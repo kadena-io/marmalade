@@ -1,0 +1,122 @@
+(begin-tx)
+(env-data
+ { 'ns-admin-keyset: ["admin"]
+ , 'ns-operate-keyset: ["operate"]
+ , 'ns-genesis-keyset: { "keys": [], "pred": "="}
+ , 'util-ns-admin: []
+ , 'hft-admin: []
+ , 'ns: "free"
+ , 'upgrade: false })
+(load "root/fungible-v2.pact")
+(load "root/ns.pact")
+(load "fungible-util.pact")
+(commit-tx)
+
+(begin-tx)
+(load "hft.pact")
+(commit-tx)
+
+(begin-tx)
+(env-data
+ { 'bob-ks: ["bob"],
+   'alice-ks: ["alice"]
+ })
+(env-keys ["bob"])
+(use free.hft)
+
+;;Transfer without rewards
+
+;;Bob mints a new token that can be divided into 50
+(mint-hft "project-0" "bob" (read-keyset 'bob-ks) 5.0 0.0 1 "project-0-uri")
+(env-sigs [
+  { 'key: "bob"
+  , 'caps:
+    [
+     (TRANSFER "project-0" "bob" "alice" 0.1)
+    ]
+  },
+  { 'key: "alice"
+  , 'caps:
+    [
+     (TRANSFER "project-0:1" "alice" "bob" 0.1)
+    ]
+  }])
+
+
+(expect "transfer-create to alice"
+  "Transfer Succeeded - no parent rewarded"
+  (transfer-create-hft "project-0" "bob" "alice" (read-keyset 'alice-ks) 0.1))
+
+(expect "transfer-mint to alice"
+  "Transfer Succeeded - no parent rewarded"
+  (transfer-mint "project-0" "project-0:1" "alice" (read-keyset 'alice-ks) 0.1 0.0 2))
+
+(expect "alice received 0.1 original nft from bob"
+  0.1
+  (at 'balance (details "project-0" "alice")))
+(expect "alice received 0.1 child nft from bob"
+  0.1
+  (at 'balance (details "project-0:1" "alice")))
+
+(expect "alice transfers minted nft back to bob"
+  "Transfer Succeeded - no parent rewarded"
+  (transfer-create-hft "project-0:1" "alice" "bob" (read-keyset 'bob-ks) 0.01))
+(expect "bob received 0.01 of minted nft from bob"
+  0.01
+  (at 'balance (details "project-0:1" "bob")))
+(commit-tx)
+
+
+(begin-tx)
+;;Transfer with rewards
+
+;;Bob mints a token with 50% share
+(use free.hft)
+
+(mint-hft "project-1" "bob" (read-keyset 'bob-ks) 5.0 0.5 1 "project-1-uri")
+(env-sigs [
+  { 'key: "bob"
+  , 'caps:
+    [
+     (TRANSFER "project-1" "bob" "alice" 0.1)
+    ]
+  },
+  { 'key: "alice"
+  , 'caps:
+    [
+     (TRANSFER "project-1:1" "alice" "bob" 0.15)
+    ]
+  }])
+
+;;No rewards in transfers between parent tokens
+(expect "transfer-create to alice"
+  "Transfer Succeeded - no parent rewarded"
+  (transfer-create-hft "project-1" "bob" "alice" (read-keyset 'alice-ks) 0.1))
+
+(expect "transfer-mint to alice"
+  "Write succeeded"
+  (transfer-mint "project-1" "project-1:1" "alice" (read-keyset 'alice-ks) 0.1 0.0 2))
+
+(expect "alice received 0.1 parent nft from bob"
+  0.1
+  (at 'balance (details "project-1" "alice")))
+
+(expect "alice received 0.1 child nft from bob and rewarded 0.05 child nft to bob"
+  0.05
+  (at 'balance (details "project-1:1" "alice")))
+
+(expect "bob received 0.05 child nft for reward"
+  0.05
+  (at 'balance (details "project-1:1" "alice")))
+
+(expect "alice transfers 0.01 child nft to bob and paid 0.005 to bob for reward"
+  "Write succeeded"
+  (transfer-create-hft "project-1:1" "alice" "bob" (read-keyset 'bob-ks) 0.01))
+
+(expect "bob received 0.01 of minted nft from bob"
+  0.065
+  (at 'balance (details "project-1:1" "bob")))
+
+
+
+(commit-tx)

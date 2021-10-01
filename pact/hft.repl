@@ -19,104 +19,88 @@
 (begin-tx)
 (env-data
  { 'bob-ks: ["bob"],
-   'alice-ks: ["alice"]
+   'alice-ks: ["alice"],
+   'ownership-g: ["project-0:1"]
  })
 (env-keys ["bob"])
 (use free.hft)
 
-;;Transfer without rewards
-
-;;Bob mints a new token that can be divided into 50
-(mint-hft "project-0" "bob" (read-keyset 'bob-ks) 5.0 0.0 1 "project-0-uri")
 (env-sigs [
   { 'key: "bob"
   , 'caps:
     [
-     (TRANSFER "project-0" "bob" "alice" 0.1)
+     (MINT "project-0" "bob" 5.0),
+     (TRANSFER "project-0" "bob" "alice" 2.0),
+     (TRANSFER "project-0" "bob" "project-0:1" 1.0),
+     (TRANSFER "project-0:1" "bob" "alice"  0.000000002),
+     (MINT "project-0:1" "bob" 1.0)
     ]
   },
-  { 'key: "alice"
-  , 'caps:
-    [
-     (TRANSFER "project-0:1" "alice" "bob" 0.1)
-    ]
-  }])
-
-
-(expect "transfer-create to alice"
-  "Transfer Succeeded - no parent rewarded"
-  (transfer-create-hft "project-0" "bob" "alice" (read-keyset 'alice-ks) 0.1))
-
-(expect "transfer-mint to alice"
-  "Transfer Succeeded - no parent rewarded"
-  (transfer-mint "project-0" "project-0:1" "alice" (read-keyset 'alice-ks) 0.1 0.0 2))
-
-(expect "alice received 0.1 original nft from bob"
-  0.1
-  (at 'balance (details "project-0" "alice")))
-(expect "alice received 0.1 child nft from bob"
-  0.1
-  (at 'balance (details "project-0:1" "alice")))
-
-(expect "alice transfers minted nft back to bob"
-  "Transfer Succeeded - no parent rewarded"
-  (transfer-create-hft "project-0:1" "alice" "bob" (read-keyset 'bob-ks) 0.01))
-(expect "bob received 0.01 of minted nft from bob"
-  0.01
-  (at 'balance (details "project-0:1" "bob")))
-(commit-tx)
-
-
-(begin-tx)
-;;Transfer with rewards
-
-;;Bob mints a token with 50% share
-(use free.hft)
-
-(mint-hft "project-1" "bob" (read-keyset 'bob-ks) 5.0 0.5 1 "project-1-uri")
-(env-sigs [
-  { 'key: "bob"
-  , 'caps:
-    [
-     (TRANSFER "project-1" "bob" "alice" 0.1)
+  {
+    'key: "project-0:1",
+    'caps: [
+     (MINT "project-0:1" "bob" 1.0)
     ]
   },
-  { 'key: "alice"
-  , 'caps:
-    [
-     (TRANSFER "project-1:1" "alice" "bob" 0.15)
+  {
+    'key: "alice",
+    'caps: [
+      (TRANSFER "project-0:1" "alice" "project-0:1:1" 1.0)
+      (MINT "project-0:1:1" "alice" 0.0000000001)
     ]
-  }])
+  }
+  ])
 
-;;No rewards in transfers between parent tokens
-(expect "transfer-create to alice"
-  "Transfer Succeeded - no parent rewarded"
-  (transfer-create-hft "project-1" "bob" "alice" (read-keyset 'alice-ks) 0.1))
+(create-token "project-0" (read-keyset 'bob-ks) "project-0-uri" 12)
 
-(expect "transfer-mint to alice"
+(expect
+  "bob mints a new token"
   "Write succeeded"
-  (transfer-mint "project-1" "project-1:1" "alice" (read-keyset 'alice-ks) 0.1 0.0 2))
+  (mint "project-0" "bob" (read-keyset 'bob-ks) 5.0))
 
-(expect "alice received 0.1 parent nft from bob"
-  0.1
-  (at 'balance (details "project-1" "alice")))
+(expect-failure
+  "alice can't mint a project-0 token"
+  (mint "project-0" "alice" (read-keyset 'alice-ks) 5.0))
+;;regular transfer
+(transfer-create "project-0" "bob" "alice" (read-keyset 'alice-ks) 2.0)
 
-(expect "alice received 0.1 child nft from bob and rewarded 0.05 child nft to bob"
-  0.05
-  (at 'balance (details "project-1:1" "alice")))
-
-(expect "bob received 0.05 child nft for reward"
-  0.05
-  (at 'balance (details "project-1:1" "alice")))
-
-(expect "alice transfers 0.01 child nft to bob and paid 0.005 to bob for reward"
+;;tokenifying transfer
+(expect
+  "bob minted a new token"
   "Write succeeded"
-  (transfer-create-hft "project-1:1" "alice" "bob" (read-keyset 'bob-ks) 0.01))
+  (transfer-mint "project-0" "project-0:1" "bob" "project-0:1" (read-keyset 'ownership-g) 1.0 13))
 
-(expect "bob received 0.01 of minted nft from bob"
-  0.065
-  (at 'balance (details "project-1:1" "bob")))
+(expect
+  "bob's details on new token"
+  {"account": "bob","balance": 1.0,"guard":(read-keyset 'bob-ks),"token": "project-0:1"}
+  (details "project-0:1" "bob"))
 
+(expect
+  "new token locker in original token"
+  {"account": "project-0:1","balance": 1.0,"guard":(read-keyset 'ownership-g),"token": "project-0"}
+  (details "project-0" "project-0:1"))
 
+(expect
+  "alice receives a new token"
+  "Write succeeded"
+  (transfer-create "project-0:1" "bob" "alice" (read-keyset 'alice-ks) 0.000000002))
+
+(expect
+  "alice receives a newly minted token"
+  {"account": "alice","balance": 0.000000002,"guard":(read-keyset 'alice-ks),"token": "project-0:1"}
+  (details "project-0:1" "alice"))
+
+(expect
+  "alice mints a new token"
+  "Write succeeded"
+  (transfer-mint "project-0:1" "project-0:1:1" "alice" "project-0:1:1" (read-keyset 'alice-ks) 0.0000000001 15))
+
+(expect "uri of project-0" "project-0-uri" (uri "project-0"))
+(expect "uri of project-0:1" "project-0-uri" (uri "project-0:1"))
+
+(expect "All tokens in the ledger"
+  ["project-0", "project-0:1", "project-0:1:1"]
+  (get-tokens)
+  )
 
 (commit-tx)

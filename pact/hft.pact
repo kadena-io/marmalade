@@ -72,30 +72,25 @@
 
   (use fungible-util)
 
-  (defschema issuer
+  (defschema token
+    token:string
+    uri:string
+    minimum-precision:integer
     guard:guard
   )
 
-  (deftable issuers:{issuer})
+  (deftable tokens:{token})
 
   (defschema supply
-    hftId:string
-    account:string
-    guard:guard
     supply:decimal
-    parent:string
-    children:list
-    minimum-precision:integer
-    share:decimal
-    uri:string
-  )
+    )
 
   (deftable supplies:{supply})
 
   (defconst ISSUER_KEY "I")
 
-  (defcap ISSUE ()
-    (enforce-guard (at 'guard (read issuers ISSUER_KEY)))
+  (defcap ISSUE (token:string)
+    (enforce-guard (at 'guard (read tokens token)))
   )
 
   (defun key ( token:string account:string )
@@ -109,29 +104,22 @@
 
   (defcap CREDIT (token:string receiver:string) true)
 
-  (defcap HFT () true)
-
   (defcap UPDATE_SUPPLY ()
     "private cap for update-supply"
     true)
 
   (defcap MINT (token:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
-    (compose-capability (ISSUE))
+    (compose-capability (ISSUE token))
   )
 
   (defcap BURN (token:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
-    (compose-capability (ISSUE))
+    (compose-capability (ISSUE token))
   )
 
-  (defun init-issuer (guard:guard)
-    (with-capability (GOVERNANCE)
-      (insert issuers ISSUER_KEY {'guard: guard}))
-  )
-
-  (defun init ()
-    (init-issuer (create-module-guard "issuance"))
+  (defcap CREATE_TOKEN (token:string)
+    true
   )
 
   (defun create-account:string
@@ -153,6 +141,16 @@
         { 'supply : 0.0 }
         { 'supply := s }
         s)
+    )
+
+    (defun create-token (token:string guard:guard uri:string precision:integer)
+      (with-capability (CREATE_TOKEN token)
+        (insert tokens token {
+          "token": token,
+          "uri": uri,
+          "minimum-precision": 12,
+          "guard": guard
+          }))
     )
 
     (defcap TRANSFER:bool
@@ -197,7 +195,6 @@
         { "guard" := old-guard }
 
         (enforce-guard old-guard)
-
         (update ledger (key token account)
           { "guard" : new-guard }))
       )
@@ -208,19 +205,17 @@
         receiver:string
         amount:decimal
       )
-      (require-capability (HFT))
       (enforce (!= sender receiver)
         "sender cannot be the receiver of a transfer")
       (enforce-valid-transfer sender receiver (precision token) amount)
-
 
       (with-capability (TRANSFER token sender receiver amount)
         (debit token sender amount)
         (with-read ledger (key token receiver)
           { "guard" := g }
           (credit token receiver g amount))
-        )
       )
+    )
 
     (defun transfer-create:string
       ( token:string
@@ -229,7 +224,6 @@
         receiver-guard:guard
         amount:decimal
       )
-      (require-capability (HFT))
       (enforce (!= sender receiver)
         "sender cannot be the receiver of a transfer")
       (enforce-valid-transfer sender receiver (precision token) amount)
@@ -238,6 +232,19 @@
         (debit token sender amount)
         (credit token receiver receiver-guard amount))
       )
+
+    (defun transfer-mint (
+        token:string
+        new-token:string
+        account:string
+        locker:string
+        token-guard:guard
+        amount:decimal
+        precision:integer)
+      (transfer-create token account locker token-guard amount)
+      (create-token new-token (create-token-guard token-guard) (uri token) precision)
+      (mint new-token account (at 'guard (details token account)) amount)
+    )
 
     (defun mint:string
       ( token:string
@@ -292,7 +299,7 @@
       (require-capability (CREDIT token account))
 
       (enforce-unit token amount)
-
+      (uri token)
       (with-default-read ledger (key token account)
         { "balance" : 0.0, "guard" : guard }
         { "balance" := balance, "guard" := retg }
@@ -314,79 +321,8 @@
       (with-default-read supplies token
         { 'supply: 0.0 }
         { 'supply := s }
-        (update supplies token {'supply: (+ s amount)}))
+        (write supplies token {'supply: (+ s amount)}))
     )
-
-  (defun mint-hft (hftId:string account:string guard:guard supply:decimal share:decimal minimum-precision:integer uri:string)
-    (install-capability (MINT hftId account supply))
-    (insert supplies hftId {
-      "hftId": hftId,
-      "account": account,
-      "guard": guard,
-      "supply": 0.0,
-      "parent": "",
-      "children": [],
-      "minimum-precision": minimum-precision,
-      "share": share,
-      "uri": uri
-    })
-    (mint hftId account guard supply)
-    )
-
-  (defun transfer-hft (hftId:string sender:string receiver:string amount:decimal)
-    (with-capability (HFT)
-      (transfer hftId sender receiver amount)
-      (reward-parent hftId sender amount))
-  )
-
-  (defun transfer-create-hft (
-    hftId:string sender:string receiver:string
-    receiver-guard:guard amount:decimal)
-    (with-capability (HFT)
-      (transfer-create hftId sender receiver receiver-guard amount))
-    (reward-parent hftId sender amount)
-  )
-
-  (defun transfer-mint (
-    hftId:string childId:string account:string
-    guard:guard amount:decimal share:decimal minimum-precision:integer)
-    (with-read supplies hftId {
-      "uri":= uri
-      }
-      (mint-hft childId account guard amount share minimum-precision uri)
-      (add-parent hftId childId)
-      (add-child hftId childId)
-      (reward-parent childId account amount)
-  ))
-
-  (defun reward-parent (hftId:string sender:string amount:decimal)
-    "Pay parent token when child token transfers"
-    (with-read supplies hftId {
-      "parent":= parent
-      }
-        (if (= parent "") "Transfer Succeeded - no parent rewarded"
-          (with-read supplies parent {
-            "account":= parent-account,
-            "guard":= parent-guard,
-            "share":= share
-            }
-            (if (= share 0.0) "Transfer Succeeded - no parent rewarded"
-              (with-capability (HFT)
-                (transfer-create hftId sender parent-account parent-guard (* share amount))))))))
-
-
-  (defun add-parent (hftId:string childId:string)
-    (update supplies childId {
-      "parent": hftId
-      }))
-
-  (defun add-child (hftId:string childId:string)
-    (with-read supplies hftId {
-      "children":= children
-      }
-    (update supplies hftId {
-      "children": (+ [childId] children)
-      })))
 
   (defun enforce-unit:bool (token:string amount:decimal)
     (enforce
@@ -395,8 +331,13 @@
       "precision violation")
   )
 
+  (defun uri (token:string)
+    (at 'uri (read tokens token))
+  )
+
   (defun precision:integer (token:string)
     12
+    ;(at 'minimum-precision (read tokens token))
   )
 
   (defpact transfer-crosschain:string
@@ -411,13 +352,16 @@
 
   (defun get-tokens ()
     "Get all token identifiers"
-    (keys supplies))
+    (keys tokens))
+
+  (defun create-token-guard (guard:guard)
+    ;;todo - shared ownership?
+
+    guard)
 )
 
 (if (read-msg 'upgrade)
   ["upgrade complete"]
   [ (create-table ledger)
-    (create-table issuers)
-    (create-table supplies) ])
-
-(init)
+    (create-table supplies)
+    (create-table tokens) ])

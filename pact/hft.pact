@@ -117,9 +117,7 @@
   (defcap CREATE_TOKEN (token:string)
     true
   )
-
-  (defcap TOKEN_GOV () true)
-
+  
   (defun create-account:string
     ( token:string
       account:string
@@ -343,14 +341,6 @@
   (defun get-tokens ()
     "Get all token identifiers"
     (keys tokens))
-
-  (defun token-guard ()
-    (require-capability (TOKEN_GOV))
-  )
-
-  (defun create-token-guard:guard ()
-    (create-user-guard (token-guard))
-  )
 )
 
 (if (read-msg 'upgrade)

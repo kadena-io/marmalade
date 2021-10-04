@@ -14,6 +14,7 @@
 
 (begin-tx)
 (load "hft.pact")
+(load "votes.pact")
 (commit-tx)
 
 (begin-tx)
@@ -84,7 +85,7 @@
 (expect
   "guard of project-0:alice is rotated to a token-guard"
   "Write succeeded"
-  (rotate "project-0" "alice" (create-token-guard)))
+  (rotate "project-0" "alice" (user.govtest.create-token-guard)))
 
 (expect
   "Create token project-0:1"
@@ -99,12 +100,14 @@
 
 (expect-failure
   "Alice fails in transferring project-0 token"
-  "require-capability: not granted: (user.hft.TOKEN_GOV)"
+  "require-capability: not granted: (user.govtest.COUNT_VOTES)"
   (transfer-create "project-0" "alice" "alice-1" (read-keyset 'alice-ks) 1.0)
 )
 
-;;with TOKEN_GOV, alice succeeds in transferring project-0 token
-(test-capability (TOKEN_GOV))
+(use user.govtest)
+;;with COUNT_VOTES capability, alice succeeds in transferring project-0 token
+
+(test-capability (user.govtest.COUNT_VOTES))
 (transfer-create "project-0" "alice" "alice-1" (read-keyset 'alice-ks) 1.0)
 
 (expect "All tokens in the ledger"

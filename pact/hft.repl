@@ -5,7 +5,7 @@
  , 'ns-genesis-keyset: { "keys": [], "pred": "="}
  , 'util-ns-admin: []
  , 'hft-admin: []
- , 'ns: "free"
+ , 'ns: "user"
  , 'upgrade: false })
 (load "root/fungible-v2.pact")
 (load "root/ns.pact")
@@ -19,11 +19,10 @@
 (begin-tx)
 (env-data
  { 'bob-ks: ["bob"],
-   'alice-ks: ["alice"],
-   'ownership-g: ["project-0:1"]
+   'alice-ks: ["alice"]
  })
 (env-keys ["bob"])
-(use free.hft)
+(use user.hft)
 
 (env-sigs [
   { 'key: "bob"
@@ -46,61 +45,35 @@
     'key: "alice",
     'caps: [
       (TRANSFER "project-0:1" "alice" "project-0:1:1" 1.0)
-      (MINT "project-0:1:1" "alice" 0.0000000001)
+      (MINT "project-0" "alice" 5.0)
     ]
   }
   ])
 
-(create-token "project-0" (read-keyset 'bob-ks) "project-0-uri" 12)
 
 (expect
-  "bob mints a new token"
+  "bob creates a new token project-0"
+  "Write succeeded"
+  (create-token "project-0" (read-keyset 'bob-ks) 12 "project-0-uri"))
+
+(expect
+  "bob mints a 5.0 of token"
   "Write succeeded"
   (mint "project-0" "bob" (read-keyset 'bob-ks) 5.0))
+
+(expect
+  "total supply of project-0"
+  5.0
+  (total-supply "project-0"))
 
 (expect-failure
   "alice can't mint a project-0 token"
   (mint "project-0" "alice" (read-keyset 'alice-ks) 5.0))
+
 ;;regular transfer
-(transfer-create "project-0" "bob" "alice" (read-keyset 'alice-ks) 2.0)
-
-;;tokenifying transfer
-(expect
-  "bob minted a new token"
+(expect "Bob transfers 2.0 to Alice"
   "Write succeeded"
-  (transfer-mint "project-0" "project-0:1" "bob" "project-0:1" (read-keyset 'ownership-g) 1.0 13))
+  (transfer-create "project-0" "bob" "alice" (read-keyset 'alice-ks) 2.0))
 
-(expect
-  "bob's details on new token"
-  {"account": "bob","balance": 1.0,"guard":(read-keyset 'bob-ks),"token": "project-0:1"}
-  (details "project-0:1" "bob"))
-
-(expect
-  "new token locker in original token"
-  {"account": "project-0:1","balance": 1.0,"guard":(read-keyset 'ownership-g),"token": "project-0"}
-  (details "project-0" "project-0:1"))
-
-(expect
-  "alice receives a new token"
-  "Write succeeded"
-  (transfer-create "project-0:1" "bob" "alice" (read-keyset 'alice-ks) 0.000000002))
-
-(expect
-  "alice receives a newly minted token"
-  {"account": "alice","balance": 0.000000002,"guard":(read-keyset 'alice-ks),"token": "project-0:1"}
-  (details "project-0:1" "alice"))
-
-(expect
-  "alice mints a new token"
-  "Write succeeded"
-  (transfer-mint "project-0:1" "project-0:1:1" "alice" "project-0:1:1" (read-keyset 'alice-ks) 0.0000000001 15))
-
-(expect "uri of project-0" "project-0-uri" (uri "project-0"))
-(expect "uri of project-0:1" "project-0-uri" (uri "project-0:1"))
-
-(expect "All tokens in the ledger"
-  ["project-0", "project-0:1", "project-0:1:1"]
-  (get-tokens)
-  )
 
 (commit-tx)

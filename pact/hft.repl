@@ -14,7 +14,6 @@
 
 (begin-tx)
 (load "hft.pact")
-(load "votes.pact")
 (commit-tx)
 
 (begin-tx)
@@ -47,9 +46,6 @@
     'caps: [
       (TRANSFER "project-0:1" "alice" "project-0:1:1" 1.0)
       (MINT "project-0" "alice" 5.0)
-      (user.hft.ROTATE "project-0" "alice")
-      (MINT "project-0:1" "alice" 10.0)
-      (user.hft.TRANSFER "project-0" "alice" "alice-1" 1.0)
     ]
   }
   ])
@@ -79,40 +75,5 @@
   "Write succeeded"
   (transfer-create "project-0" "bob" "alice" (read-keyset 'alice-ks) 2.0))
 
-
-;;Rotate and issue a new tokens
-
-(expect
-  "guard of project-0:alice is rotated to a token-guard"
-  "Write succeeded"
-  (rotate "project-0" "alice" (user.govtest.create-token-guard)))
-
-(expect
-  "Create token project-0:1"
-  "Write succeeded"
-  (create-token "project-0:1" (read-keyset 'alice-ks) 16 "project-0-uri"))
-
-(expect
-  "Alice mints new project-0:1"
-  "Write succeeded"
-  (mint "project-0:1" "alice" (read-keyset 'alice-ks) 10.0)
-  )
-
-(expect-failure
-  "Alice fails in transferring project-0 token"
-  "require-capability: not granted: (user.govtest.COUNT_VOTES)"
-  (transfer-create "project-0" "alice" "alice-1" (read-keyset 'alice-ks) 1.0)
-)
-
-(use user.govtest)
-;;with COUNT_VOTES capability, alice succeeds in transferring project-0 token
-
-(test-capability (user.govtest.COUNT_VOTES))
-(transfer-create "project-0" "alice" "alice-1" (read-keyset 'alice-ks) 1.0)
-
-(expect "All tokens in the ledger"
-  ["project-0", "project-0:1"]
-  (get-tokens)
-  )
 
 (commit-tx)

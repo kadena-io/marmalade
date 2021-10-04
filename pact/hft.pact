@@ -93,6 +93,35 @@
     (format "{}:{}" [token account])
   )
 
+  (defcap TRANSFER:bool
+    ( token:string
+      sender:string
+      receiver:string
+      amount:decimal
+    )
+    @managed amount TRANSFER-mgr
+    (enforce-unit token amount)
+    (enforce (> amount 0.0) "Positive amount")
+    (compose-capability (DEBIT token sender))
+    (compose-capability (CREDIT token receiver))
+  )
+
+  (defun TRANSFER-mgr:decimal
+    ( managed:decimal
+      requested:decimal
+    )
+
+    (let ((newbal (- managed requested)))
+      (enforce (>= newbal 0.0)
+        (format "TRANSFER exceeded for balance {}" [managed]))
+      newbal)
+  )
+
+  (defcap ROTATE (token:string account:string)
+    @doc "Autonomously managed capability for guard rotation"
+    @managed
+    true)
+
   (defcap DEBIT (token:string sender:string)
     (enforce-guard
       (at 'guard
@@ -117,7 +146,7 @@
   (defcap CREATE_TOKEN (token:string)
     true
   )
-  
+
   (defun create-account:string
     ( token:string
       account:string
@@ -148,35 +177,6 @@
           "uri": uri
           }))
     )
-
-    (defcap TRANSFER:bool
-      ( token:string
-        sender:string
-        receiver:string
-        amount:decimal
-      )
-      @managed amount TRANSFER-mgr
-      (enforce-unit token amount)
-      (enforce (> amount 0.0) "Positive amount")
-      (compose-capability (DEBIT token sender))
-      (compose-capability (CREDIT token receiver))
-    )
-
-    (defun TRANSFER-mgr:decimal
-      ( managed:decimal
-        requested:decimal
-      )
-
-      (let ((newbal (- managed requested)))
-        (enforce (>= newbal 0.0)
-          (format "TRANSFER exceeded for balance {}" [managed]))
-        newbal)
-    )
-
-    (defcap ROTATE (token:string account:string)
-      @doc "Autonomously managed capability for guard rotation"
-      @managed
-      true)
 
     (defun truncate:decimal (token:string amount:decimal)
       (floor amount (precision token))

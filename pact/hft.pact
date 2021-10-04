@@ -9,7 +9,7 @@
      (property
       (forall (token:string)
        (when (row-written supplies token)
-        (row-enforced issuers 'guard ISSUER_KEY)))
+        (row-enforced tokens 'guard token)))
       { 'except:
         [ transfer-crosschain ;; VACUOUS
           debit               ;; PRIVATE
@@ -21,9 +21,7 @@
      (property
       (forall (key:string)
        (when (row-written ledger key)
-        (or
-         (row-enforced issuers 'guard ISSUER_KEY)    ;; issuer write
-         (row-enforced ledger 'guard key))))  ;; owner write
+         (row-enforced ledger 'guard key)))  ;; owner write
       { 'except:
         [ transfer-crosschain ;; VACUOUS
           debit               ;; PRIVATE
@@ -87,8 +85,6 @@
 
   (deftable supplies:{supply})
 
-  (defconst ISSUER_KEY "I")
-
   (defcap ISSUE (token:string)
     (enforce-guard (at 'guard (read tokens token)))
   )
@@ -122,6 +118,8 @@
     true
   )
 
+  (defcap TOKEN_GOV () true)
+
   (defun create-account:string
     ( token:string
       account:string
@@ -143,13 +141,13 @@
         s)
     )
 
-    (defun create-token (token:string guard:guard uri:string precision:integer)
+    (defun create-token (token:string guard:guard precision:integer uri:string)
       (with-capability (CREATE_TOKEN token)
         (insert tokens token {
           "token": token,
-          "uri": uri,
-          "minimum-precision": 12,
-          "guard": guard
+          "guard": guard,
+          "minimum-precision": precision,
+          "uri": uri
           }))
     )
 
@@ -177,6 +175,11 @@
         newbal)
     )
 
+    (defcap ROTATE (token:string account:string)
+      @doc "Autonomously managed capability for guard rotation"
+      @managed
+      true)
+
     (defun truncate:decimal (token:string amount:decimal)
       (floor amount (precision token))
     )
@@ -191,13 +194,13 @@
       )
 
     (defun rotate:string (token:string account:string new-guard:guard)
-      (with-read ledger (key token account)
-        { "guard" := old-guard }
+      (with-capability (ROTATE token account)
+        (with-read ledger (key token account)
+          { "guard" := old-guard }
 
-        (enforce-guard old-guard)
-        (update ledger (key token account)
-          { "guard" : new-guard }))
-      )
+          (enforce-guard old-guard)
+          (update ledger (key token account)
+            { "guard" : new-guard }))))
 
     (defun transfer:string
       ( token:string
@@ -232,19 +235,6 @@
         (debit token sender amount)
         (credit token receiver receiver-guard amount))
       )
-
-    (defun transfer-mint (
-        token:string
-        new-token:string
-        account:string
-        locker:string
-        token-guard:guard
-        amount:decimal
-        precision:integer)
-      (transfer-create token account locker token-guard amount)
-      (create-token new-token (create-token-guard token-guard) (uri token) precision)
-      (mint new-token account (at 'guard (details token account)) amount)
-    )
 
     (defun mint:string
       ( token:string
@@ -325,10 +315,11 @@
     )
 
   (defun enforce-unit:bool (token:string amount:decimal)
+    (let ((p (precision token)))
     (enforce
-      (= (floor amount (precision token))
+      (= (floor amount p)
          amount)
-      "precision violation")
+      "precision violation"))
   )
 
   (defun uri (token:string)
@@ -336,8 +327,7 @@
   )
 
   (defun precision:integer (token:string)
-    12
-    ;(at 'minimum-precision (read tokens token))
+    (at 'minimum-precision (read tokens token))
   )
 
   (defpact transfer-crosschain:string
@@ -354,10 +344,13 @@
     "Get all token identifiers"
     (keys tokens))
 
-  (defun create-token-guard (guard:guard)
-    ;;todo - shared ownership?
+  (defun token-guard ()
+    (require-capability (TOKEN_GOV))
+  )
 
-    guard)
+  (defun create-token-guard:guard ()
+    (create-user-guard (token-guard))
+  )
 )
 
 (if (read-msg 'upgrade)

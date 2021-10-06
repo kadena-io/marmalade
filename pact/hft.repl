@@ -75,5 +75,6 @@
   "Write succeeded"
   (transfer-create "project-0" "bob" "alice" (read-keyset 'alice-ks) 2.0))
 
-
+(view-tokens)
+(view-ledger)
 (commit-tx)

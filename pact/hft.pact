@@ -68,6 +68,12 @@
 
   (deftable ledger:{entry})
 
+  (defun view-ledger-keys ()
+    (keys ledger))
+
+  (defun view-ledger ()
+    (map (read ledger) (keys ledger)))
+
   (use fungible-util)
 
   (defschema token
@@ -79,6 +85,12 @@
   )
 
   (deftable tokens:{token})
+
+  (defun view-tokens-keys ()
+    (keys tokens))
+
+  (defun view-tokens ()
+    (map (read tokens) (keys tokens)))
 
   (defcap ISSUE (token:string)
     (enforce-guard (at 'guard (read tokens token)))

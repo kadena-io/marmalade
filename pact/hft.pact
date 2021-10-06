@@ -75,15 +75,10 @@
     uri:string
     minimum-precision:integer
     guard:guard
+    supply:decimal
   )
 
   (deftable tokens:{token})
-
-  (defschema supply
-    supply:decimal
-    )
-
-  (deftable supplies:{supply})
 
   (defcap ISSUE (token:string)
     (enforce-guard (at 'guard (read tokens token)))
@@ -162,7 +157,7 @@
     )
 
     (defun total-supply:decimal (token:string)
-      (with-default-read supplies token
+      (with-default-read tokens token
         { 'supply : 0.0 }
         { 'supply := s }
         s)
@@ -174,7 +169,8 @@
           "token": token,
           "guard": guard,
           "minimum-precision": precision,
-          "uri": uri
+          "uri": uri,
+          "supply": 0.0
           }))
     )
 
@@ -287,7 +283,7 @@
       (require-capability (CREDIT token account))
 
       (enforce-unit token amount)
-      (uri token)
+
       (with-default-read ledger (key token account)
         { "balance" : 0.0, "guard" : guard }
         { "balance" := balance, "guard" := retg }
@@ -306,10 +302,10 @@
 
     (defun update-supply (token:string amount:decimal)
       (require-capability (UPDATE_SUPPLY))
-      (with-default-read supplies token
+      (with-default-read tokens token
         { 'supply: 0.0 }
         { 'supply := s }
-        (write supplies token {'supply: (+ s amount)}))
+        (update tokens token {'supply: (+ s amount)}))
     )
 
   (defun enforce-unit:bool (token:string amount:decimal)
@@ -346,5 +342,4 @@
 (if (read-msg 'upgrade)
   ["upgrade complete"]
   [ (create-table ledger)
-    (create-table supplies)
     (create-table tokens) ])

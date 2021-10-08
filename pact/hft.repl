@@ -9,11 +9,13 @@
  , 'upgrade: false })
 (load "root/fungible-v2.pact")
 (load "root/ns.pact")
+(load "account-protocols-v1.pact")
 (load "fungible-util.pact")
 (commit-tx)
 
 (begin-tx)
 (load "hft.pact")
+(verify "user.hft")
 (commit-tx)
 
 (begin-tx)
@@ -77,4 +79,5 @@
 
 (view-tokens)
 (view-ledger)
+
 (commit-tx)

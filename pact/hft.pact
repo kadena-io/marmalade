@@ -1,5 +1,4 @@
 (namespace (read-msg 'ns))
-(define-keyset 'hft-admin)
 
 (module hft GOVERNANCE
 
@@ -8,7 +7,7 @@
      ;; prop-supply-write-issuer-guard
      (property
       (forall (token:string)
-       (when (row-written supplies token)
+       (when (row-written tokens token)
         (row-enforced tokens 'guard token)))
       { 'except:
         [ transfer-crosschain ;; VACUOUS
@@ -45,7 +44,7 @@
 
       ;; prop-supply-conserves-mass
       (property
-       (= (column-delta supplies 'supply) 0.0)
+       (= (column-delta tokens 'supply) 0.0)
        { 'except:
         [ transfer-crosschain ;; VACUOUS
           debit               ;; PRIVATE
@@ -54,7 +53,12 @@
           burn                ;; prop-ledger-write-guard
           mint                ;; prop-ledger-write-guard
        ] } )
+
+      (defproperty enforce-valid-account (account:string)
+          (> (length account) 2))
     ]
+
+  (use fungible-util)
 
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'hft-admin)))
@@ -73,8 +77,6 @@
 
   (defun view-ledger ()
     (map (read ledger) (keys ledger)))
-
-  (use fungible-util)
 
   (defschema token
     token:string
@@ -160,6 +162,7 @@
       guard:guard
     )
     (enforce-valid-account account)
+    (enforce-reserved account guard)
     (insert ledger account
       { "balance" : 0.0
       , "guard"   : guard
@@ -291,26 +294,36 @@
         guard:guard
         amount:decimal
       )
+      @doc "Credit AMOUNT to ACCOUNT balance"
+
+      @model [ (property (> amount 0.0))
+               (property (enforce-valid-account account))
+             ]
+      (enforce-valid-account account)
+      (enforce-unit token amount)
 
       (require-capability (CREDIT token account))
 
-      (enforce-unit token amount)
-
       (with-default-read ledger (key token account)
-        { "balance" : 0.0, "guard" : guard }
+        { "balance" : -1.0, "guard" : guard }
         { "balance" := balance, "guard" := retg }
         (enforce (= retg guard)
           "account guards do not match")
 
+        (let ((is-new
+               (if (= balance -1.0)
+                   (enforce-reserved account guard)
+                 false)))
+
         (write ledger (key token account)
-          { "balance" : (+ balance amount)
+          { "balance" : (if is-new amount (+ balance amount))
           , "guard"   : retg
           , "token"   : token
           , "account" : account
           })
         (with-capability (UPDATE_SUPPLY)
           (update-supply token amount))
-        ))
+        )))
 
     (defun update-supply (token:string amount:decimal)
       (require-capability (UPDATE_SUPPLY))

@@ -3,59 +3,6 @@
 
 (module hft GOVERNANCE
 
-  @model
-    [
-     ;; prop-supply-write-issuer-guard
-     (property
-      (forall (token:string)
-       (when (row-written supplies token)
-        (row-enforced tokens 'guard token)))
-      { 'except:
-        [ transfer-crosschain ;; VACUOUS
-          debit               ;; PRIVATE
-          credit              ;; PRIVATE
-          update-supply       ;; PRIVATE
-        ] } )
-
-     ;; prop-ledger-write-guard
-     (property
-      (forall (key:string)
-       (when (row-written ledger key)
-         (row-enforced ledger 'guard key)))  ;; owner write
-      { 'except:
-        [ transfer-crosschain ;; VACUOUS
-          debit               ;; PRIVATE
-          credit              ;; PRIVATE
-          create-account      ;; prop-ledger-conserves-mass, prop-supply-conserves-mass
-          transfer            ;; prop-ledger-conserves-mass, prop-supply-conserves-mass
-          transfer-create     ;; prop-ledger-conserves-mass, prop-supply-conserves-mass
-        ] } )
-
-
-     ;; prop-ledger-conserves-mass
-     (property
-      (= (column-delta ledger 'balance) 0.0)
-      { 'except:
-         [ transfer-crosschain ;; VACUOUS
-           debit               ;; PRIVATE
-           credit              ;; PRIVATE
-           burn                ;; prop-ledger-write-guard
-           mint                ;; prop-ledger-write-guard
-         ] } )
-
-      ;; prop-supply-conserves-mass
-      (property
-       (= (column-delta supplies 'supply) 0.0)
-       { 'except:
-        [ transfer-crosschain ;; VACUOUS
-          debit               ;; PRIVATE
-          credit              ;; PRIVATE
-          update-supply       ;; PRIVATE
-          burn                ;; prop-ledger-write-guard
-          mint                ;; prop-ledger-write-guard
-       ] } )
-    ]
-
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'hft-admin)))
 
@@ -75,13 +22,14 @@
     (map (read ledger) (keys ledger)))
 
   (use fungible-util)
+  (use token-manifest)
 
   (defschema token
     token:string
-    uri:string
+    manifest:object{manifest}
     minimum-precision:integer
-    guard:guard
     supply:decimal
+    policy:module{token-policy-v1}
   )
 
   (deftable tokens:{token})
@@ -91,10 +39,6 @@
 
   (defun view-tokens ()
     (map (read tokens) (keys tokens)))
-
-  (defcap ISSUE (token:string)
-    (enforce-guard (at 'guard (read tokens token)))
-  )
 
   (defun key ( token:string account:string )
     (format "{}:{}" [token account])
@@ -142,12 +86,26 @@
 
   (defcap MINT (token:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
-    (compose-capability (ISSUE token))
+    (with-read tokens token
+      { 'policy := policy:module{token-policy-v1}
+      , 'supply := supply
+      , 'minimum-precision := precision
+      }
+      (policy::enforce-mint
+        { 'token: token, 'supply: supply, 'precision: precision }
+        account amount))
   )
 
   (defcap BURN (token:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
-    (compose-capability (ISSUE token))
+    (with-read tokens token
+      { 'policy := policy:module{token-policy-v1}
+      , 'supply := supply
+      , 'minimum-precision := precision
+      }
+      (policy::enforce-burn
+        { 'token: token, 'supply: supply, 'precision: precision }
+        account amount))
   )
 
   (defcap CREATE_TOKEN (token:string)
@@ -175,14 +133,19 @@
         s)
     )
 
-    (defun create-token (token:string guard:guard precision:integer uri:string)
+    (defun create-token
+      ( token:string
+        precision:integer
+        manifest:object{manifest}
+        policy:module{token-policy-v1}
+      )
       (with-capability (CREATE_TOKEN token)
         (insert tokens token {
           "token": token,
-          "guard": guard,
           "minimum-precision": precision,
-          "uri": uri,
-          "supply": 0.0
+          "manifest": manifest,
+          "supply": 0.0,
+          "policy": policy
           }))
     )
 

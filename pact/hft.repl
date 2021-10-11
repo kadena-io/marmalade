@@ -10,6 +10,8 @@
 (load "root/fungible-v2.pact")
 (load "root/ns.pact")
 (load "fungible-util.pact")
+(load "policy.pact")
+(load "manifest.pact")
 (commit-tx)
 
 (begin-tx)
@@ -50,11 +52,19 @@
   }
   ])
 
+(user.guard-token-policy.init-guards
+  "project-0" (read-keyset 'bob-ks ) (read-keyset 'bob-ks ))
 
+(use user.token-manifest)
 (expect
   "bob creates a new token project-0"
   "Write succeeded"
-  (create-token "project-0" (read-keyset 'bob-ks) 12 "project-0-uri"))
+  (create-token
+    "project-0"
+    12
+    (create-manifest (uri "text" "project-0-uri") [])
+    user.guard-token-policy)
+  )
 
 (expect
   "bob mints a 5.0 of token"

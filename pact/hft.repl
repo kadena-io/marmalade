@@ -21,7 +21,9 @@
 (begin-tx)
 (env-data
  { 'bob-ks: ["bob"],
-   'alice-ks: ["alice"]
+   'alice-ks: ["alice"],
+   'ted-ks: ["ted"],
+   'multi-ks: ["alice", "bob"]
  })
 (env-keys ["bob"])
 (use user.hft)
@@ -34,7 +36,8 @@
      (TRANSFER "project-0" "bob" "alice" 2.0),
      (TRANSFER "project-0" "bob" "project-0:1" 1.0),
      (TRANSFER "project-0:1" "bob" "alice"  0.000000002),
-     (MINT "project-0:1" "bob" 1.0)
+     (MINT "project-0:1" "bob" 1.0),
+     (TRANSFER "project-0" "bob" "k:alice" 2.0)
     ]
   },
   {
@@ -77,7 +80,40 @@
   "Write succeeded"
   (transfer-create "project-0" "bob" "alice" (read-keyset 'alice-ks) 2.0))
 
+(commit-tx)
+
+
+(begin-tx)
+;;Single key account protcol - transfer-create
+(use user.hft)
+(expect-failure "Bob transfers 2.0 to k:alice with guard multi-ks"
+  "Single-key account protocol violation"
+  (transfer-create "project-0" "bob" "k:alice" (read-keyset 'multi-ks) 1.0))
+
+(expect-failure "Bob transfers 2.0 to k:alice with a single key keyset ted-ks"
+  "Single-key account protocol violation"
+  (transfer-create "project-0" "bob" "k:alice" (read-keyset 'ted-ks) 1.0))
+
+(expect "Bob transfers 2.0 to k:alice with a single key keyset alice-ks"
+  "Write succeeded"
+  (transfer-create "project-0" "bob" "k:alice" (read-keyset 'alice-ks) 1.0))
+
+;;Single key account protcol - Create Account
+(expect-failure "Create account k:alice with multi-keyset"
+  "Single-key account protocol violation"
+  (create-account "project-0" "k:alice" (read-keyset 'multi-ks) ))
+
+(expect-failure "Create account k:alice with a single key keyset ted-ks"
+  "Single-key account protocol violation"
+  (create-account "project-0" "k:alice" (read-keyset 'ted-ks)))
+
+(expect "Create account k:alice with a single key keyset alice-ks"
+  "Write succeeded"
+  (create-account "project-0" "k:alice" (read-keyset 'alice-ks)))
+(rollback-tx)
+
+(begin-tx)
+(use user.hft)
 (view-tokens)
 (view-ledger)
-
 (commit-tx)

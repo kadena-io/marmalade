@@ -21,9 +21,7 @@
 (begin-tx)
 (env-data
  { 'bob-ks: ["bob"],
-   'alice-ks: ["alice"],
-   'ted-ks: ["ted"],
-   'multi-ks: ["alice", "bob"]
+   'alice-ks: ["alice"]
  })
 (env-keys ["bob"])
 (use user.hft)
@@ -36,8 +34,7 @@
      (TRANSFER "project-0" "bob" "alice" 2.0),
      (TRANSFER "project-0" "bob" "project-0:1" 1.0),
      (TRANSFER "project-0:1" "bob" "alice"  0.000000002),
-     (MINT "project-0:1" "bob" 1.0),
-     (TRANSFER "project-0" "bob" "k:alice" 2.0)
+     (MINT "project-0:1" "bob" 1.0)
     ]
   },
   {
@@ -83,33 +80,113 @@
 (commit-tx)
 
 
+;; ======================================================
+;; test chainweb single-key naming protocol
+;; ======================================================
+
 (begin-tx)
-;;Single key account protcol - transfer-create
-(use user.hft)
-(expect-failure "Bob transfers 2.0 to k:alice with guard multi-ks"
-  "Single-key account protocol violation"
-  (transfer-create "project-0" "bob" "k:alice" (read-keyset 'multi-ks) 1.0))
+(env-data
+  {'k: ["5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"]
+  ,'k2:
+   {'keys:["5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"]
+   ,'pred:"keys-any"}
+  ,'k3:
+   {'keys:["5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4", "5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"]
+   ,'pred:"keys-all"}
+  })
+(env-sigs
+  [{'key:'bob
+   ,'caps:
+    [(user.hft.TRANSFER 'project-0 'bob
+      "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
+      0.04),
+    (user.hft.TRANSFER 'project-0 'bob
+      "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
+      0.02)
+      ]}])
 
-(expect-failure "Bob transfers 2.0 to k:alice with a single key keyset ted-ks"
+(length "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3")
+(expect-failure
+  "single-key mismatch, create-account"
   "Single-key account protocol violation"
-  (transfer-create "project-0" "bob" "k:alice" (read-keyset 'ted-ks) 1.0))
+  (user.hft.create-account 'project-0
+    "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
+    (read-keyset 'k)))
 
-(expect "Bob transfers 2.0 to k:alice with a single key keyset alice-ks"
+(expect-failure
+  "single-key mismatch, transfer-create"
+  "Single-key account protocol violation"
+  (user.hft.transfer-create
+    'project-0
+    'bob
+    "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
+    (read-keyset 'k)
+    0.02))
+
+(expect-failure
+  "single-key mismatch, transfer-create"
+  "Single-key account protocol violation"
+  (user.hft.transfer-create
+    'project-0
+    'bob
+    "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
+    (read-keyset 'k2 )
+    0.02))
+
+(expect-failure
+  "multi-key, transfer-create"
+  "Single-key account protocol violation"
+  (user.hft.transfer-create
+    'project-0
+    'bob
+    "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
+    (read-keyset 'k3 )
+    0.02))
+
+(expect-failure
+  "bad protocol, create-account"
+  "Unrecognized reserved protocol: c"
+  (user.hft.create-account 'project-0
+    "c:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
+    (read-keyset 'k2)))
+
+(expect-failure
+  "single-key mismatch, create-account"
+  "Single-key account protocol violation"
+  (user.hft.create-account
+    'project-0
+    "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
+    (read-keyset 'k)))
+
+(expect
+  "single-key success, create-account"
   "Write succeeded"
-  (transfer-create "project-0" "bob" "k:alice" (read-keyset 'alice-ks) 1.0))
+  (user.hft.create-account 'project-0
+    "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
+    (read-keyset 'k)))
 
-;;Single key account protcol - Create Account
-(expect-failure "Create account k:alice with multi-keyset"
-  "Single-key account protocol violation"
-  (create-account "project-0" "k:alice" (read-keyset 'multi-ks) ))
+(rollback-tx)
 
-(expect-failure "Create account k:alice with a single key keyset ted-ks"
-  "Single-key account protocol violation"
-  (create-account "project-0" "k:alice" (read-keyset 'ted-ks)))
+(begin-tx)
 
-(expect "Create account k:alice with a single key keyset alice-ks"
+(env-data
+  {'k: ["5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"]})
+(env-sigs
+  [{'key:'bob
+   ,'caps:
+    [(user.hft.TRANSFER 'project-0 'bob
+      "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
+      0.02)]}])
+
+(expect
+  "single-key success, transfer-create"
   "Write succeeded"
-  (create-account "project-0" "k:alice" (read-keyset 'alice-ks)))
+  (user.hft.transfer-create
+    'project-0
+    'bob
+    "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
+    (read-keyset 'k)
+    0.02))
 (rollback-tx)
 
 (begin-tx)

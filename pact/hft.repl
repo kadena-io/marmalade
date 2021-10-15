@@ -9,11 +9,13 @@
  , 'upgrade: false })
 (load "root/fungible-v2.pact")
 (load "root/ns.pact")
+(load "account-protocols-v1.pact")
 (load "fungible-util.pact")
 (commit-tx)
 
 (begin-tx)
 (load "hft.pact")
+(verify "user.hft")
 (commit-tx)
 
 (begin-tx)
@@ -75,6 +77,120 @@
   "Write succeeded"
   (transfer-create "project-0" "bob" "alice" (read-keyset 'alice-ks) 2.0))
 
+(commit-tx)
+
+
+;; ======================================================
+;; test chainweb single-key naming protocol
+;; ======================================================
+
+(begin-tx)
+(env-data
+  {'k: ["5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"]
+  ,'k2:
+   {'keys:["5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"]
+   ,'pred:"keys-any"}
+  ,'k3:
+   {'keys:["5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4", "5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"]
+   ,'pred:"keys-all"}
+  })
+(env-sigs
+  [{'key:'bob
+   ,'caps:
+    [(user.hft.TRANSFER 'project-0 'bob
+      "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
+      0.04),
+    (user.hft.TRANSFER 'project-0 'bob
+      "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
+      0.02)
+      ]}])
+
+(length "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3")
+(expect-failure
+  "single-key mismatch, create-account"
+  "Single-key account protocol violation"
+  (user.hft.create-account 'project-0
+    "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
+    (read-keyset 'k)))
+
+(expect-failure
+  "single-key mismatch, transfer-create"
+  "Single-key account protocol violation"
+  (user.hft.transfer-create
+    'project-0
+    'bob
+    "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
+    (read-keyset 'k)
+    0.02))
+
+(expect-failure
+  "single-key mismatch, transfer-create"
+  "Single-key account protocol violation"
+  (user.hft.transfer-create
+    'project-0
+    'bob
+    "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
+    (read-keyset 'k2 )
+    0.02))
+
+(expect-failure
+  "multi-key, transfer-create"
+  "Single-key account protocol violation"
+  (user.hft.transfer-create
+    'project-0
+    'bob
+    "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
+    (read-keyset 'k3 )
+    0.02))
+
+(expect-failure
+  "bad protocol, create-account"
+  "Unrecognized reserved protocol: c"
+  (user.hft.create-account 'project-0
+    "c:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
+    (read-keyset 'k2)))
+
+(expect-failure
+  "single-key mismatch, create-account"
+  "Single-key account protocol violation"
+  (user.hft.create-account
+    'project-0
+    "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
+    (read-keyset 'k)))
+
+(expect
+  "single-key success, create-account"
+  "Write succeeded"
+  (user.hft.create-account 'project-0
+    "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
+    (read-keyset 'k)))
+
+(rollback-tx)
+
+(begin-tx)
+
+(env-data
+  {'k: ["5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"]})
+(env-sigs
+  [{'key:'bob
+   ,'caps:
+    [(user.hft.TRANSFER 'project-0 'bob
+      "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
+      0.02)]}])
+
+(expect
+  "single-key success, transfer-create"
+  "Write succeeded"
+  (user.hft.transfer-create
+    'project-0
+    'bob
+    "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
+    (read-keyset 'k)
+    0.02))
+(rollback-tx)
+
+(begin-tx)
+(use user.hft)
 (view-tokens)
 (view-ledger)
 (commit-tx)

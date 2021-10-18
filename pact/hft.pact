@@ -4,18 +4,6 @@
 
   @model
     [
-     ;; prop-supply-write-issuer-guard
-     (property
-      (forall (token:string)
-       (when (row-written tokens token)
-        (row-enforced tokens 'guard token)))
-      { 'except:
-        [ transfer-crosschain ;; VACUOUS
-          debit               ;; PRIVATE
-          credit              ;; PRIVATE
-          update-supply       ;; PRIVATE
-        ] } )
-
      ;; prop-ledger-write-guard
      (property
       (forall (key:string)
@@ -195,6 +183,8 @@
         manifest:object{manifest}
         policy:module{token-policy-v1}
       )
+      (policy::enforce-init token)
+      (enforce-verify-manifest manifest)
       (with-capability (CREATE_TOKEN token)
         (insert tokens token {
           "token": token,
@@ -357,10 +347,6 @@
       "precision violation"))
   )
 
-  (defun uri (token:string)
-    (at 'uri (read tokens token))
-  )
-
   (defun precision:integer (token:string)
     (at 'minimum-precision (read tokens token))
   )
@@ -375,9 +361,13 @@
     (step (format "{}" [(enforce false "cross chain not supported")]))
     )
 
-  (defun get-tokens ()
+  (defun get-tokens:list ()
     "Get all token identifiers"
     (keys tokens))
+
+  (defun get-token:object (token:string)
+    (read tokens token)
+  )
 )
 
 (if (read-msg 'upgrade)

@@ -32,6 +32,11 @@
       (property (> amount 0.0))
     ]
   )
+
+  (defun enforce-init:bool
+    (token:string)
+    @doc "Enforce that the token is initialized"
+    )
 )
 
 (module guard-token-policy GOVERNANCE
@@ -65,13 +70,29 @@
     (enforce-guard (at 'mint-guard (get-guards token)))
   )
 
-
   (defun enforce-burn:bool
     ( token:object{token-info}
       account:string
       amount:decimal
     )
     (enforce-guard (at 'burn-guard (get-guards token)))
+  )
+
+  (defun guard
+    (token:string)
+    (read policy-guards token))
+
+  (defun check-init:bool
+    ( token:string
+    )
+    (try false (!= (length (guard token)) 0))
+  )
+
+  (defun enforce-init:bool
+    ( token:string
+    )
+    (let ((init (check-init token)))
+      (enforce init "Token is not initialized"))
   )
 
 )

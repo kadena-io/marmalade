@@ -49,6 +49,25 @@
     }
   )
 
+  (defun verify-manifest:bool
+    ( manifest:object{manifest}
+    )
+    (bind manifest
+      { "uri":= uri
+      , "data":= data
+      }
+      (= (create-manifest uri data) manifest)
+    )
+  )
+
+  (defun enforce-verify-manifest:bool
+    ( manifest:object{manifest}
+    )
+    (enforce
+      (verify-manifest manifest)
+      "Manifest is not valid")
+  )
+
   (defun uri (scheme:string data:string)
     {'scheme: scheme, 'data: data }
   )

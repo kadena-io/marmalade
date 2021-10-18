@@ -58,7 +58,6 @@
   "project-0" (read-keyset 'bob-ks ) (read-keyset 'bob-ks ))
 
 (use user.token-manifest)
-(use user.guard-token-policy)
 
 (expect
   "bob creates a new token project-0"
@@ -91,7 +90,7 @@
      "data": []}
     user.guard-token-policy)
   )
-  
+
 (expect
   "bob mints a 5.0 of token"
   "Write succeeded"

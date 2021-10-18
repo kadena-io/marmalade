@@ -366,6 +366,7 @@
     (keys tokens))
 
   (defun get-token:object (token:string)
+    "Read token"
     (read tokens token)
   )
 )

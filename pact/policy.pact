@@ -78,14 +78,10 @@
     (enforce-guard (at 'burn-guard (get-guards token)))
   )
 
-  (defun guard
-    (token:string)
-    (read policy-guards token))
-
   (defun check-init:bool
     ( token:string
     )
-    (try false (!= (length (guard token)) 0))
+    (try false (!= (length (read policy-guards token)) 0))
   )
 
   (defun enforce-init:bool

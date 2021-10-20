@@ -71,7 +71,7 @@
 
 (expect-failure
   "bob creates a new token project-1 before initialization"
-  "Token policy is not initialized"
+  "read: row not found: project-1"
   (create-token
     "project-1"
     12

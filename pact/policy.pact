@@ -20,7 +20,6 @@
     ]
   )
 
-
   (defun enforce-burn:bool
     ( token:object{token-info}
       account:string
@@ -81,12 +80,8 @@
   (defun enforce-init:bool
     ( token:string
     )
-    (with-default-read policy-guards token {
-      "mint-guard": -1
-      } {
-      "mint-guard":= g
-      }
-    (enforce (!= "integer" (typeof g)) "Token policy is not initialized"))
+    (read policy-guards token)
+    true
   )
 )
 

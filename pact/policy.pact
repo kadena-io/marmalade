@@ -35,7 +35,7 @@
 
   (defun enforce-init:bool
     (token:string)
-    @doc "Enforce that the token is initialized"
+    @doc "Enforce that TOKEN policy is initialized"
     )
 )
 
@@ -78,19 +78,16 @@
     (enforce-guard (at 'burn-guard (get-guards token)))
   )
 
-  (defun check-init:bool
-    ( token:string
-    )
-    (try false (!= (length (read policy-guards token)) 0))
-  )
-
   (defun enforce-init:bool
     ( token:string
     )
-    (let ((init (check-init token)))
-      (enforce init "Token is not initialized"))
+    (with-default-read policy-guards token {
+      "mint-guard": -1
+      } {
+      "mint-guard":= g
+      }
+    (enforce (!= "integer" (typeof g)) "Token policy is not initialized"))
   )
-
 )
 
 (create-table policy-guards)

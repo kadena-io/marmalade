@@ -361,11 +361,11 @@
     (step (format "{}" [(enforce false "cross chain not supported")]))
     )
 
-  (defun get-tokens:list ()
+  (defun get-tokens:[string] ()
     "Get all token identifiers"
     (keys tokens))
 
-  (defun get-token:object (token:string)
+  (defun get-token:object{token} (token:string)
     "Read token"
     (read tokens token)
   )

@@ -71,7 +71,7 @@
 
 (expect-failure
   "bob creates a new token project-1 before initialization"
-  "Token is not initialized"
+  "Token policy is not initialized"
   (create-token
     "project-1"
     12

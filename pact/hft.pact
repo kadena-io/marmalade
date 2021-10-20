@@ -4,18 +4,6 @@
 
   @model
     [
-     ;; prop-supply-write-issuer-guard
-     (property
-      (forall (token:string)
-       (when (row-written tokens token)
-        (row-enforced tokens 'guard token)))
-      { 'except:
-        [ transfer-crosschain ;; VACUOUS
-          debit               ;; PRIVATE
-          credit              ;; PRIVATE
-          update-supply       ;; PRIVATE
-        ] } )
-
      ;; prop-ledger-write-guard
      (property
       (forall (key:string)
@@ -59,6 +47,7 @@
     ]
 
   (use fungible-util)
+  (use token-manifest)
 
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'hft-admin)))
@@ -80,10 +69,10 @@
 
   (defschema token
     token:string
-    uri:string
+    manifest:object{manifest}
     minimum-precision:integer
-    guard:guard
     supply:decimal
+    policy:module{token-policy-v1}
   )
 
   (deftable tokens:{token})
@@ -93,10 +82,6 @@
 
   (defun view-tokens ()
     (map (read tokens) (keys tokens)))
-
-  (defcap ISSUE (token:string)
-    (enforce-guard (at 'guard (read tokens token)))
-  )
 
   (defun key ( token:string account:string )
     (format "{}:{}" [token account])
@@ -144,12 +129,26 @@
 
   (defcap MINT (token:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
-    (compose-capability (ISSUE token))
+    (with-read tokens token
+      { 'policy := policy:module{token-policy-v1}
+      , 'supply := supply
+      , 'minimum-precision := precision
+      }
+      (policy::enforce-mint
+        { 'token: token, 'supply: supply, 'precision: precision }
+        account amount))
   )
 
   (defcap BURN (token:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
-    (compose-capability (ISSUE token))
+    (with-read tokens token
+      { 'policy := policy:module{token-policy-v1}
+      , 'supply := supply
+      , 'minimum-precision := precision
+      }
+      (policy::enforce-burn
+        { 'token: token, 'supply: supply, 'precision: precision }
+        account amount))
   )
 
   (defcap CREATE_TOKEN (token:string)
@@ -178,14 +177,21 @@
         s)
     )
 
-    (defun create-token (token:string guard:guard precision:integer uri:string)
+    (defun create-token
+      ( token:string
+        precision:integer
+        manifest:object{manifest}
+        policy:module{token-policy-v1}
+      )
+      (policy::enforce-init token)
+      (enforce-verify-manifest manifest)
       (with-capability (CREATE_TOKEN token)
         (insert tokens token {
           "token": token,
-          "guard": guard,
           "minimum-precision": precision,
-          "uri": uri,
-          "supply": 0.0
+          "manifest": manifest,
+          "supply": 0.0,
+          "policy": policy
           }))
     )
 
@@ -341,10 +347,6 @@
       "precision violation"))
   )
 
-  (defun uri (token:string)
-    (at 'uri (read tokens token))
-  )
-
   (defun precision:integer (token:string)
     (at 'minimum-precision (read tokens token))
   )
@@ -359,9 +361,14 @@
     (step (format "{}" [(enforce false "cross chain not supported")]))
     )
 
-  (defun get-tokens ()
+  (defun get-tokens:[string] ()
     "Get all token identifiers"
     (keys tokens))
+
+  (defun get-token:object{token} (token:string)
+    "Read token"
+    (read tokens token)
+  )
 )
 
 (if (read-msg 'upgrade)

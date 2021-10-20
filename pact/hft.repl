@@ -11,6 +11,8 @@
 (load "root/ns.pact")
 (load "account-protocols-v1.pact")
 (load "fungible-util.pact")
+(load "policy.pact")
+(load "manifest.pact")
 (commit-tx)
 
 (begin-tx)
@@ -52,11 +54,42 @@
   }
   ])
 
+(user.guard-token-policy.init-guards
+  "project-0" (read-keyset 'bob-ks ) (read-keyset 'bob-ks ))
+
+(use user.token-manifest)
 
 (expect
   "bob creates a new token project-0"
   "Write succeeded"
-  (create-token "project-0" (read-keyset 'bob-ks) 12 "project-0-uri"))
+  (create-token
+    "project-0"
+    12
+    (create-manifest (uri "text" "project-0-uri") [])
+    user.guard-token-policy)
+  )
+
+(expect-failure
+  "bob creates a new token project-1 before initialization"
+  "read: row not found: project-1"
+  (create-token
+    "project-1"
+    12
+    (create-manifest (uri "text" "project-0-uri") [])
+    user.guard-token-policy)
+  )
+
+(expect-failure
+  "bob creates a new token project-1 before initialization"
+  "Manifest is not valid"
+  (create-token
+    "project-0"
+    12
+    {"uri": (uri "text" "project-0-uri"),
+     "hash": "wrong-hash",
+     "data": []}
+    user.guard-token-policy)
+  )
 
 (expect
   "bob mints a 5.0 of token"

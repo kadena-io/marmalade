@@ -20,7 +20,6 @@
     ]
   )
 
-
   (defun enforce-burn:bool
     ( token:object{token-info}
       account:string
@@ -32,6 +31,11 @@
       (property (> amount 0.0))
     ]
   )
+
+  (defun enforce-init:bool
+    (token:string)
+    @doc "Enforce that TOKEN policy is initialized"
+    )
 )
 
 (module guard-token-policy GOVERNANCE
@@ -65,7 +69,6 @@
     (enforce-guard (at 'mint-guard (get-guards token)))
   )
 
-
   (defun enforce-burn:bool
     ( token:object{token-info}
       account:string
@@ -74,6 +77,12 @@
     (enforce-guard (at 'burn-guard (get-guards token)))
   )
 
+  (defun enforce-init:bool
+    ( token:string
+    )
+    (read policy-guards token)
+    true
+  )
 )
 
 (create-table policy-guards)

@@ -1,4 +1,4 @@
-
+(namespace (read-msg 'ns))
 (interface account-protocols-v1
 
   " Define a standard for support of Kadena Account Protocols, \

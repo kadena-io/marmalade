@@ -1,5 +1,4 @@
 (define-keyset 'util-ns-admin)
-
 (namespace (read-msg 'ns))
 
 (module fungible-util GOVERNANCE

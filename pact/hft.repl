@@ -127,6 +127,7 @@
    {'keys:["5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4", "5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"]
    ,'pred:"keys-all"}
   })
+
 (env-sigs
   [{'key:'bob
    ,'caps:
@@ -135,7 +136,10 @@
       0.04),
     (user.hft.TRANSFER 'project-0 'bob
       "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
-      0.02)
+      0.02),
+    (user.hft.TRANSFER 'project-0 'bob
+      "c:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
+      0.04)
       ]}])
 
 (length "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3")
@@ -175,6 +179,16 @@
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
     (read-keyset 'k3 )
     0.02))
+
+(expect-failure
+  "bad protocol, transfer-create"
+  "Unrecognized reserved protocol: c"
+  (user.hft.transfer-create
+    'project-0
+    'bob
+    "c:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
+    (read-keyset 'k2)
+    0.04))
 
 (expect-failure
   "bad protocol, create-account"

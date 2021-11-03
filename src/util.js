@@ -382,3 +382,32 @@ export const MakeForm = (props) => {
     </div>
   )
 };
+
+export const MakeLocalForm = (props) => {
+  const {
+    inputFields,
+    onSubmit
+  } = props;
+  const [wasSubmitted,setWasSubmitted] = useState(false);
+  useEffect(()=>setWasSubmitted(false),[inputFields]);
+
+  return (
+    <div>
+      <form
+        autoComplete="off"
+        onSubmit={e => onSubmit(e)}>
+        {inputFields.map(f =>
+          <MakeInputField inputField={f}/>
+        )}
+        <CardActions>
+          {wasSubmitted
+            ? null
+            : <Button variant="outlined" color="default" type="submit" disabled={wasSubmitted}>
+                {"Execute Local Command"}
+              </Button>
+          }
+        </CardActions>
+      </form>
+    </div>
+  )
+};

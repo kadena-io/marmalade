@@ -46,6 +46,7 @@ const App = () => {
   //HFT Top Level States
   const [hftLedger,setHftLedger] = createPersistedState("hftLedger3")({});
   const [hftTokens,setHftTokens] = createPersistedState("hftTokens3")({});
+  const [mfCache,setMfCache] = createPersistedState("mfCache2")([]);
 
   const getHftLedger = async () => {
     const res = await getHftState("view-ledger");
@@ -90,6 +91,8 @@ const App = () => {
       setAppRoute={setAppRoute}
       hftLedger={hftLedger}
       hftTokens={hftTokens}
+      mfCache={mfCache}
+      setMfCache={setMfCache}
       pactTxStatus={pactTxStatus}
       refresh={refresh}
       />

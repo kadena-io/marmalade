@@ -26,7 +26,7 @@ export const hftDrawerEntries = {
         primary:"HFT Ledger",
         to:{app:"hft", ui: "ledger"}
       },{
-        primary:"Manifestr",
+        primary:"Manifest",
         to:{app:"hft", ui: "manifest"}
       }]
     }

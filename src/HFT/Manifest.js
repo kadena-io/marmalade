@@ -50,13 +50,13 @@ export const createUri = async (scheme, data) => {
 };
 
 
-export const createDatum = async (uri, datumList) => {
+export const createDatum = async (uri, datum) => {
   //calling get-all() function from smart contract
     const res = await Pact.fetch.local(
       {
-        pactCode: `(${manifestAPI.contractAddress}.create-datum (read-msg 'uri) (read-msg 'datumList))`,
+        pactCode: `(${manifestAPI.contractAddress}.create-datum (read-msg 'uri) (read-msg 'datum))`,
         //pact-lang-api function to construct transaction meta data
-        envData: {uri, datumList},
+        envData: {uri, datum},
         meta: Pact.lang.mkMeta(
           manifestAPI.meta.sender,
           manifestAPI.meta.chainId,
@@ -70,7 +70,7 @@ export const createDatum = async (uri, datumList) => {
     );
     const all = res.result.data;
     //sorts memories by least recent
-    console.debug(`local query data: (${manifestAPI.contractAddress}.create-datum)`, {uri,datumList}, all);
+    console.debug(`local query data: (${manifestAPI.contractAddress}.create-datum)`, {uri,datum}, all);
     return({'type':'datum', 'value': all});
 };
 
@@ -176,6 +176,52 @@ const CreateUri = ({mfCache, setMfCache}) => {
   );
 };
 
+const CreateDatum = ({mfCache, setMfCache}) => {
+  const [uri,setUri] = useState("");
+  const [datum,setDatum] = useState("");
+  const classes = useStyles();
+
+  const handleSubmit = async (evt) => {
+      evt.preventDefault();
+      const uriObj = JSON.parse(uri);
+      const datumObj = JSON.parse(datum);
+      try {
+        const res = await createDatum(uriObj, datumObj);
+        console.debug('create-datum result', res)
+        setMfCache(_.uniq(_.concat([res],mfCache)));
+        console.debug('updated mf', mfCache )
+      } catch (e) {
+        console.log("create-datum Submit Error",typeof e, e, uriObj, datumObj);
+      }
+      };
+  const inputFields = [
+    {
+      type:'select',
+      label:'URI',
+      className:classes.formControl,
+      options:_.map(_.filter(mfCache,{type:'uri'}),v=> JSON.stringify(v.value)),
+      value:uri,
+      onChange:setUri
+    },
+    {
+      type:'select',
+      label:'Data',
+      className:classes.formControl,
+      options:_.map(_.reject(mfCache,{type:'datum'}),v=> JSON.stringify(v.value)),
+      value:datum,
+      onChange:setDatum
+    }
+  ];
+
+  return (
+    <MakeLocalForm
+      inputFields={inputFields}
+      onSubmit={handleSubmit}
+      tx={"stateless tx"} txStatus={"stateless tx"} txRes={"stateless tx"}
+      setTxStatus={() => null}/>
+  );
+};
+
 export const ManifestForms = ({
   mfCache,
   setMfCache,
@@ -186,9 +232,13 @@ export const ManifestForms = ({
       tabIdx={tabIdx}
       tabEntries={[
           {
-            label:"Create HFT Token",
+            label:"Create URI",
             component:
               <CreateUri mfCache={mfCache} setMfCache={setMfCache}/>
+          },{
+            label:"Create Datum",
+            component:
+              <CreateDatum mfCache={mfCache} setMfCache={setMfCache}/>
           }
         ]}/>
   );

@@ -83,7 +83,7 @@ export const HftApp = ({
       </CardContent>
     </Card>
     <Card>
-      <CardHeader title="Manifest/URI/Datum Local Cache"/>
+      <CardHeader title="Manifest Local Cache"/>
       <CardContent>
         <RenderManifest mfCache={mfCache} />
       </CardContent>

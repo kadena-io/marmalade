@@ -5,6 +5,7 @@ import {
   StringParam,
  } from 'use-query-params';
 import _ from 'lodash';
+import ReactJson from 'react-json-view'
 //config file for blockchain calls
 import Pact from "pact-lang-api";
 import { manifestAPI } from "../kadena-config.js";
@@ -103,32 +104,57 @@ export const RenderUri = ({mfCache}) => {
   return (
    <PactJsonListAsTable
     json={_.map(_.filter(mfCache,{type:'uri'}),'value')}
-    header={["Scheme", "URI"]}
-    keyOrder={["scheme","uri"]}
+    header={["Scheme", "Data"]}
+    keyOrder={["scheme","data"]}
     keyFormatter={dashStyleNames2Text}
     />
   )
 };
 
 export const RenderManifest = ({mfCache}) => {
-  console.debug("renderManifest", mfCache);
+  const pretty = _.map(_.filter(mfCache,{type:'manifest'}),v=> {return {hash: v.value.hash, contents: v.value};});
+  console.debug("renderManifest", pretty);
   return (
    <PactJsonListAsTable
-    json={_.map(_.filter(mfCache,{type:'manifest'}),'value')}
-    header={["Hash", "URI", "Data"]}
-    keyOrder={["hash","uri", "data"]}
-    keyFormatter={dashStyleNames2Text}
+    json={pretty}
+    header={["Hash", "Contents"]}
+    keyOrder={["hash","contents"]}
+    kvFunc={
+      {'contents': v => {
+        return <ReactJson 
+          src={v.contents}
+          name={false}
+          collapsed={2}
+          enableClipboard={false}
+          displayDataTypes={false}
+          displayObjectSize={false}
+        />}
+      }
+    }
     />
   )
 };
 
 export const RenderDatum = ({mfCache}) => {
-  console.debug("renderDatum", mfCache);
+  const pretty = _.map(_.filter(mfCache,{type:'datum'}),v=> {return {hash: v.value.hash, contents: v.value};});
+  console.debug("renderDatum", pretty);
   return (
    <PactJsonListAsTable
-    json={_.map(_.filter(mfCache,{type:'datum'}),'value')}
-    header={["Hash", "URI", "Datum"]}
-    keyOrder={["hash","uri", "datum"]}
+    json={pretty}
+    header={["Hash", "Contents"]}
+    keyOrder={["hash","contents"]}
+    kvFunc={
+      {'contents': v => {
+        return <ReactJson 
+          src={v.contents}
+          name={false}
+          collapsed={2}
+          enableClipboard={false}
+          displayDataTypes={false}
+          displayObjectSize={false}
+        />}
+      }
+    }
     keyFormatter={dashStyleNames2Text}
     />
   )

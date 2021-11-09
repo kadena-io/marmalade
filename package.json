@@ -16,6 +16,7 @@
     "query-string": "^7.0.1",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
+    "react-json-view": "^1.21.3",
     "react-markdown": "^6.0.2",
     "react-mde": "^11.5.0",
     "react-router-dom": "^5.2.0",

@@ -15,6 +15,7 @@ import {
   Checkbox,
   FormControl,
 } from '@material-ui/core';
+import Autocomplete, { createFilterOptions } from '@material-ui/lab/Autocomplete';
 import {
   Button,
   LinearProgress,
@@ -265,6 +266,24 @@ export const PactJsonListAsTable = (props) => {
     )
 )};
 
+export const FixedGroupedMultiSelector = ({getVal,setVal,options,label}) => {
+  console.debug("fixed multi selector", {options})
+  return (
+    <Autocomplete
+      multiple
+      id="grouped-demo"
+      freeSolo
+      options={options}
+      groupBy={(option) => option.type}
+      getOptionLabel={(option) => JSON.stringify(option.value)}
+      sx={{ width: 300 }}
+      value={getVal}
+      onChange={(event, newValue) => setVal(newValue)}
+      renderInput={(params) => <TextField {...params} label={label} />}
+    />
+  );
+}
+
 export const MakeInputField = (props) => {
   const {
     type,
@@ -339,6 +358,13 @@ export const MakeInputField = (props) => {
           getVal={value}
           setVal={onChange}
           allOpts={options}
+          />
+    : type === 'fixedGroupMultiSelector' ?
+        <FixedGroupedMultiSelector
+          label={label}
+          getVal={value}
+          setVal={onChange}
+          options={options}
           />
     : null
   );

@@ -222,6 +222,54 @@ const CreateDatum = ({mfCache, setMfCache}) => {
   );
 };
 
+const CreateManifest = ({mfCache, setMfCache}) => {
+  const [uri,setUri] = useState("");
+  const [data,setData] = useState([]);
+  const classes = useStyles();
+  console.debug('CreateManifest', {mfCache});
+
+  const handleSubmit = async (evt) => {
+      evt.preventDefault();
+      const uriObj = JSON.parse(uri);
+      const dataObjList = _.map(data,(v)=>v.value);
+      console.debug('create manifest submit', {uriObj,dataObjList});
+      try {
+        const res = await createManifest(uriObj, dataObjList);
+        console.debug('create-manifest result', res)
+        setMfCache(_.uniq(_.concat([res],mfCache)));
+        console.debug('updated mf', mfCache )
+      } catch (e) {
+        console.log("create-manifest Submit Error",typeof e, e, uriObj, dataObjList);
+      }
+      };
+  const inputFields = [
+    {
+      type:'select',
+      label:'URI',
+      className:classes.formControl,
+      options:_.map(_.filter(mfCache,{type:'uri'}),v=> JSON.stringify(v.value)),
+      value:uri,
+      onChange:setUri
+    },
+    {
+      type:'fixedGroupMultiSelector',
+      label:'Data',
+      className:classes.formControl,
+      options:_.filter(mfCache,{type:'datum'}),
+      value:data,
+      onChange:setData
+    }
+  ];
+
+  return (
+    <MakeLocalForm
+      inputFields={inputFields}
+      onSubmit={handleSubmit}
+      tx={"stateless tx"} txStatus={"stateless tx"} txRes={"stateless tx"}
+      setTxStatus={() => null}/>
+  );
+};
+
 export const ManifestForms = ({
   mfCache,
   setMfCache,
@@ -239,6 +287,10 @@ export const ManifestForms = ({
             label:"Create Datum",
             component:
               <CreateDatum mfCache={mfCache} setMfCache={setMfCache}/>
+          },{
+            label:"Create Manifest",
+            component:
+              <CreateManifest mfCache={mfCache} setMfCache={setMfCache}/>
           }
         ]}/>
   );

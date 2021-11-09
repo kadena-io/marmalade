@@ -44,8 +44,8 @@ export const RenderHftTokens = ({hftTokens}) => {
   return (
    <PactJsonListAsTable
     json={hftTokens}
-    header={["Token", "URI", "Precision", "Guard"]}
-    keyOrder={["token","uri","minimum-precision","guard"]}
+    header={["Token", "Supply", "Manifest", "Precision", "Policy"]}
+    keyOrder={["token","Supply","manifest","minimum-precision","policy"]}
     keyFormatter={dashStyleNames2Text}
     />
   )

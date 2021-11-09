@@ -57,7 +57,7 @@ export const HftApp = ({
       <CardHeader title="Tokens State"/>
       <CardContent>
         <RenderHftTokens hftTokens={hftTokens}/>
-        <TokenForms pactTxStatus={pactTxStatus} tabIdx={"hftTabT"} hftTokens={hftTokens} refresh={refresh}/>
+        <TokenForms pactTxStatus={pactTxStatus} tabIdx={"hftTabT"} hftTokens={hftTokens} mfCache={mfCache} refresh={refresh}/>
       </CardContent>
     </Card>
   : appRoute.ui === "ledger" ?
@@ -65,7 +65,7 @@ export const HftApp = ({
       <CardHeader title="Ledger State"/>
       <CardContent>
         <RenderHftLedger hftLedger={hftLedger}/>
-        <LedgerForms pactTxStatus={pactTxStatus} tabIdx={"hftTabL"} hftTokens={hftTokens} hftLedger={hftLedger} refresh={refresh}/>
+        <LedgerForms pactTxStatus={pactTxStatus} tabIdx={"hftTabL"} hftTokens={hftTokens} hftLedger={hftLedger} mfCache={mfCache} refresh={refresh}/>
       </CardContent>
     </Card>
   : appRoute.ui === "manifest" ?

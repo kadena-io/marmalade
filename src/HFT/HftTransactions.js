@@ -121,15 +121,15 @@ export const sendHftCommand = async (
 };
 
 const CreateToken = (props) => {
-  const {refresh} = props;
+  const {refresh, mfCache} = props;
   const {txStatus, setTxStatus,
     tx, setTx,
     txRes, setTxRes} = props.pactTxStatus;
   const {current: {signingKey, networkId, gasPrice}} = usePactWallet();
   const [token,setToken] = useState("");
-  const [newKs,setNewKs] = useState({});
+  const [manifest,setManifest] = useState("");
   const [precision,setPrecision] = useState(12);
-  const [uri,setUri] = useState("");
+  const [policy,setPolicy] = useState("");
   const classes = useStyles();
 
   const handleSubmit = (evt) => {
@@ -137,11 +137,11 @@ const CreateToken = (props) => {
       try {
         sendHftCommand(setTx,setTxStatus,setTxRes,refresh
           ,signingKey, networkId, Number.parseFloat(gasPrice)
-          ,`(${hftAPI.contractAddress}.create-token "${token}" (read-keyset 'ks) ${precision} "${uri}")`
-          ,{ks: JSON.parse(newKs)}
+          ,`(${hftAPI.contractAddress}.create-token "${token}" ${precision} (read-msg 'manifest) "${policy}")`
+          ,{manifest: JSON.parse(manifest)}
           );
       } catch (e) {
-        console.log("create-token Submit Error",typeof e, e, token, newKs, precision, uri);
+        console.log("create-token Submit Error",typeof e, e, token, JSON.parse(manifest), precision, policy);
         setTxRes(e);
         setTxStatus("validation-error");
       }
@@ -155,14 +155,6 @@ const CreateToken = (props) => {
       onChange:setToken
     },
     {
-      type:'textFieldMulti',
-      label:'Keyset',
-      className:classes.formControl,
-      placeholder:JSON.stringify({"pred":"keys-all","keys":["8c59a322800b3650f9fc5b6742aa845bc1c35c2625dabfe5a9e9a4cada32c543"]},undefined,2),
-      value:newKs,
-      onChange:setNewKs,
-    },
-    {
       type:'textFieldSingle',
       label:'Precision',
       className:classes.formControl,
@@ -170,12 +162,20 @@ const CreateToken = (props) => {
       onChange:setPrecision
     },
     {
-      type:'textFieldMulti',
-      label:'URI',
+      type:'select',
+      label:'Manifest',
       className:classes.formControl,
-      placeholder:"some string",
-      value:uri,
-      onChange:setUri,
+      options:_.map(_.filter(mfCache,{type:'manifest'}),v=> JSON.stringify(v.value)),
+      value:manifest,
+      onChange:setManifest
+    },
+    {
+      type:'textFieldMulti',
+      label:'Policy',
+      className:classes.formControl,
+      placeholder:"Policy Module",
+      value:policy,
+      onChange:setPolicy,
     }
   ];
 
@@ -537,6 +537,7 @@ export const LedgerForms = ({
 
 export const TokenForms = ({
   hftTokens,
+  mfCache,
   tabIdx,
   pactTxStatus,
   refresh: {
@@ -553,6 +554,7 @@ export const TokenForms = ({
             component:
               <CreateToken
                 pactTxStatus={pactTxStatus}
+                mfCache={mfCache}
                 refresh={()=>getHftTokens()}/>
           },{
             label:"Mint HFT Token",

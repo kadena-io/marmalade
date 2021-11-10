@@ -1,4 +1,4 @@
-# Kadena HFT
+# Kadena HFT: Mint a Marketplace
 
 Experimental POC/Work in Progress
 

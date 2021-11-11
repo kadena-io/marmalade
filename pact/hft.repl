@@ -11,19 +11,23 @@
 (load "root/ns.pact")
 (load "account-protocols-v1.pact")
 (load "fungible-util.pact")
-(load "policy.pact")
 (load "manifest.pact")
+(load "policy.pact")
 (commit-tx)
 
 (begin-tx)
 (load "hft.pact")
-(verify "user.hft")
+(typecheck "user.hft")
 (commit-tx)
 
 (begin-tx)
 (env-data
- { 'bob-ks: ["bob"],
-   'alice-ks: ["alice"]
+ { 'bob-ks: ["bob"]
+ , 'alice-ks: ["alice"]
+ , 'mint-ks: ["mint"]
+ , 'burn-ks: ["burn"]
+ , 'sale-ks: ["sale"]
+ , 'transfer-ks: ["transfer"]
  })
 (env-keys ["bob"])
 (use user.hft)
@@ -51,11 +55,17 @@
       (TRANSFER "project-0:1" "alice" "project-0:1:1" 1.0)
       (MINT "project-0" "alice" 5.0)
     ]
-  }
+  },
+  { 'key: "mint", 'caps: [] },
+  { 'key: "transfer", 'caps: [] }
   ])
 
 (user.guard-token-policy.init-guards
-  "project-0" (read-keyset 'bob-ks ) (read-keyset 'bob-ks ))
+  "project-0"
+  (read-keyset 'mint-ks )
+  (read-keyset 'burn-ks )
+  (read-keyset 'sale-ks)
+  (read-keyset 'transfer-ks))
 
 (use user.token-manifest)
 
@@ -101,9 +111,6 @@
   5.0
   (total-supply "project-0"))
 
-(expect-failure
-  "alice can't mint a project-0 token"
-  (mint "project-0" "alice" (read-keyset 'alice-ks) 5.0))
 
 ;;regular transfer
 (expect "Bob transfers 2.0 to Alice"
@@ -112,6 +119,25 @@
 
 (commit-tx)
 
+(begin-tx)
+(use user.hft)
+
+(env-sigs [
+  {
+    'key: "alice",
+    'caps: [
+      (TRANSFER "project-0:1" "alice" "project-0:1:1" 1.0)
+      (MINT "project-0" "alice" 5.0)
+    ]
+  }
+  ])
+
+  (expect-failure
+    "alice can't mint a project-0 token"
+    "[mint]"
+    (mint "project-0" "alice" (read-keyset 'alice-ks) 5.0))
+    
+(rollback-tx)
 
 ;; ======================================================
 ;; test chainweb single-key naming protocol
@@ -140,7 +166,9 @@
     (user.hft.TRANSFER 'project-0 'bob
       "c:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
       0.04)
-      ]}])
+      ]}
+  ,{'key:'transfer,'caps:[]}
+])
 
 (length "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3")
 (expect-failure
@@ -223,7 +251,9 @@
    ,'caps:
     [(user.hft.TRANSFER 'project-0 'bob
       "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
-      0.02)]}])
+      0.02)]}
+  ,{'key:'transfer,'caps: []}
+  ])
 
 (expect
   "single-key success, transfer-create"

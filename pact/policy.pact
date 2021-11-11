@@ -6,7 +6,8 @@
   (defschema token-info
     token:string
     supply:decimal
-    precision:integer)
+    precision:integer
+    manifest:object{token-manifest.manifest})
 
   (defun enforce-mint:bool
     ( token:object{token-info}
@@ -33,9 +34,26 @@
   )
 
   (defun enforce-init:bool
-    (token:string)
+    ( token:object{token-info} )
     @doc "Enforce that TOKEN policy is initialized"
     )
+
+  (defun enforce-sale:bool
+    ( token:object{token-info}
+      seller:string
+      buyer:string
+      amount:decimal
+      sale:string )
+    @doc "Enforce rules on SALE by SELLER to BUYER AMOUNT of TOKEN."
+  )
+
+  (defun enforce-transfer:bool
+    ( token:object{token-info}
+      sender:string
+      receiver:string
+      amount:decimal )
+    @doc "Enforce rules on transfer of TOKEN AMOUNT from SENDER to RECEIVER."
+  )
 )
 
 (module guard-token-policy GOVERNANCE
@@ -48,13 +66,22 @@
   (defschema guards
     mint-guard:guard
     burn-guard:guard
+    sale-guard:guard
+    transfer-guard:guard
   )
 
   (deftable policy-guards:{guards})
 
-  (defun init-guards (token:string mint-guard:guard burn-guard:guard)
+  (defun init-guards
+    ( token:string
+      mint-guard:guard
+      burn-guard:guard
+      sale-guard:guard
+      transfer-guard:guard
+    )
     (insert policy-guards token
-      { 'mint-guard: mint-guard, 'burn-guard: burn-guard })
+      { 'mint-guard: mint-guard, 'burn-guard: burn-guard
+      , 'sale-guard: sale-guard, 'transfer-guard: transfer-guard })
   )
 
   (defun get-guards:object{guards} (token:object{token-info})
@@ -78,10 +105,28 @@
   )
 
   (defun enforce-init:bool
-    ( token:string
+    ( token:object{token-info}
     )
-    (read policy-guards token)
+    (get-guards token)
     true
+  )
+
+  (defun enforce-sale:bool
+    ( token:object{token-info}
+      seller:string
+      buyer:string
+      amount:decimal
+      sale:string )
+    (enforce-guard (at 'sale-guard (get-guards token)))
+  )
+
+
+  (defun enforce-transfer:bool
+    ( token:object{token-info}
+      sender:string
+      receiver:string
+      amount:decimal )
+    (enforce-guard (at 'transfer-guard (get-guards token)))
   )
 )
 

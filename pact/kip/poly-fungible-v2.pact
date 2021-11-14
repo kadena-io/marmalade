@@ -43,6 +43,10 @@
     @event
   )
 
+  (defcap TOKEN:bool (id:string)
+    @doc " Emitted when token ID is created."
+    @event
+  )
 
   (defun precision:integer (id:string)
     @doc

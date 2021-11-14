@@ -38,6 +38,15 @@
     @doc "Enforce that TOKEN policy is initialized"
     )
 
+  (defun init-sale:bool
+    ( token:object{token-info}
+      seller:string
+      amount:decimal
+      sale:string )
+    @doc "Initialize SALE by SELLER of AMOUNT of TOKEN."
+  )
+
+
   (defun enforce-sale:bool
     ( token:object{token-info}
       seller:string
@@ -109,6 +118,15 @@
     )
     (get-guards token)
     true
+  )
+
+
+  (defun init-sale:bool
+    ( token:object{token-info}
+      seller:string
+      amount:decimal
+      sale:string )
+    (enforce-guard (at 'sale-guard (get-guards token)))
   )
 
   (defun enforce-sale:bool

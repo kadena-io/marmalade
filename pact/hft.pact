@@ -404,12 +404,21 @@
     @doc "Wrapper cap/event of SALE of TOKEN by SELLER of AMOUNT until TIMEOUT block height."
     @event
     (compose-capability (OFFER token seller amount timeout))
+    (with-read tokens token
+      { 'policy := policy:module{token-policy-v1}
+      , 'supply := supply
+      , 'minimum-precision := precision
+      , 'manifest := manifest
+      }
+      (policy::init-sale
+        { 'token: token, 'supply: supply, 'precision: precision, 'manifest: manifest }
+        seller amount sale))
     (compose-capability (SALE_PRIVATE sale))
   )
 
   (defcap OFFER
     (token:string seller:string amount:decimal timeout:integer)
-    @doc "SELLER offers AMOUNT of TOKEN until TIMEOUT."
+    @doc "Managed cap for SELLER offering AMOUNT of TOKEN until TIMEOUT."
     @managed
     (enforce (sale-active timeout) "SALE: invalid timeout")
     (compose-capability (DEBIT token seller))

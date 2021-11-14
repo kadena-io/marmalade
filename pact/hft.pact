@@ -4,100 +4,46 @@
 
   @model
     [
-     ;; prop-ledger-write-guard
-     (property
-      (forall (key:string)
-       (when (row-written ledger key)
-         (row-enforced ledger 'guard key)))  ;; owner write
-      { 'except:
-        [ transfer-crosschain ;; VACUOUS
-          debit               ;; PRIVATE
-          credit              ;; PRIVATE
-          create-account      ;; prop-ledger-conserves-mass, prop-supply-conserves-mass
-          transfer            ;; prop-ledger-conserves-mass, prop-supply-conserves-mass
-          transfer-create     ;; prop-ledger-conserves-mass, prop-supply-conserves-mass
-        ] } )
-
-
-     ;; prop-ledger-conserves-mass
-     (property
-      (= (column-delta ledger 'balance) 0.0)
-      { 'except:
-         [ transfer-crosschain ;; VACUOUS
-           debit               ;; PRIVATE
-           credit              ;; PRIVATE
-           burn                ;; prop-ledger-write-guard
-           mint                ;; prop-ledger-write-guard
-         ] } )
-
-      ;; prop-supply-conserves-mass
-      (property
-       (= (column-delta tokens 'supply) 0.0)
-       { 'except:
-        [ transfer-crosschain ;; VACUOUS
-          debit               ;; PRIVATE
-          credit              ;; PRIVATE
-          update-supply       ;; PRIVATE
-          burn                ;; prop-ledger-write-guard
-          mint                ;; prop-ledger-write-guard
-       ] } )
-
-      (defproperty enforce-valid-account (account:string)
+      (defproperty valid-account (account:string)
           (> (length account) 2))
     ]
 
-  (use fungible-util)
-  (use token-manifest)
+  (use util.fungible-util)
+  (use kip.token-manifest)
+
+  (implements kip.poly-fungible-v2)
+  (use kip.poly-fungible-v2 [account-details])
 
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'hft-admin)))
 
-  (defschema entry
-    token:string
-    account:string
-    balance:decimal
-    guard:guard
-    )
+  (deftable ledger:{account-details})
 
-  (deftable ledger:{entry})
-
-  (defun view-ledger-keys ()
-    (keys ledger))
-
-  (defun view-ledger ()
-    (map (read ledger) (keys ledger)))
-
-  (defschema token
-    token:string
+  (defschema token-schema
+    id:string
     manifest:object{manifest}
-    minimum-precision:integer
+    precision:integer
     supply:decimal
     policy:module{token-policy-v1}
   )
 
-  (deftable tokens:{token})
+  (deftable tokens:{token-schema})
 
-  (defun view-tokens-keys ()
-    (keys tokens))
-
-  (defun view-tokens ()
-    (map (read tokens) (keys tokens)))
-
-  (defun key ( token:string account:string )
-    (format "{}:{}" [token account])
+  (defun key ( id:string account:string )
+    (format "{}:{}" [id account])
   )
 
   (defcap TRANSFER:bool
-    ( token:string
+    ( id:string
       sender:string
       receiver:string
       amount:decimal
     )
     @managed amount TRANSFER-mgr
-    (enforce-unit token amount)
+    (enforce-unit id amount)
     (enforce (> amount 0.0) "Positive amount")
-    (compose-capability (DEBIT token sender))
-    (compose-capability (CREDIT token receiver))
+    (compose-capability (DEBIT id sender))
+    (compose-capability (CREDIT id receiver))
   )
 
   (defun TRANSFER-mgr:decimal
@@ -111,52 +57,59 @@
       newbal)
   )
 
-  (defcap ROTATE (token:string account:string)
+  (defcap ROTATE (id:string account:string)
     @doc "Autonomously managed capability for guard rotation"
     @managed
     true)
 
-  (defcap DEBIT (token:string sender:string)
+  (defcap DEBIT (id:string sender:string)
     (enforce-guard
       (at 'guard
-        (read ledger (key token sender)))))
+        (read ledger (key id sender)))))
 
-  (defcap CREDIT (token:string receiver:string) true)
+  (defcap CREDIT (id:string receiver:string) true)
 
   (defcap UPDATE_SUPPLY ()
     "private cap for update-supply"
     true)
 
-  (defcap MINT (token:string account:string amount:decimal)
+  (defcap MINT (id:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
-    (with-read tokens token
+    (with-read tokens id
       { 'policy := policy:module{token-policy-v1}
       , 'supply := supply
-      , 'minimum-precision := precision
+      , 'precision := precision
       }
       (policy::enforce-mint
-        { 'token: token, 'supply: supply, 'precision: precision }
+        { 'id: id, 'supply: supply, 'precision: precision }
         account amount))
   )
 
-  (defcap BURN (token:string account:string amount:decimal)
+  (defcap BURN (id:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
-    (with-read tokens token
+    (with-read tokens id
       { 'policy := policy:module{token-policy-v1}
       , 'supply := supply
-      , 'minimum-precision := precision
+      , 'precision := precision
       }
       (policy::enforce-burn
-        { 'token: token, 'supply: supply, 'precision: precision }
+        { 'id: id, 'supply: supply, 'precision: precision }
         account amount))
   )
 
-  (defcap CREATE_TOKEN (token:string)
+  (defcap CREATE_TOKEN (id:string)
     true
   )
 
+
+  (defcap SUPPLY:bool (id:string supply:decimal)
+    @doc " Emitted when supply is updated, if supported."
+    @event true
+  )
+
+
   (defun create-account:string
-    ( token:string
+    ( id:string
       account:string
       guard:guard
     )
@@ -165,78 +118,81 @@
     (insert ledger account
       { "balance" : 0.0
       , "guard"   : guard
-      , "token" : token
+      , "id" : id
       , "account" : account
       })
     )
 
-    (defun total-supply:decimal (token:string)
-      (with-default-read tokens token
+    (defun total-supply:decimal (id:string)
+      (with-default-read tokens id
         { 'supply : 0.0 }
         { 'supply := s }
         s)
     )
 
     (defun create-token
-      ( token:string
+      ( id:string
         precision:integer
         manifest:object{manifest}
         policy:module{token-policy-v1}
       )
-      (policy::enforce-init token)
+      (policy::enforce-init id)
       (enforce-verify-manifest manifest)
-      (with-capability (CREATE_TOKEN token)
-        (insert tokens token {
-          "token": token,
-          "minimum-precision": precision,
+      (with-capability (CREATE_TOKEN id)
+        (insert tokens id {
+          "id": id,
+          "precision": precision,
           "manifest": manifest,
           "supply": 0.0,
           "policy": policy
           }))
     )
 
-    (defun truncate:decimal (token:string amount:decimal)
-      (floor amount (precision token))
+    (defun truncate:decimal (id:string amount:decimal)
+      (floor amount (precision id))
     )
 
-    (defun get-balance:decimal (token:string account:string)
-      (at 'balance (read ledger (key token account)))
+    (defun get-balance:decimal (id:string account:string)
+      (at 'balance (read ledger (key id account)))
       )
 
-    (defun details
-      ( token:string account:string )
-      (read ledger (key token account))
+    (defun details:object{account-details}
+      ( id:string account:string )
+      (read ledger (key id account))
       )
 
-    (defun rotate:string (token:string account:string new-guard:guard)
-      (with-capability (ROTATE token account)
-        (with-read ledger (key token account)
+    (defun get-manifest:object{manifest} (id:string)
+      (at 'manifest (read tokens id)))
+
+    (defun rotate:string (id:string account:string new-guard:guard)
+      (with-capability (ROTATE id account)
+        (with-read ledger (key id account)
           { "guard" := old-guard }
 
           (enforce-guard old-guard)
-          (update ledger (key token account)
+          (update ledger (key id account)
             { "guard" : new-guard }))))
 
     (defun transfer:string
-      ( token:string
+      ( id:string
         sender:string
         receiver:string
         amount:decimal
       )
       (enforce (!= sender receiver)
         "sender cannot be the receiver of a transfer")
-      (enforce-valid-transfer sender receiver (precision token) amount)
+      (enforce-valid-transfer sender receiver (precision id) amount)
 
-      (with-capability (TRANSFER token sender receiver amount)
-        (debit token sender amount)
-        (with-read ledger (key token receiver)
+      (with-capability (TRANSFER id sender receiver amount)
+        (debit id sender amount)
+        (with-read ledger (key id receiver)
           { "guard" := g }
-          (credit token receiver g amount))
+          (credit id receiver g amount))
       )
     )
 
     (defun transfer-create:string
-      ( token:string
+      ( id:string
         sender:string
         receiver:string
         receiver-guard:guard
@@ -244,58 +200,58 @@
       )
       (enforce (!= sender receiver)
         "sender cannot be the receiver of a transfer")
-      (enforce-valid-transfer sender receiver (precision token) amount)
+      (enforce-valid-transfer sender receiver (precision id) amount)
 
-      (with-capability (TRANSFER token sender receiver amount)
-        (debit token sender amount)
-        (credit token receiver receiver-guard amount))
+      (with-capability (TRANSFER id sender receiver amount)
+        (debit id sender amount)
+        (credit id receiver receiver-guard amount))
       )
 
     (defun mint:string
-      ( token:string
+      ( id:string
         account:string
         guard:guard
         amount:decimal
       )
-      (with-capability (MINT token account amount)
-        (with-capability (CREDIT token account)
-          (credit token account guard amount)))
+      (with-capability (MINT id account amount)
+        (with-capability (CREDIT id account)
+          (credit id account guard amount)))
     )
 
     (defun burn:string
-      ( token:string
+      ( id:string
         account:string
         amount:decimal
       )
-      (with-capability (BURN token account amount)
-        (with-capability (DEBIT token account)
-          (debit token account amount)))
+      (with-capability (BURN id account amount)
+        (with-capability (DEBIT id account)
+          (debit id account amount)))
     )
 
     (defun debit:string
-      ( token:string
+      ( id:string
         account:string
         amount:decimal
       )
 
-      (require-capability (DEBIT token account))
+      (require-capability (DEBIT id account))
 
-      (enforce-unit token amount)
+      (enforce-unit id amount)
 
-      (with-read ledger (key token account)
+      (with-read ledger (key id account)
         { "balance" := balance }
 
         (enforce (<= amount balance) "Insufficient funds")
 
-        (update ledger (key token account)
+        (update ledger (key id account)
           { "balance" : (- balance amount) }
           ))
       (with-capability (UPDATE_SUPPLY)
-        (update-supply token (- amount)))
+        (update-supply id (- amount)))
     )
 
     (defun credit:string
-      ( token:string
+      ( id:string
         account:string
         guard:guard
         amount:decimal
@@ -303,14 +259,14 @@
       @doc "Credit AMOUNT to ACCOUNT balance"
 
       @model [ (property (> amount 0.0))
-               (property (enforce-valid-account account))
+               (property (valid-account account))
              ]
       (enforce-valid-account account)
-      (enforce-unit token amount)
+      (enforce-unit id amount)
 
-      (require-capability (CREDIT token account))
+      (require-capability (CREDIT id account))
 
-      (with-default-read ledger (key token account)
+      (with-default-read ledger (key id account)
         { "balance" : -1.0, "guard" : guard }
         { "balance" := balance, "guard" := retg }
         (enforce (= retg guard)
@@ -321,38 +277,38 @@
                    (enforce-reserved account guard)
                  false)))
 
-        (write ledger (key token account)
+        (write ledger (key id account)
           { "balance" : (if is-new amount (+ balance amount))
           , "guard"   : retg
-          , "token"   : token
+          , "id"   : id
           , "account" : account
           })
         (with-capability (UPDATE_SUPPLY)
-          (update-supply token amount))
+          (update-supply id amount))
         )))
 
-    (defun update-supply (token:string amount:decimal)
+    (defun update-supply (id:string amount:decimal)
       (require-capability (UPDATE_SUPPLY))
-      (with-default-read tokens token
+      (with-default-read tokens id
         { 'supply: 0.0 }
         { 'supply := s }
-        (update tokens token {'supply: (+ s amount)}))
+        (update tokens id {'supply: (+ s amount)}))
     )
 
-  (defun enforce-unit:bool (token:string amount:decimal)
-    (let ((p (precision token)))
+  (defun enforce-unit:bool (id:string amount:decimal)
+    (let ((p (precision id)))
     (enforce
       (= (floor amount p)
          amount)
       "precision violation"))
   )
 
-  (defun precision:integer (token:string)
-    (at 'minimum-precision (read tokens token))
+  (defun precision:integer (id:string)
+    (at 'precision (read tokens id))
   )
 
   (defpact transfer-crosschain:string
-    ( token:string
+    ( id:string
       sender:string
       receiver:string
       receiver-guard:guard
@@ -361,14 +317,25 @@
     (step (format "{}" [(enforce false "cross chain not supported")]))
     )
 
+  ;;
+  ;; ACCESSORS
+  ;;
+
   (defun get-tokens:[string] ()
     "Get all token identifiers"
     (keys tokens))
 
-  (defun get-token:object{token} (token:string)
+  (defun get-token:object{token-schema} (id:string)
     "Read token"
-    (read tokens token)
+    (read tokens id)
   )
+
+  (defun get-ledger-keys ()
+    (keys ledger))
+
+  (defun get-ledger ()
+    (map (read ledger) (keys ledger)))
+
 )
 
 (if (read-msg 'upgrade)

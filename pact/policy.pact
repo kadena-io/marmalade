@@ -4,7 +4,7 @@
 (interface token-policy-v1
 
   (defschema token-info
-    token:string
+    id:string
     supply:decimal
     precision:integer)
 
@@ -33,8 +33,8 @@
   )
 
   (defun enforce-init:bool
-    (token:string)
-    @doc "Enforce that TOKEN policy is initialized"
+    (id:string)
+    @doc "Enforce that token ID policy is initialized"
     )
 )
 
@@ -52,13 +52,13 @@
 
   (deftable policy-guards:{guards})
 
-  (defun init-guards (token:string mint-guard:guard burn-guard:guard)
-    (insert policy-guards token
+  (defun init-guards (id:string mint-guard:guard burn-guard:guard)
+    (insert policy-guards id
       { 'mint-guard: mint-guard, 'burn-guard: burn-guard })
   )
 
   (defun get-guards:object{guards} (token:object{token-info})
-    (read policy-guards (at 'token token))
+    (read policy-guards (at 'id token))
   )
 
   (defun enforce-mint:bool
@@ -78,9 +78,9 @@
   )
 
   (defun enforce-init:bool
-    ( token:string
+    ( id:string
     )
-    (read policy-guards token)
+    (read policy-guards id)
     true
   )
 )

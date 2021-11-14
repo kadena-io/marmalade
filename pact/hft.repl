@@ -1,23 +1,26 @@
 (begin-tx)
-(env-data
- { 'ns-admin-keyset: ["admin"]
- , 'ns-operate-keyset: ["operate"]
- , 'ns-genesis-keyset: { "keys": [], "pred": "="}
- , 'util-ns-admin: []
- , 'hft-admin: []
- , 'ns: "user"
- , 'upgrade: false })
+(define-namespace 'kip (sig-keyset) (sig-keyset))
 (load "root/fungible-v2.pact")
-(load "root/ns.pact")
-(load "account-protocols-v1.pact")
-(load "fungible-util.pact")
+(load "kip/account-protocols-v1.pact")
+(load "kip/manifest.pact")
+(load "kip/poly-fungible-v2.pact")
+
+(define-namespace 'util (sig-keyset) (sig-keyset))
+(load "util/fungible-util.pact")
+
+(define-namespace 'hft (sig-keyset) (sig-keyset))
+(env-data
+ { 'hft-admin: []
+ , 'ns: "hft"
+ , 'upgrade: false })
+
 (load "policy.pact")
-(load "manifest.pact")
 (commit-tx)
 
 (begin-tx)
 (load "hft.pact")
-(verify "user.hft")
+(env-dynref hft.token-policy-v1 hft.guard-token-policy)
+(verify "hft.hft")
 (commit-tx)
 
 (begin-tx)
@@ -26,7 +29,7 @@
    'alice-ks: ["alice"]
  })
 (env-keys ["bob"])
-(use user.hft)
+(use hft.hft)
 
 (env-sigs [
   { 'key: "bob"
@@ -54,10 +57,10 @@
   }
   ])
 
-(user.guard-token-policy.init-guards
+(hft.guard-token-policy.init-guards
   "project-0" (read-keyset 'bob-ks ) (read-keyset 'bob-ks ))
 
-(use user.token-manifest)
+(use kip.token-manifest)
 
 (expect
   "bob creates a new token project-0"
@@ -66,7 +69,7 @@
     "project-0"
     12
     (create-manifest (uri "text" "project-0-uri") [])
-    user.guard-token-policy)
+    hft.guard-token-policy)
   )
 
 (expect-failure
@@ -76,7 +79,7 @@
     "project-1"
     12
     (create-manifest (uri "text" "project-0-uri") [])
-    user.guard-token-policy)
+    hft.guard-token-policy)
   )
 
 (expect-failure
@@ -88,7 +91,7 @@
     {"uri": (uri "text" "project-0-uri"),
      "hash": "wrong-hash",
      "data": []}
-    user.guard-token-policy)
+    hft.guard-token-policy)
   )
 
 (expect
@@ -131,13 +134,13 @@
 (env-sigs
   [{'key:'bob
    ,'caps:
-    [(user.hft.TRANSFER 'project-0 'bob
+    [(hft.hft.TRANSFER 'project-0 'bob
       "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
       0.04),
-    (user.hft.TRANSFER 'project-0 'bob
+    (hft.hft.TRANSFER 'project-0 'bob
       "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
       0.02),
-    (user.hft.TRANSFER 'project-0 'bob
+    (hft.hft.TRANSFER 'project-0 'bob
       "c:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
       0.04)
       ]}])
@@ -146,14 +149,14 @@
 (expect-failure
   "single-key mismatch, create-account"
   "Single-key account protocol violation"
-  (user.hft.create-account 'project-0
+  (hft.hft.create-account 'project-0
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
     (read-keyset 'k)))
 
 (expect-failure
   "single-key mismatch, transfer-create"
   "Single-key account protocol violation"
-  (user.hft.transfer-create
+  (hft.hft.transfer-create
     'project-0
     'bob
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
@@ -163,7 +166,7 @@
 (expect-failure
   "single-key mismatch, transfer-create"
   "Single-key account protocol violation"
-  (user.hft.transfer-create
+  (hft.hft.transfer-create
     'project-0
     'bob
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
@@ -173,7 +176,7 @@
 (expect-failure
   "multi-key, transfer-create"
   "Single-key account protocol violation"
-  (user.hft.transfer-create
+  (hft.hft.transfer-create
     'project-0
     'bob
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
@@ -183,7 +186,7 @@
 (expect-failure
   "bad protocol, transfer-create"
   "Unrecognized reserved protocol: c"
-  (user.hft.transfer-create
+  (hft.hft.transfer-create
     'project-0
     'bob
     "c:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
@@ -193,14 +196,14 @@
 (expect-failure
   "bad protocol, create-account"
   "Unrecognized reserved protocol: c"
-  (user.hft.create-account 'project-0
+  (hft.hft.create-account 'project-0
     "c:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
     (read-keyset 'k2)))
 
 (expect-failure
   "single-key mismatch, create-account"
   "Single-key account protocol violation"
-  (user.hft.create-account
+  (hft.hft.create-account
     'project-0
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
     (read-keyset 'k)))
@@ -208,7 +211,7 @@
 (expect
   "single-key success, create-account"
   "Write succeeded"
-  (user.hft.create-account 'project-0
+  (hft.hft.create-account 'project-0
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
     (read-keyset 'k)))
 
@@ -221,14 +224,14 @@
 (env-sigs
   [{'key:'bob
    ,'caps:
-    [(user.hft.TRANSFER 'project-0 'bob
+    [(hft.hft.TRANSFER 'project-0 'bob
       "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
       0.02)]}])
 
 (expect
   "single-key success, transfer-create"
   "Write succeeded"
-  (user.hft.transfer-create
+  (hft.hft.transfer-create
     'project-0
     'bob
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
@@ -237,7 +240,7 @@
 (rollback-tx)
 
 (begin-tx)
-(use user.hft)
-(view-tokens)
-(view-ledger)
+(use hft.hft)
+(get-tokens)
+(get-ledger)
 (commit-tx)

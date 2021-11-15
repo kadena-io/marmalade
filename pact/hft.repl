@@ -113,6 +113,21 @@
   "Write succeeded"
   (transfer-create "project-0" "bob" "alice" (read-keyset 'alice-ks) 2.0))
 
+(expect "TOKEN, MINT, TRANSFER events"
+   [
+    { "module-hash": "2AtKiB_CYFEz2Vwq63NKe2qJ6emN4OPdQg90uY1R4Cw",
+      "name": "hft.hft.TOKEN",
+      "params": ["project-0"]
+    },
+    { "module-hash": "2AtKiB_CYFEz2Vwq63NKe2qJ6emN4OPdQg90uY1R4Cw",
+      "name": "hft.hft.MINT",
+      "params": ["project-0" "bob" 5.0]
+    },
+    { "module-hash": "2AtKiB_CYFEz2Vwq63NKe2qJ6emN4OPdQg90uY1R4Cw",
+      "name": "hft.hft.TRANSFER",
+      "params": ["project-0" "bob" "alice" 2.0]}]
+  (env-events true))
+
 (commit-tx)
 
 
@@ -237,10 +252,75 @@
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
     (read-keyset 'k)
     0.02))
+
+(expect "TRANSFER events"
+  [{
+  "module-hash": "2AtKiB_CYFEz2Vwq63NKe2qJ6emN4OPdQg90uY1R4Cw",
+  "name": "hft.hft.TRANSFER",
+  "params": ["project-0", "bob", "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4", 0.02]
+  }]
+  (env-events true))
+
 (rollback-tx)
 
 (begin-tx)
+
+;; Test ACCESSORS
+
 (use hft.hft)
-(get-tokens)
-(get-ledger)
-(commit-tx)
+(use kip.token-manifest)
+
+(env-data
+ { 'bob-ks: ["bob"],
+   'alice-ks: ["alice"]
+ })
+
+(expect "Returns key"
+  "project-0:bob"
+  (key 'project-0 'bob))
+
+(expect "Returns manifest"
+  (create-manifest (uri "text" "project-0-uri") [])
+  (get-manifest 'project-0))
+
+(expect "Returns tokens"
+  ['project-0]
+  (get-tokens))
+
+(expect "Returns project-0 token"
+  { 'id: "project-0"
+  , 'manifest: (create-manifest (uri "text" "project-0-uri") [])
+  , 'policy: hft.guard-token-policy
+  , 'precision: 12
+  , 'supply: 5.0
+  }
+  (get-token "project-0"))
+
+(expect "Returns ledger keys"
+  [ "project-0:alice"
+    "project-0:bob" ]
+  (get-ledger-keys))
+
+(expect "get ledger entry"
+  { 'account: "bob"
+  , 'balance: 3.0
+  , 'guard: (read-keyset 'bob-ks)
+  , 'id: "project-0"
+  }
+  (get-ledger-entry (key 'project-0 'bob)))
+
+(expect "get ledger"
+ [
+  { 'account: "alice"
+  , 'balance: 2.0
+  , 'guard: (read-keyset 'alice-ks)
+  , 'id: "project-0"
+  }
+  { 'account: "bob"
+  , 'balance: 3.0
+  , 'guard: (read-keyset 'bob-ks)
+  , 'id: "project-0"
+  }]
+ (get-ledger))
+
+(rollback-tx)

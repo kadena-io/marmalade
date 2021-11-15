@@ -352,6 +352,9 @@
   (defun get-ledger-keys ()
     (keys ledger))
 
+  (defun get-ledger-key (key:string)
+    (read ledger key))
+
   (defun get-ledger ()
     (map (read ledger) (keys ledger)))
 

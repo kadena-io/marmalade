@@ -115,15 +115,15 @@
 
 (expect "TOKEN, MINT, TRANSFER events"
    [
-    { "module-hash": "Bom0i8OscI2ZiZn0wCk8FVnlUNGio6DDxT-wW6BZiF8",
+    { "module-hash": "2AtKiB_CYFEz2Vwq63NKe2qJ6emN4OPdQg90uY1R4Cw",
       "name": "hft.hft.TOKEN",
       "params": ["project-0"]
     },
-    { "module-hash": "Bom0i8OscI2ZiZn0wCk8FVnlUNGio6DDxT-wW6BZiF8",
+    { "module-hash": "2AtKiB_CYFEz2Vwq63NKe2qJ6emN4OPdQg90uY1R4Cw",
       "name": "hft.hft.MINT",
       "params": ["project-0" "bob" 5.0]
     },
-    { "module-hash": "Bom0i8OscI2ZiZn0wCk8FVnlUNGio6DDxT-wW6BZiF8",
+    { "module-hash": "2AtKiB_CYFEz2Vwq63NKe2qJ6emN4OPdQg90uY1R4Cw",
       "name": "hft.hft.TRANSFER",
       "params": ["project-0" "bob" "alice" 2.0]}]
   (env-events true))
@@ -255,7 +255,7 @@
 
 (expect "TRANSFER events"
   [{
-  "module-hash": "Bom0i8OscI2ZiZn0wCk8FVnlUNGio6DDxT-wW6BZiF8",
+  "module-hash": "2AtKiB_CYFEz2Vwq63NKe2qJ6emN4OPdQg90uY1R4Cw",
   "name": "hft.hft.TRANSFER",
   "params": ["project-0", "bob", "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4", 0.02]
   }]
@@ -301,13 +301,13 @@
     "project-0:bob" ]
   (get-ledger-keys))
 
-(expect "get ledger key"
+(expect "get ledger entry"
   { 'account: "bob"
   , 'balance: 3.0
   , 'guard: (read-keyset 'bob-ks)
   , 'id: "project-0"
   }
-  (get-ledger-key (key 'project-0 'bob)))
+  (get-ledger-entry (key 'project-0 'bob)))
 
 (expect "get ledger"
  [

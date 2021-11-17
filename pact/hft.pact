@@ -302,7 +302,9 @@
     (with-default-read tokens id
       { 'supply: 0.0 }
       { 'supply := s }
-      (update tokens id {'supply: (+ s amount)}))
+      (let ((new-supply (+ s amount)))
+        (emit-event (SUPPLY id new-supply))
+        (update tokens id {'supply: new-supply })))
   )
 
   (defun enforce-unit:bool (id:string amount:decimal)

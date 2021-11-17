@@ -104,6 +104,8 @@
       (policy::enforce-mint
         { 'id: id, 'supply: supply, 'precision: precision }
         account amount))
+    (compose-capability (CREDIT id account))
+    (compose-capability (UPDATE_SUPPLY))
   )
 
   (defcap BURN (id:string account:string amount:decimal)
@@ -116,6 +118,8 @@
       (policy::enforce-burn
         { 'id: id, 'supply: supply, 'precision: precision }
         account amount))
+    (compose-capability (DEBIT id account))
+    (compose-capability (UPDATE_SUPPLY))
   )
 
 
@@ -224,7 +228,8 @@
     )
     (with-capability (MINT id account amount)
       (with-capability (CREDIT id account)
-        (credit id account guard amount)))
+        (credit id account guard amount)
+        (update-supply id amount)))
   )
 
   (defun burn:string
@@ -234,7 +239,8 @@
     )
     (with-capability (BURN id account amount)
       (with-capability (DEBIT id account)
-        (debit id account amount)))
+        (debit id account amount)
+        (update-supply id (- amount))))
   )
 
   (defun debit:string
@@ -255,8 +261,6 @@
       (update ledger (key id account)
         { "balance" : (- balance amount) }
         ))
-    (with-capability (UPDATE_SUPPLY)
-      (update-supply id (- amount)))
   )
 
   (defun credit:string
@@ -291,10 +295,7 @@
         , "guard"   : retg
         , "id"   : id
         , "account" : account
-        })
-      (with-capability (UPDATE_SUPPLY)
-        (update-supply id amount))
-      ))
+        })))
   )
 
   (defun update-supply (id:string amount:decimal)

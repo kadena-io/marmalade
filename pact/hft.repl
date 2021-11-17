@@ -104,6 +104,12 @@
   5.0
   (total-supply "project-0"))
 
+(expect "MINT events"
+   [{"name": "hft.hft.TOKEN","params": ["project-0"]}
+   {"name": "hft.hft.MINT","params": ["project-0" "bob" 5.0]}
+   {"name": "hft.hft.SUPPLY","params": ["project-0" 5.0]} ]
+  (map (remove 'module-hash) (env-events true)))
+
 (expect-failure
   "alice can't mint a project-0 token"
   (mint "project-0" "alice" (read-keyset 'alice-ks) 5.0))
@@ -113,22 +119,16 @@
   "Write succeeded"
   (transfer-create "project-0" "bob" "alice" (read-keyset 'alice-ks) 2.0))
 
-(expect "TOKEN, MINT, TRANSFER events"
-   [
-    { "module-hash": "2AtKiB_CYFEz2Vwq63NKe2qJ6emN4OPdQg90uY1R4Cw",
-      "name": "hft.hft.TOKEN",
-      "params": ["project-0"]
-    },
-    { "module-hash": "2AtKiB_CYFEz2Vwq63NKe2qJ6emN4OPdQg90uY1R4Cw",
-      "name": "hft.hft.MINT",
-      "params": ["project-0" "bob" 5.0]
-    },
-    { "module-hash": "2AtKiB_CYFEz2Vwq63NKe2qJ6emN4OPdQg90uY1R4Cw",
-      "name": "hft.hft.TRANSFER",
-      "params": ["project-0" "bob" "alice" 2.0]}]
-  (env-events true))
+(expect "TRANSFER event"
+   [{"name": "hft.hft.TRANSFER","params": ["project-0" "bob" "alice" 2.0]}
+   ]
+  (map (remove 'module-hash) (env-events true)))
 
 (commit-tx)
+
+;;
+;; BURN TODO
+;;
 
 
 ;; ======================================================
@@ -255,11 +255,10 @@
 
 (expect "TRANSFER events"
   [{
-  "module-hash": "2AtKiB_CYFEz2Vwq63NKe2qJ6emN4OPdQg90uY1R4Cw",
   "name": "hft.hft.TRANSFER",
   "params": ["project-0", "bob", "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4", 0.02]
   }]
-  (env-events true))
+  (map (remove 'module-hash) (env-events true)))
 
 (rollback-tx)
 

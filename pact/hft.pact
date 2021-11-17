@@ -354,6 +354,9 @@
   (defun get-ledger-keys ()
     (keys ledger))
 
+  (defun get-ledger-entry (key:string)
+    (read ledger key))
+
   (defun get-ledger ()
     (map (read ledger) (keys ledger)))
 

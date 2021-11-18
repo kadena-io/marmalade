@@ -1,13 +1,13 @@
 
 (namespace (read-msg 'ns))
 
-(interface token-policy-v1
+(interface token-policy-v1_DRAFT1
 
   (defschema token-info
-    token:string
+    id:string
     supply:decimal
     precision:integer
-    manifest:object{token-manifest.manifest})
+    manifest:object{kip.token-manifest.manifest})
 
   (defun enforce-mint:bool
     ( token:object{token-info}
@@ -34,7 +34,7 @@
   )
 
   (defun enforce-init:bool
-    ( token:object{token-info} )
+    (token:object{token-info})
     @doc "Enforce that TOKEN policy is initialized"
     )
 
@@ -70,7 +70,7 @@
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'hft-admin )))
 
-  (implements token-policy-v1)
+  (implements token-policy-v1_DRAFT1)
 
   (defschema guards
     mint-guard:guard
@@ -94,7 +94,7 @@
   )
 
   (defun get-guards:object{guards} (token:object{token-info})
-    (read policy-guards (at 'token token))
+    (read policy-guards (at 'id token))
   )
 
   (defun enforce-mint:bool

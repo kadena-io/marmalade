@@ -11,8 +11,8 @@
   (use util.fungible-util)
   (use kip.token-manifest)
 
-  (implements kip.poly-fungible-v2)
-  (use kip.poly-fungible-v2 [account-details])
+  (implements kip.poly-fungible-v2_DRAFT1)
+  (use kip.poly-fungible-v2_DRAFT1 [account-details])
 
   ;;
   ;; Tables/Schemas
@@ -227,9 +227,8 @@
       amount:decimal
     )
     (with-capability (MINT id account amount)
-      (with-capability (CREDIT id account)
-        (credit id account guard amount)
-        (update-supply id amount)))
+      (credit id account guard amount)
+      (update-supply id amount))
   )
 
   (defun burn:string
@@ -238,9 +237,8 @@
       amount:decimal
     )
     (with-capability (BURN id account amount)
-      (with-capability (DEBIT id account)
-        (debit id account amount)
-        (update-supply id (- amount))))
+      (debit id account amount)
+      (update-supply id (- amount)))
   )
 
   (defun debit:string

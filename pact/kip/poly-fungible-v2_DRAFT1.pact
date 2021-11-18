@@ -2,7 +2,7 @@
 
 (namespace 'kip)
 
-(interface poly-fungible-v2
+(interface poly-fungible-v2_DRAFT1
 
   (defschema account-details
     @doc

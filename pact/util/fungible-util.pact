@@ -1,8 +1,7 @@
-(define-keyset 'util-ns-admin)
-(namespace (read-msg 'ns))
+(namespace 'util)
 
 (module fungible-util GOVERNANCE
-  (implements account-protocols-v1)
+  (implements kip.account-protocols-v1)
 
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'util-ns-admin)))

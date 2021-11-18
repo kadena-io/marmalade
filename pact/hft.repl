@@ -3,7 +3,7 @@
 (load "root/fungible-v2.pact")
 (load "kip/account-protocols-v1.pact")
 (load "kip/manifest.pact")
-(load "kip/poly-fungible-v2_DRAFT1.pact")
+(load "kip/poly-fungible-v2.pact")
 
 (define-namespace 'util (sig-keyset) (sig-keyset))
 (load "util/fungible-util.pact")
@@ -19,7 +19,7 @@
 
 (begin-tx)
 (load "hft.pact")
-(env-dynref hft.token-policy-v1 hft.guard-token-policy)
+(env-dynref hft.token-policy-v1_DRAFT1 hft.guard-token-policy)
 (verify "hft.hft")
 (commit-tx)
 

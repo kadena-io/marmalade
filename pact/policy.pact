@@ -1,7 +1,7 @@
 
 (namespace (read-msg 'ns))
 
-(interface token-policy-v1
+(interface token-policy-v1_DRAFT1
 
   (defschema token-info
     id:string
@@ -43,7 +43,7 @@
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'hft-admin )))
 
-  (implements token-policy-v1)
+  (implements token-policy-v1_DRAFT1)
 
   (defschema guards
     mint-guard:guard

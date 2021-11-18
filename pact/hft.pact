@@ -25,7 +25,7 @@
     manifest:object{manifest}
     precision:integer
     supply:decimal
-    policy:module{token-policy-v1}
+    policy:module{token-policy-v1_DRAFT1}
   )
 
   (deftable tokens:{token-schema})
@@ -97,7 +97,7 @@
   (defcap MINT (id:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
     (with-read tokens id
-      { 'policy := policy:module{token-policy-v1}
+      { 'policy := policy:module{token-policy-v1_DRAFT1}
       , 'supply := supply
       , 'precision := precision
       }
@@ -111,7 +111,7 @@
   (defcap BURN (id:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
     (with-read tokens id
-      { 'policy := policy:module{token-policy-v1}
+      { 'policy := policy:module{token-policy-v1_DRAFT1}
       , 'supply := supply
       , 'precision := precision
       }
@@ -150,7 +150,7 @@
     ( id:string
       precision:integer
       manifest:object{manifest}
-      policy:module{token-policy-v1}
+      policy:module{token-policy-v1_DRAFT1}
     )
     (policy::enforce-init id)
     (enforce-verify-manifest manifest)

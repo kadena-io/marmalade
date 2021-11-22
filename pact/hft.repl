@@ -501,7 +501,7 @@
   1.0
   (get-balance 'project-2 'bob))
 
-(expect "Create and mint fqp token"
+(expect "Create and mint fqp token EVENTS"
   [ {"name": "hft.hft.CREATE_TOKEN","params": ["project-2"]}
     {"name": "hft.hft.MINT","params": ["project-2" "bob" 1.0]}
     {"name": "hft.hft.SUPPLY","params": ["project-2" 1.0]}]
@@ -557,7 +557,7 @@
   [0.8 0.2]
   (map (get-balance 'project-2) ['bob (sale-account)]))
 
-(expect "SALE events"
+(expect "OFFER events"
    [{"name": "hft.hft.OFFER","params": ["project-2" "bob" 0.2 120]}
     {"name": "hft.hft.SALE","params": ["project-2" "bob" 0.2 120 (pact-id)]}
     {"name": "hft.hft.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}]
@@ -583,7 +583,7 @@
   (format "pact completed: {}" [(pact-id)])
   (continue-pact 0 true))
 
-(expect "SALE events"
+(expect "BUY events"
    [{"name": "hft.hft.BUY","params": ["project-2" "bob" "coin-buyer" 0.2 120 (pact-id)]}
     {"name": "coin.TRANSFER","params": ["coin-buyer" "alice" 0.2]}
     {"name": "hft.hft.TRANSFER","params": ["project-2" (sale-account) "coin-buyer" 0.2]}]

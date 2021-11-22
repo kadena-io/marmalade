@@ -355,7 +355,7 @@
 (rollback-tx)
 
 ;;sales policy
-(begin-tx)
+(begin-tx "sale guard policy success")
 (env-hash (hash "sale-tx1"))
 (use hft.hft)
 (env-chain-data {"block-height": 100})
@@ -400,7 +400,7 @@
 
 (rollback-tx)
 
-(begin-tx)
+(begin-tx "sale guard policy timeout/withdraw")
 (env-hash (hash "sale-tx2"))
 (env-chain-data {"block-height": 100})
 (use hft.hft)
@@ -444,10 +444,11 @@
 
 (rollback-tx)
 
-(begin-tx)
+(begin-tx "sale fixed-quote-policy setup")
 (env-hash (hash "sale-tx3"))
 (env-data {
-   "ns": "hft"
+   'upgrade: false
+  ,'ns: "hft"
   ,'mint-guard: {"keys": ["mint"], "pred": "="}
   ,'bob-guard: {"keys": ["bob"], "pred": "="}
   })
@@ -476,12 +477,18 @@
 (commit-tx)
 
 (begin-tx)
+(env-hash (hash "fixed-quote-sale"))
 (use hft.hft)
 (env-sigs
   [{'key:'bob
    ,'caps:
     [(hft.hft.OFFER "project-2" "bob" 0.2 120)
-     ]}])
+    (hft.hft.BUY "project-2" "bob" "buyer" 0.2 120 (hash "fixed-quote-sale"))
+     ]}
+   {'key: 'buyer
+   ,'caps: [
+     (coin.TRANSFER "buyer" "alice" 1.0)
+   ]}])
 (env-data
   {
    "quote": {
@@ -493,6 +500,53 @@
   ,"buyer": "buyer"
   ,"buyer-guard": {"keys": ["buyer"], "pred": "="}
   })
+
+(test-capability (coin.COINBASE))
+
+(expect "coinbase buyer" "Write succeeded"
+  (coin.coinbase "buyer" (read-msg 'buyer-guard) 2.0))
+
+(env-chain-data {"block-height": 100})
+
+(expect "Sale succeeds"
+  true
+  (sale 'project-2 'bob 0.2 120))
+
+(expect "buy suceeds"
+  true
+  (continue-pact 1))
+
+(rollback-tx)
+
+
+(begin-tx "sale fixed-quote-policy success")
+(env-hash (hash "fixed-quote-sale"))
+(use hft.hft)
+(env-sigs
+  [{'key:'bob
+   ,'caps:
+    [(hft.hft.OFFER "project-2" "bob" 0.2 120)
+    (hft.hft.BUY "project-2" "bob" "buyer" 0.2 120 (hash "fixed-quote-sale"))
+     ]}
+   {'key: 'buyer
+   ,'caps: [
+     (coin.TRANSFER "buyer" "alice" 1.0)
+   ]}])
+(env-data
+  {
+   "quote": {
+       "fungible": coin
+      ,"price": 1.0
+      ,"recipient": "alice"
+      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+    }
+  ,"buyer": "buyer"
+  ,"buyer-guard": {"keys": ["buyer"], "pred": "="}
+  })
+
+(test-capability (coin.COINBASE))
+(expect "coinbase buyer" "Write succeeded"
+  (coin.coinbase "buyer" (read-msg 'buyer-guard) 2.0))
 
 (env-chain-data {"block-height": 100})
 

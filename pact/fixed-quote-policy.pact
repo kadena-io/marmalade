@@ -125,5 +125,8 @@
   )
 )
 
-(create-table quotes)
-(create-table policies)
+
+(if (read-msg 'upgrade)
+  ["upgrade complete"]
+  [ (create-table quotes)
+    (create-table policies) ])

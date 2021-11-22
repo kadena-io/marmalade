@@ -52,11 +52,29 @@
     (let ((r (check-reserved account)))
       (if (= "" r) true
         (if (= "k" r)
-          (enforce
-            (= (format "{}" [guard])
-               (format "KeySet {keys: [{}],pred: keys-all}"
-                       [(drop 2 account)]))
-            "Single-key account protocol violation")
-          (enforce false
-            (format "Unrecognized reserved protocol: {}" [r]))))))
+          (enforce-k account guard)
+          (if (= "p" r)
+            (enforce-p account guard)
+            (enforce false
+              (format "Unrecognized reserved protocol: {}" [r])))))
+        )
+      )
+
+  (defun enforce-k:bool (account:string guard:guard)
+    (enforce
+      (= (format "{}" [guard])
+         (format "KeySet {keys: [{}],pred: keys-all}"
+                 [(drop 2 account)]))
+      "Single-key account protocol violation")
+  )
+
+  (defun enforce-p:bool (account:string guard:guard)
+    (enforce
+      (and
+        (= (take 68 (format "{}" [guard]))
+          (format "PactGuard {pactId: {},name:"
+                 [(drop 2 account)]))
+        (= (pact-id) (drop 2 account)))
+      "Pact account protocol violation")
+  )
 )

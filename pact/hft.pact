@@ -443,7 +443,6 @@
 
   (defcap SALE_PRIVATE (sale:string) true)
 
-
   (defpact sale
     ( token:string
       seller:string
@@ -452,7 +451,7 @@
     )
     (step-with-rollback
       (with-capability (SALE token seller amount timeout (pact-id))
-        (offer token seller amount timeout))
+        (offer token seller amount))
       (with-capability (WITHDRAW token seller amount timeout (pact-id))
         (withdraw token seller amount))
     )
@@ -472,6 +471,7 @@
     (require-capability (SALE_PRIVATE (pact-id)))
     (debit token seller amount)
     (credit token (sale-account) (create-pact-guard "SALE") amount)
+    (emit-event (TRANSFER token seller (sale-account) amount))
   )
 
   (defun withdraw
@@ -483,6 +483,7 @@
     (require-capability (SALE_PRIVATE (pact-id)))
     (debit token (sale-account) amount)
     (credit-account token seller amount)
+    (emit-event (TRANSFER token (sale-account) seller amount))
   )
 
 
@@ -497,7 +498,7 @@
     (require-capability (SALE_PRIVATE (pact-id)))
     (debit token (sale-account) amount)
     (credit token buyer buyer-guard amount)
-    (emit-event (TRANSFER token seller buyer amount))
+    (emit-event (TRANSFER token (sale-account) buyer amount))
   )
 
   (defun sale-active (timeout:integer)
@@ -508,7 +509,6 @@
   (defun sale-account:string ()
     (format "p:{}" [(pact-id)])
   )
-
 
   (defun get-ledger-keys ()
     (keys ledger))

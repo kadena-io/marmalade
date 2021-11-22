@@ -1,6 +1,7 @@
 (begin-tx)
 (define-namespace 'kip (sig-keyset) (sig-keyset))
 (load "root/fungible-v2.pact")
+(load "root/coin.pact")
 (load "kip/account-protocols-v1.pact")
 (load "kip/manifest.pact")
 (load "kip/poly-fungible-v2.pact")
@@ -350,5 +351,153 @@
   , 'id: "project-0"
   }]
  (get-ledger))
+
+(rollback-tx)
+
+;;sales policy
+(begin-tx)
+(env-hash (hash "sale-tx1"))
+(use hft.hft)
+(env-chain-data {"block-height": 100})
+(env-sigs
+  [{'key:'bob
+   ,'caps:
+    [(hft.hft.OFFER "project-0" "bob" 0.1 110)
+     (hft.hft.OFFER "project-0" "bob" 0.1 10)
+     ]}
+  ,{'key:'sale,'caps: [
+    (hft.hft.OFFER "project-0" "bob" 0.1 110)
+    (hft.hft.OFFER "project-0" "bob" 0.1 10)
+    (hft.hft.BUY "project-0" "bob" "buyer" 0.1 110 (hash "sale-tx1"))
+    ]}
+  ])
+
+(env-data
+ { 'buyer: "buyer",
+   'buyer-guard: {"keys": ["buyer"], "pred": "="}
+ })
+
+(expect-failure "Offer fails due to small timeout"
+  "invalid timeout"
+  (sale 'project-0 'bob 0.1 10))
+
+(expect "Offer succeeds"
+  true
+  (sale 'project-0 'bob 0.1 110))
+
+(expect "Buy succeeds"
+  true
+  (continue-pact 1))
+
+(expect "SALE events"
+  [{"name": "hft.hft.OFFER","params": ["project-0" "bob" 0.1 110]}
+   {"name": "hft.hft.SALE","params": ["project-0" "bob" 0.1 110 (hash "sale-tx1")]}
+   {"name": "hft.hft.TRANSFER","params": ["project-0" "bob" (sale-account) 0.1]}
+   {"name": "hft.hft.BUY","params": ["project-0" "bob" "buyer" 0.1 110 (hash "sale-tx1")]}
+   {"name": "hft.hft.TRANSFER","params": ["project-0" (sale-account) "buyer" 0.1]}]
+  (map (remove 'module-hash) (env-events true)))
+
+
+(rollback-tx)
+
+(begin-tx)
+(env-hash (hash "sale-tx2"))
+(env-chain-data {"block-height": 100})
+(use hft.hft)
+(env-sigs
+  [{'key:'bob
+   ,'caps:
+    [(hft.hft.OFFER "project-0" "bob" 0.1 110)
+     ]}
+  ,{'key:'sale,'caps: [
+    (hft.hft.OFFER "project-0" "bob" 0.1 110)
+    (hft.hft.BUY "project-0" "bob" "buyer" 0.1 110 (hash "sale-tx2"))
+    ]}
+  ])
+
+(env-data
+ { 'buyer: "buyer",
+   'buyer-guard: {"keys": ["buyer"], "pred": "="}
+ })
+
+(expect "Offer succeeds"
+  true
+  (sale 'project-0 'bob 0.1 110))
+
+(env-chain-data {"block-height": 111})
+
+(expect-failure "Buy fails after timeout"
+  "expired"
+  (continue-pact 1))
+
+(expect "Withdraw succeeds after timeout"
+  true
+  (continue-pact 0 true))
+
+(expect "SALE events"
+  [{"name": "hft.hft.OFFER","params": ["project-0" "bob" 0.1 110]}
+  {"name": "hft.hft.SALE","params": ["project-0" "bob" 0.1 110 (hash "sale-tx2")]}
+  {"name": "hft.hft.TRANSFER","params": ["project-0" "bob" (sale-account) 0.1]}
+  {"name": "hft.hft.WITHDRAW","params": ["project-0" "bob" 0.1 110 (hash "sale-tx2")]}
+  {"name": "hft.hft.TRANSFER","params": ["project-0" (sale-account) "bob" 0.1]}]
+  (map (remove 'module-hash) (env-events true)))
+
+(rollback-tx)
+
+(begin-tx)
+(env-hash (hash "sale-tx3"))
+(env-data {
+   "ns": "hft"
+  ,'mint-guard: {"keys": ["mint"], "pred": "="}
+  ,'bob-guard: {"keys": ["bob"], "pred": "="}
+  })
+(env-sigs
+  [{'key:'mint
+   ,'caps:
+    [(hft.hft.MINT "project-2" "bob" 1.0)
+     ]}])
+(load "fixed-quote-policy.pact")
+(use kip.token-manifest)
+(use hft.hft)
+
+(expect "initiates project-2 with fixed quote policy"
+  "Write succeeded"
+  (init-fqp "project-2" (read-keyset 'mint-guard) 10.0 1.0))
+
+(expect "Create token project-2"
+  "Write succeeded"
+  (create-token "project-2" 1
+    (create-manifest (uri "text" "project-2-uri") []) hft.fixed-quote-policy))
+
+(expect "bob mints project-2"
+  "Write succeeded"
+  (mint 'project-2 "bob" (read-keyset 'bob-guard) 1.0))
+
+(commit-tx)
+
+(begin-tx)
+(use hft.hft)
+(env-sigs
+  [{'key:'bob
+   ,'caps:
+    [(hft.hft.OFFER "project-2" "bob" 0.2 120)
+     ]}])
+(env-data
+  {
+   "quote": {
+       "fungible": coin
+      ,"price": 1.0
+      ,"recipient": "alice"
+      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+    }
+  ,"buyer": "buyer"
+  ,"buyer-guard": {"keys": ["buyer"], "pred": "="}
+  })
+
+(env-chain-data {"block-height": 100})
+
+(expect "Sale succeeds"
+  true
+  (sale 'project-2 'bob 0.2 120))
 
 (rollback-tx)

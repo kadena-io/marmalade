@@ -106,7 +106,7 @@
         , 'recipient := recipient:string
         , 'recipient-guard := recipient-guard:guard
         }
-        (fungible::transfer-create buyer recipient recipient-guard price)
+        (fungible::transfer-create buyer recipient recipient-guard (* amount price))
       )
     )
   )

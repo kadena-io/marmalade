@@ -102,7 +102,7 @@
 
   (defcap CREDIT (id:string receiver:string) true)
 
-  (defcap CREATE_TOKEN (token:string)
+  (defcap CREATE_TOKEN (id:string)
     @event
     true
   )
@@ -387,7 +387,7 @@
   ;;
 
   (defcap SALE
-    (id:string seller:string amount:decimal timeout:integer sale:string)
+    (id:string seller:string amount:decimal timeout:integer sale-id:string)
     @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
     @event
     (compose-capability (OFFER id seller amount timeout))
@@ -399,8 +399,8 @@
       }
       (policy::init-sale
         { 'id: id, 'supply: supply, 'precision: precision, 'manifest: manifest }
-        seller amount sale))
-    (compose-capability (SALE_PRIVATE sale))
+        seller amount sale-id))
+    (compose-capability (SALE_PRIVATE sale-id))
   )
 
   (defcap OFFER
@@ -413,26 +413,26 @@
   )
 
   (defcap WITHDRAW
-    (id:string seller:string amount:decimal timeout:integer sale:string)
+    (id:string seller:string amount:decimal timeout:integer sale-id:string)
     @doc "Withdraws offer SALE from SELLER of AMOUNT of token ID after timeout."
     @event
     (enforce (not (sale-active timeout)) "WITHDRAW: still active")
     (compose-capability (DEBIT id (sale-account)))
     (compose-capability (CREDIT id seller))
-    (compose-capability (SALE_PRIVATE sale))
+    (compose-capability (SALE_PRIVATE sale-id))
   )
 
   (defcap BUY
-    (id:string seller:string buyer:string amount:decimal timeout:integer sale:string)
+    (id:string seller:string buyer:string amount:decimal timeout:integer sale-id:string)
     @doc "Completes sale OFFER to BUYER."
     @managed
     (enforce (sale-active timeout) "BUY: expired")
     (compose-capability (DEBIT id (sale-account)))
     (compose-capability (CREDIT id buyer))
-    (compose-capability (SALE_PRIVATE sale))
+    (compose-capability (SALE_PRIVATE sale-id))
   )
 
-  (defcap SALE_PRIVATE (sale:string) true)
+  (defcap SALE_PRIVATE (sale-id:string) true)
 
   (defpact sale
     ( id:string

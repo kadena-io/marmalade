@@ -102,7 +102,7 @@
 
   (defcap CREDIT (id:string receiver:string) true)
 
-  (defcap CREATE_TOKEN (token:string)
+  (defcap CREATE_TOKEN (id:string)
     @event
     true
   )
@@ -387,7 +387,7 @@
   ;;
 
   (defcap SALE
-    (id:string seller:string amount:decimal timeout:integer sale:string)
+    (id:string seller:string amount:decimal timeout:integer sale-id:string)
     @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
     @event
     (compose-capability (OFFER id seller amount timeout))
@@ -399,8 +399,8 @@
       }
       (policy::init-sale
         { 'id: id, 'supply: supply, 'precision: precision, 'manifest: manifest }
-        seller amount sale))
-    (compose-capability (SALE_PRIVATE sale))
+        seller amount sale-id))
+    (compose-capability (SALE_PRIVATE sale-id))
   )
 
   (defcap OFFER
@@ -413,20 +413,81 @@
   )
 
   (defcap WITHDRAW
-    (id:string seller:string amount:decimal timeout:integer sale:string)
+    (id:string seller:string amount:decimal timeout:integer sale-id:string)
     @doc "Withdraws offer SALE from SELLER of AMOUNT of token ID after timeout."
     @event
     (enforce (not (sale-active timeout)) "WITHDRAW: still active")
     (compose-capability (DEBIT id (sale-account)))
     (compose-capability (CREDIT id seller))
-    (compose-capability (SALE_PRIVATE sale))
+    (compose-capability (SALE_PRIVATE sale-id))
   )
 
   (defcap BUY
-    (id:string seller:string buyer:string amount:decimal timeout:integer sale:string)
+    (id:string seller:string buyer:string amount:decimal timeout:integer sale-id:string)
     @doc "Completes sale OFFER to BUYER."
     @managed
     (enforce (sale-active timeout) "BUY: expired")
+    (compose-capability (DEBIT id (sale-account)))
+    (compose-capability (CREDIT id buyer))
+    (compose-capability (SALE_PRIVATE sale-id))
+  )
+
+  (defcap SALE_PRIVATE (sale-id:string) true)
+
+  (defpact sale
+    ( id:string
+      seller:string
+      amount:decimal
+      timeout:integer
+    )
+    (step-with-rollback
+      (with-capability (SALE id seller amount timeout (pact-id))
+        (offer id seller amount))
+      (with-capability (WITHDRAW id seller amount timeout (pact-id))
+        (withdraw id seller amount))
+    )
+    (step
+      (let ( (buyer:string (read-msg "buyer"))
+             (buyer-guard:guard (read-msg "buyer-guard")) )
+        (with-capability (BUY id seller buyer amount timeout (pact-id))
+          (buy id seller buyer buyer-guard amount (pact-id)))))
+  )
+
+  (defun offer
+    ( id:string
+      seller:string
+      amount:decimal
+    )
+    @doc "Initiate sale with by SELLER by escrowing AMOUNT of TOKEN until TIMEOUT."
+    (require-capability (SALE_PRIVATE (pact-id)))
+    (debit id seller amount)
+    (credit id (sale-account) (create-pact-guard "SALE") amount)
+    (emit-event (TRANSFER id seller (sale-account) amount))
+  )
+
+  (defun withdraw
+    ( id:string
+      seller:string
+      amount:decimal
+    )
+    @doc "Withdraw offer by SELLER of AMOUNT of TOKEN before TIMEOUT"
+    (require-capability (SALE_PRIVATE (pact-id)))
+    (debit id (sale-account) amount)
+    (credit-account id seller amount)
+    (emit-event (TRANSFER id (sale-account) seller amount))
+  )
+
+
+  (defun buy
+    ( id:string
+      seller:string
+      buyer:string
+      buyer-guard:guard
+      amount:decimal
+      sale-id:string
+    )
+    @doc "Complete sale with transfer."
+    (require-capability (SALE_PRIVATE (pact-id)))
     (with-read tokens id
       { 'policy := policy:module{token-policy-v1_DRAFT1}
       , 'supply := supply
@@ -434,70 +495,14 @@
       , 'manifest := manifest
       }
       (policy::enforce-sale
-        { 'id: id, 'supply: supply, 'precision: precision, 'manifest: manifest }
-        seller buyer amount sale))
-    (compose-capability (DEBIT id (sale-account)))
-    (compose-capability (CREDIT id buyer))
-    (compose-capability (SALE_PRIVATE sale))
-  )
-
-  (defcap SALE_PRIVATE (sale:string) true)
-
-
-  (defpact sale
-    ( token:string
-      seller:string
-      amount:decimal
-      timeout:integer
-    )
-    (step-with-rollback
-      (with-capability (SALE token seller amount timeout (pact-id))
-        (offer token seller amount timeout))
-      (with-capability (WITHDRAW token seller amount timeout (pact-id))
-        (withdraw token seller amount))
-    )
-    (step
-      (let ( (buyer:string (read-msg "buyer"))
-             (buyer-guard:guard (read-msg "buyer-guard")) )
-        (with-capability (BUY token seller buyer amount timeout (pact-id))
-          (buy token seller buyer buyer-guard amount))))
-  )
-
-  (defun offer
-    ( token:string
-      seller:string
-      amount:decimal
-    )
-    @doc "Initiate sale with by SELLER by escrowing AMOUNT of TOKEN until TIMEOUT."
-    (require-capability (SALE_PRIVATE (pact-id)))
-    (debit token seller amount)
-    (credit token (sale-account) (create-pact-guard "SALE") amount)
-  )
-
-  (defun withdraw
-    ( token:string
-      seller:string
-      amount:decimal
-    )
-    @doc "Withdraw offer by SELLER of AMOUNT of TOKEN before TIMEOUT"
-    (require-capability (SALE_PRIVATE (pact-id)))
-    (debit token (sale-account) amount)
-    (credit-account token seller amount)
-  )
-
-
-  (defun buy
-    ( token:string
-      seller:string
-      buyer:string
-      buyer-guard:guard
-      amount:decimal
-    )
-    @doc "Complete sale with transfer."
-    (require-capability (SALE_PRIVATE (pact-id)))
-    (debit token (sale-account) amount)
-    (credit token buyer buyer-guard amount)
-    (emit-event (TRANSFER token seller buyer amount))
+        { 'id: id
+        , 'supply: supply
+        , 'precision: precision
+        , 'manifest: manifest }
+        seller buyer amount sale-id))
+    (debit id (sale-account) amount)
+    (credit id buyer buyer-guard amount)
+    (emit-event (TRANSFER id (sale-account) buyer amount))
   )
 
   (defun sale-active (timeout:integer)
@@ -506,9 +511,8 @@
   )
 
   (defun sale-account:string ()
-    (format "p:{}" [(pact-id)])
+    (format "sale-{}" [(pact-id)])
   )
-
 
   (defun get-ledger-keys ()
     (keys ledger))

@@ -1,6 +1,8 @@
 (begin-tx)
 (define-namespace 'kip (sig-keyset) (sig-keyset))
 (load "root/fungible-v2.pact")
+(load "root/gas-payer-v1.pact")
+(load "root/coin.pact")
 (load "kip/account-protocols-v1.pact")
 (load "kip/manifest.pact")
 (load "kip/poly-fungible-v2.pact")
@@ -13,20 +15,22 @@
  { 'hft-admin: []
  , 'ns: "hft"
  , 'upgrade: false })
-
 (load "policy.pact")
 (commit-tx)
 
 (begin-tx)
 (load "hft.pact")
-(env-dynref hft.token-policy-v1_DRAFT1 hft.guard-token-policy)
-(verify "hft.hft")
+(typecheck "hft.hft")
 (commit-tx)
 
 (begin-tx)
 (env-data
- { 'bob-ks: ["bob"],
-   'alice-ks: ["alice"]
+ { 'bob-ks: ["bob"]
+ , 'alice-ks: ["alice"]
+ , 'mint-ks: ["mint"]
+ , 'burn-ks: ["burn"]
+ , 'sale-ks: ["sale"]
+ , 'transfer-ks: ["transfer"]
  })
 (env-keys ["bob"])
 (use hft.hft)
@@ -54,11 +58,17 @@
       (TRANSFER "project-0:1" "alice" "project-0:1:1" 1.0)
       (MINT "project-0" "alice" 5.0)
     ]
-  }
+  },
+  { 'key: "mint", 'caps: [] },
+  { 'key: "transfer", 'caps: [] }
   ])
 
 (hft.guard-token-policy.init-guards
-  "project-0" (read-keyset 'bob-ks ) (read-keyset 'bob-ks ))
+  "project-0"
+  (read-keyset 'mint-ks )
+  (read-keyset 'burn-ks )
+  (read-keyset 'sale-ks)
+  (read-keyset 'transfer-ks))
 
 (use kip.token-manifest)
 
@@ -105,14 +115,10 @@
   (total-supply "project-0"))
 
 (expect "MINT events"
-   [{"name": "hft.hft.TOKEN","params": ["project-0"]}
+   [{"name": "hft.hft.CREATE_TOKEN","params": ["project-0"]}
    {"name": "hft.hft.MINT","params": ["project-0" "bob" 5.0]}
    {"name": "hft.hft.SUPPLY","params": ["project-0" 5.0]} ]
   (map (remove 'module-hash) (env-events true)))
-
-(expect-failure
-  "alice can't mint a project-0 token"
-  (mint "project-0" "alice" (read-keyset 'alice-ks) 5.0))
 
 ;;regular transfer
 (expect "Bob transfers 2.0 to Alice"
@@ -126,9 +132,30 @@
 
 (commit-tx)
 
+(begin-tx)
+(use hft.hft)
+
+(env-sigs [
+  {
+    'key: "alice",
+    'caps: [
+      (TRANSFER "project-0:1" "alice" "project-0:1:1" 1.0)
+      (MINT "project-0" "alice" 5.0)
+    ]
+  }
+  ])
+
+(expect-failure
+  "alice can't mint a project-0 token"
+  "[mint]"
+  (mint "project-0" "alice" (read-keyset 'alice-ks) 5.0))
+
+(rollback-tx)
+
 ;;
 ;; BURN TODO
 ;;
+
 
 
 ;; ======================================================
@@ -158,7 +185,9 @@
     (hft.hft.TRANSFER 'project-0 'bob
       "c:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
       0.04)
-      ]}])
+      ]}
+  ,{'key:'transfer,'caps:[]}
+])
 
 (length "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3")
 (expect-failure
@@ -241,7 +270,9 @@
    ,'caps:
     [(hft.hft.TRANSFER 'project-0 'bob
       "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
-      0.02)]}])
+      0.02)]}
+  ,{'key:'transfer,'caps: []}
+  ])
 
 (expect
   "single-key success, transfer-create"
@@ -321,5 +352,391 @@
   , 'id: "project-0"
   }]
  (get-ledger))
+
+(rollback-tx)
+
+;;sales policy
+(begin-tx "sale guard policy success")
+(env-hash (hash "sale-tx1"))
+(use hft.hft)
+(env-chain-data {"block-height": 100})
+(env-sigs
+  [{'key:'bob
+   ,'caps:
+    [(hft.hft.OFFER "project-0" "bob" 0.1 110)
+     (hft.hft.OFFER "project-0" "bob" 0.1 10)
+     ]}
+  ,{'key:'sale,'caps: [
+    (hft.hft.OFFER "project-0" "bob" 0.1 10)
+    (hft.hft.BUY "project-0" "bob" "buyer" 0.1 110 (hash "sale-tx1"))
+    ]}
+  ])
+
+(env-data
+ { 'buyer: "buyer",
+   'buyer-guard: {"keys": ["buyer"], "pred": "="}
+ })
+
+(expect-failure "Offer fails due to small timeout"
+  "invalid timeout"
+  (sale 'project-0 'bob 0.1 10))
+
+(expect-failure "Offer fails, sale guard not signed"
+  "[sale]"
+  (sale 'project-0 'bob 0.1 110))
+
+(env-sigs
+  [{'key:'sale,'caps: [
+    (hft.hft.OFFER "project-0" "bob" 0.1 110)
+    ]}
+  ])
+
+(expect-failure "Offer fails, seller guard not signed"
+  "Keyset failure (keys-all): [bob]"
+  (sale 'project-0 'bob 0.1 110))
+
+(env-sigs
+  [{'key:'bob,'caps: [
+    (hft.hft.OFFER "project-0" "bob" 0.1 110)
+    ]}
+  ,{'key:'sale,'caps: [
+     (hft.hft.OFFER "project-0" "bob" 0.1 110)
+   ]}
+  ])
+
+(expect "Offer succeeds"
+  true
+  (sale 'project-0 'bob 0.1 110))
+
+(expect "Seller is debited, sale account is credited"
+  [2.9 0.1]
+  (map (get-balance 'project-0) ['bob (sale-account)]))
+
+(expect "OFFER events"
+  [{"name": "hft.hft.OFFER","params": ["project-0" "bob" 0.1 110]}
+   {"name": "hft.hft.SALE","params": ["project-0" "bob" 0.1 110 (hash "sale-tx1")]}
+   {"name": "hft.hft.TRANSFER","params": ["project-0" "bob" (sale-account) 0.1]}]
+  (map (remove 'module-hash) (env-events true)))
+
+(env-sigs
+  [{'key:'dummy,'caps: [
+     (hft.hft.BUY "project-0" "bob" "buyer" 0.1 110 (pact-id))
+   ]}])
+
+(expect-failure "Buy fails, sale guard not signed"
+ "Keyset failure (keys-all): [sale]"
+ (continue-pact 1))
+
+(env-sigs
+ [{'key:'sale,'caps: [
+    (hft.hft.BUY "project-0" "bob" "buyer" 0.1 110 (pact-id))
+  ]}])
+
+(expect "Buy succeeds"
+  true
+  (continue-pact 1))
+
+(expect "Sale account is debited, buyer is credited"
+  [0.0 0.1]
+  (map (get-balance 'project-0) [(sale-account) "buyer"]))
+
+(expect "BUY events"
+  [{"name": "hft.hft.BUY","params": ["project-0" "bob" "buyer" 0.1 110 (hash "sale-tx1")]}
+   {"name": "hft.hft.TRANSFER","params": ["project-0" (sale-account) "buyer" 0.1]}]
+  (map (remove 'module-hash) (env-events true)))
+
+(rollback-tx)
+
+(begin-tx "sale guard policy timeout/withdraw")
+
+(env-hash (hash "sale-tx2"))
+(env-chain-data {"block-height": 100})
+(use hft.hft)
+(env-sigs
+  [{'key:'bob
+   ,'caps:
+    [(hft.hft.OFFER "project-0" "bob" 0.1 110)
+     ]}
+  ,{'key:'sale,'caps: [
+    (hft.hft.OFFER "project-0" "bob" 0.1 110)
+    (hft.hft.BUY "project-0" "bob" "buyer" 0.1 110 (hash "sale-tx2"))
+    ]}
+  ])
+
+(env-data
+ { 'buyer: "buyer",
+   'buyer-guard: {"keys": ["buyer"], "pred": "="}
+ })
+
+(expect "Offer succeeds"
+  true
+  (sale 'project-0 'bob 0.1 110))
+
+(expect "Seller is debited, sale account is credited"
+  [2.9 0.1]
+  (map (get-balance 'project-0) ['bob (sale-account)]))
+
+(expect "OFFER events"
+  [{"name": "hft.hft.OFFER","params": ["project-0" "bob" 0.1 110]}
+  {"name": "hft.hft.SALE","params": ["project-0" "bob" 0.1 110 (hash "sale-tx2")]}
+  {"name": "hft.hft.TRANSFER","params": ["project-0" "bob" (sale-account) 0.1]}]
+  (map (remove 'module-hash) (env-events true)))
+
+(env-chain-data {"block-height": 111})
+
+(expect-failure "Buy fails after timeout"
+  "expired"
+  (continue-pact 1))
+
+(expect "Withdraw succeeds after timeout"
+  true
+  (continue-pact 0 true))
+
+(expect "Seller is credited, sale account is debited"
+  [3.0 0.0]
+  (map (get-balance 'project-0) ['bob (sale-account)]))
+
+(expect "WITHDRAW events"
+  [{"name": "hft.hft.WITHDRAW","params": ["project-0" "bob" 0.1 110 (hash "sale-tx2")]}
+   {"name": "hft.hft.TRANSFER","params": ["project-0" (sale-account) "bob" 0.1]}]
+  (map (remove 'module-hash) (env-events true)))
+
+(rollback-tx)
+
+(begin-tx "sale fixed-quote-policy setup")
+(env-hash (hash "fixed-quote-sale-tx2"))
+(env-data {
+   'upgrade: false
+  ,'ns: "hft"
+  ,'mint-guard: {"keys": ["mint"], "pred": "keys-all"}
+  ,'bob-guard: {"keys": ["bob"], "pred": "keys-all"}
+  })
+(env-sigs
+  [{'key:'dummy
+   ,'caps:
+    [(hft.hft.MINT "project-2" "bob" 1.0)
+     ]}])
+
+(load "fixed-quote-policy.pact")
+(use kip.token-manifest)
+(use hft.hft)
+
+(expect "initiates project-2 with fixed quote policy"
+  "Write succeeded"
+  (init-fqp "project-2" (read-keyset 'mint-guard) 10.0 1.0))
+
+(expect "Create token project-2"
+  "Write succeeded"
+  (create-token "project-2" 1
+    (create-manifest (uri "text" "project-2-uri") []) hft.fixed-quote-policy))
+
+(expect-failure "bob mints project-2"
+  "Failed: Keyset failure (keys-all): [mint]"
+  (mint 'project-2 "bob" (read-keyset 'bob-guard) 1.0))
+
+(env-sigs
+  [{'key:'mint
+   ,'caps:
+    [(hft.hft.MINT "project-2" "bob" 1.0)
+     ]}])
+
+(expect "bob mints project-2"
+  "Write succeeded"
+  (mint 'project-2 "bob" (read-keyset 'bob-guard) 1.0))
+
+(expect "Bob is credited"
+  1.0
+  (get-balance 'project-2 'bob))
+
+(expect "Create and mint fqp token EVENTS"
+  [ {"name": "hft.hft.CREATE_TOKEN","params": ["project-2"]}
+    {"name": "hft.hft.MINT","params": ["project-2" "bob" 1.0]}
+    {"name": "hft.hft.SUPPLY","params": ["project-2" 1.0]}]
+    (map (remove 'module-hash) (env-events true)))
+
+(commit-tx)
+
+(begin-tx "sale fixed-quote-policy success")
+(env-hash (hash "fixed-quote-sale-tx2"))
+(use hft.hft)
+(env-sigs
+  [{'key:'bob
+   ,'caps:
+    [(hft.hft.OFFER "project-2" "bob" 0.2 120)]}
+ ])
+
+(env-data
+  {
+   "quote": {
+       "fungible": coin
+      ,"price": 1.0
+      ,"recipient": "alice"
+      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+    }
+  ,"buyer": "coin-buyer"
+  ,"buyer-guard": {"keys": ["buyer"], "pred": "="}
+  })
+(env-chain-data {"block-height": 100})
+
+(test-capability (coin.COINBASE))
+
+(expect "coinbase buyer" "Write succeeded"
+  (coin.coinbase "coin-buyer" (read-msg 'buyer-guard) 2.0))
+
+(expect "coin-buyer is credited coins"
+  2.0
+  (coin.get-balance 'coin-buyer))
+
+(expect "Sale succeeds"
+  true
+  (sale 'project-2 'bob 0.2 120))
+
+(expect "coin balance of coin-buyer is unchanged"
+  2.0
+  (coin.get-balance 'coin-buyer))
+
+(expect "Seller is credited, sale account is debited on project-2 balance"
+  [0.8 0.2]
+  (map (get-balance 'project-2) ['bob (sale-account)]))
+
+(expect "OFFER events"
+   [{"name": "hft.hft.OFFER","params": ["project-2" "bob" 0.2 120]}
+    {"name": "hft.hft.SALE","params": ["project-2" "bob" 0.2 120 (pact-id)]}
+    {"name": "hft.hft.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}]
+  (map (remove 'module-hash) (env-events true)))
+
+
+(expect-failure "Withdraw fails before timeout"
+  "still active"
+  (continue-pact 0 true))
+
+(env-sigs [
+  {'key: 'bob
+   ,'caps: [(hft.hft.BUY "project-2" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-sale-tx2"))]
+  }
+,{'key: 'dummy
+ ,'caps: [
+   (coin.TRANSFER "coin-buyer" "alice" 0.2)
+ ]}])
+
+(expect-failure "buy fails, buyer doesn't sign coin.TRANSFER"
+  "[buyer]"
+  (continue-pact 1))
+
+(env-sigs [
+  {'key: 'bob
+   ,'caps: [(hft.hft.BUY "project-2" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-sale-tx2"))]
+  }
+ ,{'key: 'buyer
+ ,'caps: [
+   (coin.TRANSFER "coin-buyer" "alice" 0.2)
+ ]}])
+
+(expect "buy suceeds"
+  true
+  (continue-pact 1))
+
+(expect "Seller is credited, sale account is debited on project-2 balance"
+  [0.8 0.0 0.2]
+  (map (get-balance 'project-2) ['bob (sale-account) 'coin-buyer]))
+
+(expect "coin-buyer is debited on coin balance by price"
+  [1.8 0.2]
+  (map (coin.get-balance ) ['coin-buyer 'alice]))
+
+(expect-failure "Withdraw fails after sale completes"
+  (format "pact completed: {}" [(pact-id)])
+  (continue-pact 0 true))
+
+(expect "BUY events"
+   [{"name": "hft.hft.BUY","params": ["project-2" "bob" "coin-buyer" 0.2 120 (pact-id)]}
+    {"name": "coin.TRANSFER","params": ["coin-buyer" "alice" 0.2]}
+    {"name": "hft.hft.TRANSFER","params": ["project-2" (sale-account) "coin-buyer" 0.2]}]
+  (map (remove 'module-hash) (env-events true)))
+
+(rollback-tx)
+
+(begin-tx "sale fixed-quote-policy timeout/withdraw")
+(begin-tx "sale fixed-quote-policy success")
+(env-hash (hash "fixed-quote-sale-tx3"))
+(use hft.hft)
+(env-sigs
+  [{'key:'bob
+   ,'caps:
+    [(hft.hft.OFFER "project-2" "bob" 0.2 120)
+     (hft.hft.BUY "project-2" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-sale-tx3"))
+     ]}
+   {'key: 'buyer
+   ,'caps: [
+     (coin.TRANSFER "coin-buyer" "alice" 1.0)
+   ]}])
+
+(env-data
+  {
+   "quote": {
+       "fungible": coin
+      ,"price": 1.0
+      ,"recipient": "alice"
+      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+    }
+  ,"buyer": "coin-buyer"
+  ,"buyer-guard": {"keys": ["buyer"], "pred": "="}
+  })
+
+(env-chain-data {"block-height": 100})
+
+(test-capability (coin.COINBASE))
+
+(expect "coinbase buyer" "Write succeeded"
+  (coin.coinbase "coin-buyer" (read-msg 'buyer-guard) 2.0))
+
+(expect "coin-buyer is credited coins"
+  2.0
+  (coin.get-balance 'coin-buyer))
+
+(expect "Sale succeeds"
+  true
+  (sale 'project-2 'bob 0.2 120))
+
+(expect "coin balance of coin-buyer is unchanged"
+  2.0
+  (coin.get-balance 'coin-buyer))
+
+(expect "Seller is credited, sale account is debited on project-2 balance"
+  [0.8 0.2]
+  (map (get-balance 'project-2) ['bob (sale-account)]))
+
+(expect "OFFER events"
+   [{"name": "hft.hft.OFFER","params": ["project-2" "bob" 0.2 120]}
+    {"name": "hft.hft.SALE","params": ["project-2" "bob" 0.2 120 (pact-id)]}
+    {"name": "hft.hft.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}]
+  (map (remove 'module-hash) (env-events true)))
+
+(env-chain-data {"block-height": 121})
+
+(expect-failure "buy fails after timeout"
+  "expired"
+  (continue-pact 1))
+
+(expect "Withdraw succeeds after timeout"
+  true
+  (continue-pact 0 true))
+
+(expect "Seller is credited and sale account is debited"
+  [1.0 0.0]
+  (map (get-balance 'project-2) ['bob (sale-account)]))
+
+(expect "coin-buyer's coin balance remains unchanged"
+  2.0
+  (coin.get-balance 'coin-buyer))
+
+(expect-failure "Withdraw fails after sale completes"
+  (format "pact completed: {}" [(pact-id)])
+  (continue-pact 0 true))
+
+(expect "WITHDRAW events"
+    [{"name": "hft.hft.WITHDRAW","params": ["project-2" "bob" 0.2 120 (pact-id)]}
+    {"name": "hft.hft.TRANSFER","params": ["project-2" (sale-account) "bob" 0.2]}]
+  (map (remove 'module-hash) (env-events true)))
 
 (rollback-tx)

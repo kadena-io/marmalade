@@ -52,6 +52,15 @@
     (enforce (> amount 0.0) "Positive amount")
     (compose-capability (DEBIT id sender))
     (compose-capability (CREDIT id receiver))
+    (with-read tokens id
+      { 'policy := policy:module{token-policy-v1_DRAFT1}
+      , 'supply := supply
+      , 'precision := precision
+      , 'manifest := manifest
+      }
+      (policy::enforce-transfer
+        { 'id: id, 'supply: supply, 'precision: precision, 'manifest: manifest }
+        sender receiver amount))
   )
 
   (defun TRANSFER-mgr:decimal
@@ -84,11 +93,19 @@
     true)
 
   (defcap DEBIT (id:string sender:string)
-    (enforce-guard
-      (at 'guard
-        (read ledger (key id sender)))))
+    (enforce-guard (account-guard id sender))
+  )
+
+  (defun account-guard:guard (id:string account:string)
+    (with-read ledger (key id account) { 'guard := guard } guard)
+  )
 
   (defcap CREDIT (id:string receiver:string) true)
+
+  (defcap CREATE_TOKEN (id:string)
+    @event
+    true
+  )
 
   (defcap UPDATE_SUPPLY ()
     "private cap for update-supply"
@@ -100,9 +117,10 @@
       { 'policy := policy:module{token-policy-v1_DRAFT1}
       , 'supply := supply
       , 'precision := precision
+      , 'manifest := manifest
       }
       (policy::enforce-mint
-        { 'id: id, 'supply: supply, 'precision: precision }
+        { 'id: id, 'supply: supply, 'precision: precision, 'manifest: manifest }
         account amount))
     (compose-capability (CREDIT id account))
     (compose-capability (UPDATE_SUPPLY))
@@ -114,13 +132,15 @@
       { 'policy := policy:module{token-policy-v1_DRAFT1}
       , 'supply := supply
       , 'precision := precision
+      , 'manifest := manifest
       }
       (policy::enforce-burn
-        { 'id: id, 'supply: supply, 'precision: precision }
+        { 'id: id, 'supply: supply, 'precision: precision, 'manifest: manifest }
         account amount))
     (compose-capability (DEBIT id account))
     (compose-capability (UPDATE_SUPPLY))
   )
+
 
 
 
@@ -152,9 +172,10 @@
       manifest:object{manifest}
       policy:module{token-policy-v1_DRAFT1}
     )
-    (policy::enforce-init id)
+    (policy::enforce-init
+      { 'id: id, 'supply: 0.0, 'precision: precision, 'manifest: manifest })
     (enforce-verify-manifest manifest)
-    (emit-event (TOKEN id))
+    (emit-event (CREATE_TOKEN id))
     (insert tokens id {
       "id": id,
       "precision": precision,
@@ -296,6 +317,17 @@
         })))
   )
 
+  (defun credit-account:string
+    ( id:string
+      account:string
+      amount:decimal
+    )
+    @doc "Credit AMOUNT to ACCOUNT"
+    (credit id account (account-guard id account) amount)
+  )
+
+
+
   (defun update-supply (id:string amount:decimal)
     (require-capability (UPDATE_SUPPLY))
     (with-default-read tokens id
@@ -348,6 +380,138 @@
   (defun get-token:object{token-schema} (id:string)
     "Read token"
     (read tokens id)
+  )
+
+  ;;
+  ;; sale
+  ;;
+
+  (defcap SALE
+    (id:string seller:string amount:decimal timeout:integer sale-id:string)
+    @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
+    @event
+    (compose-capability (OFFER id seller amount timeout))
+    (with-read tokens id
+      { 'policy := policy:module{token-policy-v1_DRAFT1}
+      , 'supply := supply
+      , 'precision := precision
+      , 'manifest := manifest
+      }
+      (policy::init-sale
+        { 'id: id, 'supply: supply, 'precision: precision, 'manifest: manifest }
+        seller amount sale-id))
+    (compose-capability (SALE_PRIVATE sale-id))
+  )
+
+  (defcap OFFER
+    (id:string seller:string amount:decimal timeout:integer)
+    @doc "Managed cap for SELLER offering AMOUNT of token ID until TIMEOUT."
+    @managed
+    (enforce (sale-active timeout) "SALE: invalid timeout")
+    (compose-capability (DEBIT id seller))
+    (compose-capability (CREDIT id (sale-account)))
+  )
+
+  (defcap WITHDRAW
+    (id:string seller:string amount:decimal timeout:integer sale-id:string)
+    @doc "Withdraws offer SALE from SELLER of AMOUNT of token ID after timeout."
+    @event
+    (enforce (not (sale-active timeout)) "WITHDRAW: still active")
+    (compose-capability (DEBIT id (sale-account)))
+    (compose-capability (CREDIT id seller))
+    (compose-capability (SALE_PRIVATE sale-id))
+  )
+
+  (defcap BUY
+    (id:string seller:string buyer:string amount:decimal timeout:integer sale-id:string)
+    @doc "Completes sale OFFER to BUYER."
+    @managed
+    (enforce (sale-active timeout) "BUY: expired")
+    (compose-capability (DEBIT id (sale-account)))
+    (compose-capability (CREDIT id buyer))
+    (compose-capability (SALE_PRIVATE sale-id))
+  )
+
+  (defcap SALE_PRIVATE (sale-id:string) true)
+
+  (defpact sale
+    ( id:string
+      seller:string
+      amount:decimal
+      timeout:integer
+    )
+    (step-with-rollback
+      (with-capability (SALE id seller amount timeout (pact-id))
+        (offer id seller amount))
+      (with-capability (WITHDRAW id seller amount timeout (pact-id))
+        (withdraw id seller amount))
+    )
+    (step
+      (let ( (buyer:string (read-msg "buyer"))
+             (buyer-guard:guard (read-msg "buyer-guard")) )
+        (with-capability (BUY id seller buyer amount timeout (pact-id))
+          (buy id seller buyer buyer-guard amount (pact-id)))))
+  )
+
+  (defun offer
+    ( id:string
+      seller:string
+      amount:decimal
+    )
+    @doc "Initiate sale with by SELLER by escrowing AMOUNT of TOKEN until TIMEOUT."
+    (require-capability (SALE_PRIVATE (pact-id)))
+    (debit id seller amount)
+    (credit id (sale-account) (create-pact-guard "SALE") amount)
+    (emit-event (TRANSFER id seller (sale-account) amount))
+  )
+
+  (defun withdraw
+    ( id:string
+      seller:string
+      amount:decimal
+    )
+    @doc "Withdraw offer by SELLER of AMOUNT of TOKEN before TIMEOUT"
+    (require-capability (SALE_PRIVATE (pact-id)))
+    (debit id (sale-account) amount)
+    (credit-account id seller amount)
+    (emit-event (TRANSFER id (sale-account) seller amount))
+  )
+
+
+  (defun buy
+    ( id:string
+      seller:string
+      buyer:string
+      buyer-guard:guard
+      amount:decimal
+      sale-id:string
+    )
+    @doc "Complete sale with transfer."
+    (require-capability (SALE_PRIVATE (pact-id)))
+    (with-read tokens id
+      { 'policy := policy:module{token-policy-v1_DRAFT1}
+      , 'supply := supply
+      , 'precision := precision
+      , 'manifest := manifest
+      }
+      (policy::enforce-sale
+        { 'id: id
+        , 'supply: supply
+        , 'precision: precision
+        , 'manifest: manifest }
+        seller buyer amount sale-id))
+    (debit id (sale-account) amount)
+    (credit id buyer buyer-guard amount)
+    (emit-event (TRANSFER id (sale-account) buyer amount))
+  )
+
+  (defun sale-active (timeout:integer)
+    @doc "Sale is active until TIMEOUT block height."
+    (< (at 'block-height (chain-data)) timeout)
+  )
+
+  (defun sale-account:string ()
+    (format "sale-{}" [(pact-id)])
   )
 
   (defun get-ledger-keys ()

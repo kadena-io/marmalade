@@ -1,7 +1,7 @@
 (namespace 'util)
 
 (module fungible-util GOVERNANCE
-  (implements kip.account-protocols-v1)
+  (implements kip.account-protocols-v1_DRAFT1)
 
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'util-ns-admin)))

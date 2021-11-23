@@ -1,5 +1,5 @@
 (namespace 'kip)
-(interface account-protocols-v1
+(interface account-protocols-v1_DRAFT1
 
   " Define a standard for support of Kadena Account Protocols, \
   \ which reserve account names starting with 'X:'' where X is a \

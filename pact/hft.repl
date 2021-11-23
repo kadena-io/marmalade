@@ -366,7 +366,6 @@
      (hft.hft.OFFER "project-0" "bob" 0.1 10)
      ]}
   ,{'key:'sale,'caps: [
-    (hft.hft.OFFER "project-0" "bob" 0.1 110)
     (hft.hft.OFFER "project-0" "bob" 0.1 10)
     (hft.hft.BUY "project-0" "bob" "buyer" 0.1 110 (hash "sale-tx1"))
     ]}
@@ -381,6 +380,29 @@
   "invalid timeout"
   (sale 'project-0 'bob 0.1 10))
 
+(expect-failure "Offer fails, sale guard not signed"
+  "[sale]"
+  (sale 'project-0 'bob 0.1 110))
+
+(env-sigs
+  [{'key:'sale,'caps: [
+    (hft.hft.OFFER "project-0" "bob" 0.1 110)
+    ]}
+  ])
+
+(expect-failure "Offer fails, seller guard not signed"
+  "Keyset failure (keys-all): [bob]"
+  (sale 'project-0 'bob 0.1 110))
+
+(env-sigs
+  [{'key:'bob,'caps: [
+    (hft.hft.OFFER "project-0" "bob" 0.1 110)
+    ]}
+  ,{'key:'sale,'caps: [
+     (hft.hft.OFFER "project-0" "bob" 0.1 110)
+   ]}
+  ])
+
 (expect "Offer succeeds"
   true
   (sale 'project-0 'bob 0.1 110))
@@ -394,6 +416,20 @@
    {"name": "hft.hft.SALE","params": ["project-0" "bob" 0.1 110 (hash "sale-tx1")]}
    {"name": "hft.hft.TRANSFER","params": ["project-0" "bob" (sale-account) 0.1]}]
   (map (remove 'module-hash) (env-events true)))
+
+(env-sigs
+  [{'key:'dummy,'caps: [
+     (hft.hft.BUY "project-0" "bob" "buyer" 0.1 110 (pact-id))
+   ]}])
+
+(expect-failure "Buy fails, sale guard not signed"
+ "Keyset failure (keys-all): [sale]"
+ (continue-pact 1))
+
+(env-sigs
+ [{'key:'sale,'caps: [
+    (hft.hft.BUY "project-0" "bob" "buyer" 0.1 110 (pact-id))
+  ]}])
 
 (expect "Buy succeeds"
   true
@@ -471,11 +507,11 @@
 (env-data {
    'upgrade: false
   ,'ns: "hft"
-  ,'mint-guard: {"keys": ["mint"], "pred": "="}
-  ,'bob-guard: {"keys": ["bob"], "pred": "="}
+  ,'mint-guard: {"keys": ["mint"], "pred": "keys-all"}
+  ,'bob-guard: {"keys": ["bob"], "pred": "keys-all"}
   })
 (env-sigs
-  [{'key:'mint
+  [{'key:'dummy
    ,'caps:
     [(hft.hft.MINT "project-2" "bob" 1.0)
      ]}])
@@ -492,6 +528,16 @@
   "Write succeeded"
   (create-token "project-2" 1
     (create-manifest (uri "text" "project-2-uri") []) hft.fixed-quote-policy))
+
+(expect-failure "bob mints project-2"
+  "Failed: Keyset failure (keys-all): [mint]"
+  (mint 'project-2 "bob" (read-keyset 'bob-guard) 1.0))
+
+(env-sigs
+  [{'key:'mint
+   ,'caps:
+    [(hft.hft.MINT "project-2" "bob" 1.0)
+     ]}])
 
 (expect "bob mints project-2"
   "Write succeeded"
@@ -515,13 +561,8 @@
 (env-sigs
   [{'key:'bob
    ,'caps:
-    [(hft.hft.OFFER "project-2" "bob" 0.2 120)
-     (hft.hft.BUY "project-2" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-sale-tx2"))
-     ]}
-   {'key: 'buyer
-   ,'caps: [
-     (coin.TRANSFER "coin-buyer" "alice" 1.0)
-   ]}])
+    [(hft.hft.OFFER "project-2" "bob" 0.2 120)]}
+ ])
 
 (env-data
   {
@@ -563,9 +604,32 @@
     {"name": "hft.hft.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}]
   (map (remove 'module-hash) (env-events true)))
 
+
 (expect-failure "Withdraw fails before timeout"
   "still active"
   (continue-pact 0 true))
+
+(env-sigs [
+  {'key: 'bob
+   ,'caps: [(hft.hft.BUY "project-2" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-sale-tx2"))]
+  }
+,{'key: 'dummy
+ ,'caps: [
+   (coin.TRANSFER "coin-buyer" "alice" 0.2)
+ ]}])
+
+(expect-failure "buy fails, buyer doesn't sign coin.TRANSFER"
+  "[buyer]"
+  (continue-pact 1))
+
+(env-sigs [
+  {'key: 'bob
+   ,'caps: [(hft.hft.BUY "project-2" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-sale-tx2"))]
+  }
+ ,{'key: 'buyer
+ ,'caps: [
+   (coin.TRANSFER "coin-buyer" "alice" 0.2)
+ ]}])
 
 (expect "buy suceeds"
   true

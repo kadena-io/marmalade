@@ -129,4 +129,12 @@
       amount:decimal )
     (enforce false "Transfer prohibited")
   )
+
+  ;; dummy impl to address #928
+  (implements gas-payer-v1)
+  (defcap GAS_PAYER:bool
+    ( user:string limit:integer price:decimal )
+    (enforce false "Dummy implementation"))
+  (defun create-gas-payer-guard:guard ()
+    (enforce false "Dummy implementation"))  
 )

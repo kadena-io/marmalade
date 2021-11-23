@@ -1,0 +1,25 @@
+codeFile: ../../ns-kip.pact
+signers:
+  - public: dfb16b13e4032a6878fd98506b22cb0d6e5932c541e656b7ee5d69d72e6eb76e
+data:
+  ns: "kip"
+  kip-ns-user:
+    keys:
+      - dfb16b13e4032a6878fd98506b22cb0d6e5932c541e656b7ee5d69d72e6eb76e
+      - 8c59a322800b3650f9fc5b6742aa845bc1c35c2625dabfe5a9e9a4cada32c543
+      - 5d3dbd0c7e9902de1a868b3410462b034760264c910091f3e0d117397ab394e6
+    pred: keys-any
+  kip-ns-admin:
+    keys:
+      - dfb16b13e4032a6878fd98506b22cb0d6e5932c541e656b7ee5d69d72e6eb76e
+      - 8c59a322800b3650f9fc5b6742aa845bc1c35c2625dabfe5a9e9a4cada32c543
+      - 5d3dbd0c7e9902de1a868b3410462b034760264c910091f3e0d117397ab394e6
+    pred: keys-any
+networkId: testnet04
+nonce: install namespace kip
+publicMeta:
+  chainId: "0"
+  sender: "dfb16b13e4032a6878fd98506b22cb0d6e5932c541e656b7ee5d69d72e6eb76e"
+  gasLimit: 5000
+  gasPrice: 0.0000001
+  ttl: 600

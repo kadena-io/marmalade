@@ -1,8 +1,7 @@
-(define-keyset 'util-ns-admin)
-(namespace (read-msg 'ns))
+(namespace 'util)
 
 (module fungible-util GOVERNANCE
-  (implements account-protocols-v1)
+  (implements kip.account-protocols-v1)
 
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'util-ns-admin)))
@@ -53,11 +52,11 @@
     (let ((r (check-reserved account)))
       (if (= "" r) true
         (if (= "k" r)
-          (enforce
-            (= (format "{}" [guard])
-               (format "KeySet {keys: [{}],pred: keys-all}"
-                       [(drop 2 account)]))
-            "Single-key account protocol violation")
+        (enforce
+          (= (format "{}" [guard])
+             (format "KeySet {keys: [{}],pred: keys-all}"
+                     [(drop 2 account)]))
+          "Single-key account protocol violation")
           (enforce false
-            (format "Unrecognized reserved protocol: {}" [r]))))))
+              (format "Unrecognized reserved protocol: {}" [r]))))))
 )

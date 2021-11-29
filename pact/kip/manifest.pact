@@ -1,4 +1,4 @@
-(namespace (read-msg 'ns))
+(namespace 'kip)
 
 (module token-manifest GOVERNANCE
 

@@ -137,7 +137,7 @@ const CreateToken = (props) => {
       try {
         sendHftCommand(setTx,setTxStatus,setTxRes,refresh
           ,signingKey, networkId, Number.parseFloat(gasPrice)
-          ,`(${hftAPI.contractAddress}.create-token "${token}" ${precision} (read-msg 'manifest) "${policy}")`
+          ,`(${hftAPI.contractAddress}.create-token "${token}" ${precision} (read-msg 'manifest) ${policy})`
           ,{manifest: JSON.parse(manifest)}
           );
       } catch (e) {

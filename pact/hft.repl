@@ -314,8 +314,17 @@
   (get-manifest 'project-0))
 
 (expect "Returns tokens"
-  ['project-0]
+   [{"id": "project-0"
+    ,"manifest": {"data": []
+    ,"hash": "E0pcFalaFSk5AJwR7QwpLbhzymaC8DCOSrCeBiDkpnY"
+    ,"uri": {"data": "project-0-uri","scheme": "text"}}
+    ,"policy": hft.guard-token-policy,"precision": 12
+    ,"supply": 5.0}]
   (get-tokens))
+
+(expect "Returns token keys"
+   ["project-0"]
+  (get-token-keys))
 
 (expect "Returns project-0 token"
   { 'id: "project-0"

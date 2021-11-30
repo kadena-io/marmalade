@@ -43,7 +43,7 @@ export const RenderHftLedger = ({hftLedger}) => {
         return <ReactJson 
           src={v.contents}
           name={false}
-          collapsed={2}
+          collapsed={1}
           enableClipboard={false}
           displayDataTypes={false}
           displayObjectSize={false}
@@ -68,7 +68,7 @@ export const RenderHftTokens = ({hftTokens}) => {
         return <ReactJson 
           src={v.contents}
           name={false}
-          collapsed={2}
+          collapsed={1}
           enableClipboard={false}
           displayDataTypes={false}
           displayObjectSize={false}

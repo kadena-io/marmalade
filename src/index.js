@@ -18,7 +18,7 @@ import {
 import App from './App';
 import * as serviceWorker from './serviceWorker';
 
-import { hftAPI, manifestAPI, globalConfig } from './kadena-config.js';
+import { hftAPI, manifestAPI, gtpAPI, fqpAPI, globalConfig } from './kadena-config.js';
 import { PactWallet } from './PactWallet.js';
 
 const Main = () => {
@@ -47,7 +47,7 @@ const Main = () => {
     <ThemeProvider theme={theme}>
       <NoSsr>
         <CssBaseline/>
-        <PactWallet contractConfigs={{hftAPI, manifestAPI}} globalConfig={globalConfig}>
+        <PactWallet contractConfigs={{hftAPI, manifestAPI, gtpAPI, fqpAPI}} globalConfig={globalConfig}>
           <Router basename={process.env.PUBLIC_URL}>
           <QueryParamProvider ReactRouterRoute={Route}>
             <App />

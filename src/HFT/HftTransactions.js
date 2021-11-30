@@ -126,10 +126,10 @@ const CreateToken = (props) => {
     tx, setTx,
     txRes, setTxRes} = props.pactTxStatus;
   const {current: {signingKey, networkId, gasPrice}} = usePactWallet();
-  const [token,setToken] = useState("");
+  const [id,setId] = useState("");
   const [manifest,setManifest] = useState("");
   const [precision,setPrecision] = useState(12);
-  const [policy,setPolicy] = useState("");
+  const [policy,setPolicy] = useState("hft.guard-token-policy");
   const classes = useStyles();
 
   const handleSubmit = (evt) => {
@@ -137,11 +137,11 @@ const CreateToken = (props) => {
       try {
         sendHftCommand(setTx,setTxStatus,setTxRes,refresh
           ,signingKey, networkId, Number.parseFloat(gasPrice)
-          ,`(${hftAPI.contractAddress}.create-token "${token}" ${precision} (read-msg 'manifest) ${policy})`
+          ,`(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${policy})`
           ,{manifest: JSON.parse(manifest)}
           );
       } catch (e) {
-        console.log("create-token Submit Error",typeof e, e, token, JSON.parse(manifest), precision, policy);
+        console.log("create-token Submit Error",typeof e, e, id, JSON.parse(manifest), precision, policy);
         setTxRes(e);
         setTxStatus("validation-error");
       }
@@ -151,8 +151,8 @@ const CreateToken = (props) => {
       type:'textFieldSingle',
       label:'Token Name',
       className:classes.formControl,
-      value:token,
-      onChange:setToken
+      value:id,
+      onChange:setId
     },
     {
       type:'textFieldSingle',
@@ -170,7 +170,7 @@ const CreateToken = (props) => {
       onChange:setManifest
     },
     {
-      type:'textFieldMulti',
+      type:'textFieldSingle',
       label:'Policy',
       className:classes.formControl,
       placeholder:"Policy Module",

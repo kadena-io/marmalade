@@ -25,12 +25,12 @@ const networkId = "testnet04";
 const node = "api.testnet.chainweb.com";
 
 //unique contract name
-const hftNamespace = "user";
+const hftNamespace = "hft";
 const hftContractName = "hft";
 const hftConstants = {};
 
 //unique contract name
-const manifestNamespace = "user";
+const manifestNamespace = "kip";
 const manifestContractName = "token-manifest";
 const manifestConstants = {};
 

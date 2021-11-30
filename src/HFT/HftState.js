@@ -1,5 +1,7 @@
 //basic React api imports
 import React from "react";
+import _ from 'lodash';
+import ReactJson from 'react-json-view'
 //config file for blockchain calls
 import Pact from "pact-lang-api";
 import { hftAPI } from "../kadena-config.js";
@@ -29,23 +31,50 @@ export const getHftState = async (cmd) => {
 };
 
 export const RenderHftLedger = ({hftLedger}) => {
-  console.debug("renderHFTLedger", hftLedger);
+  const pretty = _.map(hftLedger,v=> {return {id: v.id, contents: v};});
+  console.debug("renderHFTLedger", {hftLedger,pretty});
   return (
    <PactJsonListAsTable
-    json={hftLedger}
-    header={["Account", "Token", "Balance", "Guard"]}
-    keyOrder={["account", "token","balance","guard"]}
+    json={pretty}
+    header={["ID", "Contents"]}
+    keyOrder={["id","contents"]}
+    kvFunc={
+      {'contents': v => {
+        return <ReactJson 
+          src={v.contents}
+          name={false}
+          collapsed={2}
+          enableClipboard={false}
+          displayDataTypes={false}
+          displayObjectSize={false}
+        />}
+      }
+    }
     keyFormatter={dashStyleNames2Text}
     />
   )
 };
 
 export const RenderHftTokens = ({hftTokens}) => {
+  const pretty = _.map(hftTokens,v=> {return {id: v.id, contents: v};});
+  console.debug("renderHFTLedger", {hftTokens,pretty});
   return (
    <PactJsonListAsTable
-    json={hftTokens}
-    header={["Token", "Supply", "Manifest", "Precision", "Policy"]}
-    keyOrder={["token","Supply","manifest","minimum-precision","policy"]}
+    json={pretty}
+    header={["ID", "Contents"]}
+    keyOrder={["id","contents"]}
+    kvFunc={
+      {'contents': v => {
+        return <ReactJson 
+          src={v.contents}
+          name={false}
+          collapsed={2}
+          enableClipboard={false}
+          displayDataTypes={false}
+          displayObjectSize={false}
+        />}
+      }
+    }
     keyFormatter={dashStyleNames2Text}
     />
   )

@@ -379,7 +379,7 @@
 
   (defun get-tokens:[object{token-schema}] ()
     "Get all tokens"
-     (map (read tokens) (get-token-keys)))
+     (map (read tokens) (keys tokens)))
 
   (defun get-token:object{token-schema} (id:string)
     "Read token"

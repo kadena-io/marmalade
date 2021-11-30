@@ -2,13 +2,13 @@ codeFile: ../../hft.pact
 signers:
   - public: dfb16b13e4032a6878fd98506b22cb0d6e5932c541e656b7ee5d69d72e6eb76e
 data:
-  ns: "user"
-  upgrade: true
+  ns: "hft"
+  upgrade: false
 networkId: testnet04
-nonce: upgrade-hft
+nonce: install-hft.hft
 publicMeta:
   chainId: "0"
-  sender: "heekyun"
+  sender: "dfb16b13e4032a6878fd98506b22cb0d6e5932c541e656b7ee5d69d72e6eb76e"
   gasLimit: 5000
-  gasPrice: 0.000000000001
+  gasPrice: 0.0000001
   ttl: 600

@@ -373,9 +373,13 @@
   (defun get-manifest:object{manifest} (id:string)
     (at 'manifest (read tokens id)))
 
-  (defun get-tokens:[string] ()
+  (defun get-token-keys:[string] ()
     "Get all token identifiers"
     (keys tokens))
+
+  (defun get-tokens:[object{token-schema}] ()
+    "Get all tokens"
+     (map (read tokens) (get-token-keys)))
 
   (defun get-token:object{token-schema} (id:string)
     "Read token"

@@ -301,11 +301,10 @@ const CreateFixedQuotePolicyToken = (props) => {
   );
 };
 
-const Mint = (props) => {
-  const {hftTokens, refresh} = props;
-  const {txStatus, setTxStatus,
+const Mint = ({hftTokens, refresh, 
+  pactTxStatus: {txStatus, setTxStatus,
     tx, setTx,
-    txRes, setTxRes} = props.pactTxStatus;
+    txRes, setTxRes}}) => {
   const {current: {signingKey, networkId, gasPrice}} = usePactWallet();
   const [token,setToken] = useState("");
   const [account,setAccount] = useState("");
@@ -322,8 +321,9 @@ const Mint = (props) => {
       try {
         sendHftCommand(setTx,setTxStatus,setTxRes,refresh
           ,signingKey, networkId, Number.parseFloat(gasPrice)
-          ,`(${hftAPI.contractAddress}.mint "${token}" "${account}" (read-keyset 'ks) ${amount})`
-          ,{ks: JSON.parse(newKs)}
+          ,`(${hftAPI.contractAddress}.mint "${token}" "${account}" (read-keyset 'ks) (read-decimal 'amount))`
+          ,{ks: JSON.parse(newKs),
+            amount}
           , [Pact.lang.mkCap("MINT Cap"
               , "Authenticates that you can mint"
               , `${hftAPI.contractAddress}.MINT`
@@ -342,7 +342,7 @@ const Mint = (props) => {
       label:'Select Token',
       className:classes.formControl,
       onChange:setToken,
-      options:hftTokens.map((g)=>g['token']),
+      options:hftTokens.map((g)=>g['id']),
     },
     {
       type:'textFieldSingle',
@@ -418,7 +418,7 @@ const TransferCreate = (props) => {
       label:'Select Token',
       className:classes.formControl,
       onChange:setToken,
-      options:hftTokens.map((g)=>g['token']),
+      options:hftTokens.map((g)=>g['id']),
     },
     {
       type:'select',
@@ -499,7 +499,7 @@ const Transfer = (props) => {
       label:'Select Token',
       className:classes.formControl,
       onChange:setToken,
-      options:hftTokens.map((g)=>g['token']),
+      options:hftTokens.map((g)=>g['id']),
     },
     {
       type:'select',
@@ -569,7 +569,7 @@ const CreateAccount = (props) => {
       label:'Select Token',
       className:classes.formControl,
       onChange:setToken,
-      options:hftTokens.map((g)=>g['token']),
+      options:hftTokens.map((g)=>g['id']),
     },
     {
       type:'textFieldSingle',

@@ -9,6 +9,7 @@ import { hftAPI } from "../kadena-config.js";
 import { HftConfig } from "./HftConfig.js"
 import { RenderHftLedger, RenderHftTokens } from "./HftState.js";
 import { LedgerForms, TokenForms } from "./HftTransactions.js";
+import { RenderUri, RenderManifest, RenderDatum, ManifestForms } from "./Manifest.js";
 
 export const hftDrawerEntries = {
   primary:`${hftAPI.namespace}.${hftAPI.contractName}`,
@@ -24,6 +25,9 @@ export const hftDrawerEntries = {
       },{
         primary:"HFT Ledger",
         to:{app:"hft", ui: "ledger"}
+      },{
+        primary:"Manifest",
+        to:{app:"hft", ui: "manifest"}
       }]
     }
   ]
@@ -34,6 +38,8 @@ export const HftApp = ({
   setAppRoute,
   hftLedger,
   hftTokens,
+  mfCache,
+  setMfCache,
   pactTxStatus,
   refresh}) => {
 
@@ -51,7 +57,7 @@ export const HftApp = ({
       <CardHeader title="Tokens State"/>
       <CardContent>
         <RenderHftTokens hftTokens={hftTokens}/>
-        <TokenForms pactTxStatus={pactTxStatus} tabIdx={"hftTabT"} hftTokens={hftTokens} refresh={refresh}/>
+        <TokenForms pactTxStatus={pactTxStatus} tabIdx={"hftTabT"} hftTokens={hftTokens} mfCache={mfCache} refresh={refresh}/>
       </CardContent>
     </Card>
   : appRoute.ui === "ledger" ?
@@ -59,9 +65,35 @@ export const HftApp = ({
       <CardHeader title="Ledger State"/>
       <CardContent>
         <RenderHftLedger hftLedger={hftLedger}/>
-        <LedgerForms pactTxStatus={pactTxStatus} tabIdx={"hftTabL"} hftTokens={hftTokens} hftLedger={hftLedger} refresh={refresh}/>
+        <LedgerForms pactTxStatus={pactTxStatus} tabIdx={"hftTabL"} hftTokens={hftTokens} hftLedger={hftLedger} mfCache={mfCache} refresh={refresh}/>
       </CardContent>
     </Card>
+  : appRoute.ui === "manifest" ?
+    <>
+    <Card>
+      <CardHeader title="URI Local Cache"/>
+      <CardContent>
+        <RenderUri mfCache={mfCache} />
+      </CardContent>
+    </Card>
+    <Card>
+      <CardHeader title="Datum Local Cache"/>
+      <CardContent>
+        <RenderDatum mfCache={mfCache} />
+      </CardContent>
+    </Card>
+    <Card>
+      <CardHeader title="Manifest Local Cache"/>
+      <CardContent>
+        <RenderManifest mfCache={mfCache} />
+      </CardContent>
+    </Card>
+    <Card>
+      <CardContent>
+        <ManifestForms mfCache={mfCache} setMfCache={setMfCache} tabIdx={"mfCache"}/>
+      </CardContent>
+    </Card>
+    </>
   : <React.Fragment>
       {setAppRoute({app:"wallet", ui:"config"})}
   </React.Fragment>

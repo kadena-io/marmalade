@@ -44,16 +44,17 @@ const App = () => {
   };
 
   //HFT Top Level States
-  const [hftLedger,setHftLedger] = createPersistedState("hftLedger3")({});
-  const [hftTokens,setHftTokens] = createPersistedState("hftTokens3")({});
+  const [hftLedger,setHftLedger] = createPersistedState("hftLedger6")({});
+  const [hftTokens,setHftTokens] = createPersistedState("hftTokens6")({});
+  const [mfCache,setMfCache] = createPersistedState("mfCache4")([]);
 
   const getHftLedger = async () => {
-    const res = await getHftState("view-ledger");
+    const res = await getHftState("get-ledger");
     setHftLedger(res);
   }
 
   const getHftTokens = async () => {
-    const res = await getHftState("view-tokens");
+    const res = await getHftState("get-tokens");
     setHftTokens(res);
   }
 
@@ -90,6 +91,8 @@ const App = () => {
       setAppRoute={setAppRoute}
       hftLedger={hftLedger}
       hftTokens={hftTokens}
+      mfCache={mfCache}
+      setMfCache={setMfCache}
       pactTxStatus={pactTxStatus}
       refresh={refresh}
       />

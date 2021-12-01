@@ -1,0 +1,23 @@
+{
+  "files": {
+    "main.js": "/hft/static/js/main.fb3a128e.chunk.js",
+    "main.js.map": "/hft/static/js/main.fb3a128e.chunk.js.map",
+    "runtime-main.js": "/hft/static/js/runtime-main.eb3163de.js",
+    "runtime-main.js.map": "/hft/static/js/runtime-main.eb3163de.js.map",
+    "static/css/2.199d4a19.chunk.css": "/hft/static/css/2.199d4a19.chunk.css",
+    "static/js/2.b5bf569b.chunk.js": "/hft/static/js/2.b5bf569b.chunk.js",
+    "static/js/2.b5bf569b.chunk.js.map": "/hft/static/js/2.b5bf569b.chunk.js.map",
+    "index.html": "/hft/index.html",
+    "precache-manifest.193a473e2a2dc3568111ff8e7434bfb7.js": "/hft/precache-manifest.193a473e2a2dc3568111ff8e7434bfb7.js",
+    "service-worker.js": "/hft/service-worker.js",
+    "static/css/2.199d4a19.chunk.css.map": "/hft/static/css/2.199d4a19.chunk.css.map",
+    "static/js/2.b5bf569b.chunk.js.LICENSE.txt": "/hft/static/js/2.b5bf569b.chunk.js.LICENSE.txt",
+    "static/media/kadena_r_rev_3_whi_lor.png": "/hft/static/media/kadena_r_rev_3_whi_lor.184cc2aa.png"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.eb3163de.js",
+    "static/css/2.199d4a19.chunk.css",
+    "static/js/2.b5bf569b.chunk.js",
+    "static/js/main.fb3a128e.chunk.js"
+  ]
+}

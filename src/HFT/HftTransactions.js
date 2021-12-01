@@ -13,7 +13,7 @@ import {
 //pact-lang-api for blockchain calls
 import Pact from "pact-lang-api";
 //config file for blockchain calls
-import { hftAPI } from "../kadena-config.js";
+import { hftAPI, gtpAPI, fqpAPI } from "../kadena-config.js";
 import {
   PactJsonListAsTable,
   MakeForm,
@@ -120,7 +120,7 @@ export const sendHftCommand = async (
     }
 };
 
-const CreateToken = (props) => {
+const CreateGuardPolicyToken = (props) => {
   const {refresh, mfCache} = props;
   const {txStatus, setTxStatus,
     tx, setTx,
@@ -129,7 +129,10 @@ const CreateToken = (props) => {
   const [id,setId] = useState("");
   const [manifest,setManifest] = useState("");
   const [precision,setPrecision] = useState(12);
-  const [policy,setPolicy] = useState("hft.guard-token-policy");
+  const [mintGrd,setMintGrd] = useState("");
+  const [burnGrd,setBurnGrd] = useState("");
+  const [saleGrd,setSaleGrd] = useState("");
+  const [transferGrd,setTransferGrd] = useState("");
   const classes = useStyles();
 
   const handleSubmit = (evt) => {
@@ -137,11 +140,17 @@ const CreateToken = (props) => {
       try {
         sendHftCommand(setTx,setTxStatus,setTxRes,refresh
           ,signingKey, networkId, Number.parseFloat(gasPrice)
-          ,`(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${policy})`
-          ,{manifest: JSON.parse(manifest)}
+          ,`(${gtpAPI.contractAddress}.init-guards "${id}" (read-keyset 'mint) (read-keyset 'burn) (read-keyset 'sale) (read-keyset 'transfer))
+          (${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${gtpAPI.contractAddress})`
+          ,{manifest: JSON.parse(manifest),
+            mint: JSON.parse(mintGrd),
+            burn: JSON.parse(burnGrd),
+            sale: JSON.parse(saleGrd),
+            transfer: JSON.parse(transferGrd),
+          }
           );
       } catch (e) {
-        console.log("create-token Submit Error",typeof e, e, id, JSON.parse(manifest), precision, policy);
+        console.log("create-token Submit Error",typeof e, e, {id, manifest: JSON.parse(manifest), precision,mintGrd,saleGrd,burnGrd,transferGrd});
         setTxRes(e);
         setTxStatus("validation-error");
       }
@@ -168,14 +177,118 @@ const CreateToken = (props) => {
       options:_.map(_.filter(mfCache,{type:'manifest'}),v=> JSON.stringify(v.value)),
       value:manifest,
       onChange:setManifest
-    },
+    },{
+      type:'textFieldMulti',
+      label:'Mint Keyset',
+      className:classes.formControl,
+      placeholder:"",
+      value:mintGrd,
+      onChange:setMintGrd,
+    },{
+      type:'textFieldMulti',
+      label:'Burn Keyset',
+      className:classes.formControl,
+      placeholder:"",
+      value:burnGrd,
+      onChange:setBurnGrd,
+    },{
+      type:'textFieldMulti',
+      label:'Sale Keyset',
+      className:classes.formControl,
+      placeholder:"",
+      value:saleGrd,
+      onChange:setSaleGrd,
+    },{
+      type:'textFieldMulti',
+      label:'Transfer Keyset',
+      className:classes.formControl,
+      placeholder:"",
+      value:transferGrd,
+      onChange:setTransferGrd,
+    }
+  ];
+
+  return (
+    <MakeForm
+      inputFields={inputFields}
+      onSubmit={handleSubmit}
+      tx={tx} txStatus={txStatus} txRes={txRes}
+      setTxStatus={setTxStatus}/>
+  );
+};
+
+const CreateFixedQuotePolicyToken = (props) => {
+  const {refresh, mfCache} = props;
+  const {txStatus, setTxStatus,
+    tx, setTx,
+    txRes, setTxRes} = props.pactTxStatus;
+  const {current: {signingKey, networkId, gasPrice}} = usePactWallet();
+  const [id,setId] = useState("");
+  const [manifest,setManifest] = useState("");
+  const [precision,setPrecision] = useState(12);
+  const [mintGrd,setMintGrd] = useState("");
+  const [maxSupply,setMaxSupply] = useState("1.0");
+  const [minAmount,setMinAmount] = useState("0.0");
+  const classes = useStyles();
+
+  const handleSubmit = (evt) => {
+      evt.preventDefault();
+      try {
+        sendHftCommand(setTx,setTxStatus,setTxRes,refresh
+          ,signingKey, networkId, Number.parseFloat(gasPrice)
+          ,`(${fqpAPI.contractAddress}.init-fqp "${id}" (read-keyset 'mint) (read-decimal 'maxSupply) (read-decimal 'minAmount))
+          (${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${fqpAPI.contractAddress})`
+          ,{manifest: JSON.parse(manifest),
+            mint: JSON.parse(mintGrd),
+            maxSupply: Number.parseFloat(maxSupply),
+            minAmount: Number.parseFloat(minAmount),
+          }
+          );
+      } catch (e) {
+        console.log("create-token Submit Error",typeof e, e, {id, manifest: JSON.parse(manifest), precision,mintGrd,maxSupply,minAmount});
+        setTxRes(e);
+        setTxStatus("validation-error");
+      }
+      };
+  const inputFields = [
     {
       type:'textFieldSingle',
-      label:'Policy',
+      label:'Token Name',
       className:classes.formControl,
-      placeholder:"Policy Module",
-      value:policy,
-      onChange:setPolicy,
+      value:id,
+      onChange:setId
+    },{
+      type:'textFieldSingle',
+      label:'Precision',
+      className:classes.formControl,
+      value:precision,
+      onChange:setPrecision
+    },{
+      type:'select',
+      label:'Manifest',
+      className:classes.formControl,
+      options:_.map(_.filter(mfCache,{type:'manifest'}),v=> JSON.stringify(v.value)),
+      value:manifest,
+      onChange:setManifest
+    },{
+      type:'textFieldMulti',
+      label:'Mint Keyset',
+      className:classes.formControl,
+      placeholder:"",
+      value:mintGrd,
+      onChange:setMintGrd,
+    },{
+      type:'textFieldSingle',
+      label:'Max Supply',
+      className:classes.formControl,
+      value:maxSupply,
+      onChange:setMaxSupply
+    },{
+      type:'textFieldSingle',
+      label:'Min Amount',
+      className:classes.formControl,
+      value:minAmount,
+      onChange:setMinAmount
     }
   ];
 
@@ -550,9 +663,16 @@ export const TokenForms = ({
       tabIdx={tabIdx}
       tabEntries={[
           {
-            label:"Create HFT Token",
+            label:"Create Guard Policy HFT",
             component:
-              <CreateToken
+              <CreateGuardPolicyToken
+                pactTxStatus={pactTxStatus}
+                mfCache={mfCache}
+                refresh={()=>getHftTokens()}/>
+          },{
+            label:"Create Fixed Quote Policy HFT",
+            component:
+              <CreateFixedQuotePolicyToken
                 pactTxStatus={pactTxStatus}
                 mfCache={mfCache}
                 refresh={()=>getHftTokens()}/>

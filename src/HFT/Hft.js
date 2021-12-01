@@ -9,7 +9,6 @@ import { hftAPI } from "../kadena-config.js";
 import { HftConfig } from "./HftConfig.js"
 import { RenderHftLedger, RenderHftTokens } from "./HftState.js";
 import { LedgerForms, TokenForms } from "./HftTransactions.js";
-import { GtpForms } from "./GuardPolicy.js";
 import { RenderUri, RenderManifest, RenderDatum, ManifestForms } from "./Manifest.js";
 
 export const hftDrawerEntries = {
@@ -29,9 +28,6 @@ export const hftDrawerEntries = {
       },{
         primary:"Manifest",
         to:{app:"hft", ui: "manifest"}
-      },{
-        primary:"Guard Token Policy",
-        to:{app:"hft", ui: "gtp"}
       }]
     }
   ]
@@ -98,13 +94,6 @@ export const HftApp = ({
       </CardContent>
     </Card>
     </>
-  : appRoute.ui === "gtp" ?
-    <Card>
-      <CardHeader title="GuardT Token Policy"/>
-      <CardContent>
-        <GtpForms pactTxStatus={pactTxStatus} tabIdx={"hftTabG"} hftTokens={hftTokens} hftLedger={hftLedger} mfCache={mfCache} refresh={refresh}/>
-      </CardContent>
-    </Card>
   : <React.Fragment>
       {setAppRoute({app:"wallet", ui:"config"})}
   </React.Fragment>

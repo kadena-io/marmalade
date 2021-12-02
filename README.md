@@ -11,6 +11,8 @@ This repo houses smart contracts and frontend code for Marmalade, Kadena's platf
 * **Pluggable Token Policies.** This is how creators "mint marketplaces" by specifying and tightly controlling all aspects of a token marketplace through enforceable token policies for minting, burning, transfer and sale.
 * **Content-addressed identifiers**. This is a WIP for better NFT identifiers, leveraging Haber Content Manifests. WIP includes integrating this concept with DIDs.
 
+See also KIP-0013 (https://github.com/kadena-io/KIPs/pull/20)
+
 ## Testnet Roadmap
 
  [ ] Creation: Manifests and minimal token specification

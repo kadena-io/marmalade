@@ -151,7 +151,7 @@
     )
     (enforce-valid-account account)
     (enforce-reserved account guard)
-    (insert ledger account
+    (insert ledger (key id account)
       { "balance" : 0.0
       , "guard"   : guard
       , "id" : id

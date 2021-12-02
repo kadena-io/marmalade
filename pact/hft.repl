@@ -259,6 +259,15 @@
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
     (read-keyset 'k)))
 
+(expect
+  "Account is inserted to ledger with the key format id:account"
+  {"account": "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
+  ,"balance": 0.0
+  ,"guard": (read-keyset 'k)
+  ,"id": "project-0"}
+  (hft.hft.get-ledger-entry
+    (hft.hft.key 'project-0 "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4")))
+
 (rollback-tx)
 
 (begin-tx)
@@ -283,6 +292,16 @@
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
     (read-keyset 'k)
     0.02))
+
+(expect
+  "Account is inserted to ledger with the key format id:account"
+  {"account": "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
+  ,"balance": 0.02
+  ,"guard": (read-keyset 'k)
+  ,"id": "project-0"}
+  (hft.hft.get-ledger-entry
+    (hft.hft.key 'project-0 "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4")))
+
 
 (expect "TRANSFER events"
   [{

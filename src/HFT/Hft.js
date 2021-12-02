@@ -12,7 +12,7 @@ import { LedgerForms, TokenForms } from "./HftTransactions.js";
 import { RenderUri, RenderManifest, RenderDatum, ManifestForms } from "./Manifest.js";
 
 export const hftDrawerEntries = {
-  primary:`${hftAPI.namespace}.${hftAPI.contractName}`,
+  primary:"Marmalade",
   subList:
     [{
       primary:"Config & State",

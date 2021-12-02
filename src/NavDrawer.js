@@ -195,6 +195,9 @@ export const NavDrawer = (props) => {
           <div className={classes.logoDiv}>
             <img src={logo} alt="logo" className={classes.logo}/>
           </div>
+          <div className={classes.logoDiv}>
+            <h1>Marmalade BETA</h1>
+          </div>
           {current.walletName && (
             <div>
               <Button

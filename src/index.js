@@ -28,7 +28,7 @@ const Main = () => {
           palette: {
             primary: {
               light: '#cb4584',
-              main: '#960057',
+              main: '#F78D1E',
               dark: '#cb4584',
               contrastText: '#fff',
             },

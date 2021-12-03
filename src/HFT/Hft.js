@@ -20,10 +20,10 @@ export const hftDrawerEntries = {
         primary:"Config",
         to:{app:"hft", ui: "config"}
       },{
-        primary:"HFT Tokens",
+        primary:"Tokens",
         to:{app:"hft", ui: "tokens"}
       },{
-        primary:"HFT Ledger",
+        primary:"Ledger",
         to:{app:"hft", ui: "ledger"}
       },{
         primary:"Manifest",
@@ -34,7 +34,7 @@ export const hftDrawerEntries = {
 };
 
 export const HftApp = ({
-  appRoute, 
+  appRoute,
   setAppRoute,
   hftLedger,
   hftTokens,

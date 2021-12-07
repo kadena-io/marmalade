@@ -1,6 +1,6 @@
 (namespace (read-msg 'ns))
 
-(module hft GOVERNANCE
+(module ledger GOVERNANCE
 
   @model
     [
@@ -25,7 +25,7 @@
     manifest:object{manifest}
     precision:integer
     supply:decimal
-    policy:module{token-policy-v1_DRAFT1}
+    policy:module{kip.token-policy-v1_DRAFT1}
   )
 
   (deftable tokens:{token-schema})
@@ -52,15 +52,6 @@
     (enforce (> amount 0.0) "Positive amount")
     (compose-capability (DEBIT id sender))
     (compose-capability (CREDIT id receiver))
-    (with-read tokens id
-      { 'policy := policy:module{token-policy-v1_DRAFT1}
-      , 'supply := supply
-      , 'precision := precision
-      , 'manifest := manifest
-      }
-      (policy::enforce-transfer
-        { 'id: id, 'supply: supply, 'precision: precision, 'manifest: manifest }
-        sender receiver amount))
   )
 
   (defun TRANSFER-mgr:decimal
@@ -102,10 +93,6 @@
 
   (defcap CREDIT (id:string receiver:string) true)
 
-  (defcap CREATE_TOKEN (id:string)
-    @event
-    true
-  )
 
   (defcap UPDATE_SUPPLY ()
     "private cap for update-supply"
@@ -113,35 +100,36 @@
 
   (defcap MINT (id:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
-    (with-read tokens id
-      { 'policy := policy:module{token-policy-v1_DRAFT1}
-      , 'supply := supply
-      , 'precision := precision
-      , 'manifest := manifest
-      }
-      (policy::enforce-mint
-        { 'id: id, 'supply: supply, 'precision: precision, 'manifest: manifest }
-        account amount))
     (compose-capability (CREDIT id account))
     (compose-capability (UPDATE_SUPPLY))
   )
 
   (defcap BURN (id:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
-    (with-read tokens id
-      { 'policy := policy:module{token-policy-v1_DRAFT1}
-      , 'supply := supply
-      , 'precision := precision
-      , 'manifest := manifest
-      }
-      (policy::enforce-burn
-        { 'id: id, 'supply: supply, 'precision: precision, 'manifest: manifest }
-        account amount))
     (compose-capability (DEBIT id account))
     (compose-capability (UPDATE_SUPPLY))
   )
 
+  (defschema policy-info
+    policy:module{kip.token-policy-v1_DRAFT1}
+    token:object{kip.token-policy-v1_DRAFT1.token-info}
+  )
 
+  (defun get-policy-info:object{policy-info} (id:string)
+    (with-read tokens id
+      { 'policy := policy:module{kip.token-policy-v1_DRAFT1}
+      , 'supply := supply
+      , 'precision := precision
+      , 'manifest := manifest
+      }
+      { 'policy: policy
+      , 'token:
+        { 'id: id
+        , 'supply: supply
+        , 'precision: precision
+        , 'manifest: manifest
+        } } )
+  )
 
 
   (defun create-account:string
@@ -170,12 +158,12 @@
     ( id:string
       precision:integer
       manifest:object{manifest}
-      policy:module{token-policy-v1_DRAFT1}
+      policy:module{kip.token-policy-v1_DRAFT1}
     )
+    (enforce-verify-manifest manifest)
     (policy::enforce-init
       { 'id: id, 'supply: 0.0, 'precision: precision, 'manifest: manifest })
-    (enforce-verify-manifest manifest)
-    (emit-event (CREATE_TOKEN id))
+    (emit-event (TOKEN id))
     (insert tokens id {
       "id": id,
       "precision": precision,
@@ -200,6 +188,7 @@
 
   (defun rotate:string (id:string account:string new-guard:guard)
     (with-capability (ROTATE id account)
+      (enforce-transfer-policy id account account 0.0)
       (with-read ledger (key id account)
         { "guard" := old-guard }
 
@@ -216,13 +205,25 @@
     (enforce (!= sender receiver)
       "sender cannot be the receiver of a transfer")
     (enforce-valid-transfer sender receiver (precision id) amount)
-
     (with-capability (TRANSFER id sender receiver amount)
+      (enforce-transfer-policy id sender receiver amount)
       (debit id sender amount)
       (with-read ledger (key id receiver)
         { "guard" := g }
         (credit id receiver g amount))
     )
+  )
+
+  (defun enforce-transfer-policy
+    ( id:string
+      sender:string
+      receiver:string
+      amount:decimal
+    )
+    (bind (get-policy-info id)
+      { 'policy := policy:module{kip.token-policy-v1_DRAFT1}
+      , 'token := token }
+      (policy::enforce-transfer token sender receiver amount))
   )
 
   (defun transfer-create:string
@@ -237,6 +238,7 @@
     (enforce-valid-transfer sender receiver (precision id) amount)
 
     (with-capability (TRANSFER id sender receiver amount)
+      (enforce-transfer-policy id sender receiver amount)
       (debit id sender amount)
       (credit id receiver receiver-guard amount))
   )
@@ -248,6 +250,10 @@
       amount:decimal
     )
     (with-capability (MINT id account amount)
+      (bind (get-policy-info id)
+        { 'policy := policy:module{kip.token-policy-v1_DRAFT1}
+        , 'token := token }
+        (policy::enforce-mint token account amount))
       (credit id account guard amount)
       (update-supply id amount))
   )
@@ -258,6 +264,10 @@
       amount:decimal
     )
     (with-capability (BURN id account amount)
+      (bind (get-policy-info id)
+        { 'policy := policy:module{kip.token-policy-v1_DRAFT1}
+        , 'token := token }
+        (policy::enforce-burn token account amount))
       (debit id account amount)
       (update-supply id (- amount)))
   )
@@ -395,15 +405,6 @@
     @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
     @event
     (compose-capability (OFFER id seller amount timeout))
-    (with-read tokens id
-      { 'policy := policy:module{token-policy-v1_DRAFT1}
-      , 'supply := supply
-      , 'precision := precision
-      , 'manifest := manifest
-      }
-      (policy::init-sale
-        { 'id: id, 'supply: supply, 'precision: precision, 'manifest: manifest }
-        seller amount sale-id))
     (compose-capability (SALE_PRIVATE sale-id))
   )
 
@@ -464,6 +465,10 @@
     )
     @doc "Initiate sale with by SELLER by escrowing AMOUNT of TOKEN until TIMEOUT."
     (require-capability (SALE_PRIVATE (pact-id)))
+    (bind (get-policy-info id)
+      { 'policy := policy:module{kip.token-policy-v1_DRAFT1}
+      , 'token := token }
+      (policy::init-sale token seller amount (pact-id)))
     (debit id seller amount)
     (credit id (sale-account) (create-pact-guard "SALE") amount)
     (emit-event (TRANSFER id seller (sale-account) amount))
@@ -492,18 +497,10 @@
     )
     @doc "Complete sale with transfer."
     (require-capability (SALE_PRIVATE (pact-id)))
-    (with-read tokens id
-      { 'policy := policy:module{token-policy-v1_DRAFT1}
-      , 'supply := supply
-      , 'precision := precision
-      , 'manifest := manifest
-      }
-      (policy::enforce-sale
-        { 'id: id
-        , 'supply: supply
-        , 'precision: precision
-        , 'manifest: manifest }
-        seller buyer amount sale-id))
+    (bind (get-policy-info id)
+      { 'policy := policy:module{kip.token-policy-v1_DRAFT1}
+      , 'token := token }
+      (policy::enforce-sale token seller buyer amount sale-id))
     (debit id (sale-account) amount)
     (credit id buyer buyer-guard amount)
     (emit-event (TRANSFER id (sale-account) buyer amount))

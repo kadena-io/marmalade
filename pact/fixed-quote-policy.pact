@@ -7,7 +7,8 @@
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'hft-admin )))
 
-  (implements token-policy-v1_DRAFT1)
+  (implements kip.token-policy-v1_DRAFT1)
+  (use kip.token-policy-v1_DRAFT1 [token-info])
 
   (defschema policy-schema
     mint-guard:guard
@@ -46,12 +47,12 @@
       , 'min-amount: min-amount })
   )
 
-  (defun get-policy:object{policy-schema} (token:object{token-policy-v1_DRAFT1.token-info})
+  (defun get-policy:object{policy-schema} (token:object{token-info})
     (read policies (at 'id token))
   )
 
   (defun enforce-mint:bool
-    ( token:object{token-policy-v1_DRAFT1.token-info}
+    ( token:object{token-info}
       account:string
       amount:decimal
     )
@@ -64,7 +65,7 @@
   ))
 
   (defun enforce-burn:bool
-    ( token:object{token-policy-v1_DRAFT1.token-info}
+    ( token:object{token-info}
       account:string
       amount:decimal
     )
@@ -72,7 +73,7 @@
   )
 
   (defun enforce-init:bool
-    ( token:object{token-policy-v1_DRAFT1.token-info}
+    ( token:object{token-info}
     )
     (get-policy token)
     true
@@ -80,7 +81,7 @@
 
 
   (defun init-sale:bool
-    ( token:object{token-policy-v1_DRAFT1.token-info}
+    ( token:object{token-info}
       seller:string
       amount:decimal
       sale:string
@@ -92,7 +93,7 @@
   )
 
   (defun enforce-sale:bool
-    ( token:object{token-policy-v1_DRAFT1.token-info}
+    ( token:object{token-info}
       seller:string
       buyer:string
       amount:decimal
@@ -117,7 +118,7 @@
   )
 
   (defun enforce-transfer:bool
-    ( token:object{token-policy-v1_DRAFT1.token-info}
+    ( token:object{token-info}
       sender:string
       receiver:string
       amount:decimal )
@@ -130,7 +131,7 @@
     ( user:string limit:integer price:decimal )
     (enforce false "Dummy implementation"))
   (defun create-gas-payer-guard:guard ()
-    (enforce false "Dummy implementation"))  
+    (enforce false "Dummy implementation"))
 )
 
 

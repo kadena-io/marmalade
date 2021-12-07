@@ -70,26 +70,26 @@
   )
 
 
-  (defun init-sale:bool
+  (defun enforce-offer:bool
     ( token:object{token-info}
       seller:string
       amount:decimal
-      sale:string
+      sale-id:string
     )
     @doc "Capture quote spec for SALE of TOKEN from message"
-    (enforce-sale-pact sale)
+    (enforce-sale-pact sale-id)
     (let ( (spec:object{quote-spec} (read-msg QUOTE) ) )
-      (insert quotes sale { 'id: (at 'id token), 'spec: spec }))
+      (insert quotes sale-id { 'id: (at 'id token), 'spec: spec }))
   )
 
-  (defun enforce-sale:bool
+  (defun enforce-buy:bool
     ( token:object{token-info}
       seller:string
       buyer:string
       amount:decimal
-      sale:string )
-    (enforce-sale-pact sale)
-    (with-read quotes sale { 'id:= qtoken, 'spec:= spec:object{quote-spec} }
+      sale-id:string )
+    (enforce-sale-pact sale-id)
+    (with-read quotes sale-id { 'id:= qtoken, 'spec:= spec:object{quote-spec} }
       (enforce (= qtoken (at 'id token)) "incorrect sale token")
       (bind spec
         { 'fungible := fungible:module{fungible-v2}

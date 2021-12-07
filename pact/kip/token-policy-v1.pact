@@ -13,7 +13,7 @@
       account:string
       amount:decimal
     )
-    @doc "Minting policy for TOKEN"
+    @doc "Minting policy for TOKEN to ACCOUNT for AMOUNT."
     @model [
       (property (!= account ""))
       (property (> amount 0.0))
@@ -25,7 +25,7 @@
       account:string
       amount:decimal
     )
-    @doc "Burning policy for TOKEN"
+    @doc "Burning policy for TOKEN to ACCOUNT for AMOUNT."
     @model [
       (property (!= account ""))
       (property (> amount 0.0))
@@ -34,25 +34,25 @@
 
   (defun enforce-init:bool
     (token:object{token-info})
-    @doc "Enforce rules on TOKEN initiation."
+    @doc "Enforce policy on TOKEN initiation."
   )
 
-  (defun init-sale:bool
+  (defun enforce-offer:bool
     ( token:object{token-info}
       seller:string
       amount:decimal
-      sale:string )
-    @doc "Initialize SALE by SELLER of AMOUNT of TOKEN."
+      sale-id:string )
+    @doc "Offer policy of sale SALE-ID by SELLER of AMOUNT of TOKEN."
   )
 
 
-  (defun enforce-sale:bool
+  (defun enforce-buy:bool
     ( token:object{token-info}
       seller:string
       buyer:string
       amount:decimal
-      sale:string )
-    @doc "Enforce rules on SALE by SELLER to BUYER AMOUNT of TOKEN."
+      sale-id:string )
+    @doc "Buy policy on SALE-ID by SELLER to BUYER AMOUNT of TOKEN."
   )
 
   (defun enforce-transfer:bool

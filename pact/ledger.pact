@@ -400,7 +400,7 @@
   ;; sale
   ;;
 
-  (defcap SALE
+  (defcap SALE:bool
     (id:string seller:string amount:decimal timeout:integer sale-id:string)
     @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
     @event
@@ -408,7 +408,7 @@
     (compose-capability (SALE_PRIVATE sale-id))
   )
 
-  (defcap OFFER
+  (defcap OFFER:bool
     (id:string seller:string amount:decimal timeout:integer)
     @doc "Managed cap for SELLER offering AMOUNT of token ID until TIMEOUT."
     @managed
@@ -417,7 +417,7 @@
     (compose-capability (CREDIT id (sale-account)))
   )
 
-  (defcap WITHDRAW
+  (defcap WITHDRAW:bool
     (id:string seller:string amount:decimal timeout:integer sale-id:string)
     @doc "Withdraws offer SALE from SELLER of AMOUNT of token ID after timeout."
     @event
@@ -427,7 +427,7 @@
     (compose-capability (SALE_PRIVATE sale-id))
   )
 
-  (defcap BUY
+  (defcap BUY:bool
     (id:string seller:string buyer:string amount:decimal timeout:integer sale-id:string)
     @doc "Completes sale OFFER to BUYER."
     @managed
@@ -439,7 +439,7 @@
 
   (defcap SALE_PRIVATE (sale-id:string) true)
 
-  (defpact sale
+  (defpact sale:bool
     ( id:string
       seller:string
       amount:decimal
@@ -468,7 +468,7 @@
     (bind (get-policy-info id)
       { 'policy := policy:module{kip.token-policy-v1_DRAFT1}
       , 'token := token }
-      (policy::init-sale token seller amount (pact-id)))
+      (policy::enforce-offer token seller amount (pact-id)))
     (debit id seller amount)
     (credit id (sale-account) (create-pact-guard "SALE") amount)
     (emit-event (TRANSFER id seller (sale-account) amount))
@@ -500,7 +500,7 @@
     (bind (get-policy-info id)
       { 'policy := policy:module{kip.token-policy-v1_DRAFT1}
       , 'token := token }
-      (policy::enforce-sale token seller buyer amount sale-id))
+      (policy::enforce-buy token seller buyer amount sale-id))
     (debit id (sale-account) amount)
     (credit id buyer buyer-guard amount)
     (emit-event (TRANSFER id (sale-account) buyer amount))

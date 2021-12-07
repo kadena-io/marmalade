@@ -173,5 +173,43 @@
       " Give manifest for ID."
   )
 
+  ;;
+  ;; Sale API
+  ;;
+
+  (defcap SALE:bool
+    (id:string seller:string amount:decimal timeout:integer sale-id:string)
+    @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
+    @event
+  )
+
+  (defcap OFFER:bool
+    (id:string seller:string amount:decimal timeout:integer)
+    @doc "Managed cap for SELLER offering AMOUNT of token ID until TIMEOUT."
+    @managed
+  )
+
+  (defcap WITHDRAW:bool
+    (id:string seller:string amount:decimal timeout:integer sale-id:string)
+    @doc "Withdraws offer SALE from SELLER of AMOUNT of token ID after TIMEOUT."
+    @event
+  )
+
+  (defcap BUY:bool
+    (id:string seller:string buyer:string amount:decimal timeout:integer sale-id:string)
+    @doc "Completes sale OFFER to BUYER."
+    @managed
+  )
+
+  (defpact sale:bool
+    ( id:string
+      seller:string
+      amount:decimal
+      timeout:integer
+    )
+    @doc " Offer->buy escrow pact of AMOUNT of token ID by SELLER with TIMEOUT in blocks. \
+         \ Step 1 is offer with withdraw rollback after timeout. \
+         \ Step 2 is buy, which completes using 'buyer' and 'buyer-guard' payload values."
+  )
 
 )

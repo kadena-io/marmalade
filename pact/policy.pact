@@ -50,20 +50,20 @@
   )
 
 
-  (defun init-sale:bool
+  (defun enforce-offer:bool
     ( token:object{token-info}
       seller:string
       amount:decimal
-      sale:string )
+      sale-id:string )
     (enforce-guard (at 'sale-guard (get-guards token)))
   )
 
-  (defun enforce-sale:bool
+  (defun enforce-buy:bool
     ( token:object{token-info}
       seller:string
       buyer:string
       amount:decimal
-      sale:string )
+      sale-id:string )
     (enforce-guard (at 'sale-guard (get-guards token)))
   )
 

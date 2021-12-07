@@ -536,6 +536,8 @@
   ,'ns: "marmalade"
   ,'mint-guard: {"keys": ["mint"], "pred": "keys-all"}
   ,'bob-guard: {"keys": ["bob"], "pred": "keys-all"}
+  ,'max-supply: 10.0
+  ,'min-amount: 1.0
   })
 (env-sigs
   [{'key:'dummy
@@ -546,10 +548,6 @@
 (load "fixed-quote-policy.pact")
 (use kip.token-manifest)
 (use marmalade.ledger)
-
-(expect "initiates project-2 with fixed quote policy"
-  "Write succeeded"
-  (init-fqp "project-2" (read-keyset 'mint-guard) 10.0 1.0))
 
 (expect "Create token project-2"
   "Write succeeded"

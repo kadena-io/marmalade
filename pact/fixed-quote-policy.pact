@@ -35,18 +35,6 @@
 
   (deftable quotes:{quote-schema})
 
-  (defun init-fqp
-    ( id:string
-      mint-guard:guard
-      max-supply:decimal
-      min-amount:decimal
-    )
-    (insert policies id
-      { 'mint-guard: mint-guard
-      , 'max-supply: max-supply
-      , 'min-amount: min-amount })
-  )
-
   (defun get-policy:object{policy-schema} (token:object{token-info})
     (read policies (at 'id token))
   )
@@ -75,8 +63,10 @@
   (defun enforce-init:bool
     ( token:object{token-info}
     )
-    (get-policy token)
-    true
+    (insert policies (at 'id token)
+      { 'mint-guard: (read-keyset 'mint-guard)
+      , 'max-supply: (read-decimal 'max-supply)
+      , 'min-amount: (read-decimal 'min-amount) })
   )
 
 

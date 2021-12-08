@@ -115,6 +115,15 @@
     (enforce false "Transfer prohibited")
   )
 
+  (defun enforce-crosschain:bool
+    ( token:object{token-info}
+      sender:string
+      receiver:string
+      target-chain:string
+      amount:decimal )
+    (enforce false "Transfer prohibited")
+  )
+
   ;; dummy impl to address #928
   (implements gas-payer-v1)
   (defcap GAS_PAYER:bool

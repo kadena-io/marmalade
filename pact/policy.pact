@@ -76,6 +76,15 @@
     (enforce-guard (at 'transfer-guard (get-guards token)))
   )
 
+  (defun enforce-crosschain:bool
+    ( token:object{token-info}
+      sender:string
+      receiver:string
+      target-chain:string
+      amount:decimal )
+    (enforce-guard (at 'transfer-guard (get-guards token)))
+  )
+
   ;; dummy impl to address #928
   (implements gas-payer-v1)
   (defcap GAS_PAYER:bool

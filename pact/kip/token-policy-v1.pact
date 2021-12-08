@@ -1,6 +1,6 @@
 (namespace 'kip)
 
-(interface token-policy-v1_DRAFT1
+(interface token-policy-v1_DRAFT2
 
   (defschema token-info
     id:string

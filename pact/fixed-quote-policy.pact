@@ -7,8 +7,8 @@
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'hft-admin )))
 
-  (implements kip.token-policy-v1_DRAFT1)
-  (use kip.token-policy-v1_DRAFT1 [token-info])
+  (implements kip.token-policy-v1_DRAFT2)
+  (use kip.token-policy-v1_DRAFT2 [token-info])
 
   (defschema policy-schema
     mint-guard:guard

@@ -7,7 +7,8 @@
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'hft-admin )))
 
-  (implements token-policy-v1_DRAFT1)
+  (implements kip.token-policy-v1_DRAFT2)
+  (use kip.token-policy-v1_DRAFT2 [token-info])
 
   (defschema policy-schema
     mint-guard:guard
@@ -34,24 +35,12 @@
 
   (deftable quotes:{quote-schema})
 
-  (defun init-fqp
-    ( id:string
-      mint-guard:guard
-      max-supply:decimal
-      min-amount:decimal
-    )
-    (insert policies id
-      { 'mint-guard: mint-guard
-      , 'max-supply: max-supply
-      , 'min-amount: min-amount })
-  )
-
-  (defun get-policy:object{policy-schema} (token:object{token-policy-v1_DRAFT1.token-info})
+  (defun get-policy:object{policy-schema} (token:object{token-info})
     (read policies (at 'id token))
   )
 
   (defun enforce-mint:bool
-    ( token:object{token-policy-v1_DRAFT1.token-info}
+    ( token:object{token-info}
       account:string
       amount:decimal
     )
@@ -64,7 +53,7 @@
   ))
 
   (defun enforce-burn:bool
-    ( token:object{token-policy-v1_DRAFT1.token-info}
+    ( token:object{token-info}
       account:string
       amount:decimal
     )
@@ -72,33 +61,36 @@
   )
 
   (defun enforce-init:bool
-    ( token:object{token-policy-v1_DRAFT1.token-info}
+    ( token:object{token-info}
     )
-    (get-policy token)
+    (insert policies (at 'id token)
+      { 'mint-guard: (read-keyset 'mint-guard)
+      , 'max-supply: (read-decimal 'max-supply)
+      , 'min-amount: (read-decimal 'min-amount) })
     true
   )
 
 
-  (defun init-sale:bool
-    ( token:object{token-policy-v1_DRAFT1.token-info}
+  (defun enforce-offer:bool
+    ( token:object{token-info}
       seller:string
       amount:decimal
-      sale:string
+      sale-id:string
     )
     @doc "Capture quote spec for SALE of TOKEN from message"
-    (enforce-sale-pact sale)
+    (enforce-sale-pact sale-id)
     (let ( (spec:object{quote-spec} (read-msg QUOTE) ) )
-      (insert quotes sale { 'id: (at 'id token), 'spec: spec }))
+      (insert quotes sale-id { 'id: (at 'id token), 'spec: spec }))
   )
 
-  (defun enforce-sale:bool
-    ( token:object{token-policy-v1_DRAFT1.token-info}
+  (defun enforce-buy:bool
+    ( token:object{token-info}
       seller:string
       buyer:string
       amount:decimal
-      sale:string )
-    (enforce-sale-pact sale)
-    (with-read quotes sale { 'id:= qtoken, 'spec:= spec:object{quote-spec} }
+      sale-id:string )
+    (enforce-sale-pact sale-id)
+    (with-read quotes sale-id { 'id:= qtoken, 'spec:= spec:object{quote-spec} }
       (enforce (= qtoken (at 'id token)) "incorrect sale token")
       (bind spec
         { 'fungible := fungible:module{fungible-v2}
@@ -117,9 +109,18 @@
   )
 
   (defun enforce-transfer:bool
-    ( token:object{token-policy-v1_DRAFT1.token-info}
+    ( token:object{token-info}
       sender:string
       receiver:string
+      amount:decimal )
+    (enforce false "Transfer prohibited")
+  )
+
+  (defun enforce-crosschain:bool
+    ( token:object{token-info}
+      sender:string
+      receiver:string
+      target-chain:string
       amount:decimal )
     (enforce false "Transfer prohibited")
   )
@@ -130,7 +131,7 @@
     ( user:string limit:integer price:decimal )
     (enforce false "Dummy implementation"))
   (defun create-gas-payer-guard:guard ()
-    (enforce false "Dummy implementation"))  
+    (enforce false "Dummy implementation"))
 )
 
 

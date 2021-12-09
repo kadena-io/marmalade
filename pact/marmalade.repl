@@ -1,39 +1,65 @@
 (begin-tx)
-(define-namespace 'kip (sig-keyset) (sig-keyset))
+
 (load "root/fungible-v2.pact")
 (load "root/gas-payer-v1.pact")
 (load "root/coin.pact")
+
+(define-namespace 'kip (sig-keyset) (sig-keyset))
+
 (load "kip/account-protocols-v1.pact")
 (load "kip/manifest.pact")
 (load "kip/poly-fungible-v2.pact")
+(load "kip/token-policy-v1.pact")
 
 (define-namespace 'util (sig-keyset) (sig-keyset))
 (load "util/fungible-util.pact")
 
-(define-namespace 'hft (sig-keyset) (sig-keyset))
+(define-namespace 'marmalade (sig-keyset) (sig-keyset))
 (env-data
- { 'hft-admin: []
- , 'ns: "hft"
+ { 'marmalade-admin: []
+ , 'ns: "marmalade"
  , 'upgrade: false })
 (load "policy.pact")
 (commit-tx)
 
 (begin-tx)
-(load "hft.pact")
-(typecheck "hft.hft")
+(load "ledger.pact")
+(typecheck "marmalade.ledger")
 (commit-tx)
+
+;; fungible test
+(begin-tx)
+(load "test/ledger-test-fungible.pact")
+(load "test/fungible.repl")
+(use kip.token-manifest)
+(env-data {'mint-guard: []
+, 'burn-guard: []
+, 'sale-guard: []
+, 'transfer-guard: [] })
+(marmalade.ledger.create-token
+  TOKEN
+  12
+  (create-manifest (uri "text" "token") [])
+  marmalade.guard-token-policy)
+(test-capability (marmalade.ledger.CREDIT TOKEN FUNDER_ACCT))
+(expect "fund success" true
+  (test-fund FUNDER_ACCT FUNDER_GUARD FUNDER_BALANCE))
+(commit-tx)
+
+(fungible-v2-test.suite ledger-test-fungible
+   fungible-test-helper-default "rotate-tests transfer-crosschain-tests")
 
 (begin-tx)
 (env-data
  { 'bob-ks: ["bob"]
  , 'alice-ks: ["alice"]
- , 'mint-ks: ["mint"]
- , 'burn-ks: ["burn"]
- , 'sale-ks: ["sale"]
- , 'transfer-ks: ["transfer"]
+ , 'mint-guard: ["mint"]
+ , 'burn-guard: ["burn"]
+ , 'sale-guard: ["sale"]
+ , 'transfer-guard: ["transfer"]
  })
 (env-keys ["bob"])
-(use hft.hft)
+(use marmalade.ledger)
 
 (env-sigs [
   { 'key: "bob"
@@ -63,34 +89,8 @@
   { 'key: "transfer", 'caps: [] }
   ])
 
-(hft.guard-token-policy.init-guards
-  "project-0"
-  (read-keyset 'mint-ks )
-  (read-keyset 'burn-ks )
-  (read-keyset 'sale-ks)
-  (read-keyset 'transfer-ks))
-
 (use kip.token-manifest)
 
-(expect
-  "bob creates a new token project-0"
-  "Write succeeded"
-  (create-token
-    "project-0"
-    12
-    (create-manifest (uri "text" "project-0-uri") [])
-    hft.guard-token-policy)
-  )
-
-(expect-failure
-  "bob creates a new token project-1 before initialization"
-  "read: row not found: project-1"
-  (create-token
-    "project-1"
-    12
-    (create-manifest (uri "text" "project-0-uri") [])
-    hft.guard-token-policy)
-  )
 
 (expect-failure
   "bob creates a new token project-1 before initialization"
@@ -101,8 +101,19 @@
     {"uri": (uri "text" "project-0-uri"),
      "hash": "wrong-hash",
      "data": []}
-    hft.guard-token-policy)
+    marmalade.guard-token-policy)
   )
+
+(expect
+  "bob creates a new token project-0"
+  "Write succeeded"
+  (create-token
+    "project-0"
+    12
+    (create-manifest (uri "text" "project-0-uri") [])
+    marmalade.guard-token-policy)
+  )
+
 
 (expect
   "bob mints a 5.0 of token"
@@ -115,9 +126,9 @@
   (total-supply "project-0"))
 
 (expect "MINT events"
-   [{"name": "hft.hft.CREATE_TOKEN","params": ["project-0"]}
-   {"name": "hft.hft.MINT","params": ["project-0" "bob" 5.0]}
-   {"name": "hft.hft.SUPPLY","params": ["project-0" 5.0]} ]
+   [{"name": "marmalade.ledger.TOKEN","params": ["project-0"]}
+   {"name": "marmalade.ledger.MINT","params": ["project-0" "bob" 5.0]}
+   {"name": "marmalade.ledger.SUPPLY","params": ["project-0" 5.0]} ]
   (map (remove 'module-hash) (env-events true)))
 
 ;;regular transfer
@@ -126,14 +137,14 @@
   (transfer-create "project-0" "bob" "alice" (read-keyset 'alice-ks) 2.0))
 
 (expect "TRANSFER event"
-   [{"name": "hft.hft.TRANSFER","params": ["project-0" "bob" "alice" 2.0]}
+   [{"name": "marmalade.ledger.TRANSFER","params": ["project-0" "bob" "alice" 2.0]}
    ]
   (map (remove 'module-hash) (env-events true)))
 
 (commit-tx)
 
 (begin-tx)
-(use hft.hft)
+(use marmalade.ledger)
 
 (env-sigs [
   {
@@ -176,13 +187,13 @@
 (env-sigs
   [{'key:'bob
    ,'caps:
-    [(hft.hft.TRANSFER 'project-0 'bob
+    [(marmalade.ledger.TRANSFER 'project-0 'bob
       "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
       0.04),
-    (hft.hft.TRANSFER 'project-0 'bob
+    (marmalade.ledger.TRANSFER 'project-0 'bob
       "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
       0.02),
-    (hft.hft.TRANSFER 'project-0 'bob
+    (marmalade.ledger.TRANSFER 'project-0 'bob
       "c:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
       0.04)
       ]}
@@ -193,14 +204,14 @@
 (expect-failure
   "single-key mismatch, create-account"
   "Single-key account protocol violation"
-  (hft.hft.create-account 'project-0
+  (marmalade.ledger.create-account 'project-0
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
     (read-keyset 'k)))
 
 (expect-failure
   "single-key mismatch, transfer-create"
   "Single-key account protocol violation"
-  (hft.hft.transfer-create
+  (marmalade.ledger.transfer-create
     'project-0
     'bob
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
@@ -210,7 +221,7 @@
 (expect-failure
   "single-key mismatch, transfer-create"
   "Single-key account protocol violation"
-  (hft.hft.transfer-create
+  (marmalade.ledger.transfer-create
     'project-0
     'bob
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
@@ -220,7 +231,7 @@
 (expect-failure
   "multi-key, transfer-create"
   "Single-key account protocol violation"
-  (hft.hft.transfer-create
+  (marmalade.ledger.transfer-create
     'project-0
     'bob
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
@@ -230,7 +241,7 @@
 (expect-failure
   "bad protocol, transfer-create"
   "Unrecognized reserved protocol: c"
-  (hft.hft.transfer-create
+  (marmalade.ledger.transfer-create
     'project-0
     'bob
     "c:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
@@ -240,14 +251,14 @@
 (expect-failure
   "bad protocol, create-account"
   "Unrecognized reserved protocol: c"
-  (hft.hft.create-account 'project-0
+  (marmalade.ledger.create-account 'project-0
     "c:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
     (read-keyset 'k2)))
 
 (expect-failure
   "single-key mismatch, create-account"
   "Single-key account protocol violation"
-  (hft.hft.create-account
+  (marmalade.ledger.create-account
     'project-0
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f3"
     (read-keyset 'k)))
@@ -255,7 +266,7 @@
 (expect
   "single-key success, create-account"
   "Write succeeded"
-  (hft.hft.create-account 'project-0
+  (marmalade.ledger.create-account 'project-0
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
     (read-keyset 'k)))
 
@@ -265,8 +276,8 @@
   ,"balance": 0.0
   ,"guard": (read-keyset 'k)
   ,"id": "project-0"}
-  (hft.hft.get-ledger-entry
-    (hft.hft.key 'project-0 "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4")))
+  (marmalade.ledger.get-ledger-entry
+    (marmalade.ledger.key 'project-0 "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4")))
 
 (rollback-tx)
 
@@ -277,7 +288,7 @@
 (env-sigs
   [{'key:'bob
    ,'caps:
-    [(hft.hft.TRANSFER 'project-0 'bob
+    [(marmalade.ledger.TRANSFER 'project-0 'bob
       "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
       0.02)]}
   ,{'key:'transfer,'caps: []}
@@ -286,7 +297,7 @@
 (expect
   "single-key success, transfer-create"
   "Write succeeded"
-  (hft.hft.transfer-create
+  (marmalade.ledger.transfer-create
     'project-0
     'bob
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
@@ -299,13 +310,13 @@
   ,"balance": 0.02
   ,"guard": (read-keyset 'k)
   ,"id": "project-0"}
-  (hft.hft.get-ledger-entry
-    (hft.hft.key 'project-0 "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4")))
+  (marmalade.ledger.get-ledger-entry
+    (marmalade.ledger.key 'project-0 "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4")))
 
 
 (expect "TRANSFER events"
   [{
-  "name": "hft.hft.TRANSFER",
+  "name": "marmalade.ledger.TRANSFER",
   "params": ["project-0", "bob", "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4", 0.02]
   }]
   (map (remove 'module-hash) (env-events true)))
@@ -316,7 +327,7 @@
 
 ;; Test ACCESSORS
 
-(use hft.hft)
+(use marmalade.ledger)
 (use kip.token-manifest)
 
 (env-data
@@ -333,22 +344,17 @@
   (get-manifest 'project-0))
 
 (expect "Returns tokens"
-   [{"id": "project-0"
-    ,"manifest": {"data": []
-    ,"hash": "E0pcFalaFSk5AJwR7QwpLbhzymaC8DCOSrCeBiDkpnY"
-    ,"uri": {"data": "project-0-uri","scheme": "text"}}
-    ,"policy": hft.guard-token-policy,"precision": 12
-    ,"supply": 5.0}]
-  (get-tokens))
+  ["project-0","token"]
+  (map (at 'id) (get-tokens)))
 
 (expect "Returns token keys"
-   ["project-0"]
+   ["project-0","token"]
   (get-token-keys))
 
 (expect "Returns project-0 token"
   { 'id: "project-0"
   , 'manifest: (create-manifest (uri "text" "project-0-uri") [])
-  , 'policy: hft.guard-token-policy
+  , 'policy: marmalade.guard-token-policy
   , 'precision: 12
   , 'supply: 5.0
   }
@@ -356,7 +362,9 @@
 
 (expect "Returns ledger keys"
   [ "project-0:alice"
-    "project-0:bob" ]
+    "project-0:bob"
+    "token:FUNDER_ACCT"
+  ]
   (get-ledger-keys))
 
 (expect "get ledger entry"
@@ -368,35 +376,25 @@
   (get-ledger-entry (key 'project-0 'bob)))
 
 (expect "get ledger"
- [
-  { 'account: "alice"
-  , 'balance: 2.0
-  , 'guard: (read-keyset 'alice-ks)
-  , 'id: "project-0"
-  }
-  { 'account: "bob"
-  , 'balance: 3.0
-  , 'guard: (read-keyset 'bob-ks)
-  , 'id: "project-0"
-  }]
- (get-ledger))
+ [ "alice" "bob" "FUNDER_ACCT" ]
+ (map (at 'account) (get-ledger)))
 
 (rollback-tx)
 
 ;;sales policy
 (begin-tx "sale guard policy success")
 (env-hash (hash "sale-tx1"))
-(use hft.hft)
+(use marmalade.ledger)
 (env-chain-data {"block-height": 100})
 (env-sigs
   [{'key:'bob
    ,'caps:
-    [(hft.hft.OFFER "project-0" "bob" 0.1 110)
-     (hft.hft.OFFER "project-0" "bob" 0.1 10)
+    [(marmalade.ledger.OFFER "project-0" "bob" 0.1 110)
+     (marmalade.ledger.OFFER "project-0" "bob" 0.1 10)
      ]}
   ,{'key:'sale,'caps: [
-    (hft.hft.OFFER "project-0" "bob" 0.1 10)
-    (hft.hft.BUY "project-0" "bob" "buyer" 0.1 110 (hash "sale-tx1"))
+    (marmalade.ledger.OFFER "project-0" "bob" 0.1 10)
+    (marmalade.ledger.BUY "project-0" "bob" "buyer" 0.1 110 (hash "sale-tx1"))
     ]}
   ])
 
@@ -415,7 +413,7 @@
 
 (env-sigs
   [{'key:'sale,'caps: [
-    (hft.hft.OFFER "project-0" "bob" 0.1 110)
+    (marmalade.ledger.OFFER "project-0" "bob" 0.1 110)
     ]}
   ])
 
@@ -425,10 +423,10 @@
 
 (env-sigs
   [{'key:'bob,'caps: [
-    (hft.hft.OFFER "project-0" "bob" 0.1 110)
+    (marmalade.ledger.OFFER "project-0" "bob" 0.1 110)
     ]}
   ,{'key:'sale,'caps: [
-     (hft.hft.OFFER "project-0" "bob" 0.1 110)
+     (marmalade.ledger.OFFER "project-0" "bob" 0.1 110)
    ]}
   ])
 
@@ -441,14 +439,14 @@
   (map (get-balance 'project-0) ['bob (sale-account)]))
 
 (expect "OFFER events"
-  [{"name": "hft.hft.OFFER","params": ["project-0" "bob" 0.1 110]}
-   {"name": "hft.hft.SALE","params": ["project-0" "bob" 0.1 110 (hash "sale-tx1")]}
-   {"name": "hft.hft.TRANSFER","params": ["project-0" "bob" (sale-account) 0.1]}]
+  [{"name": "marmalade.ledger.OFFER","params": ["project-0" "bob" 0.1 110]}
+   {"name": "marmalade.ledger.SALE","params": ["project-0" "bob" 0.1 110 (hash "sale-tx1")]}
+   {"name": "marmalade.ledger.TRANSFER","params": ["project-0" "bob" (sale-account) 0.1]}]
   (map (remove 'module-hash) (env-events true)))
 
 (env-sigs
   [{'key:'dummy,'caps: [
-     (hft.hft.BUY "project-0" "bob" "buyer" 0.1 110 (pact-id))
+     (marmalade.ledger.BUY "project-0" "bob" "buyer" 0.1 110 (pact-id))
    ]}])
 
 (expect-failure "Buy fails, sale guard not signed"
@@ -457,7 +455,7 @@
 
 (env-sigs
  [{'key:'sale,'caps: [
-    (hft.hft.BUY "project-0" "bob" "buyer" 0.1 110 (pact-id))
+    (marmalade.ledger.BUY "project-0" "bob" "buyer" 0.1 110 (pact-id))
   ]}])
 
 (expect "Buy succeeds"
@@ -469,8 +467,8 @@
   (map (get-balance 'project-0) [(sale-account) "buyer"]))
 
 (expect "BUY events"
-  [{"name": "hft.hft.BUY","params": ["project-0" "bob" "buyer" 0.1 110 (hash "sale-tx1")]}
-   {"name": "hft.hft.TRANSFER","params": ["project-0" (sale-account) "buyer" 0.1]}]
+  [{"name": "marmalade.ledger.BUY","params": ["project-0" "bob" "buyer" 0.1 110 (hash "sale-tx1")]}
+   {"name": "marmalade.ledger.TRANSFER","params": ["project-0" (sale-account) "buyer" 0.1]}]
   (map (remove 'module-hash) (env-events true)))
 
 (rollback-tx)
@@ -479,15 +477,15 @@
 
 (env-hash (hash "sale-tx2"))
 (env-chain-data {"block-height": 100})
-(use hft.hft)
+(use marmalade.ledger)
 (env-sigs
   [{'key:'bob
    ,'caps:
-    [(hft.hft.OFFER "project-0" "bob" 0.1 110)
+    [(marmalade.ledger.OFFER "project-0" "bob" 0.1 110)
      ]}
   ,{'key:'sale,'caps: [
-    (hft.hft.OFFER "project-0" "bob" 0.1 110)
-    (hft.hft.BUY "project-0" "bob" "buyer" 0.1 110 (hash "sale-tx2"))
+    (marmalade.ledger.OFFER "project-0" "bob" 0.1 110)
+    (marmalade.ledger.BUY "project-0" "bob" "buyer" 0.1 110 (hash "sale-tx2"))
     ]}
   ])
 
@@ -505,9 +503,9 @@
   (map (get-balance 'project-0) ['bob (sale-account)]))
 
 (expect "OFFER events"
-  [{"name": "hft.hft.OFFER","params": ["project-0" "bob" 0.1 110]}
-  {"name": "hft.hft.SALE","params": ["project-0" "bob" 0.1 110 (hash "sale-tx2")]}
-  {"name": "hft.hft.TRANSFER","params": ["project-0" "bob" (sale-account) 0.1]}]
+  [{"name": "marmalade.ledger.OFFER","params": ["project-0" "bob" 0.1 110]}
+  {"name": "marmalade.ledger.SALE","params": ["project-0" "bob" 0.1 110 (hash "sale-tx2")]}
+  {"name": "marmalade.ledger.TRANSFER","params": ["project-0" "bob" (sale-account) 0.1]}]
   (map (remove 'module-hash) (env-events true)))
 
 (env-chain-data {"block-height": 111})
@@ -525,8 +523,8 @@
   (map (get-balance 'project-0) ['bob (sale-account)]))
 
 (expect "WITHDRAW events"
-  [{"name": "hft.hft.WITHDRAW","params": ["project-0" "bob" 0.1 110 (hash "sale-tx2")]}
-   {"name": "hft.hft.TRANSFER","params": ["project-0" (sale-account) "bob" 0.1]}]
+  [{"name": "marmalade.ledger.WITHDRAW","params": ["project-0" "bob" 0.1 110 (hash "sale-tx2")]}
+   {"name": "marmalade.ledger.TRANSFER","params": ["project-0" (sale-account) "bob" 0.1]}]
   (map (remove 'module-hash) (env-events true)))
 
 (rollback-tx)
@@ -535,28 +533,26 @@
 (env-hash (hash "fixed-quote-sale-tx2"))
 (env-data {
    'upgrade: false
-  ,'ns: "hft"
+  ,'ns: "marmalade"
   ,'mint-guard: {"keys": ["mint"], "pred": "keys-all"}
   ,'bob-guard: {"keys": ["bob"], "pred": "keys-all"}
+  ,'max-supply: 10.0
+  ,'min-amount: 1.0
   })
 (env-sigs
   [{'key:'dummy
    ,'caps:
-    [(hft.hft.MINT "project-2" "bob" 1.0)
+    [(marmalade.ledger.MINT "project-2" "bob" 1.0)
      ]}])
 
 (load "fixed-quote-policy.pact")
 (use kip.token-manifest)
-(use hft.hft)
-
-(expect "initiates project-2 with fixed quote policy"
-  "Write succeeded"
-  (init-fqp "project-2" (read-keyset 'mint-guard) 10.0 1.0))
+(use marmalade.ledger)
 
 (expect "Create token project-2"
   "Write succeeded"
   (create-token "project-2" 1
-    (create-manifest (uri "text" "project-2-uri") []) hft.fixed-quote-policy))
+    (create-manifest (uri "text" "project-2-uri") []) marmalade.fixed-quote-policy))
 
 (expect-failure "bob mints project-2"
   "Failed: Keyset failure (keys-all): [mint]"
@@ -565,7 +561,7 @@
 (env-sigs
   [{'key:'mint
    ,'caps:
-    [(hft.hft.MINT "project-2" "bob" 1.0)
+    [(marmalade.ledger.MINT "project-2" "bob" 1.0)
      ]}])
 
 (expect "bob mints project-2"
@@ -577,20 +573,20 @@
   (get-balance 'project-2 'bob))
 
 (expect "Create and mint fqp token EVENTS"
-  [ {"name": "hft.hft.CREATE_TOKEN","params": ["project-2"]}
-    {"name": "hft.hft.MINT","params": ["project-2" "bob" 1.0]}
-    {"name": "hft.hft.SUPPLY","params": ["project-2" 1.0]}]
+  [ {"name": "marmalade.ledger.TOKEN","params": ["project-2"]}
+    {"name": "marmalade.ledger.MINT","params": ["project-2" "bob" 1.0]}
+    {"name": "marmalade.ledger.SUPPLY","params": ["project-2" 1.0]}]
     (map (remove 'module-hash) (env-events true)))
 
 (commit-tx)
 
 (begin-tx "sale fixed-quote-policy success")
 (env-hash (hash "fixed-quote-sale-tx2"))
-(use hft.hft)
+(use marmalade.ledger)
 (env-sigs
   [{'key:'bob
    ,'caps:
-    [(hft.hft.OFFER "project-2" "bob" 0.2 120)]}
+    [(marmalade.ledger.OFFER "project-2" "bob" 0.2 120)]}
  ])
 
 (env-data
@@ -628,9 +624,9 @@
   (map (get-balance 'project-2) ['bob (sale-account)]))
 
 (expect "OFFER events"
-   [{"name": "hft.hft.OFFER","params": ["project-2" "bob" 0.2 120]}
-    {"name": "hft.hft.SALE","params": ["project-2" "bob" 0.2 120 (pact-id)]}
-    {"name": "hft.hft.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}]
+   [{"name": "marmalade.ledger.OFFER","params": ["project-2" "bob" 0.2 120]}
+    {"name": "marmalade.ledger.SALE","params": ["project-2" "bob" 0.2 120 (pact-id)]}
+    {"name": "marmalade.ledger.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}]
   (map (remove 'module-hash) (env-events true)))
 
 
@@ -640,7 +636,7 @@
 
 (env-sigs [
   {'key: 'bob
-   ,'caps: [(hft.hft.BUY "project-2" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-sale-tx2"))]
+   ,'caps: [(marmalade.ledger.BUY "project-2" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-sale-tx2"))]
   }
 ,{'key: 'dummy
  ,'caps: [
@@ -653,7 +649,7 @@
 
 (env-sigs [
   {'key: 'bob
-   ,'caps: [(hft.hft.BUY "project-2" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-sale-tx2"))]
+   ,'caps: [(marmalade.ledger.BUY "project-2" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-sale-tx2"))]
   }
  ,{'key: 'buyer
  ,'caps: [
@@ -677,9 +673,9 @@
   (continue-pact 0 true))
 
 (expect "BUY events"
-   [{"name": "hft.hft.BUY","params": ["project-2" "bob" "coin-buyer" 0.2 120 (pact-id)]}
+   [{"name": "marmalade.ledger.BUY","params": ["project-2" "bob" "coin-buyer" 0.2 120 (pact-id)]}
     {"name": "coin.TRANSFER","params": ["coin-buyer" "alice" 0.2]}
-    {"name": "hft.hft.TRANSFER","params": ["project-2" (sale-account) "coin-buyer" 0.2]}]
+    {"name": "marmalade.ledger.TRANSFER","params": ["project-2" (sale-account) "coin-buyer" 0.2]}]
   (map (remove 'module-hash) (env-events true)))
 
 (rollback-tx)
@@ -687,12 +683,12 @@
 (begin-tx "sale fixed-quote-policy timeout/withdraw")
 (begin-tx "sale fixed-quote-policy success")
 (env-hash (hash "fixed-quote-sale-tx3"))
-(use hft.hft)
+(use marmalade.ledger)
 (env-sigs
   [{'key:'bob
    ,'caps:
-    [(hft.hft.OFFER "project-2" "bob" 0.2 120)
-     (hft.hft.BUY "project-2" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-sale-tx3"))
+    [(marmalade.ledger.OFFER "project-2" "bob" 0.2 120)
+     (marmalade.ledger.BUY "project-2" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-sale-tx3"))
      ]}
    {'key: 'buyer
    ,'caps: [
@@ -735,9 +731,9 @@
   (map (get-balance 'project-2) ['bob (sale-account)]))
 
 (expect "OFFER events"
-   [{"name": "hft.hft.OFFER","params": ["project-2" "bob" 0.2 120]}
-    {"name": "hft.hft.SALE","params": ["project-2" "bob" 0.2 120 (pact-id)]}
-    {"name": "hft.hft.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}]
+   [{"name": "marmalade.ledger.OFFER","params": ["project-2" "bob" 0.2 120]}
+    {"name": "marmalade.ledger.SALE","params": ["project-2" "bob" 0.2 120 (pact-id)]}
+    {"name": "marmalade.ledger.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}]
   (map (remove 'module-hash) (env-events true)))
 
 (env-chain-data {"block-height": 121})
@@ -763,8 +759,8 @@
   (continue-pact 0 true))
 
 (expect "WITHDRAW events"
-    [{"name": "hft.hft.WITHDRAW","params": ["project-2" "bob" 0.2 120 (pact-id)]}
-    {"name": "hft.hft.TRANSFER","params": ["project-2" (sale-account) "bob" 0.2]}]
+    [{"name": "marmalade.ledger.WITHDRAW","params": ["project-2" "bob" 0.2 120 (pact-id)]}
+    {"name": "marmalade.ledger.TRANSFER","params": ["project-2" (sale-account) "bob" 0.2]}]
   (map (remove 'module-hash) (env-events true)))
 
 (rollback-tx)

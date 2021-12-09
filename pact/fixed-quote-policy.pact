@@ -67,6 +67,7 @@
       { 'mint-guard: (read-keyset 'mint-guard)
       , 'max-supply: (read-decimal 'max-supply)
       , 'min-amount: (read-decimal 'min-amount) })
+    true
   )
 
 

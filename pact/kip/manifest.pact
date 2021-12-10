@@ -3,7 +3,7 @@
 (module token-manifest GOVERNANCE
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'hft-admin )))
+    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
   (defschema mf-uri
     scheme:string

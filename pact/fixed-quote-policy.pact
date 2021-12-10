@@ -5,7 +5,7 @@
   @doc "Policy for fixed issuance with simple quoted sale."
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'hft-admin )))
+    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
   (implements kip.token-policy-v1_DRAFT2)
   (use kip.token-policy-v1_DRAFT2 [token-info])

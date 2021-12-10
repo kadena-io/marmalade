@@ -1,10 +1,10 @@
-codeFile: ../../kip/poly-fungible-v2.pact
+codeFile: ../../kip/token-policy-v1.pact
 signers:
   - public: dfb16b13e4032a6878fd98506b22cb0d6e5932c541e656b7ee5d69d72e6eb76e
 data:
   ns: "kip"
 networkId: testnet04
-nonce: "install kip.poly-fungible-v2_DRAFT2"
+nonce: "install kip.token-policy-v1_DRAFT2"
 publicMeta:
   chainId: "0"
   sender: "dfb16b13e4032a6878fd98506b22cb0d6e5932c541e656b7ee5d69d72e6eb76e"

@@ -35,7 +35,7 @@
   ;;
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'hft-admin)))
+    (enforce-guard (keyset-ref-guard 'marmalade-admin)))
 
   ;;
   ;; poly-fungible-v2 caps

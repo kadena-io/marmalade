@@ -1,6 +1,6 @@
 //basic React api imports
 import React, { useState, useEffect } from "react";
-import { 
+import {
   useQueryParams,
   StringParam,
  } from 'use-query-params';
@@ -140,13 +140,12 @@ const CreateGuardPolicyToken = (props) => {
       try {
         sendHftCommand(setTx,setTxStatus,setTxRes,refresh
           ,signingKey, networkId, Number.parseFloat(gasPrice)
-          ,`(${gtpAPI.contractAddress}.init-guards "${id}" (read-keyset 'mint) (read-keyset 'burn) (read-keyset 'sale) (read-keyset 'transfer))
-          (${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${gtpAPI.contractAddress})`
-          ,{manifest: JSON.parse(manifest),
-            mint: JSON.parse(mintGrd),
-            burn: JSON.parse(burnGrd),
-            sale: JSON.parse(saleGrd),
-            transfer: JSON.parse(transferGrd),
+          ,`(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${gtpAPI.contractAddress})`
+          ,{"manifest": JSON.parse(manifest),
+            "mint-guard": JSON.parse(mintGrd),
+            "burn-guard": JSON.parse(burnGrd),
+            "sale-guard": JSON.parse(saleGrd),
+            "transfer-guard": JSON.parse(transferGrd),
           }
           );
       } catch (e) {
@@ -236,12 +235,11 @@ const CreateFixedQuotePolicyToken = (props) => {
       try {
         sendHftCommand(setTx,setTxStatus,setTxRes,refresh
           ,signingKey, networkId, Number.parseFloat(gasPrice)
-          ,`(${fqpAPI.contractAddress}.init-fqp "${id}" (read-keyset 'mint) (read-decimal 'maxSupply) (read-decimal 'minAmount))
-          (${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${fqpAPI.contractAddress})`
-          ,{manifest: JSON.parse(manifest),
-            mint: JSON.parse(mintGrd),
-            maxSupply: Number.parseFloat(maxSupply),
-            minAmount: Number.parseFloat(minAmount),
+          ,`(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${fqpAPI.contractAddress})`
+          ,{"manifest": JSON.parse(manifest),
+            "mint-guard": JSON.parse(mintGrd),
+            "max-supply": Number.parseFloat(maxSupply),
+            "min-amount": Number.parseFloat(minAmount),
           }
           );
       } catch (e) {
@@ -301,7 +299,7 @@ const CreateFixedQuotePolicyToken = (props) => {
   );
 };
 
-const Mint = ({hftTokens, refresh, 
+const Mint = ({hftTokens, refresh,
   pactTxStatus: {txStatus, setTxStatus,
     tx, setTx,
     txRes, setTxRes}}) => {
@@ -411,7 +409,7 @@ const TransferCreate = (props) => {
         setTxStatus("validation-error");
       }
       };
-  
+
   const inputFields = [
     {
       type:'select',
@@ -492,7 +490,7 @@ const Transfer = (props) => {
         setTxStatus("validation-error");
       }
       };
-  
+
   const inputFields = [
     {
       type:'select',
@@ -562,7 +560,7 @@ const CreateAccount = (props) => {
         setTxStatus("validation-error");
       }
       };
-  
+
   const inputFields = [
     {
       type:'select',

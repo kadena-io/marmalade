@@ -25,8 +25,8 @@ const networkId = "testnet04";
 const node = "api.testnet.chainweb.com";
 
 //unique contract name
-const hftNamespace = "hft";
-const hftContractName = "hft";
+const hftNamespace = "marmalade";
+const hftContractName = "ledger";
 const hftConstants = {};
 
 //unique contract name
@@ -35,12 +35,12 @@ const manifestContractName = "token-manifest";
 const manifestConstants = {};
 
 //unique contract name
-const gtpNamespace = "hft";
+const gtpNamespace = "marmalade";
 const gtpContractName = "guard-token-policy";
 const gtpConstants = {};
 
 //unique contract name
-const fqpNamespace = "hft";
+const fqpNamespace = "marmalade";
 const fqpContractName = "fixed-quote-policy";
 const fqpConstants = {};
 

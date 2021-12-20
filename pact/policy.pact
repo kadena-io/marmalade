@@ -22,11 +22,16 @@
     (read policy-guards (at 'id token))
   )
 
+  (defun enforce-ledger:bool ()
+    (enforce-guard (marmalade.ledger.ledger-guard))
+  )
+
   (defun enforce-mint:bool
     ( token:object{token-info}
       account:string
       amount:decimal
     )
+    (enforce-ledger)
     (enforce-guard (at 'mint-guard (get-guards token)))
   )
 
@@ -35,12 +40,14 @@
       account:string
       amount:decimal
     )
+    (enforce-ledger)
     (enforce-guard (at 'burn-guard (get-guards token)))
   )
 
   (defun enforce-init:bool
     ( token:object{token-info}
     )
+    (enforce-ledger)
     (insert policy-guards (at 'id token)
       { 'mint-guard: (read-keyset 'mint-guard)
       , 'burn-guard: (read-keyset 'burn-guard)
@@ -55,6 +62,8 @@
       seller:string
       amount:decimal
       sale-id:string )
+    (enforce-ledger)
+    (enforce-sale-pact sale-id)
     (enforce-guard (at 'sale-guard (get-guards token)))
   )
 
@@ -64,15 +73,22 @@
       buyer:string
       amount:decimal
       sale-id:string )
+    (enforce-ledger)
+    (enforce-sale-pact sale-id)
     (enforce-guard (at 'sale-guard (get-guards token)))
   )
 
+  (defun enforce-sale-pact:bool (sale:string)
+    "Enforces that SALE is id for currently executing pact"
+    (enforce (= sale (pact-id)) "Invalid pact/sale id")
+  )
 
   (defun enforce-transfer:bool
     ( token:object{token-info}
       sender:string
       receiver:string
       amount:decimal )
+    (enforce-ledger)
     (enforce-guard (at 'transfer-guard (get-guards token)))
   )
 
@@ -82,6 +98,7 @@
       receiver:string
       target-chain:string
       amount:decimal )
+    (enforce-ledger)
     (enforce-guard (at 'transfer-guard (get-guards token)))
   )
 

@@ -131,6 +131,9 @@
         } } )
   )
 
+  (defun ledger-guard:guard ()
+    (create-module-guard "marmalade")
+  )
 
   (defun create-account:string
     ( id:string

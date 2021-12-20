@@ -39,11 +39,16 @@
     (read policies (at 'id token))
   )
 
+  (defun enforce-ledger:bool ()
+     (enforce-guard (marmalade.ledger.ledger-guard))
+   )
+
   (defun enforce-mint:bool
     ( token:object{token-info}
       account:string
       amount:decimal
     )
+    (enforce-ledger)
     (bind (get-policy token)
       { 'mint-guard:=mint-guard:guard
       , 'max-supply:=max-supply:decimal
@@ -57,19 +62,20 @@
       account:string
       amount:decimal
     )
+    (enforce-ledger)
     (enforce false "Burn prohibited")
   )
 
   (defun enforce-init:bool
     ( token:object{token-info}
     )
+    (enforce-ledger)
     (insert policies (at 'id token)
       { 'mint-guard: (read-keyset 'mint-guard)
       , 'max-supply: (read-decimal 'max-supply)
       , 'min-amount: (read-decimal 'min-amount) })
     true
   )
-
 
   (defun enforce-offer:bool
     ( token:object{token-info}
@@ -78,6 +84,7 @@
       sale-id:string
     )
     @doc "Capture quote spec for SALE of TOKEN from message"
+    (enforce-ledger)
     (enforce-sale-pact sale-id)
     (let ( (spec:object{quote-spec} (read-msg QUOTE) ) )
       (insert quotes sale-id { 'id: (at 'id token), 'spec: spec }))
@@ -89,6 +96,7 @@
       buyer:string
       amount:decimal
       sale-id:string )
+    (enforce-ledger)
     (enforce-sale-pact sale-id)
     (with-read quotes sale-id { 'id:= qtoken, 'spec:= spec:object{quote-spec} }
       (enforce (= qtoken (at 'id token)) "incorrect sale token")
@@ -113,6 +121,7 @@
       sender:string
       receiver:string
       amount:decimal )
+    (enforce-ledger)
     (enforce false "Transfer prohibited")
   )
 
@@ -122,6 +131,7 @@
       receiver:string
       target-chain:string
       amount:decimal )
+    (enforce-ledger)
     (enforce false "Transfer prohibited")
   )
 

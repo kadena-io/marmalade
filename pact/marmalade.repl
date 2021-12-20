@@ -13,17 +13,16 @@
 
 (define-namespace 'util (sig-keyset) (sig-keyset))
 (load "util/fungible-util.pact")
-
 (define-namespace 'marmalade (sig-keyset) (sig-keyset))
+(commit-tx)
+
+(begin-tx)
 (env-data
  { 'marmalade-admin: []
  , 'ns: "marmalade"
  , 'upgrade: false })
-(load "policy.pact")
-(commit-tx)
-
-(begin-tx)
 (load "ledger.pact")
+(load "policy.pact")
 (typecheck "marmalade.ledger")
 (commit-tx)
 
@@ -48,6 +47,176 @@
 
 (fungible-v2-test.suite ledger-test-fungible
    fungible-test-helper-default "rotate-tests transfer-crosschain-tests")
+
+;; enforce-ledger test
+(begin-tx)
+
+(module test-ledger G
+  (defcap G () true)
+  (use kip.token-manifest)
+  (use kip.token-policy-v1_DRAFT3 [token-info])
+
+  (defun create-token
+    ( id:string
+      precision:integer
+      manifest:object{manifest}
+      policy:module{kip.token-policy-v1_DRAFT3}
+    )
+    (policy::enforce-init
+      { 'id: id, 'supply: 0.0, 'precision: precision, 'manifest: manifest })
+  )
+
+  (defun mint:string
+    ( token:object{token-info}
+      account:string
+      amount:decimal
+      policy:module{kip.token-policy-v1_DRAFT3}
+    )
+    (policy::enforce-mint token account amount)
+  )
+
+  (defun burn:string
+    ( token:object{token-info}
+      account:string
+      amount:decimal
+      policy:module{kip.token-policy-v1_DRAFT3}
+    )
+    (policy::enforce-burn token account amount)
+  )
+
+  (defun offer
+    ( token:object{token-info}
+      seller:string
+      amount:decimal
+      policy:module{kip.token-policy-v1_DRAFT3}
+    )
+    (policy::enforce-offer token seller amount "sale")
+  )
+
+  (defun buy
+    ( token:object{token-info}
+      seller:string
+      buyer:string
+      amount:decimal
+      sale-id:string
+      policy:module{kip.token-policy-v1_DRAFT3}
+    )
+    (policy::enforce-buy token seller buyer amount sale-id)
+  )
+
+  (defun enforce-transfer-policy
+    ( token:object{token-info}
+      sender:string
+      receiver:string
+      amount:decimal
+      policy:module{kip.token-policy-v1_DRAFT3}
+    )
+    (policy::enforce-transfer token sender receiver amount)
+  )
+
+  (defun transfer-crosschain
+    ( token:object{token-info}
+      sender:string
+      receiver:string
+      amount:decimal
+      policy:module{kip.token-policy-v1_DRAFT3}
+    )
+    (policy::enforce-transfer token sender receiver amount)
+  )
+)
+
+(expect-failure
+  "enforce-init is called directly"
+  "marmalade-admin"
+  (marmalade.guard-token-policy.enforce-init {
+    "id": "project-0",
+    "supply": 0.0,
+    "precision": 12,
+    "manifest": (create-manifest (uri "text" "project-0-uri") [])})
+)
+
+(expect-failure
+  "enforce-init is called from an external ledger"
+  "marmalade-admin"
+  (create-token "project-0"
+    12
+    (create-manifest (uri "text" "project-0-uri") [])
+    marmalade.guard-token-policy)
+)
+
+(expect-failure
+  "enforce-mint is called from an external ledger"
+  "marmalade-admin"
+  (test-ledger.mint
+  {
+    "id": "project-0",
+    "supply": 0.0,
+    "precision": 12,
+    "manifest": (create-manifest (uri "text" "project-0-uri") [])
+  }
+  "bob" 5.0 marmalade.guard-token-policy))
+
+(expect-failure
+  "enforce-burn is called from an external ledger"
+  "marmalade-admin"
+  (test-ledger.burn
+  {
+    "id": "project-0",
+    "supply": 0.0,
+    "precision": 12,
+    "manifest": (create-manifest (uri "text" "project-0-uri") [])
+  }
+  "bob" 5.0 marmalade.guard-token-policy))
+
+(expect-failure
+  "enforce-offer is called from an external ledger"
+  "marmalade-admin"
+  (test-ledger.offer
+  {
+    "id": "project-0",
+    "supply": 0.0,
+    "precision": 12,
+    "manifest": (create-manifest (uri "text" "project-0-uri") [])
+  }
+  "bob" 5.0 marmalade.guard-token-policy ))
+
+(expect-failure
+  "enforce-buy is called from an external ledger"
+  "marmalade-admin"
+  (test-ledger.buy
+  {
+    "id": "project-0",
+    "supply": 0.0,
+    "precision": 12,
+    "manifest": (create-manifest (uri "text" "project-0-uri") [])
+  }
+  "bob" "alice" 5.0 "test-id" marmalade.guard-token-policy ))
+
+(expect-failure
+  "enforce-transfer is called from an external ledger"
+  "marmalade-admin"
+  (test-ledger.enforce-transfer-policy
+  {
+    "id": "project-0",
+    "supply": 0.0,
+    "precision": 12,
+    "manifest": (create-manifest (uri "text" "project-0-uri") [])
+  }
+  "bob" "alice" 5.0 marmalade.guard-token-policy ))
+
+(expect-failure
+  "enforce-crosschain is called from an external ledger"
+  "marmalade-admin"
+  (test-ledger.transfer-crosschain
+  {
+    "id": "project-0",
+    "supply": 0.0,
+    "precision": 12,
+    "manifest": (create-manifest (uri "text" "project-0-uri") [])
+  }
+  "bob" "alice" 5.0 marmalade.guard-token-policy ))
+
+(rollback-tx)
 
 (begin-tx)
 (env-data
@@ -91,7 +260,6 @@
 
 (use kip.token-manifest)
 
-
 (expect-failure
   "bob creates a new token project-1 before initialization"
   "Manifest is not valid"
@@ -114,11 +282,11 @@
     marmalade.guard-token-policy)
   )
 
-
 (expect
   "bob mints a 5.0 of token"
   "Write succeeded"
   (mint "project-0" "bob" (read-keyset 'bob-ks) 5.0))
+
 
 (expect
   "total supply of project-0"

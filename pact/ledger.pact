@@ -110,6 +110,12 @@
     (compose-capability (UPDATE_SUPPLY))
   )
 
+  (defconst MARMALADE_GUARD "marmalade-guard")
+
+  (defun ledger-guard:guard ()
+    (create-module-guard MARMALADE_GUARD)
+  )
+
   (defschema policy-info
     policy:module{kip.token-policy-v1_DRAFT3}
     token:object{kip.token-policy-v1_DRAFT3.token-info}
@@ -129,10 +135,6 @@
         , 'precision: precision
         , 'manifest: manifest
         } } )
-  )
-
-  (defun ledger-guard:guard ()
-    (create-module-guard "marmalade")
   )
 
   (defun create-account:string

@@ -48,66 +48,13 @@
 (fungible-v2-test.suite ledger-test-fungible
    fungible-test-helper-default "rotate-tests transfer-crosschain-tests")
 
-(begin-tx)
-(env-data
- { 'bob-ks: ["bob"]
- , 'alice-ks: ["alice"]
- , 'mint-guard: ["mint"]
- , 'burn-guard: ["burn"]
- , 'sale-guard: ["sale"]
- , 'transfer-guard: ["transfer"]
- })
-(env-keys ["bob"])
-(use marmalade.ledger)
-
-(env-sigs [
-  { 'key: "bob"
-  , 'caps:
-    [
-     (MINT "project-0" "bob" 5.0),
-     (TRANSFER "project-0" "bob" "alice" 2.0),
-     (TRANSFER "project-0" "bob" "project-0:1" 1.0),
-     (TRANSFER "project-0:1" "bob" "alice"  0.000000002),
-     (MINT "project-0:1" "bob" 1.0)
-    ]
-  },
-  {
-    'key: "project-0:1",
-    'caps: [
-     (MINT "project-0:1" "bob" 1.0)
-    ]
-  },
-  {
-    'key: "alice",
-    'caps: [
-      (TRANSFER "project-0:1" "alice" "project-0:1:1" 1.0)
-      (MINT "project-0" "alice" 5.0)
-    ]
-  },
-  { 'key: "mint", 'caps: [] },
-  { 'key: "transfer", 'caps: [] }
-  ])
-
-(use kip.token-manifest)
-
 ;; enforce-ledger test
+(begin-tx)
 
 (module test-ledger G
   (defcap G () true)
-  (use util.fungible-util)
   (use kip.token-manifest)
   (use kip.token-policy-v1_DRAFT3 [token-info])
-
-  (defun TRANSFER-mgr:decimal
-    ( managed:decimal
-      requested:decimal
-    )
-
-    (let ((newbal (- managed requested)))
-      (enforce (>= newbal 0.0)
-        (format "TRANSFER exceeded for balance {}" [managed]))
-      newbal)
-  )
 
   (defun create-token
     ( id:string
@@ -269,7 +216,49 @@
   }
   "bob" "alice" 5.0 marmalade.guard-token-policy ))
 
+(rollback-tx)
+
+(begin-tx)
+(env-data
+ { 'bob-ks: ["bob"]
+ , 'alice-ks: ["alice"]
+ , 'mint-guard: ["mint"]
+ , 'burn-guard: ["burn"]
+ , 'sale-guard: ["sale"]
+ , 'transfer-guard: ["transfer"]
+ })
+(env-keys ["bob"])
 (use marmalade.ledger)
+
+(env-sigs [
+  { 'key: "bob"
+  , 'caps:
+    [
+     (MINT "project-0" "bob" 5.0),
+     (TRANSFER "project-0" "bob" "alice" 2.0),
+     (TRANSFER "project-0" "bob" "project-0:1" 1.0),
+     (TRANSFER "project-0:1" "bob" "alice"  0.000000002),
+     (MINT "project-0:1" "bob" 1.0)
+    ]
+  },
+  {
+    'key: "project-0:1",
+    'caps: [
+     (MINT "project-0:1" "bob" 1.0)
+    ]
+  },
+  {
+    'key: "alice",
+    'caps: [
+      (TRANSFER "project-0:1" "alice" "project-0:1:1" 1.0)
+      (MINT "project-0" "alice" 5.0)
+    ]
+  },
+  { 'key: "mint", 'caps: [] },
+  { 'key: "transfer", 'caps: [] }
+  ])
+
+(use kip.token-manifest)
 
 (expect-failure
   "bob creates a new token project-1 before initialization"

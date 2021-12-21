@@ -593,11 +593,8 @@
 (env-data
   {
    "quote": {
-       "fungible": {
-         "refName": {"namespace": "null", "name": coin},
-         "refSpec": {"namepace": "null", "name": fungible-v2}
-       }
-      ,"price": -1.0
+       "fungible": kip.token-manifest
+      ,"price": 1.0
       ,"recipient": "alice"
       ,"recipient-guard": {"keys": ["alice"], "pred":"="}
     }

@@ -109,11 +109,10 @@
     (compose-capability (DEBIT id account))
     (compose-capability (UPDATE_SUPPLY))
   )
-
-  (defconst MARMALADE_GUARD "marmalade-guard")
-
+  
   (defun ledger-guard:guard ()
-    (create-module-guard MARMALADE_GUARD)
+    @doc "Ledger module guard for policies to be able to validate access to policy operations."
+    (create-module-guard "ledger-guard")
   )
 
   (defschema policy-info

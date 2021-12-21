@@ -595,6 +595,42 @@
  ])
 
 (env-data
+ {
+  "quote": {
+      "fungible": coin
+     ,"price": 1.0
+     ,"recipient": "alice"
+     ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+   }
+ })
+
+(expect-failure
+  "Sale fails with non-existent recipient account"
+  "Failure: Tx Failed: with-read: row not found: alice"
+  (sale 'project-2 'bob 0.2 120))
+
+(env-data
+  {
+   "quote": {
+       "fungible": coin
+      ,"price": 1.0
+      ,"recipient": "alice"
+      ,"recipient-guard": {"keys": ["wrong-alice"], "pred":"="}
+    }
+  ,"alice": {"keys": ["alice"], "pred":"="}
+ })
+
+(expect
+  "Create recipient account alice"
+  "Write succeeded"
+  (coin.create-account 'alice (read-keyset 'alice)))
+
+(expect-failure
+  "Sale fails with wrong recipient guard"
+  "Failure: Tx Failed: Recipient guard does not match"
+  (sale 'project-2 'bob 0.2 120))
+
+(env-data
   {
    "quote": {
        "fungible": ns
@@ -656,10 +692,16 @@
 
 (rollback-tx)
 
-
 (begin-tx "sale fixed-quote-policy success")
 (env-hash (hash "fixed-quote-sale-tx2"))
 (use marmalade.ledger)
+
+(env-data {"alice": {"keys": ["alice"], "pred":"="}})
+(expect
+  "Create recipient account alice"
+  "Write succeeded"
+  (coin.create-account 'alice (read-keyset 'alice)))
+
 (env-sigs
   [{'key:'bob
    ,'caps:
@@ -758,9 +800,15 @@
 (rollback-tx)
 
 (begin-tx "sale fixed-quote-policy timeout/withdraw")
-(begin-tx "sale fixed-quote-policy success")
 (env-hash (hash "fixed-quote-sale-tx3"))
 (use marmalade.ledger)
+
+(env-data {"alice": {"keys": ["alice"], "pred":"="}})
+(expect
+  "Create recipient account alice"
+  "Write succeeded"
+  (coin.create-account 'alice (read-keyset 'alice)))
+
 (env-sigs
   [{'key:'bob
    ,'caps:
@@ -830,6 +878,10 @@
 (expect "coin-buyer's coin balance remains unchanged"
   2.0
   (coin.get-balance 'coin-buyer))
+
+(expect "recipient's coin balance remains unchanged"
+  0.0
+  (coin.get-balance 'alice))
 
 (expect-failure "Withdraw fails after sale completes"
   (format "pact completed: {}" [(pact-id)])

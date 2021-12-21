@@ -1,8 +1,12 @@
 (begin-tx)
-
+(env-data
+  { 'ns-admin-keyset: []
+  , 'ns-genesis-keyset:[]
+  , 'ns-operate-keyset:[] })
 (load "root/fungible-v2.pact")
 (load "root/gas-payer-v1.pact")
 (load "root/coin.pact")
+(load "root/ns.pact")
 
 (define-namespace 'kip (sig-keyset) (sig-keyset))
 
@@ -593,7 +597,7 @@
 (env-data
   {
    "quote": {
-       "fungible": kip.token-manifest
+       "fungible": ns
       ,"price": 1.0
       ,"recipient": "alice"
       ,"recipient-guard": {"keys": ["alice"], "pred":"="}
@@ -602,7 +606,7 @@
 
 (expect-failure
   "Sale fails with non-fungible in quote"
-  "fungible: Failure: Type error: expected module{fungible-v2}, found object:*"
+  "fungible: Failure: Type error: expected module{fungible-v2}, found module{}"
   (sale 'project-2 'bob 0.2 120))
 
 (env-data

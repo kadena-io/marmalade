@@ -79,9 +79,9 @@
     )
     @doc "Capture quote spec for SALE of TOKEN from message"
     (enforce-sale-pact sale-id)
-    (let ( (spec:object{quote-spec} (read-msg QUOTE) )
-           (fungible:module{fungible-v2} (at 'fungible (read-msg QUOTE)) )
-           (price:decimal (at 'price (read-msg QUOTE))) )
+    (let* ( (spec:object{quote-spec} (read-msg QUOTE))
+            (fungible:module{fungible-v2} (at 'fungible spec) )
+            (price:decimal (at 'price spec)) )
       (fungible::enforce-unit price)
       (enforce (< 0.0 price) "Offer amount must be positive")
       (insert quotes sale-id { 'id: (at 'id token), 'spec: spec }))

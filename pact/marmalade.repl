@@ -580,6 +580,82 @@
 
 (commit-tx)
 
+(begin-tx "sale fixed-quote-policy failure")
+(env-hash (hash "fixed-quote-sale-tx2"))
+(use marmalade.ledger)
+(env-chain-data {"block-height": 100})
+(env-sigs
+  [{'key:'bob
+   ,'caps:
+    [(marmalade.ledger.OFFER "project-2" "bob" 0.2 120)]}
+ ])
+
+(env-data
+  {
+   "quote": {
+       "fungible": {
+         "refName": {"namespace": "null", "name": coin},
+         "refSpec": {"namepace": "null", "name": fungible-v2}
+       }
+      ,"price": -1.0
+      ,"recipient": "alice"
+      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+    }
+  })
+
+(expect-failure
+  "Sale fails with non-fungible in quote"
+  "fungible: Failure: Type error: expected module{fungible-v2}, found object:*"
+  (sale 'project-2 'bob 0.2 120))
+
+(env-data
+  {
+   "quote": {
+       "fungible": coin
+      ,"price": -1.0
+      ,"recipient": "alice"
+      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+    }
+  })
+
+(expect-failure
+  "Sale fails with negative price in quote"
+  "Offer amount must be positive"
+  (sale 'project-2 'bob 0.2 120))
+
+(env-data
+  {
+   "quote": {
+       "fungible": coin
+      ,"price": 1.0
+      ,"recipient": {"account": "alice"}
+      ,"recipient-guard":  {"keys": ["alice"], "pred":"="}
+    }
+  })
+
+(expect-failure
+  "Sale fails with invalid recipient in quote"
+  "Type error: expected string, found object:*"
+  (sale 'project-2 'bob 0.2 120))
+
+(env-data
+  {
+   "quote": {
+       "fungible": coin
+      ,"price": 1.0
+      ,"recipient": "alice"
+      ,"recipient-guard": "INVALID GUARD"
+    }
+  })
+
+(expect-failure
+  "Sale fails with invalid guard in quote"
+  "Type error: expected guard, found string"
+  (sale 'project-2 'bob 0.2 120))
+
+(rollback-tx)
+
+
 (begin-tx "sale fixed-quote-policy success")
 (env-hash (hash "fixed-quote-sale-tx2"))
 (use marmalade.ledger)

@@ -86,7 +86,17 @@
     @doc "Capture quote spec for SALE of TOKEN from message"
     (enforce-ledger)
     (enforce-sale-pact sale-id)
-    (let ( (spec:object{quote-spec} (read-msg QUOTE) ) )
+    (let* ( (spec:object{quote-spec} (read-msg QUOTE))
+            (fungible:module{fungible-v2} (at 'fungible spec) )
+            (price:decimal (at 'price spec))
+            (recipient:string (at 'recipient spec))
+            (recipient-guard:guard (at 'recipient-guard spec))
+            (recipient-details:object (fungible::details recipient)) )
+      (fungible::enforce-unit price)
+      (enforce (< 0.0 price) "Offer amount must be positive")
+      (enforce (=
+        (at 'guard recipient-details) recipient-guard)
+        "Recipient guard does not match")
       (insert quotes sale-id { 'id: (at 'id token), 'spec: spec }))
   )
 

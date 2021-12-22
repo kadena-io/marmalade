@@ -660,36 +660,6 @@
   "Offer amount must be positive"
   (sale 'project-2 'bob 0.2 120))
 
-(env-data
-  {
-   "quote": {
-       "fungible": coin
-      ,"price": 1.0
-      ,"recipient": {"account": "alice"}
-      ,"recipient-guard":  {"keys": ["alice"], "pred":"="}
-    }
-  })
-
-(expect-failure
-  "Sale fails with invalid recipient in quote"
-  "Type error: expected string, found object:*"
-  (sale 'project-2 'bob 0.2 120))
-
-(env-data
-  {
-   "quote": {
-       "fungible": coin
-      ,"price": 1.0
-      ,"recipient": "alice"
-      ,"recipient-guard": "INVALID GUARD"
-    }
-  })
-
-(expect-failure
-  "Sale fails with invalid guard in quote"
-  "Type error: expected guard, found string"
-  (sale 'project-2 'bob 0.2 120))
-
 (rollback-tx)
 
 (begin-tx "sale fixed-quote-policy success")

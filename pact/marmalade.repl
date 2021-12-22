@@ -17,14 +17,20 @@
 
 (define-namespace 'util (sig-keyset) (sig-keyset))
 (load "util/fungible-util.pact")
-(define-namespace 'marmalade (sig-keyset) (sig-keyset))
 (commit-tx)
 
 (begin-tx)
 (env-data
- { 'marmalade-admin: []
+ { 'marmalade-admin: ["marmalade-admin"]
+ , 'marmalade-ns-user: ["marmalade-admin"]
+ , 'marmalade-ns-admin: ["marmalade-admin"]
  , 'ns: "marmalade"
  , 'upgrade: false })
+ (env-sigs [
+   { 'key: 'marmalade-admin
+    ,'caps: []
+    }])
+(load "ns-marmalade.pact")
 (load "ledger.pact")
 (load "policy.pact")
 (typecheck "marmalade.ledger")
@@ -32,6 +38,7 @@
 
 ;; fungible test
 (begin-tx)
+(env-sigs [])
 (load "test/ledger-test-fungible.pact")
 (load "test/fungible.repl")
 (use kip.token-manifest)
@@ -715,7 +722,9 @@
   [{'key:'dummy
    ,'caps:
     [(marmalade.ledger.MINT "project-2" "bob" 1.0)
-     ]}])
+     ]}
+   {'key: 'marmalade-admin
+   ,'caps:[]}])
 
 (load "fixed-quote-policy.pact")
 (use kip.token-manifest)
@@ -1030,4 +1039,19 @@
     {"name": "marmalade.ledger.TRANSFER","params": ["project-2" (sale-account) "bob" 0.2]}]
   (map (remove 'module-hash) (env-events true)))
 
+(rollback-tx)
+
+;; Upgrade tests
+(begin-tx "Upgrade contracts")
+(env-sigs [
+  { 'key: 'marmalade-admin
+   ,'caps: []
+   }])
+(env-data {
+  'ns: "marmalade"
+ ,'upgrade: true
+  })
+(load "ledger.pact")
+(load "fixed-quote-policy.pact")
+(load "policy.pact")
 (rollback-tx)

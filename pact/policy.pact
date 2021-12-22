@@ -112,4 +112,6 @@
 
 )
 
-(create-table policy-guards)
+(if (read-msg 'upgrade)
+  ["upgrade complete"]
+  [ (create-table policy-guards) ])

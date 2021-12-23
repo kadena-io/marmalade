@@ -82,6 +82,7 @@
             (royalty-rate:decimal (read-decimal 'royalty-rate ))
             (creator-details:object (fungible::details creator ))
             )
+      (fungible::precision)
       (enforce (=
         (at 'guard creator-details) creator-guard)
         "Creator guard does not match")

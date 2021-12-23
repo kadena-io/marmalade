@@ -76,19 +76,26 @@
     (let* ( (fungible:module{fungible-v2} (read-msg 'fungible ))
             (creator:string (read-msg 'creator ))
             (creator-guard:guard (read-keyset 'creator-guard ))
+            (mint-guard:guard (read-keyset 'mint-guard ))
+            (max-supply:decimal (read-decimal 'max-supply ))
+            (min-amount:decimal (read-decimal 'min-amount ))
+            (royalty-rate:decimal (read-decimal 'royalty-rate ))
             (creator-details:object (fungible::details creator ))
             )
       (enforce (=
         (at 'guard creator-details) creator-guard)
         "Creator guard does not match")
+      (enforce (and
+        (>= royalty-rate 0.0) (<= royalty-rate 1.0))
+        "royalty rate is not valid")
       (insert policies (at 'id token)
         { 'fungible: fungible
         , 'creator: creator
         , 'creator-guard: creator-guard
-        , 'mint-guard: (read-keyset 'mint-guard )
-        , 'max-supply: (read-decimal 'max-supply )
-        , 'min-amount: (read-decimal 'min-amount )
-        , 'royalty-rate: (read-decimal 'royalty-rate ) }))
+        , 'mint-guard: mint-guard
+        , 'max-supply: max-supply
+        , 'min-amount: min-amount
+        , 'royalty-rate: royalty-rate }))
     true
   )
 

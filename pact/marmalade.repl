@@ -1103,9 +1103,115 @@
 
 (commit-tx)
 
-(begin-tx "Upgrade contracts")
-(load "fixed-quote-policy-royalty.pact")
-(commit-tx)
+(begin-tx "sale fixed-quote-policy-royalty success")
+(env-hash (hash "fixed-quote-policy-royalty-sale-tx2"))
+(use marmalade.ledger)
+
+(env-data {"alice": {"keys": ["alice"], "pred":"="}})
+(expect
+  "Create recipient account alice"
+  "Write succeeded"
+  (coin.create-account 'alice (read-keyset 'alice)))
+
+(env-sigs
+  [{'key:'bob
+   ,'caps:
+    [(marmalade.ledger.OFFER "project-3" "bob" 0.2 120)]}
+ ])
+
+(env-data
+  {
+   "quote": {
+       "price": 1.0
+      ,"recipient": "alice"
+      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+    }
+  ,"buyer": "coin-buyer"
+  ,"buyer-guard": {"keys": ["buyer"], "pred": "="}
+  })
+(env-chain-data {"block-height": 100})
+
+(test-capability (coin.COINBASE))
+
+(expect "coinbase buyer" "Write succeeded"
+  (coin.coinbase "coin-buyer" (read-msg 'buyer-guard) 2.0))
+
+(expect "coin-buyer is credited coins"
+  2.0
+  (coin.get-balance 'coin-buyer))
+
+(expect "Sale succeeds"
+  true
+  (sale 'project-3 'bob 0.2 120))
+
+(expect "coin balance of coin-buyer is unchanged"
+  2.0
+  (coin.get-balance 'coin-buyer))
+
+(expect "Seller is credited, sale account is debited on project-3 balance"
+  [0.8 0.2]
+  (map (get-balance 'project-3) ['bob (sale-account)]))
+
+(expect "OFFER events"
+   [{"name": "marmalade.ledger.OFFER","params": ["project-3" "bob" 0.2 120]}
+    {"name": "marmalade.ledger.SALE","params": ["project-3" "bob" 0.2 120 (pact-id)]}
+    {"name": "marmalade.ledger.TRANSFER","params": ["project-3" "bob" (sale-account) 0.2]}]
+  (map (remove 'module-hash) (env-events true)))
+
+
+(expect-failure "Withdraw fails before timeout"
+  "still active"
+  (continue-pact 0 true))
+
+(env-sigs [
+  {'key: 'bob
+   ,'caps: [(marmalade.ledger.BUY "project-3" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-policy-royalty-sale-tx2"))]
+  }
+,{'key: 'dummy
+ ,'caps: [
+   (coin.TRANSFER "coin-buyer" "alice" 0.194)
+   (coin.TRANSFER "coin-buyer" "creator" 0.006)
+ ]}])
+
+(expect-failure "buy fails, buyer doesn't sign coin.TRANSFER"
+  "[buyer]"
+  (continue-pact 1))
+
+(env-sigs [
+  {'key: 'bob
+   ,'caps: [(marmalade.ledger.BUY "project-3" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-policy-royalty-sale-tx2"))]
+  }
+ ,{'key: 'buyer
+ ,'caps: [
+  (coin.TRANSFER "coin-buyer" "alice" 0.194)
+  (coin.TRANSFER "coin-buyer" "creator" 0.006)
+ ]}])
+
+(expect "buy suceeds"
+  true
+  (continue-pact 1))
+
+(expect "Seller is credited, sale account is debited on project-3 balance"
+  [0.8 0.0 0.2]
+  (map (get-balance 'project-3) ['bob (sale-account) 'coin-buyer]))
+
+(expect "coin-buyer is debited on coin balance by price"
+  [1.8 0.194 0.006]
+  (map (coin.get-balance ) ['coin-buyer 'alice 'creator]))
+
+(expect-failure "Withdraw fails after sale completes"
+  (format "pact completed: {}" [(pact-id)])
+  (continue-pact 0 true))
+
+(expect "BUY events"
+   [{"name": "marmalade.ledger.BUY","params": ["project-3" "bob" "coin-buyer" 0.2 120 (pact-id)]}
+    {"name": "coin.TRANSFER","params": ["coin-buyer" "creator" 0.006]}
+    {"name": "coin.TRANSFER","params": ["coin-buyer" "alice" 0.194]}
+    {"name": "marmalade.ledger.TRANSFER","params": ["project-3" (sale-account) "coin-buyer" 0.2]}]
+  (map (remove 'module-hash) (env-events true)))
+
+(rollback-tx)
+
 ;; Upgrade tests
 (begin-tx "Upgrade contracts")
 (env-sigs [
@@ -1118,5 +1224,6 @@
   })
 (load "ledger.pact")
 (load "fixed-quote-policy.pact")
+(load "fixed-quote-policy-royalty.pact")
 (load "policy.pact")
 (rollback-tx)

@@ -1041,6 +1041,71 @@
 
 (rollback-tx)
 
+(begin-tx "sale fixed-quote-policy-royalty setup")
+(env-hash (hash "fixed-quote-sale-royalty-tx1"))
+(env-data {
+   'upgrade: false
+  ,'ns: "marmalade"
+  ,'fungible: coin
+  ,'creator: "creator"
+  ,'creator-guard: {"keys": ["creator"], "pred": "keys-all"}
+  ,'royalty-rate: 0.03
+  ,'mint-guard: {"keys": ["mint"], "pred": "keys-all"}
+  ,'bob-guard: {"keys": ["bob"], "pred": "keys-all"}
+  ,'max-supply: 10.0
+  ,'min-amount: 1.0
+  })
+(env-sigs
+  [{'key:'dummy
+   ,'caps:
+    [(marmalade.ledger.MINT "project-3" "bob" 1.0)
+     ]},
+   { 'key: 'marmalade-admin
+    ,'caps:[]
+     }
+   ])
+
+(expect "create creator account " "Write succeeded"
+  (coin.create-account "creator" (read-keyset 'creator-guard) ))
+
+(load "fixed-quote-policy-royalty.pact")
+(use kip.token-manifest)
+(use marmalade.ledger)
+
+(expect "Create token project-3"
+  "Write succeeded"
+  (create-token "project-3" 1
+    (create-manifest (uri "text" "project-3-uri") []) marmalade.fixed-quote-policy-royalty))
+
+(expect-failure "bob mints project-3"
+  "Failed: Keyset failure (keys-all): [mint]"
+  (mint 'project-3 "bob" (read-keyset 'bob-guard) 1.0))
+
+(env-sigs
+  [{'key:'mint
+   ,'caps:
+    [(marmalade.ledger.MINT "project-3" "bob" 1.0)
+     ]}])
+
+(expect "bob mints project-3"
+  "Write succeeded"
+  (mint 'project-3 "bob" (read-keyset 'bob-guard) 1.0))
+
+(expect "Bob is credited"
+  1.0
+  (get-balance 'project-3 'bob))
+
+(expect "Create and mint fqp token EVENTS"
+  [ {"name": "marmalade.ledger.TOKEN","params": ["project-3"]}
+    {"name": "marmalade.ledger.MINT","params": ["project-3" "bob" 1.0]}
+    {"name": "marmalade.ledger.SUPPLY","params": ["project-3" 1.0]}]
+    (map (remove 'module-hash) (env-events true)))
+
+(commit-tx)
+
+(begin-tx "Upgrade contracts")
+(load "fixed-quote-policy-royalty.pact")
+(commit-tx)
 ;; Upgrade tests
 (begin-tx "Upgrade contracts")
 (env-sigs [

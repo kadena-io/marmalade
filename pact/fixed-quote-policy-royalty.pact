@@ -1,8 +1,8 @@
 (namespace (read-msg 'ns))
 
-(module fixed-quote-policy-royalty GOVERNANCE
+(module fixed-quote-royalty-policy GOVERNANCE
 
-  @doc "Policy for fixed issuance with simple quoted sale."
+  @doc "Policy for fixed issuance with royalty and quoted sale in specified fungible."
 
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-ns-admin )))
@@ -21,6 +21,9 @@
   )
 
   (deftable policies:{policy-schema})
+
+  (defconst TOKEN_SPEC "token_spec"
+    @doc "Payload field for token spec")
 
   (defconst QUOTE "quote"
     @doc "Payload field for quote spec")
@@ -73,22 +76,23 @@
     ( token:object{token-info}
     )
     (enforce-ledger)
-    (let* ( (fungible:module{fungible-v2} (read-msg 'fungible ))
-            (creator:string (read-msg 'creator ))
-            (creator-guard:guard (read-keyset 'creator-guard ))
-            (mint-guard:guard (read-keyset 'mint-guard ))
-            (max-supply:decimal (read-decimal 'max-supply ))
-            (min-amount:decimal (read-decimal 'min-amount ))
-            (royalty-rate:decimal (read-decimal 'royalty-rate ))
+    (let* ( (spec:object{policy-schema} (read-msg TOKEN_SPEC))
+            (fungible:module{fungible-v2} (at 'fungible spec))
+            (creator:string (at 'creator spec))
+            (creator-guard:guard (at 'creator-guard spec))
+            (mint-guard:guard (at 'mint-guard spec))
+            (max-supply:decimal (at 'max-supply spec))
+            (min-amount:decimal (at 'min-amount spec))
+            (royalty-rate:decimal (at 'royalty-rate spec))
             (creator-details:object (fungible::details creator ))
             )
-      (fungible::precision)
+      (fungible::enforce-unit royalty-rate)
       (enforce (=
         (at 'guard creator-details) creator-guard)
         "Creator guard does not match")
       (enforce (and
         (>= royalty-rate 0.0) (<= royalty-rate 1.0))
-        "royalty rate is not valid")
+        "Invalid royalty rate")
       (insert policies (at 'id token)
         { 'fungible: fungible
         , 'creator: creator
@@ -111,13 +115,15 @@
     (enforce-sale-pact sale-id)
     (bind (get-policy token)
       { 'fungible := fungible:module{fungible-v2}
+       ,'royalty-rate:= royalty-rate:decimal
       }
     (let* ( (spec:object{quote-spec} (read-msg QUOTE))
             (price:decimal (at 'price spec))
             (recipient:string (at 'recipient spec))
             (recipient-guard:guard (at 'recipient-guard spec))
-            (recipient-details:object (fungible::details recipient)) )
-      (fungible::enforce-unit price)
+            (recipient-details:object (fungible::details recipient))
+            (sale-price:decimal (* amount price)) )
+      (fungible::enforce-unit (* sale-price royalty-rate))
       (enforce (< 0.0 price) "Offer amount must be positive")
       (enforce (=
         (at 'guard recipient-details) recipient-guard)
@@ -146,8 +152,9 @@
           , 'recipient := recipient:string
           , 'recipient-guard := recipient-guard:guard
           }
-          (fungible::transfer-create buyer creator creator-guard (* (* amount price) royalty-rate))
-          (fungible::transfer-create buyer recipient recipient-guard (* (* amount price) (- 1 royalty-rate)))
+          (let ((sale-price (* amount price)))
+            (fungible::transfer-create buyer creator creator-guard (* sale-price royalty-rate))
+            (fungible::transfer-create buyer recipient recipient-guard (* sale-price (- 1 royalty-rate))))
         )
       ))
   )

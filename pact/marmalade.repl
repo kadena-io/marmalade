@@ -1046,14 +1046,19 @@
 (env-data {
    'upgrade: false
   ,'ns: "marmalade"
-  ,'fungible: coin
   ,'creator: "creator"
   ,'creator-guard: {"keys": ["creator"], "pred": "keys-all"}
-  ,'royalty-rate: 0.03
   ,'mint-guard: {"keys": ["mint"], "pred": "keys-all"}
   ,'bob-guard: {"keys": ["bob"], "pred": "keys-all"}
-  ,'max-supply: 10.0
-  ,'min-amount: 1.0
+  ,'token_spec: {
+    'fungible: coin
+    ,'creator: "creator"
+    ,'creator-guard: {"keys": ["creator"], "pred": "keys-all"}
+    ,'mint-guard: {"keys": ["mint"], "pred": "keys-all"}
+    ,'royalty-rate: 0.03
+    ,'max-supply: 10.0
+    ,'min-amount: 1.0
+  }
   })
 (env-sigs
   [{'key:'dummy
@@ -1075,7 +1080,7 @@
 (expect "Create token project-3"
   "Write succeeded"
   (create-token "project-3" 1
-    (create-manifest (uri "text" "project-3-uri") []) marmalade.fixed-quote-policy-royalty))
+    (create-manifest (uri "text" "project-3-uri") []) marmalade.fixed-quote-royalty-policy))
 
 (expect-failure "bob mints project-3"
   "Failed: Keyset failure (keys-all): [mint]"
@@ -1122,7 +1127,7 @@
 (env-data
   {
    "quote": {
-       "price": 1.0
+       "price": 0.00000000001
       ,"recipient": "alice"
       ,"recipient-guard": {"keys": ["alice"], "pred":"="}
     }
@@ -1139,6 +1144,21 @@
 (expect "coin-buyer is credited coins"
   2.0
   (coin.get-balance 'coin-buyer))
+
+(expect-failure
+  "0.00000000000006"
+  (sale 'project-3 'bob 0.2 120))
+
+(env-data
+  {
+   "quote": {
+       "price": 1.0
+      ,"recipient": "alice"
+      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+    }
+  ,"buyer": "coin-buyer"
+  ,"buyer-guard": {"keys": ["buyer"], "pred": "="}
+  })
 
 (expect "Sale succeeds"
   true

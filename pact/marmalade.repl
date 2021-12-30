@@ -1041,7 +1041,7 @@
 
 (rollback-tx)
 
-(begin-tx "sale fixed-quote-policy-royalty setup")
+(begin-tx "sale fixed-quote-royalty-policy setup")
 (env-hash (hash "fixed-quote-sale-royalty-tx1"))
 (env-data {
    'upgrade: false
@@ -1073,7 +1073,7 @@
 (expect "create creator account " "Write succeeded"
   (coin.create-account "creator" (read-keyset 'creator-guard) ))
 
-(load "fixed-quote-policy-royalty.pact")
+(load "fixed-quote-royalty-policy.pact")
 (use kip.token-manifest)
 (use marmalade.ledger)
 
@@ -1108,8 +1108,8 @@
 
 (commit-tx)
 
-(begin-tx "sale fixed-quote-policy-royalty success")
-(env-hash (hash "fixed-quote-policy-royalty-sale-tx2"))
+(begin-tx "sale fixed-quote-royalty-policy success")
+(env-hash (hash "fixed-quote-royalty-policy-sale-tx2"))
 (use marmalade.ledger)
 
 (env-data {"alice": {"keys": ["alice"], "pred":"="}})
@@ -1185,7 +1185,7 @@
 
 (env-sigs [
   {'key: 'bob
-   ,'caps: [(marmalade.ledger.BUY "project-3" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-policy-royalty-sale-tx2"))]
+   ,'caps: [(marmalade.ledger.BUY "project-3" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-royalty-policy-sale-tx2"))]
   }
 ,{'key: 'dummy
  ,'caps: [
@@ -1199,7 +1199,7 @@
 
 (env-sigs [
   {'key: 'bob
-   ,'caps: [(marmalade.ledger.BUY "project-3" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-policy-royalty-sale-tx2"))]
+   ,'caps: [(marmalade.ledger.BUY "project-3" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-royalty-policy-sale-tx2"))]
   }
  ,{'key: 'buyer
  ,'caps: [
@@ -1244,6 +1244,6 @@
   })
 (load "ledger.pact")
 (load "fixed-quote-policy.pact")
-(load "fixed-quote-policy-royalty.pact")
+(load "fixed-quote-royalty-policy.pact")
 (load "policy.pact")
 (rollback-tx)

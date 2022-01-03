@@ -272,7 +272,7 @@
 (use kip.token-manifest)
 
 (expect-failure
-  "bob creates a new token project-1 before initialization"
+  "bob creates a new token project-0 before initialization"
   "Manifest is not valid"
   (create-token
     "project-0"
@@ -613,9 +613,13 @@
   true
   (sale 'project-0 'bob 0.1 110))
 
-(expect "Seller is debited, sale account is credited"
-  [2.9 0.1]
-  (map (get-balance 'project-0) ['bob (sale-account)]))
+(expect "Seller project-0 account debited sale amount"
+  2.9
+  (marmalade.ledger.get-balance 'project-0 'bob))
+
+(expect "project-0 escrow account credited sale amount"
+  0.1
+  (marmalade.ledger.get-balance 'project-0 (sale-account)))
 
 (expect "OFFER events"
   [{"name": "marmalade.ledger.OFFER","params": ["project-0" "bob" 0.1 110]}
@@ -641,9 +645,13 @@
   true
   (continue-pact 1))
 
-(expect "Sale account is debited, buyer is credited"
-  [0.0 0.1]
-  (map (get-balance 'project-0) [(sale-account) "buyer"]))
+(expect "project-0 escrow account debited sale amount"
+  0.0
+  (marmalade.ledger.get-balance 'project-0 (sale-account)))
+
+(expect "Buyer project-0 account credited sale amount"
+  0.1
+  (marmalade.ledger.get-balance 'project-0 'buyer))
 
 (expect "BUY events"
   [{"name": "marmalade.ledger.BUY","params": ["project-0" "bob" "buyer" 0.1 110 (hash "sale-tx1")]}
@@ -677,9 +685,13 @@
   true
   (sale 'project-0 'bob 0.1 110))
 
-(expect "Seller is debited, sale account is credited"
-  [2.9 0.1]
-  (map (get-balance 'project-0) ['bob (sale-account)]))
+(expect "Seller project-0 account debited sale amount"
+  2.9
+  (marmalade.ledger.get-balance 'project-0 'bob))
+
+(expect "project-0 escrow account credited sale amount"
+  0.1
+  (marmalade.ledger.get-balance 'project-0 (sale-account)))
 
 (expect "OFFER events"
   [{"name": "marmalade.ledger.OFFER","params": ["project-0" "bob" 0.1 110]}
@@ -697,9 +709,13 @@
   true
   (continue-pact 0 true))
 
-(expect "Seller is credited, sale account is debited"
-  [3.0 0.0]
-  (map (get-balance 'project-0) ['bob (sale-account)]))
+(expect "Seller project-0 account credited sale amount"
+  3.0
+  (marmalade.ledger.get-balance 'project-0 'bob))
+
+(expect "project-0 escrow account debited sale amount"
+  0.0
+  (marmalade.ledger.get-balance 'project-0 (sale-account)))
 
 (expect "WITHDRAW events"
   [{"name": "marmalade.ledger.WITHDRAW","params": ["project-0" "bob" 0.1 110 (hash "sale-tx2")]}
@@ -796,11 +812,7 @@
     }
   ,"alice": {"keys": ["alice"], "pred":"="}
  })
-
-(expect
-  "Create recipient account alice"
-  "Write succeeded"
-  (coin.create-account 'alice (read-keyset 'alice)))
+(coin.create-account 'alice (read-keyset 'alice))
 
 (expect-failure
   "Sale fails with wrong recipient guard"
@@ -844,10 +856,7 @@
 (use marmalade.ledger)
 
 (env-data {"alice": {"keys": ["alice"], "pred":"="}})
-(expect
-  "Create recipient account alice"
-  "Write succeeded"
-  (coin.create-account 'alice (read-keyset 'alice)))
+(coin.create-account 'alice (read-keyset 'alice))
 
 (env-sigs
   [{'key:'bob
@@ -869,25 +878,23 @@
 (env-chain-data {"block-height": 100})
 
 (test-capability (coin.COINBASE))
-
-(expect "coinbase buyer" "Write succeeded"
-  (coin.coinbase "coin-buyer" (read-msg 'buyer-guard) 2.0))
-
-(expect "coin-buyer is credited coins"
-  2.0
-  (coin.get-balance 'coin-buyer))
+(coin.coinbase "coin-buyer" (read-msg 'buyer-guard) 2.0)
 
 (expect "Sale succeeds"
   true
   (sale 'project-2 'bob 0.2 120))
 
-(expect "coin balance of coin-buyer is unchanged"
+(expect "Buyer coin balance remains unchanged"
   2.0
   (coin.get-balance 'coin-buyer))
 
-(expect "Seller is credited, sale account is debited on project-2 balance"
-  [0.8 0.2]
-  (map (get-balance 'project-2) ['bob (sale-account)]))
+(expect "Seller project-2 account debited sale amount"
+  0.8
+  (marmalade.ledger.get-balance 'project-2 'bob))
+
+(expect "project-2 escrow account credited sale amount"
+  0.2
+  (marmalade.ledger.get-balance 'project-2 (sale-account)))
 
 (expect "OFFER events"
    [{"name": "marmalade.ledger.OFFER","params": ["project-2" "bob" 0.2 120]}
@@ -922,17 +929,25 @@
    (coin.TRANSFER "coin-buyer" "alice" 0.2)
  ]}])
 
-(expect "buy suceeds"
+(expect "buy succeeds"
   true
   (continue-pact 1))
 
-(expect "Seller is credited, sale account is debited on project-2 balance"
-  [0.8 0.0 0.2]
-  (map (get-balance 'project-2) ['bob (sale-account) 'coin-buyer]))
+(expect "project-2 escrow account debited sale amount"
+  0.0
+  (marmalade.ledger.get-balance 'project-2 (sale-account)))
 
-(expect "coin-buyer is debited on coin balance by price"
-  [1.8 0.2]
-  (map (coin.get-balance ) ['coin-buyer 'alice]))
+(expect "Buyer project-2 account credited sale amount"
+  0.2
+  (marmalade.ledger.get-balance 'project-2 'coin-buyer))
+
+(expect "Buyer coin account debited sale price"
+  1.8
+  (coin.get-balance 'coin-buyer))
+
+(expect "Seller coin account credited sale price"
+  0.2
+  (coin.get-balance 'alice))
 
 (expect-failure "Withdraw fails after sale completes"
   (format "pact completed: {}" [(pact-id)])
@@ -951,10 +966,7 @@
 (use marmalade.ledger)
 
 (env-data {"alice": {"keys": ["alice"], "pred":"="}})
-(expect
-  "Create recipient account alice"
-  "Write succeeded"
-  (coin.create-account 'alice (read-keyset 'alice)))
+(coin.create-account 'alice (read-keyset 'alice))
 
 (env-sigs
   [{'key:'bob
@@ -982,25 +994,23 @@
 (env-chain-data {"block-height": 100})
 
 (test-capability (coin.COINBASE))
-
-(expect "coinbase buyer" "Write succeeded"
-  (coin.coinbase "coin-buyer" (read-msg 'buyer-guard) 2.0))
-
-(expect "coin-buyer is credited coins"
-  2.0
-  (coin.get-balance 'coin-buyer))
+(coin.coinbase "coin-buyer" (read-msg 'buyer-guard) 2.0)
 
 (expect "Sale succeeds"
   true
   (sale 'project-2 'bob 0.2 120))
 
-(expect "coin balance of coin-buyer is unchanged"
+(expect "Buyer coin balance remains unchanged"
   2.0
   (coin.get-balance 'coin-buyer))
 
-(expect "Seller is credited, sale account is debited on project-2 balance"
-  [0.8 0.2]
-  (map (get-balance 'project-2) ['bob (sale-account)]))
+(expect "Seller project-2 account debited sale amount"
+  0.8
+  (marmalade.ledger.get-balance 'project-2 'bob))
+
+(expect "project-2 escrow account credited sale amount"
+  0.2
+  (marmalade.ledger.get-balance 'project-2 (sale-account)))
 
 (expect "OFFER events"
    [{"name": "marmalade.ledger.OFFER","params": ["project-2" "bob" 0.2 120]}
@@ -1018,15 +1028,19 @@
   true
   (continue-pact 0 true))
 
-(expect "Seller is credited and sale account is debited"
-  [1.0 0.0]
-  (map (get-balance 'project-2) ['bob (sale-account)]))
+(expect "Seller project-2 account credited sale amount"
+  1.0
+  (marmalade.ledger.get-balance 'project-2 'bob))
 
-(expect "coin-buyer's coin balance remains unchanged"
+(expect "project-2 escrow account debited sale amount"
+  0.0
+  (marmalade.ledger.get-balance 'project-2 (sale-account)))
+
+(expect "Buyer coin balance remains unchanged"
   2.0
   (coin.get-balance 'coin-buyer))
 
-(expect "recipient's coin balance remains unchanged"
+(expect "Seller coin balance remains unchanged"
   0.0
   (coin.get-balance 'alice))
 
@@ -1070,8 +1084,7 @@
      }
    ])
 
-(expect "create creator account " "Write succeeded"
-  (coin.create-account "creator" (read-keyset 'creator-guard) ))
+(coin.create-account "creator" (read-keyset 'creator-guard))
 
 (load "fixed-quote-royalty-policy.pact")
 (use kip.token-manifest)
@@ -1082,7 +1095,7 @@
   (create-token "project-3" 1
     (create-manifest (uri "text" "project-3-uri") []) marmalade.fixed-quote-royalty-policy))
 
-(expect-failure "bob mints project-3"
+(expect-failure "mint project-3 to bob, invalid minter"
   "Failed: Keyset failure (keys-all): [mint]"
   (mint 'project-3 "bob" (read-keyset 'bob-guard) 1.0))
 
@@ -1092,7 +1105,7 @@
     [(marmalade.ledger.MINT "project-3" "bob" 1.0)
      ]}])
 
-(expect "bob mints project-3"
+(expect "mint project-3 to bob, success"
   "Write succeeded"
   (mint 'project-3 "bob" (read-keyset 'bob-guard) 1.0))
 
@@ -1113,10 +1126,7 @@
 (use marmalade.ledger)
 
 (env-data {"alice": {"keys": ["alice"], "pred":"="}})
-(expect
-  "Create recipient account alice"
-  "Write succeeded"
-  (coin.create-account 'alice (read-keyset 'alice)))
+(coin.create-account 'alice (read-keyset 'alice))
 
 (env-sigs
   [{'key:'bob
@@ -1137,15 +1147,10 @@
 (env-chain-data {"block-height": 100})
 
 (test-capability (coin.COINBASE))
-
-(expect "coinbase buyer" "Write succeeded"
-  (coin.coinbase "coin-buyer" (read-msg 'buyer-guard) 2.0))
-
-(expect "coin-buyer is credited coins"
-  2.0
-  (coin.get-balance 'coin-buyer))
+(coin.coinbase "coin-buyer" (read-msg 'buyer-guard) 2.0)
 
 (expect-failure
+  "Transfer amount violates fungible precision"
   "0.00000000000006"
   (sale 'project-3 'bob 0.2 120))
 
@@ -1164,13 +1169,17 @@
   true
   (sale 'project-3 'bob 0.2 120))
 
-(expect "coin balance of coin-buyer is unchanged"
+(expect "Buyer coin balance remains unchanged"
   2.0
   (coin.get-balance 'coin-buyer))
 
-(expect "Seller is credited, sale account is debited on project-3 balance"
-  [0.8 0.2]
-  (map (get-balance 'project-3) ['bob (sale-account)]))
+(expect "Seller project-3 account debited sale amount"
+  0.8
+  (marmalade.ledger.get-balance 'project-3 'bob))
+
+(expect "project-3 escrow account credited sale amount"
+  0.2
+  (marmalade.ledger.get-balance 'project-3 (sale-account)))
 
 (expect "OFFER events"
    [{"name": "marmalade.ledger.OFFER","params": ["project-3" "bob" 0.2 120]}
@@ -1207,17 +1216,29 @@
   (coin.TRANSFER "coin-buyer" "creator" 0.006)
  ]}])
 
-(expect "buy suceeds"
+(expect "buy succeeds"
   true
   (continue-pact 1))
 
-(expect "Seller is credited, sale account is debited on project-3 balance"
-  [0.8 0.0 0.2]
-  (map (get-balance 'project-3) ['bob (sale-account) 'coin-buyer]))
+(expect "project-3 escrow account debited sale amount"
+  0.0
+  (marmalade.ledger.get-balance 'project-3 (sale-account)))
 
-(expect "coin-buyer is debited on coin balance by price"
-  [1.8 0.194 0.006]
-  (map (coin.get-balance ) ['coin-buyer 'alice 'creator]))
+(expect "Buyer project-3 account credited sale amount"
+  0.2
+  (marmalade.ledger.get-balance 'project-3 'coin-buyer))
+
+(expect "Buyer coin account debited sale price"
+  1.8
+  (coin.get-balance 'coin-buyer))
+
+(expect "Seller coin account credited sale price minus 3% royalty"
+  0.194
+  (coin.get-balance 'alice))
+
+(expect "Creator coin account credited 3% royalty"
+  0.006
+  (coin.get-balance 'creator))
 
 (expect-failure "Withdraw fails after sale completes"
   (format "pact completed: {}" [(pact-id)])

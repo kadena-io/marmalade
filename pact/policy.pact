@@ -101,15 +101,6 @@
     (enforce-ledger)
     (enforce-guard (at 'transfer-guard (get-guards token)))
   )
-
-  ;; dummy impl to address #928
-  (implements gas-payer-v1)
-  (defcap GAS_PAYER:bool
-    ( user:string limit:integer price:decimal )
-    (enforce false "Dummy implementation"))
-  (defun create-gas-payer-guard:guard ()
-    (enforce false "Dummy implementation"))
-
 )
 
 (if (read-msg 'upgrade)

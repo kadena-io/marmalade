@@ -337,7 +337,7 @@
 
 (expect-failure
   "alice can't mint a project-0 token"
-  "[mint]"
+  "Keyset failure"
   (mint "project-0" "alice" (read-keyset 'alice-ks) 5.0))
 
 (rollback-tx)
@@ -587,7 +587,7 @@
   (sale 'project-0 'bob 0.1 10))
 
 (expect-failure "Offer fails, sale guard not signed"
-  "[sale]"
+  "Keyset failure"
   (sale 'project-0 'bob 0.1 110))
 
 (env-sigs
@@ -1201,11 +1201,11 @@
    (coin.TRANSFER "coin-buyer" "alice" 0.194)
    (coin.TRANSFER "coin-buyer" "creator" 0.006)
  ]}])
-;(continue-pact 1)
+
 (expect-failure "buy fails, buyer doesn't sign coin.TRANSFER"
-  "[buyer]"
+  "Keyset failure"
   (continue-pact 1))
-(enforce-keyset (read-keyset 'buyer-guard))
+
 (env-sigs [
   {'key: 'bob
    ,'caps: [(marmalade.ledger.BUY "project-3" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-royalty-policy-sale-tx2"))]

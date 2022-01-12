@@ -121,7 +121,7 @@ export const RenderManifest = ({mfCache}) => {
     keyOrder={["hash","contents"]}
     kvFunc={
       {'contents': v => {
-        return <ReactJson 
+        return <ReactJson
           src={v.contents}
           name={false}
           collapsed={2}
@@ -233,7 +233,6 @@ const CreateDatum = ({mfCache, setMfCache}) => {
       type:'textFieldMulti',
       label:'Datum',
       className:classes.formControl,
-      options:_.map(_.reject(mfCache,{type:'datum'}),v=> JSON.stringify(v.value)),
       value:datum,
       onChange:setDatum
     }

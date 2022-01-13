@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/marmalade/precache-manifest.1f63d627a822a8352766cf21a1a40d97.js"
+  "/marmalade/precache-manifest.95206faa1347b755b0228cd757cfc5e2.js"
 );
 
 self.addEventListener('message', (event) => {

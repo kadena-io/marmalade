@@ -1,6 +1,6 @@
 //basic React api imports
 import React, { useState, useEffect } from "react";
-import { 
+import {
   useQueryParams,
   StringParam,
  } from 'use-query-params';
@@ -121,7 +121,7 @@ export const RenderManifest = ({mfCache}) => {
     keyOrder={["hash","contents"]}
     kvFunc={
       {'contents': v => {
-        return <ReactJson 
+        return <ReactJson
           src={v.contents}
           name={false}
           collapsed={2}
@@ -145,7 +145,7 @@ export const RenderDatum = ({mfCache}) => {
     keyOrder={["hash","contents"]}
     kvFunc={
       {'contents': v => {
-        return <ReactJson 
+        return <ReactJson
           src={v.contents}
           name={false}
           collapsed={2}
@@ -230,10 +230,9 @@ const CreateDatum = ({mfCache, setMfCache}) => {
       onChange:setUri
     },
     {
-      type:'select',
-      label:'Data',
+      type:'textFieldMulti',
+      label:'Datum',
       className:classes.formControl,
-      options:_.map(_.reject(mfCache,{type:'datum'}),v=> JSON.stringify(v.value)),
       value:datum,
       onChange:setDatum
     }

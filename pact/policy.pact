@@ -6,8 +6,8 @@
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
-  (implements kip.token-policy-v1_DRAFT3)
-  (use kip.token-policy-v1_DRAFT3 [token-info])
+  (implements kip.token-policy-v1_DRAFT4)
+  (use kip.token-policy-v1_DRAFT4 [token-info])
 
   (defschema guards
     mint-guard:guard

@@ -7,8 +7,8 @@
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-ns-admin )))
 
-  (implements kip.token-policy-v1_DRAFT3)
-  (use kip.token-policy-v1_DRAFT3 [token-info])
+  (implements kip.token-policy-v1_DRAFT4)
+  (use kip.token-policy-v1_DRAFT4 [token-info])
 
   (defschema policy-schema
     fungible:module{fungible-v2}

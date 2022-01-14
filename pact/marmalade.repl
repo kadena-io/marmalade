@@ -62,6 +62,10 @@
 ;; enforce-ledger test
 (begin-tx)
 
+(env-data {
+  "bob-guard": {"keys": ["bob"], "pred": "keys-all"}
+  })
+
 (module test-ledger G
   (defcap G () true)
   (use kip.token-manifest)
@@ -80,19 +84,21 @@
   (defun mint:string
     ( token:object{token-info}
       account:string
+      guard:guard
       amount:decimal
       policy:module{kip.token-policy-v1_DRAFT3}
     )
-    (policy::enforce-mint token account amount)
+    (policy::enforce-mint token account guard amount)
   )
 
   (defun burn:string
     ( token:object{token-info}
       account:string
+      guard:guard
       amount:decimal
       policy:module{kip.token-policy-v1_DRAFT3}
     )
-    (policy::enforce-burn token account amount)
+    (policy::enforce-burn token account guard amount)
   )
 
   (defun offer
@@ -118,21 +124,23 @@
   (defun enforce-transfer-policy
     ( token:object{token-info}
       sender:string
+      guard:guard
       receiver:string
       amount:decimal
       policy:module{kip.token-policy-v1_DRAFT3}
     )
-    (policy::enforce-transfer token sender receiver amount)
+    (policy::enforce-transfer token sender guard receiver amount)
   )
 
   (defun transfer-crosschain
     ( token:object{token-info}
       sender:string
+      guard:guard
       receiver:string
       amount:decimal
       policy:module{kip.token-policy-v1_DRAFT3}
     )
-    (policy::enforce-transfer token sender receiver amount)
+    (policy::enforce-transfer token sender guard receiver amount)
   )
 )
 
@@ -165,7 +173,7 @@
     "precision": 12,
     "manifest": (create-manifest (uri "text" "project-0-uri") [])
   }
-  "bob" 5.0 marmalade.guard-token-policy))
+  "bob" (read-keyset 'bob-guard) 5.0 marmalade.guard-token-policy))
 
 (expect-failure
   "enforce-burn is called from an external ledger"
@@ -177,7 +185,7 @@
     "precision": 12,
     "manifest": (create-manifest (uri "text" "project-0-uri") [])
   }
-  "bob" 5.0 marmalade.guard-token-policy))
+  "bob" (read-keyset 'bob-guard) 5.0 marmalade.guard-token-policy))
 
 (expect-failure
   "enforce-offer is called from an external ledger"
@@ -213,7 +221,7 @@
     "precision": 12,
     "manifest": (create-manifest (uri "text" "project-0-uri") [])
   }
-  "bob" "alice" 5.0 marmalade.guard-token-policy ))
+  "bob" (read-keyset 'bob-guard) "alice" 5.0 marmalade.guard-token-policy ))
 
 (expect-failure
   "enforce-crosschain is called from an external ledger"
@@ -225,7 +233,7 @@
     "precision": 12,
     "manifest": (create-manifest (uri "text" "project-0-uri") [])
   }
-  "bob" "alice" 5.0 marmalade.guard-token-policy ))
+  "bob" (read-keyset 'bob-guard) "alice" 5.0 marmalade.guard-token-policy ))
 
 (rollback-tx)
 

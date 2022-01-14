@@ -109,7 +109,7 @@
     (compose-capability (DEBIT id account))
     (compose-capability (UPDATE_SUPPLY))
   )
-  
+
   (defun ledger-guard:guard ()
     @doc "Ledger module guard for policies to be able to validate access to policy operations."
     (create-module-guard "ledger-guard")
@@ -227,7 +227,7 @@
     (bind (get-policy-info id)
       { 'policy := policy:module{kip.token-policy-v1_DRAFT3}
       , 'token := token }
-      (policy::enforce-transfer token sender receiver amount))
+      (policy::enforce-transfer token sender (account-guard id sender) receiver amount))
   )
 
   (defun transfer-create:string
@@ -257,7 +257,7 @@
       (bind (get-policy-info id)
         { 'policy := policy:module{kip.token-policy-v1_DRAFT3}
         , 'token := token }
-        (policy::enforce-mint token account amount))
+        (policy::enforce-mint token account guard amount))
       (credit id account guard amount)
       (update-supply id amount))
   )
@@ -271,7 +271,7 @@
       (bind (get-policy-info id)
         { 'policy := policy:module{kip.token-policy-v1_DRAFT3}
         , 'token := token }
-        (policy::enforce-burn token account amount))
+        (policy::enforce-burn token account (account-guard id account) amount))
       (debit id account amount)
       (update-supply id (- amount)))
   )

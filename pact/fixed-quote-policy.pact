@@ -46,6 +46,7 @@
   (defun enforce-mint:bool
     ( token:object{token-info}
       account:string
+      guard:guard
       amount:decimal
     )
     (enforce-ledger)
@@ -60,6 +61,7 @@
   (defun enforce-burn:bool
     ( token:object{token-info}
       account:string
+      guard:guard
       amount:decimal
     )
     (enforce-ledger)
@@ -129,6 +131,7 @@
   (defun enforce-transfer:bool
     ( token:object{token-info}
       sender:string
+      guard:guard
       receiver:string
       amount:decimal )
     (enforce-ledger)
@@ -138,6 +141,7 @@
   (defun enforce-crosschain:bool
     ( token:object{token-info}
       sender:string
+      guard:guard
       receiver:string
       target-chain:string
       amount:decimal )

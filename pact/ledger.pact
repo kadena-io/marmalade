@@ -271,7 +271,7 @@
       (bind (get-policy-info id)
         { 'policy := policy:module{kip.token-policy-v1_DRAFT4}
         , 'token := token }
-        (policy::enforce-burn token account (account-guard id account) amount))
+        (policy::enforce-burn token account amount))
       (debit id account amount)
       (update-supply id (- amount)))
   )

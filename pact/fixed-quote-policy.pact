@@ -61,7 +61,6 @@
   (defun enforce-burn:bool
     ( token:object{token-info}
       account:string
-      guard:guard
       amount:decimal
     )
     (enforce-ledger)

@@ -94,11 +94,10 @@
   (defun burn:string
     ( token:object{token-info}
       account:string
-      guard:guard
       amount:decimal
       policy:module{kip.token-policy-v1_DRAFT4}
     )
-    (policy::enforce-burn token account guard amount)
+    (policy::enforce-burn token account amount)
   )
 
   (defun offer
@@ -185,7 +184,7 @@
     "precision": 12,
     "manifest": (create-manifest (uri "text" "project-0-uri") [])
   }
-  "bob" (read-keyset 'bob-guard) 5.0 marmalade.guard-token-policy))
+  "bob" 5.0 marmalade.guard-token-policy))
 
 (expect-failure
   "enforce-offer is called from an external ledger"

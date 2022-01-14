@@ -24,7 +24,6 @@
   (defun enforce-burn:bool
     ( token:object{token-info}
       account:string
-      guard:guard
       amount:decimal
     )
     @doc "Burning policy for TOKEN to ACCOUNT for AMOUNT."

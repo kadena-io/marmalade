@@ -7,8 +7,8 @@
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
-  (implements kip.token-policy-v1_DRAFT3)
-  (use kip.token-policy-v1_DRAFT3 [token-info])
+  (implements kip.token-policy-v1_DRAFT4)
+  (use kip.token-policy-v1_DRAFT4 [token-info])
 
   (defschema policy-schema
     mint-guard:guard
@@ -46,6 +46,7 @@
   (defun enforce-mint:bool
     ( token:object{token-info}
       account:string
+      guard:guard
       amount:decimal
     )
     (enforce-ledger)
@@ -129,6 +130,7 @@
   (defun enforce-transfer:bool
     ( token:object{token-info}
       sender:string
+      guard:guard
       receiver:string
       amount:decimal )
     (enforce-ledger)
@@ -138,6 +140,7 @@
   (defun enforce-crosschain:bool
     ( token:object{token-info}
       sender:string
+      guard:guard
       receiver:string
       target-chain:string
       amount:decimal )

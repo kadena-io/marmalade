@@ -69,13 +69,13 @@
 (module test-ledger G
   (defcap G () true)
   (use kip.token-manifest)
-  (use kip.token-policy-v1_DRAFT4 [token-info])
+  (use kip.token-policy-v1 [token-info])
 
   (defun create-token
     ( id:string
       precision:integer
       manifest:object{manifest}
-      policy:module{kip.token-policy-v1_DRAFT4}
+      policy:module{kip.token-policy-v1}
     )
     (policy::enforce-init
       { 'id: id, 'supply: 0.0, 'precision: precision, 'manifest: manifest })
@@ -86,7 +86,7 @@
       account:string
       guard:guard
       amount:decimal
-      policy:module{kip.token-policy-v1_DRAFT4}
+      policy:module{kip.token-policy-v1}
     )
     (policy::enforce-mint token account guard amount)
   )
@@ -95,7 +95,7 @@
     ( token:object{token-info}
       account:string
       amount:decimal
-      policy:module{kip.token-policy-v1_DRAFT4}
+      policy:module{kip.token-policy-v1}
     )
     (policy::enforce-burn token account amount)
   )
@@ -104,7 +104,7 @@
     ( token:object{token-info}
       seller:string
       amount:decimal
-      policy:module{kip.token-policy-v1_DRAFT4}
+      policy:module{kip.token-policy-v1}
     )
     (policy::enforce-offer token seller amount "sale")
   )
@@ -115,7 +115,7 @@
       buyer:string
       amount:decimal
       sale-id:string
-      policy:module{kip.token-policy-v1_DRAFT4}
+      policy:module{kip.token-policy-v1}
     )
     (policy::enforce-buy token seller buyer amount sale-id)
   )
@@ -126,7 +126,7 @@
       guard:guard
       receiver:string
       amount:decimal
-      policy:module{kip.token-policy-v1_DRAFT4}
+      policy:module{kip.token-policy-v1}
     )
     (policy::enforce-transfer token sender guard receiver amount)
   )
@@ -137,7 +137,7 @@
       guard:guard
       receiver:string
       amount:decimal
-      policy:module{kip.token-policy-v1_DRAFT4}
+      policy:module{kip.token-policy-v1}
     )
     (policy::enforce-transfer token sender guard receiver amount)
   )

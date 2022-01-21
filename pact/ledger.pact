@@ -25,7 +25,7 @@
     manifest:object{manifest}
     precision:integer
     supply:decimal
-    policy:module{kip.token-policy-v1_DRAFT4}
+    policy:module{kip.token-policy-v1}
   )
 
   (deftable tokens:{token-schema})
@@ -116,13 +116,13 @@
   )
 
   (defschema policy-info
-    policy:module{kip.token-policy-v1_DRAFT4}
-    token:object{kip.token-policy-v1_DRAFT4.token-info}
+    policy:module{kip.token-policy-v1}
+    token:object{kip.token-policy-v1.token-info}
   )
 
   (defun get-policy-info:object{policy-info} (id:string)
     (with-read tokens id
-      { 'policy := policy:module{kip.token-policy-v1_DRAFT4}
+      { 'policy := policy:module{kip.token-policy-v1}
       , 'supply := supply
       , 'precision := precision
       , 'manifest := manifest
@@ -162,7 +162,7 @@
     ( id:string
       precision:integer
       manifest:object{manifest}
-      policy:module{kip.token-policy-v1_DRAFT4}
+      policy:module{kip.token-policy-v1}
     )
     (enforce-verify-manifest manifest)
     (policy::enforce-init
@@ -225,7 +225,7 @@
       amount:decimal
     )
     (bind (get-policy-info id)
-      { 'policy := policy:module{kip.token-policy-v1_DRAFT4}
+      { 'policy := policy:module{kip.token-policy-v1}
       , 'token := token }
       (policy::enforce-transfer token sender (account-guard id sender) receiver amount))
   )
@@ -255,7 +255,7 @@
     )
     (with-capability (MINT id account amount)
       (bind (get-policy-info id)
-        { 'policy := policy:module{kip.token-policy-v1_DRAFT4}
+        { 'policy := policy:module{kip.token-policy-v1}
         , 'token := token }
         (policy::enforce-mint token account guard amount))
       (credit id account guard amount)
@@ -269,7 +269,7 @@
     )
     (with-capability (BURN id account amount)
       (bind (get-policy-info id)
-        { 'policy := policy:module{kip.token-policy-v1_DRAFT4}
+        { 'policy := policy:module{kip.token-policy-v1}
         , 'token := token }
         (policy::enforce-burn token account amount))
       (debit id account amount)
@@ -470,7 +470,7 @@
     @doc "Initiate sale with by SELLER by escrowing AMOUNT of TOKEN until TIMEOUT."
     (require-capability (SALE_PRIVATE (pact-id)))
     (bind (get-policy-info id)
-      { 'policy := policy:module{kip.token-policy-v1_DRAFT4}
+      { 'policy := policy:module{kip.token-policy-v1}
       , 'token := token }
       (policy::enforce-offer token seller amount (pact-id)))
     (debit id seller amount)
@@ -502,7 +502,7 @@
     @doc "Complete sale with transfer."
     (require-capability (SALE_PRIVATE (pact-id)))
     (bind (get-policy-info id)
-      { 'policy := policy:module{kip.token-policy-v1_DRAFT4}
+      { 'policy := policy:module{kip.token-policy-v1}
       , 'token := token }
       (policy::enforce-buy token seller buyer amount sale-id))
     (debit id (sale-account) amount)

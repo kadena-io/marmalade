@@ -11,8 +11,8 @@
   (use util.fungible-util)
   (use kip.token-manifest)
 
-  (implements kip.poly-fungible-v2_DRAFT3)
-  (use kip.poly-fungible-v2_DRAFT3 [account-details])
+  (implements kip.poly-fungible-v2)
+  (use kip.poly-fungible-v2 [account-details])
 
   ;;
   ;; Tables/Schemas

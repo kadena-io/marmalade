@@ -48,8 +48,11 @@ const fqpConstants = {};
 //unique gas station contract name
 const gasStationName = "memory-wall-gas-station";
 
-//api host to send requests
+//pact api host to send requests
 const host = `https://${node}/chainweb/0.0/${networkId}/chain/${chainId}/pact`;
+
+//api host to send requests
+const apiHost = `https://${node}`;
 
 //creation time for request
 const creationTime = () => Math.round(new Date().getTime() / 1000) - 15;
@@ -109,6 +112,7 @@ const hftAPI = {
     networkId: networkId,
     chainId: chainId,
     host: host,
+    apiHost: apiHost,
     creationTime: creationTime,
     //gas price at lowest possible denomination
     gasPrice: 0.000000001,

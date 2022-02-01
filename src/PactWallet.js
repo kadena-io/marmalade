@@ -47,6 +47,7 @@ import ExpandLess from '@material-ui/icons/ExpandLess';
 import ExpandMore from '@material-ui/icons/ExpandMore';
 //pact-lang-api for blockchain calls
 import Pact from "pact-lang-api";
+import {SigData} from './Pact.SigBuilder';
 //config file for blockchain calls
 import { PactTxStatus } from "./PactTxStatus.js";
 import {
@@ -190,6 +191,85 @@ export const WalletApp = ({
   )
 };
 export const addGasCap = (otherCaps) => _.concat([Pact.lang.mkCap("Gas Cap", "Gas Cap", "coin.GAS", [])], otherCaps);
+
+const prepareSigBuilderExecCmd = ({
+  pactCode, 
+  envData, 
+  caps,
+  networkId,
+  chainId,
+  gasAccount,
+  gasPrice,
+  gasLimit,
+  ttl
+}) => {
+  const creationTime = Math.round(new Date().getTime() / 1000) - 15;
+  const nonce = new Date().toISOString();
+    
+  var cmdJSON = {
+    networkId: networkId,
+    payload: {
+      exec: {
+        data: envData || {},
+        code: pactCode
+      }
+    },
+    signers: caps,
+    meta: Pact.lang.mkMeta(gasAccount, chainId, gasPrice, gasLimit, creationTime, ttl),
+    nonce: JSON.stringify(nonce)
+  };
+  console.debug('cmdJSON', cmdJSON);
+  return JSON.stringify(cmdJSON);
+};
+
+var mkSigner = function(kp) {
+  if (kp.clist) {
+    return {
+      clist: asArray(kp.clist),
+      pubKey: kp.publicKey
+    }
+  } else {
+    return {pubKey: kp.publicKey}
+  }
+};
+
+var asArray = function(singleOrArray) {
+  if (Array.isArray(singleOrArray)) {
+    return singleOrArray;
+  } else {
+    return [singleOrArray];
+  }
+};
+
+const mkWalletTestCmd = ({
+  user, 
+  signingPubKey, 
+  networkId,
+  gasPrice,
+}) => {
+  //creates transaction to send to wallet
+  const caps = [
+    {clist: [{name: "coin.GAS", args: []}],
+    pubKey: signingPubKey}
+  ];
+  console.debug("caps", caps);
+  const toSign = prepareSigBuilderExecCmd({
+      pactCode: "(+ 1 1)",
+      envData: {foo: "bar"},
+      caps,
+      networkId: networkId,
+      chainId: "0",
+      gasAccount: user,
+      gasLimit: 1000,
+      gasPrice: gasPrice,
+      signingPubKey: signingPubKey,
+      ttl: 28800,
+  });
+  var unsignedSigs = {};
+  unsignedSigs[signingPubKey] = null;
+  console.debug("toSign", {hash: Pact.crypto.hash(toSign), cmd: toSign, sigs: unsignedSigs});
+  return toSign;
+};
 
 const walletCmd = async (
   setTx,
@@ -481,15 +561,20 @@ export const WalletConfig = () => {
         const host = networkId === "testnet04" ? 
           `https://api.testnet.chainweb.com/chainweb/0.0/${networkId}/chain/0/pact` : 
           `https://api.chainweb.com/chainweb/0.0/${networkId}/chain/0/pact`; 
-        walletCmd(
-          setTx,
-          setTxStatus,
-          setTxRes,
-          signingKey,
-          signingKey, 
+        SigData.mkWalletTestCmd1({
+          user: signingKey,
+          signingPubKey: signingKey, 
           networkId,
-          Number.parseFloat(gasPrice), 
-          host);
+          gasPrice: Number.parseFloat(gasPrice),
+          gasLimit: 10000
+        });
+        mkWalletTestCmd({
+          user: signingKey,
+          signingPubKey: signingKey, 
+          networkId,
+          gasPrice: Number.parseFloat(gasPrice),
+          gasLimit: 10000
+        });
       } else {
         const n = {walletName:walletName, signingKey:signingKey, gasPrice:gasPrice, networkId:networkId};
         walletDispatch({type: 'updateWallet', newWallet: n});

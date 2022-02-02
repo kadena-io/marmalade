@@ -93,19 +93,20 @@
 
   (defcap CREDIT (id:string receiver:string) true)
 
-
   (defcap UPDATE_SUPPLY ()
     "private cap for update-supply"
     true)
 
   (defcap MINT (id:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
+    (enforce (< 0.0 amount) "Positive amount")
     (compose-capability (CREDIT id account))
     (compose-capability (UPDATE_SUPPLY))
   )
 
   (defcap BURN (id:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
+    (enforce (< 0.0 amount) "Positive amount")
     (compose-capability (DEBIT id account))
     (compose-capability (UPDATE_SUPPLY))
   )
@@ -253,6 +254,7 @@
       guard:guard
       amount:decimal
     )
+    (enforce (> amount 0.0) "Amount must be positive")
     (with-capability (MINT id account amount)
       (bind (get-policy-info id)
         { 'policy := policy:module{kip.token-policy-v1}
@@ -267,6 +269,7 @@
       account:string
       amount:decimal
     )
+    (enforce (> amount 0.0) "Amount must be positive")
     (with-capability (BURN id account amount)
       (bind (get-policy-info id)
         { 'policy := policy:module{kip.token-policy-v1}
@@ -408,6 +411,7 @@
     (id:string seller:string amount:decimal timeout:integer sale-id:string)
     @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
     @event
+    (enforce (> amount 0.0) "Offer amount must be positive")
     (compose-capability (OFFER id seller amount timeout))
     (compose-capability (SALE_PRIVATE sale-id))
   )

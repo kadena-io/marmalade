@@ -71,11 +71,17 @@
     ( token:object{token-info}
     )
     (enforce-ledger)
+    (let* ( (mint-guard:guard (read-keyset 'mint-guard ))
+            (max-supply:decimal (read-decimal 'max-supply ))
+            (min-amount:decimal (read-decimal 'min-amount ))
+            )
+    (enforce (>= min-amount 0.0) "Invalid min-amount")
+    (enforce (>= max-supply 0.0) "Invalid max-supply")
     (insert policies (at 'id token)
-      { 'mint-guard: (read-keyset 'mint-guard)
-      , 'max-supply: (read-decimal 'max-supply)
-      , 'min-amount: (read-decimal 'min-amount) })
-    true
+      { 'mint-guard: mint-guard
+      , 'max-supply: max-supply
+      , 'min-amount: min-amount })
+    true)
   )
 
   (defun enforce-offer:bool
@@ -94,7 +100,7 @@
             (recipient-guard:guard (at 'recipient-guard spec))
             (recipient-details:object (fungible::details recipient)) )
       (fungible::enforce-unit price)
-      (enforce (< 0.0 price) "Offer amount must be positive")
+      (enforce (< 0.0 price) "Offer price must be positive")
       (enforce (=
         (at 'guard recipient-details) recipient-guard)
         "Recipient guard does not match")

@@ -87,10 +87,12 @@
             (royalty-rate:decimal (at 'royalty-rate spec))
             (creator-details:object (fungible::details creator ))
             )
-      (fungible::enforce-unit royalty-rate)
+      (enforce (>= min-amount 0.0) "Invalid min-amount")
+      (enforce (>= max-supply 0.0) "Invalid max-supply")
       (enforce (=
         (at 'guard creator-details) creator-guard)
         "Creator guard does not match")
+      (fungible::enforce-unit royalty-rate)
       (enforce (and
         (>= royalty-rate 0.0) (<= royalty-rate 1.0))
         "Invalid royalty rate")
@@ -124,8 +126,11 @@
             (recipient-guard:guard (at 'recipient-guard spec))
             (recipient-details:object (fungible::details recipient))
             (sale-price:decimal (* amount price)) )
-      (fungible::enforce-unit (* sale-price royalty-rate))
-      (enforce (< 0.0 price) "Offer amount must be positive")
+      (if
+        (= royalty-rate 0.0)
+        (fungible::enforce-unit sale-price)
+        (fungible::enforce-unit (* sale-price royalty-rate)))
+      (enforce (< 0.0 price) "Offer price must be positive")
       (enforce (=
         (at 'guard recipient-details) recipient-guard)
         "Recipient guard does not match")
@@ -154,7 +159,10 @@
           , 'recipient-guard := recipient-guard:guard
           }
           (let ((sale-price (* amount price)))
-            (fungible::transfer-create buyer creator creator-guard (* sale-price royalty-rate))
+            (if
+              (> (* sale-price royalty-rate) 0.0)
+              (fungible::transfer-create buyer creator creator-guard (* sale-price royalty-rate))
+              true)
             (fungible::transfer-create buyer recipient recipient-guard (* sale-price (- 1 royalty-rate))))
         )
       ))

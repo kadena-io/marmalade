@@ -13,7 +13,7 @@ import {
 //pact-lang-api for blockchain calls
 import Pact from "pact-lang-api";
 //config file for blockchain calls
-import { hftAPI, gtpAPI, fqpAPI } from "../kadena-config.js";
+import { hftAPI, gtpAPI, fqpAPI, fqrpAPI } from "../kadena-config.js";
 import {
   PactJsonListAsTable,
   MakeForm,
@@ -287,6 +287,137 @@ const CreateFixedQuotePolicyToken = (props) => {
       className:classes.formControl,
       value:minAmount,
       onChange:setMinAmount
+    }
+  ];
+
+  return (
+    <MakeForm
+      inputFields={inputFields}
+      onSubmit={handleSubmit}
+      tx={tx} txStatus={txStatus} txRes={txRes}
+      setTxStatus={setTxStatus}/>
+  );
+};
+
+const CreateFixedQuoteRoyaltyPolicyToken = (props) => {
+  const {refresh, mfCache} = props;
+  const {txStatus, setTxStatus,
+    tx, setTx,
+    txRes, setTxRes} = props.pactTxStatus;
+  const {current: {signingKey, networkId, gasPrice}} = usePactWallet();
+  const [id,setId] = useState("");
+  const [manifest,setManifest] = useState("");
+  const [precision,setPrecision] = useState(12);
+  const [fungible, setFungible] = useState("");
+  const [mintGrd,setMintGrd] = useState("");
+  const [creator, setCreator] = useState("");
+  const [creatorGrd,setCreatorGrd] = useState("");
+  const [maxSupply,setMaxSupply] = useState("1.0");
+  const [minAmount,setMinAmount] = useState("0.0");
+  const [royaltyRate,setRoyaltyRate] = useState("0.0");
+  const classes = useStyles();
+
+  const handleSubmit = (evt) => {
+      evt.preventDefault();
+      try {
+        sendHftCommand(setTx,setTxStatus,setTxRes,refresh
+          ,signingKey, networkId, Number.parseFloat(gasPrice)
+          ,`(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${fqrpAPI.contractAddress})`
+          ,{"manifest": JSON.parse(manifest),
+            "token_spec": {
+              "fungible": {
+                "refName": {
+                  "namespace":null,
+                  "name":fungible
+                },
+                "refSpec": [
+                  {
+                  "namespace":null,
+                  "name":"fungible-v2"
+                }]
+              },
+              "creator": creator,
+              "creator-guard": JSON.parse(creatorGrd),
+              "mint-guard": JSON.parse(mintGrd),
+              "max-supply": Number.parseFloat(maxSupply),
+              "min-amount": Number.parseFloat(minAmount),
+              "royalty-rate": Number.parseFloat(royaltyRate)
+          }}
+          );
+      } catch (e) {
+        console.log("create-token Submit Error",typeof e, e, {id, manifest: JSON.parse(manifest), precision,mintGrd,maxSupply,minAmount});
+        setTxRes(e);
+        setTxStatus("validation-error");
+      }
+      };
+  const inputFields = [
+    {
+      type:'textFieldSingle',
+      label:'Token Name',
+      className:classes.formControl,
+      value:id,
+      onChange:setId
+    },{
+      type:'textFieldSingle',
+      label:'Precision',
+      className:classes.formControl,
+      value:precision,
+      onChange:setPrecision
+    },{
+      type:'select',
+      label:'Manifest',
+      className:classes.formControl,
+      options:_.map(_.filter(mfCache,{type:'manifest'}),v=> JSON.stringify(v.value)),
+      value:manifest,
+      onChange:setManifest
+    },{
+      type:'textFieldMulti',
+      label:'Mint Keyset',
+      className:classes.formControl,
+      placeholder:"",
+      value:mintGrd,
+      onChange:setMintGrd,
+    },
+    {
+      type:'textFieldSingle',
+      label:'Creator',
+      className:classes.formControl,
+      value:creator,
+      onChange:setCreator
+    },
+    {
+      type:'textFieldMulti',
+      label:'Creator Keyset',
+      className:classes.formControl,
+      placeholder:"",
+      value:creatorGrd,
+      onChange:setCreatorGrd,
+    },
+    {
+      type:'textFieldSingle',
+      label:'Fungible',
+      className:classes.formControl,
+      value:fungible,
+      onChange:setFungible
+    },
+    {
+      type:'textFieldSingle',
+      label:'Max Supply',
+      className:classes.formControl,
+      value:maxSupply,
+      onChange:setMaxSupply
+    },{
+      type:'textFieldSingle',
+      label:'Min Amount',
+      className:classes.formControl,
+      value:minAmount,
+      onChange:setMinAmount
+    },{
+      type:'textFieldSingle',
+      label:'Royalty Rate',
+      className:classes.formControl,
+      value:royaltyRate,
+      onChange:setRoyaltyRate
     }
   ];
 
@@ -671,6 +802,13 @@ export const TokenForms = ({
             label:"Create Fixed Quote Policy HFT",
             component:
               <CreateFixedQuotePolicyToken
+                pactTxStatus={pactTxStatus}
+                mfCache={mfCache}
+                refresh={()=>getHftTokens()}/>
+          },{
+            label:"Create Fixed Quote Royalty Policy HFT",
+            component:
+              <CreateFixedQuoteRoyaltyPolicyToken
                 pactTxStatus={pactTxStatus}
                 mfCache={mfCache}
                 refresh={()=>getHftTokens()}/>

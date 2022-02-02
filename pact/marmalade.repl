@@ -1373,7 +1373,7 @@
  ])
 
 (expect-failure
-  "Offer amount must be positive"
+  "Amount must be positive"
   (sale 'project-4 'bob -0.2 120))
 
 (env-sigs

@@ -49,7 +49,7 @@
     )
     @managed amount TRANSFER-mgr
     (enforce-unit id amount)
-    (enforce (> amount 0.0) "Positive amount")
+    (enforce (> amount 0.0) "Amount must be positive")
     (compose-capability (DEBIT id sender))
     (compose-capability (CREDIT id receiver))
   )
@@ -99,14 +99,14 @@
 
   (defcap MINT (id:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
-    (enforce (< 0.0 amount) "Positive amount")
+    (enforce (< 0.0 amount) "Amount must be positive")
     (compose-capability (CREDIT id account))
     (compose-capability (UPDATE_SUPPLY))
   )
 
   (defcap BURN (id:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
-    (enforce (< 0.0 amount) "Positive amount")
+    (enforce (< 0.0 amount) "Amount must be positive")
     (compose-capability (DEBIT id account))
     (compose-capability (UPDATE_SUPPLY))
   )
@@ -254,7 +254,6 @@
       guard:guard
       amount:decimal
     )
-    (enforce (> amount 0.0) "Amount must be positive")
     (with-capability (MINT id account amount)
       (bind (get-policy-info id)
         { 'policy := policy:module{kip.token-policy-v1}
@@ -269,7 +268,6 @@
       account:string
       amount:decimal
     )
-    (enforce (> amount 0.0) "Amount must be positive")
     (with-capability (BURN id account amount)
       (bind (get-policy-info id)
         { 'policy := policy:module{kip.token-policy-v1}
@@ -411,7 +409,7 @@
     (id:string seller:string amount:decimal timeout:integer sale-id:string)
     @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
     @event
-    (enforce (> amount 0.0) "Offer amount must be positive")
+    (enforce (> amount 0.0) "Amount must be positive")
     (compose-capability (OFFER id seller amount timeout))
     (compose-capability (SALE_PRIVATE sale-id))
   )

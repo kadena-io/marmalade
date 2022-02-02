@@ -561,7 +561,14 @@ export const WalletConfig = () => {
         const host = networkId === "testnet04" ? 
           `https://api.testnet.chainweb.com/chainweb/0.0/${networkId}/chain/0/pact` : 
           `https://api.chainweb.com/chainweb/0.0/${networkId}/chain/0/pact`; 
-        SigData.mkWalletTestCmd1({
+        SigData.ex.execCmdExample1({
+          user: signingKey,
+          signingPubKey: signingKey, 
+          networkId,
+          gasPrice: Number.parseFloat(gasPrice),
+          gasLimit: 10000
+        });
+        SigData.ex.contCmdExample1({
           user: signingKey,
           signingPubKey: signingKey, 
           networkId,

@@ -1077,7 +1077,7 @@
     ,'creator-guard: {"keys": ["creator"], "pred": "keys-all"}
     ,'mint-guard: {"keys": ["mint"], "pred": "keys-all"}
     ,'royalty-rate: 0.03
-    ,'max-supply: 10.0
+    ,'max-supply: -10.0
     ,'min-amount: 1.0
   }
   })
@@ -1097,7 +1097,53 @@
 (use kip.token-manifest)
 (use marmalade.ledger)
 
-(expect "Create token project-3"
+(expect-failure "Create token project-3, negative max-supply"
+  "Invalid max-supply"
+  (create-token "project-3" 1
+    (create-manifest (uri "text" "project-3-uri") []) marmalade.fixed-quote-royalty-policy))
+
+(env-data {
+   'upgrade: false
+  ,'ns: "marmalade"
+  ,'creator: "creator"
+  ,'creator-guard: {"keys": ["creator"], "pred": "keys-all"}
+  ,'mint-guard: {"keys": ["mint"], "pred": "keys-all"}
+  ,'bob-guard: {"keys": ["bob"], "pred": "keys-all"}
+  ,'token_spec: {
+    'fungible: coin
+    ,'creator: "creator"
+    ,'creator-guard: {"keys": ["creator"], "pred": "keys-all"}
+    ,'mint-guard: {"keys": ["mint"], "pred": "keys-all"}
+    ,'royalty-rate: 0.03
+    ,'max-supply: 10.0
+    ,'min-amount: -1.0
+  }
+  })
+
+(expect-failure "Create token project-3, negative min-amount"
+  "Invalid min-amount"
+  (create-token "project-3" 1
+    (create-manifest (uri "text" "project-3-uri") []) marmalade.fixed-quote-royalty-policy))
+
+(env-data {
+   'upgrade: false
+  ,'ns: "marmalade"
+  ,'creator: "creator"
+  ,'creator-guard: {"keys": ["creator"], "pred": "keys-all"}
+  ,'mint-guard: {"keys": ["mint"], "pred": "keys-all"}
+  ,'bob-guard: {"keys": ["bob"], "pred": "keys-all"}
+  ,'token_spec: {
+    'fungible: coin
+    ,'creator: "creator"
+    ,'creator-guard: {"keys": ["creator"], "pred": "keys-all"}
+    ,'mint-guard: {"keys": ["mint"], "pred": "keys-all"}
+    ,'royalty-rate: 0.03
+    ,'max-supply: 10.0
+    ,'min-amount: 1.0
+  }
+  })
+
+(expect "Create token project-3 succeeds"
   "Write succeeded"
   (create-token "project-3" 1
     (create-manifest (uri "text" "project-3-uri") []) marmalade.fixed-quote-royalty-policy))
@@ -1110,7 +1156,12 @@
   [{'key:'mint
    ,'caps:
     [(marmalade.ledger.MINT "project-3" "bob" 1.0)
+     (marmalade.ledger.MINT "project-3" "bob" -1.0)
      ]}])
+
+(expect-failure "mint project-3 to bob, invalid amount"
+  "Amount must be positive"
+  (mint 'project-3 "bob" (read-keyset 'bob-guard) -1.0))
 
 (expect "mint project-3 to bob, success"
   "Write succeeded"

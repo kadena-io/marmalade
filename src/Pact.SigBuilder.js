@@ -45,6 +45,19 @@ var enforceArray = function(val, msg) {
     };
   };
 
+var debugMode = false;
+
+const debug = (...args) => {
+  if (debugMode && args.length) {
+    console.debug("[Pact.SigBuilder]", ...args);
+  };
+};
+
+const toggleDebug = () => {
+  debugMode = !debugMode;
+  console.log("[Pact.SigBuilder] debugMode set to", debugMode);
+};
+
 /**
  * Prepares a capability object for use in mkSignerCList.
  * @param {string} name of pact capability to be signed
@@ -120,7 +133,7 @@ const mergeSigners = (arrayOfSigners) => {
 const autoCreationTime = () => Math.round(new Date().getTime() / 1000) - 15;
 
 /**
- * Convinence function to get a nonce for use in CmdJSON
+ * Convinence function to get a nonce for use in Payload
  * @return {string} the string "SigBuilder:".concat(Date.toISOString) 
  */
 const autoNonce = () => JSON.stringify(new Date().toISOString());
@@ -135,7 +148,7 @@ const autoNonce = () => JSON.stringify(new Date().toISOString());
 
 
 /**
- * Generates a correctly formatted `cmd` core for use in mk[Exec|Cont]CmdJSON
+ * Generates a correctly formatted `cmd` core for use in mk[Exec|Cont]Payload
  * FYI SigData is compatible with:
  *  - `pact -u` on the command line
  *  - SigBuilder in Chainweaver
@@ -156,14 +169,14 @@ const autoNonce = () => JSON.stringify(new Date().toISOString());
   enforceType(meta, "object", "mkCmdTemplate's");
   if (nonce) {enforceType(nonce, "string", "mkCmdTemplate's nonce");}
     
-  const coreCmdJSON = {
+  const corePayload = {
     networkId: networkId,
     signers: signers,
     meta,
     nonce: nonce || autoNonce()
   };
-  console.debug('coreCmdJSON', coreCmdJSON);
-  return coreCmdJSON;
+  debug('corePayload', corePayload);
+  return corePayload;
 };
 
 /**
@@ -178,19 +191,19 @@ const autoNonce = () => JSON.stringify(new Date().toISOString());
  * @param {SigDataOptArgs} optArgs `{data, nonce}`
  * @return {object} cmdJSON object for an exec tx
  */
-const mkExecCmdJSON = (
+const mkExecPayload = (
   pactCode, 
   signers,
   networkId,
   meta,
   {data,nonce}
 ) => {
-  enforceType(pactCode, "string", "mkExecCmdJSON's pactCode");
-  enforceArray(signers, "mkExecCmdJSON's signers");
-  enforceType(networkId, "string", "mkExecCmdJSON's networkId");
-  enforceType(meta, "object", "mkExecCmdJSON's");
-  if (data) {enforceType(data, "object", "mkExecCmdJSON's envData");}
-  if (nonce) {enforceType(nonce, "string", "mkExecCmdJSON's nonce");}
+  enforceType(pactCode, "string", "mkExecPayload's pactCode");
+  enforceArray(signers, "mkExecPayload's signers");
+  enforceType(networkId, "string", "mkExecPayload's networkId");
+  enforceType(meta, "object", "mkExecPayload's");
+  if (data) {enforceType(data, "object", "mkExecPayload's envData");}
+  if (nonce) {enforceType(nonce, "string", "mkExecPayload's nonce");}
   
   var cmdJSON = mkCmdTemplate(signers,networkId,meta,{nonce});
   cmdJSON["payload"] = {
@@ -199,7 +212,7 @@ const mkExecCmdJSON = (
         code: pactCode
       }
   };
-  console.debug('execCmdJSON', cmdJSON);
+  debug('execPayload', cmdJSON);
   return cmdJSON;
 };
 
@@ -216,7 +229,7 @@ const mkExecCmdJSON = (
  * @param {SigDataOptArgs} optArgs `{nonce,data,proof,rollback}`
  * @return {object} cmdJSON object for a cont tx
  */
-const mkContCmdJSON = (
+const mkContPayload = (
   pactId,
   step,
   signers,
@@ -224,15 +237,15 @@ const mkContCmdJSON = (
   meta,
   {nonce,data,proof,rollback}
 ) => {
-  enforceType(pactId, "string", "mkContCmdJSON's pactId");
-  enforceType(step, "number", "mkContCmdJSON's pactId");
-  enforceArray(signers, "mkContCmdJSON's signers");
-  enforceType(networkId, "string", "mkContCmdJSON's networkId");
-  enforceType(meta, "object", "mkContCmdJSON's meta");
- if (nonce) {enforceType(nonce, "string", "mkContCmdJSON's nonce");};
- if (proof) {enforceType(proof, "string", "mkContCmdJSON's proof");};
- if (data) {enforceType(data, "object", "mkContCmdJSON's data");} else {data = null;};
- if (rollback) {enforceType(rollback, "boolean", "mkContCmdJSON's rollback");} else {rollback = false;};
+  enforceType(pactId, "string", "mkContPayload's pactId");
+  enforceType(step, "number", "mkContPayload's pactId");
+  enforceArray(signers, "mkContPayload's signers");
+  enforceType(networkId, "string", "mkContPayload's networkId");
+  enforceType(meta, "object", "mkContPayload's meta");
+  if (nonce) {enforceType(nonce, "string", "mkContPayload's nonce");};
+  if (proof) {enforceType(proof, "string", "mkContPayload's proof");};
+  if (data) {enforceType(data, "object", "mkContPayload's data");} else {data = null;};
+  if (rollback) {enforceType(rollback, "boolean", "mkContPayload's rollback");} else {rollback = false;};
   
   var cmdJSON = mkCmdTemplate(signers,networkId,meta,{nonce});
   cmdJSON["payload"] = {
@@ -246,7 +259,7 @@ const mkContCmdJSON = (
   if (proof) {
     cmdJSON.payload.cont["proof"] = proof;
   }
-  console.debug('contCmdJSON', cmdJSON);
+  debug('contPayload', cmdJSON);
   return cmdJSON;
 };
 
@@ -262,7 +275,7 @@ const pubKeysFromSigners = (signers) => {
 
 /**
  * Create the SigData Object for txs
- * @param {object} cmdJSON returned from mkExecCmdJSON or mkContCmdJSON
+ * @param {object} cmdJSON returned from mkExecPayload or mkContPayload
  * @param {array} signers is an optional array of pubKeys, overrides those found in signers's caps
  * @return {object} the SigData object for use in SigBuilder 
  */
@@ -281,7 +294,7 @@ const mkSigData = (cmdJSON, signers=[]) => {
   }
   const cmdJSONasString = JSON.stringify(cmdJSON);
   const sigDataExec = {hash: Pact.crypto.hash(cmdJSONasString), cmd: cmdJSONasString, sigs: unsignedSigs};
-  console.debug("mkSigData", sigDataExec);
+  debug("mkSigData", sigDataExec);
   return sigDataExec;
 };
 
@@ -303,7 +316,7 @@ const execCmdExample1 = ({
       ttl: 28800};
   const meta = Pact.lang.mkMeta(ms.sender, ms.chainId, ms.gasPrice, ms.gasLimit, ms.creationTime, ms.ttl);
 
-  console.debug("caps", caps);
+  debug("caps", caps);
   const cs = {
       pactCode: "(+ 1 1)",
       data: {foo: "bar"},
@@ -311,7 +324,7 @@ const execCmdExample1 = ({
       networkId: networkId,
       meta: meta
   };
-  const cmdJSON = mkExecCmdJSON(
+  const cmdJSON = mkExecPayload(
     cs.pactCode, 
     cs.signers,
     cs.networkId,
@@ -319,7 +332,6 @@ const execCmdExample1 = ({
     {data: cs.data} 
     );
   const execSigData = mkSigData(cmdJSON);
-//   console.debug("cmdJSON", sigDataExec);
   return execSigData;
 };
 
@@ -341,7 +353,7 @@ const contCmdExample1 = ({
       ttl: 28800};
   const meta = Pact.lang.mkMeta(ms.sender, ms.chainId, ms.gasPrice, ms.gasLimit, ms.creationTime, ms.ttl);
 
-  console.debug("caps", caps);
+  debug("caps", caps);
   const cs = {
       "proof": "eyJjaGFpbiI6NCwib2JqZWN0IjoiQUFBQUVBQUFBQUFBQUFBQkFOQ1lzbnNjV2VWcHRtNWd6eXl2YzZxRTAxX195QzV3LUx5R3p4SWNOc0ZOQUxLY19UeVd6YlphVjA1TjBtMFdVQjVxTFVoY2FSUDd2NHpEbkJhY21ORExBZWhPUk94V0FyQmJ1emV2dktNR1BlMHVGVV9QTzJ6MzdULS1jS2F0NnV3ekFWWU5Fdzk1S1prckdRMF93ZXZFVkdsaFkyTEwycUxHZXF2NnJ4UFBMMHFrQUFlVmRSanRvYU4xSHNhSF9xek1LUjRnZ29acGZoSVVVMEJSSG0yWmh0emVBY0pjV0w1ejlzZlU4ZFdVUlFTMF9rUmR3ajZaeGFRQ2FicTdYcl9aeEQ1UUFBWUdoZHBWX3V1b3FxOXVaYkdON1N0LVNqYXp3cTFRLTdxdWIzSHhHV0tkQU1iX3E5T2k5YXRjVXYydERaQUpCVHJiV1pZM2s4VTc4YTlMX1pWc0pXRDVBY212eUJvTFViNHhKY1FiWldoRG85eDZGQ19uaU5mOXFkMVVZRWtySFZXN0FOU3pwNm5pNHJvZUprSGxZal9vVnZuN1lxdXRGZE41TlVzc09jd1ZyMmRUQU11dnQ1aWVVdGVFc3hRQ1VOeEp5SXN3WUFDUGxTUzdMWkZPUy1HM2NGOThBTVhlRnJ4NFFLVUludVVfYlFyclR0UEdCc2dKWGxib0hrMHlCamNaRWNhT0FBNHVRcDhYbENBYnFGclFCTWRISFJic3dtT05RcEtUN210SnZEQUpCNzZqQVdFb0E5V1paVG9UWHZKcGlESDcySFFTdFRwNTdrRDZlUEFoTXkzUFA0NFZBQ1I5MEFHdVVWeHlwd3VCMEVHM1NOOGJLSG9QUW9ab1pVRDNScDkzX05DdEFNRktXb3FZZFRITXpGcHJSM2R1Q2d3bzhVbnpRZ29Ta1dnc2U2UEU5S3FxIiwic3ViamVjdCI6eyJpbnB1dCI6IkFCUjdJbWRoY3lJNk5qQXdMQ0p5WlhOMWJIUWlPbnNpYzNSaGRIVnpJam9pWm1GcGJIVnlaU0lzSW1WeWNtOXlJanA3SW1OaGJHeFRkR0ZqYXlJNlcxMHNJblI1Y0dVaU9pSkZkbUZzUlhKeWIzSWlMQ0p0WlhOellXZGxJam9pVkhsd1pTQmxjbkp2Y2pvZ1pYaHdaV04wWldRZ1pHVmphVzFoYkN3Z1ptOTFibVFnYVc1MFpXZGxjaUlzSW1sdVptOGlPaUk4YVc1MFpYSmhZM1JwZG1VLU9qQTZNVFF4TlRRaWZYMHNJbkpsY1V0bGVTSTZJblJ4TVVoNFVtMVplRkZHYXkwdFpHNUVRbEJXYzBod1RteGpRbXhQUlhKT05FOTNSVmhTYVdOR1FXY2lMQ0pzYjJkeklqb2laSEJEVEZGblVtTnVZbTlZYjBNNVpVaExObU5OYzBWNU1HUXpVRUZ1TTFGTmNFOXFNMUUyVkZCSFNTSXNJbVYyWlc1MGN5STZXM3NpY0dGeVlXMXpJanBiSW1KbE1qSTVaalJoT1RjMVpUUTBNV1JqTmprMFpHVmtNR1U1TWpZd1pEazVNekkzTURFeU9EY3dNbVptTldFMVlXWTNZbVZrTW1VME1tTTVOV05sTURraUxDSmtZamMzTmpjNU0ySmxNR1pqWmpobE56WmpOelZpWkdJek5XRXpObVUyTjJZeU9UZ3hNVEZrWXpZeE5EVmpOalkyT1ROaU1ERXpNekU1TW1VeU5qRTJJaXcyTGpCbExUWmRMQ0p1WVcxbElqb2lWRkpCVGxOR1JWSWlMQ0p0YjJSMWJHVWlPbnNpYm1GdFpYTndZV05sSWpwdWRXeHNMQ0p1WVcxbElqb2lZMjlwYmlKOUxDSnRiMlIxYkdWSVlYTm9Jam9pTVc5elgzTk1RVlZaZGtKNmMzQnVOV3BxWVhkMFVuQktWMmxJTVZkUVptaDVUbkpoWlZaMlUwbDNWU0o5WFN3aWJXVjBZVVJoZEdFaU9tNTFiR3dzSW1OdmJuUnBiblZoZEdsdmJpSTZiblZzYkN3aWRIaEpaQ0k2Ym5Wc2JIMCJ9LCJhbGdvcml0aG0iOiJTSEE1MTJ0XzI1NiJ9",
       "pactId": "tq1HxRmYxQFk--dnDBPVsHpNlcBlOErN4OwEXRicFAg",
@@ -350,7 +362,7 @@ const contCmdExample1 = ({
       networkId: networkId,
       meta: meta
   };
-  const cmdJSON = mkContCmdJSON(
+  const cmdJSON = mkContPayload(
     cs.pactId,
     cs.step, 
     cs.signers,
@@ -359,7 +371,6 @@ const contCmdExample1 = ({
     {proof: cs.proof}
     );
   const execSigData = mkSigData(cmdJSON);
-//   console.debug("cmdJSON", sigDataExec);
   return execSigData;
 };
 
@@ -369,7 +380,8 @@ export const SigData = {
                 mkSignerGas,
                 mkSignerCList,
                 mkSignerUnrestricted,
-                mkExecCmdJSON,
+                mkExecPayload,
+                mkContPayload,
                 util: {
                   gasCap,
                   mergeSigners,
@@ -380,5 +392,9 @@ export const SigData = {
                 ex: {
                   execCmdExample1,
                   contCmdExample1
+                },
+                debug: {
+                  toggleDebug
                 }
+
     };

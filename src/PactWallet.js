@@ -37,7 +37,14 @@ import {
   TextField,
   Tooltip,
   Typography,
+  Modal,
+  Dialog,
+  AppBar,
+  Toolbar,
+  Slide,
 } from '@material-ui/core';
+import CloseIcon from '@material-ui/icons/Close';
+
 import {
   makeStyles,
 } from '@material-ui/styles';
@@ -122,7 +129,7 @@ const pactWalletReducer = (state, action) => {
 
 export const PactWallet = ({globalConfig, contractConfigs, children}) => {
   //PactWallet State
-  const usePersistedWallet = createPersistedState("pactWallet5");
+  const usePersistedWallet = createPersistedState("pactWallet6");
   const [persistedPactWallet,setPersistedPactWallet] = usePersistedWallet({});
   const [wallet,walletDispatch] = useReducer(pactWalletReducer, _.size(persistedPactWallet) ? _.cloneDeep(persistedPactWallet) : pactWalletContextDefault);
   // Experimental wrapper for "emit" bug found in https://github.com/donavon/use-persisted-state/issues/56
@@ -271,48 +278,16 @@ const mkWalletTestCmd = ({
   return toSign;
 };
 
-const walletCmd = async (
-  setTx,
+const trackSigDataResult = async (
+  sigData,
   setTxStatus,
   setTxRes,
-  user, 
-  signingPubKey, 
-  networkId,
-  gasPrice,
   host
 ) => {
     try {
-      //creates transaction to send to wallet
-      const toSign = {
-          pactCode: "(+ 1 1)",
-          caps: [
-            Pact.lang.mkCap("Gas Cap"
-                           , "Gas Cap"
-                           , "coin.GAS"
-                           , [])
-          ],
-          gasLimit: 1000,
-          gasPrice: gasPrice,
-          chainId: "0",
-          signingPubKey: signingPubKey,
-          networkId: networkId,
-          ttl: 28800,
-          sender: user,
-          envData: {foo: "bar"}
-      }
-      console.log("toSign", toSign)
-      //sends transaction to wallet to sign and awaits signed transaction
-      const signed = await Pact.wallet.sign(toSign)
-      console.log("signed", signed)
-      if ( typeof signed === 'object' && 'hash' in signed ) {
-        setTx(signed);
-      } else {
-        throw new Error("Signing API Failed");
-      }
-
       //sends signed transaction to blockchain
-      const txReqKeys = await Pact.wallet.sendSigned(signed, host)
-      console.log("txReqKeys", txReqKeys)
+      const txReqKey = sigData.hash 
+      console.log("txReqKeys", txReqKey)
       //set html to wait for transaction response
       //set state to wait for transaction response
       setTxStatus('pending')
@@ -325,9 +300,10 @@ const walletCmd = async (
         while (retries > 0) {
           //sleep the polling
           await new Promise(r => setTimeout(r, 15000));
-          res = await Pact.fetch.poll(txReqKeys, host);
+          res = await Pact.fetch.poll({requestKeys:[txReqKey]}, host);
+          console.log("Pact.poll Result", res);
           try {
-            if (res[signed.hash].result.status) {
+            if (res[txReqKey].result.status) {
               retries = -1;
             } else {
               retries = retries - 1;
@@ -338,7 +314,7 @@ const walletCmd = async (
         };
         //keep transaction response in local state
         setTxRes(res)
-        if (res[signed.hash].result.status === "success"){
+        if (res[txReqKey].result.status === "success"){
           console.log("tx status set to success");
           //set state for transaction success
           setTxStatus('success');
@@ -520,20 +496,27 @@ export const WalletConfig = () => {
   const {wallet, walletDispatch} = useContext(PactWalletContext);
   const [saved,setSaved] = useState(false);
   const [walletName,setWalletName] = useState("");
+  const [accountName, setAccountName] = useState("");
   const [signingKey, setSigningKey] = useState("");
   const [networkId, setNetworkId] = useState("testnet04");
-  const [gasPrice, setGasPrice] = useState("");
+  const [gasPrice, setGasPrice] = useState("0.000001");
   const classes = useStyles();
 
   const [txStatus, setTxStatus] = useState("");
   const [tx, setTx] = useState({});
   const [txRes, setTxRes] = useState({});
+  const [host, setHost] = useState("");
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [sigData, setSigData] = useState({hash:"",cmd:"",sigs:""});
+  const [wasSubmitted,setWasSubmitted] = useState(false);
 
   useEffect(()=> {
     console.debug("WalletConfig useEffect on load fired with", wallet)
     if (_.size(wallet.current)) {
         if (wallet.current.walletName) {setWalletName(wallet.current.walletName)}
         if (wallet.current.signingKey) {setSigningKey(wallet.current.signingKey)}
+        if (wallet.current.accountName) {setAccountName(wallet.current.accountName)}
         if (wallet.current.gasPrice) {setGasPrice(wallet.current.gasPrice)}
         if (wallet.current.networkId) {setNetworkId(wallet.current.networkId)}
     } 
@@ -544,52 +527,62 @@ export const WalletConfig = () => {
     if (_.size(wallet.otherWallets[walletName])) {
       const loadingWallet = wallet.otherWallets[walletName];
       console.debug("PactWalletConfig updating entries", loadingWallet)
-        if (loadingWallet.walletName && loadingWallet.signingKey && loadingWallet.gasPrice && loadingWallet.networkId) {
+        if (loadingWallet.walletName && loadingWallet.signingKey && loadingWallet.gasPrice && loadingWallet.networkId && loadingWallet.accountName) {
           setGasPrice(loadingWallet.gasPrice);
           setSigningKey(loadingWallet.signingKey);
+          setAccountName(loadingWallet.accountName);
           setNetworkId(loadingWallet.networkId);
           setWalletName(loadingWallet.walletName);
         }
     }
   },[walletName])
 
-  useEffect(()=>setSaved(false),[walletName,signingKey,gasPrice,networkId]);
+  useEffect(()=>setSaved(false),[walletName,signingKey,gasPrice,networkId,accountName]);
 
   const handleSubmit = (evt) => {
       evt.preventDefault();
       if (saved) {
-        const host = networkId === "testnet04" ? 
+        setHost(networkId === "testnet04" ? 
           `https://api.testnet.chainweb.com/chainweb/0.0/${networkId}/chain/0/pact` : 
-          `https://api.chainweb.com/chainweb/0.0/${networkId}/chain/0/pact`;
+          `https://api.chainweb.com/chainweb/0.0/${networkId}/chain/0/pact`);
         SigData.debug.toggleDebug();
-        SigData.ex.execCmdExample1({
-          user: signingKey,
+        const sigData = SigData.ex.execCmdExample1({
+          user: accountName,
           signingPubKey: signingKey, 
           networkId,
           gasPrice: Number.parseFloat(gasPrice),
           gasLimit: 10000
         });
-        SigData.ex.contCmdExample1({
-          user: signingKey,
-          signingPubKey: signingKey, 
-          networkId,
-          gasPrice: Number.parseFloat(gasPrice),
-          gasLimit: 10000
-        });
-        mkWalletTestCmd({
-          user: signingKey,
-          signingPubKey: signingKey, 
-          networkId,
-          gasPrice: Number.parseFloat(gasPrice),
-          gasLimit: 10000
-        });
+        // SigData.ex.contCmdExample1({
+        //   user: signingKey,
+        //   signingPubKey: signingKey, 
+        //   networkId,
+        //   gasPrice: Number.parseFloat(gasPrice),
+        //   gasLimit: 10000
+        // });
+        // mkWalletTestCmd({
+        //   user: signingKey,
+        //   signingPubKey: signingKey, 
+        //   networkId,
+        //   gasPrice: Number.parseFloat(gasPrice),
+        //   gasLimit: 10000
+        // });
+        setSigData(sigData);
+        setModalOpen(true);
       } else {
-        const n = {walletName:walletName, signingKey:signingKey, gasPrice:gasPrice, networkId:networkId};
+        const n = {walletName:walletName, signingKey:signingKey, gasPrice:gasPrice, networkId:networkId, accountName:accountName};
         walletDispatch({type: 'updateWallet', newWallet: n});
         setSaved(true);
         console.debug("WalletConfig set. locale: ", n, " while context is: ", wallet.current);
       }
   };
+  
+  useEffect(()=>{
+    if (wasSubmitted) {
+      trackSigDataResult(sigData,setTxStatus,setTxRes,host);
+    }
+  },[wasSubmitted]);
+
   const inputFields = [
     {
       type:'textFieldSingle',
@@ -609,14 +602,88 @@ export const WalletConfig = () => {
         {inputFields.map(f =>
           <MakeInputField inputField={f}/>
         )}
+        <EntrySelector label="Account Name" getVal={accountName} setVal={setAccountName} allOpts={_.map(wallet.otherWallets, 'accountName')}/>
         <EntrySelector label="Select Signing Key" getVal={signingKey} setVal={setSigningKey} allOpts={wallet.allKeys}/>
         <CardActions>
+          {saved ? 
+            (wasSubmitted ? <React.Fragment/> 
+            : <React.Fragment>
+              <Button variant="outlined" color="default" type="submit">
+                Test Current Settings
+              </Button>
+              <SigningDialog sigData={sigData} setWasSubmitted={setWasSubmitted} open={modalOpen} setOpen={setModalOpen}/>
+            </React.Fragment>)
+          : 
             <Button variant="outlined" color="default" type="submit">
-                {saved ? "Test Current Settings" : "Save New Settings" }
+              Save Current Settings
             </Button>
+          }
         </CardActions>
       </form>
       { txStatus === 'pending' ? <LinearProgress /> : null }
       <PactTxStatus tx={tx} txRes={txRes} txStatus={txStatus} setTxStatus={setTxStatus}/>
   </Container>
-}
+};
+
+const signingModalStyles = makeStyles((theme) => ({
+  appBar: {
+    position: 'relative',
+  },
+  title: {
+    marginLeft: theme.spacing(2),
+    flex: 1,
+  },
+}));
+
+const SigningDialogTransition = React.forwardRef(function Transition(props, ref) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
+
+export const SigningDialog = ({
+  sigData,
+  setWasSubmitted,
+  open, setOpen,
+}) => {
+
+  const handleClickOpen = () => {
+    setOpen(true);
+  };
+
+  const handleClose = () => {
+    setOpen(false);
+  };
+
+  const handleTxSubmit = () => {
+    setWasSubmitted(true);
+    setOpen(false);
+  };
+
+  const classes = signingModalStyles();
+
+  return (
+      <Dialog fullScreen open={open} onClose={handleClose} TransitionComponent={SigningDialogTransition}>
+        <AppBar className={classes.appBar}>
+          <Toolbar>
+            <IconButton edge="start" color="inherit" onClick={handleClose} aria-label="close">
+              <CloseIcon />
+            </IconButton>
+            <Typography variant="h6" className={classes.title}>
+              New Transaction
+            </Typography>
+            <Button autoFocus variant="outlined" color="default" onClick={handleTxSubmit}>
+              I Submitted the Transaction 
+            </Button>
+          </Toolbar>
+        </AppBar>
+        <List>
+          <ListItem>
+            <ListItemText primary="Copy The Transaction's SigData To Clipboard" secondary={JSON.stringify(sigData)} />
+          </ListItem>
+          <Divider />
+          <ListItem>
+            <ListItemText primary="Transaction Hash" secondary={sigData.hash} />
+          </ListItem>
+        </List>
+      </Dialog>
+  );
+};

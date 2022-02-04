@@ -1,4 +1,3 @@
-import { ContactsOutlined } from '@material-ui/icons';
 import Pact from 'pact-lang-api';
 
 // DELTE ME BEFORE MERGE TO pact-lang-api

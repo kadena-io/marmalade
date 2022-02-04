@@ -44,6 +44,10 @@ const fqpNamespace = "marmalade";
 const fqpContractName = "fixed-quote-policy";
 const fqpConstants = {};
 
+//unique contract name
+const fqrpNamespace = "marmalade";
+const fqrpContractName = "fixed-quote-royalty-policy";
+const fqrpConstants = {};
 
 //unique gas station contract name
 const gasStationName = "memory-wall-gas-station";
@@ -179,6 +183,32 @@ const fqpAPI = {
   },
 };
 
+const fqrpAPI = {
+  contractName: fqpContractName,
+  gasStationName: gasStationName,
+  namespace: fqrpNamespace,
+  contractAddress: `${fqrpNamespace}.${fqrpContractName}`,
+  gasStationAddress: `${fqrpNamespace}.${gasStationName}`,
+  explorerURL: `https://explorer.chainweb.com/${networkId.slice(0, -2)}`,
+  constants: fqrpConstants,
+  meta: {
+    networkId: networkId,
+    chainId: chainId,
+    host: host,
+    creationTime: creationTime,
+    //gas price at lowest possible denomination
+    gasPrice: 0.000000001,
+    //high gas limit for tx
+    gasLimit: 10000,
+    //time a tx lives in mempool since creationTime
+    ttl: 28800,
+    //sender === gas payer of the transaction
+    //  set to our gas station account defined in memory-wall-gas-station.pact
+    sender: "mw-free-gas",
+    //nonce here doesnt matter since the tx will never have the same hash
+    nonce: "some nonce that doesnt matter",
+  },
+};
 
 const keyFormatter = (str) =>
   str.replace(new RegExp("[A-Z]+","gm")," $&").replace(new RegExp("^[a-z]","gm"),k => k.toUpperCase());
@@ -187,5 +217,6 @@ module.exports = { manifestAPI: manifestAPI,
   hftAPI: hftAPI,
   gtpAPI: gtpAPI,
   fqpAPI: fqpAPI,
+  fqrpAPI: fqrpAPI,
   globalConfig,
   keyFormatter: keyFormatter }

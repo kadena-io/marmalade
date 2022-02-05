@@ -537,7 +537,10 @@ export const WalletConfig = () => {
     }
   },[walletName])
 
-  useEffect(()=>setSaved(false),[walletName,signingKey,gasPrice,networkId,accountName]);
+  useEffect(()=>{
+    setSaved(false);
+    setWasSubmitted(false);
+  },[walletName,signingKey,gasPrice,networkId,accountName]);
 
   const handleSubmit = (evt) => {
       evt.preventDefault();

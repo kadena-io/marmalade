@@ -17,15 +17,24 @@ var enforceArray = function(val, msg) {
 };
 
 /**
- * DELTE ME BEFORE MERGE TO pact-lang-api
+ * @typedef {object} MetaData - optional arguments for SigData construction
+ * @property {string} sender gas account
+ * @property {string} chainId chain identifier
+ * @property {number} gasPrice desired gas price
+ * @property {number} gasLimit desired gas limit
+ * @property {number} creationTime desired tx's time created in UNIX epoch time as seconds
+ * @property {number} ttl desired tx's time to live as seconds
+ */
+
+/**
  * Prepare a chainweb-style public meta payload.
- * @param sender {string} gas account
- * @param chainId {string} chain identifier
- * @param gasPrice {number} desired gas price
- * @param gasLimit {number} desired gas limit
- * @param creationTime {number} desired tx's time created in UNIX epoch time as seconds
- * @param ttl {number} desired tx's time to live as seconds
- * @return {object} of arguments, type-checked and properly named.
+ * @param {string} sender gas account
+ * @param {string} chainId chain identifier
+ * @param {number} gasPrice desired gas price
+ * @param {number} gasLimit desired gas limit
+ * @param {number} creationTime desired tx's time created in UNIX epoch time as seconds
+ * @param {number} ttl desired tx's time to live as seconds
+ * @returns {MetaData} of arguments, type-checked and properly named.
  */
  var mkMeta = function(sender, chainId, gasPrice, gasLimit, creationTime, ttl) {
     enforceType(sender, "string", "sender");
@@ -58,10 +67,24 @@ const toggleDebug = () => {
 };
 
 /**
+ * @typedef {object} Cap - A capability
+ * @property {string} name of pact capability to be signed
+ * @property {array} args - array of arguments used in pact capability, default to empty array.
+ */
+
+/**
+ * @typedef {string} PubKeyEd25519 - a ED25519 public key for the caps argument
+ */
+
+/**
+ * @typedef {Array.<Cap>} CList - a list of `Cap`s
+ */
+
+/**
  * Prepares a capability object for use in mkSignerCList.
  * @param {string} name of pact capability to be signed
  * @param {array} args - array of arguments used in pact capability, default to empty array.
- * @return {object} A properly formatted cap object required in SigBuilder
+ * @returns {Cap} A properly formatted cap object required in SigBuilder
  */
 const mkCap = (name, args=[]) => {
   enforceType(name,"string","mkCap's name");
@@ -74,14 +97,24 @@ const mkCap = (name, args=[]) => {
 
 /**
  * Standard gas cap, created by mkCap, for use in mkGasSigner or mkSignerCList
- * @return {array} A properly formatted element for the `signers` array field in SigBuilder
+ * @type {Cap} A properly formatted element for the `signers` array field in SigBuilder
  */
 const gasCap = mkCap("coin.GAS", []);
 
 /**
+ * @typedef {object} Signer a list of caps for a signature to sign for
+ * @property {PubKeyEd25519} publicKey a ED25519 public key for the caps argument
+ * @property {CList} caps an array of caps created with SigBuilder.mkCap
+ */
+
+/**
+ * @typedef {Array.<Signer>} Signers a list of `Signer`
+ */
+
+/**
  * Convinence function to make the gas cap "signer" element
- * @param {string} publicKey a ED25519 public key for the caps argument
- * @return {array} A properly formatted element for the `signers` array field in SigBuilder
+ * @param {PubKeyEd25519} publicKey a ED25519 public key for the caps argument
+ * @returns {Signers} A properly formatted element for the `signers` array field in SigBuilder
  */
 const mkSignerGas = (publicKey) => {
     enforceType(publicKey,"string","mkSignerGas' publicKey");
@@ -90,9 +123,9 @@ const mkSignerGas = (publicKey) => {
 
 /**
  * Make a Capabilites "signer" array for inclusion in a SigBuilder.
- * @param {string} publicKey a ED25519 public key for the caps argument
- * @param {array} caps an array of caps created with SigBuilder.mkCap
- * @return {array} A properly formatted element for the `signers` array field in SigBuilder
+ * @param {PubKeyEd25519} publicKey a ED25519 public key for the caps argument
+ * @param {CList} caps an array of caps created with SigBuilder.mkCap
+ * @returns {Signers} A properly formatted element for the `signers` array field in SigBuilder
  */
 const mkSignerCList = (publicKey, caps) => {
     enforceType(publicKey,"string","mkSignerCList's publicKey");
@@ -105,8 +138,8 @@ const mkSignerCList = (publicKey, caps) => {
 
 /**
  * Make an ED25519 (aka unrestricted) "signer" array for inclusion in SigBuilder.
- * @param {string} publicKey a ED25519 public key for the caps argument
- * @return {array} A properly formatted `signers` array field in SigBuilder
+ * @param {PubKeyEd25519} publicKey a ED25519 public key for the caps argument
+ * @returns {Signers} FYI Unrestricted Signers do not have CList field (TODO: Figure out TS notation here)
  */
 const mkSignerUnrestricted = (publicKey) => {
     enforceType(publicKey,"string","mkSignerUnrestricted's publicKey");
@@ -117,8 +150,8 @@ const mkSignerUnrestricted = (publicKey) => {
 
 /**
  * Combine multiple signer arrays created by mkSigner* functions 
- * @param  {array} arrayOfSigners of pact capability to be signed
- * @return {object} A properly formatted cap object required in SigBuilder
+ * @param  {Array.<Signers>} arrayOfSigners of pact capability to be signed
+ * @returns {Signers} A properly formatted cap object required in SigBuilder
  */
 const mergeSigners = (arrayOfSigners) => {
     enforceArray(arrayOfSigners, "mergeSigners's arrayOfSigners");
@@ -127,22 +160,30 @@ const mergeSigners = (arrayOfSigners) => {
 
 /**
  * Convinence function to get a creation time set to system's local time
- * @return {number} seconds since epoch
+ * @returns {number} seconds since epoch
  */
 const autoCreationTime = () => Math.round(new Date().getTime() / 1000) - 15;
 
 /**
  * Convinence function to get a nonce for use in Payload
- * @return {string} the string "SigBuilder:".concat(Date.toISOString) 
+ * @returns {string} the string "SigBuilder:".concat(Date.toISOString) 
  */
 const autoNonce = () => JSON.stringify(new Date().toISOString());
 
 /**
  * @typedef {object} SigDataOptArgs - optional arguments for SigData construction
- * @property {string} nonce for the tx (default: `autoNonce()`)
- * @property {object} data environmental data of the executing pact cont (defaults: `{}`)
- * @property {string} proof for use in `verify`
- * @property {boolean} rollback is the pact cont rolling back (`false` if empty)
+ * @property {string} [nonce] for the tx (default: `autoNonce()`)
+ * @property {object} [data={}] environmental data of the executing pact cont (defaults: `{}`)
+ * @property {string} [proof] for use in `verify`
+ * @property {boolean} [rollback=false] is the pact cont rolling back (`false` if empty)
+ */
+
+/**
+ * @typedef {object} CmdTemplate - All cmd fields sans `payload`
+ * @property {Signers} signers
+ * @property {string} networkId
+ * @property {MetaData} meta
+ * @property {string} nonce
  */
 
 
@@ -151,11 +192,11 @@ const autoNonce = () => JSON.stringify(new Date().toISOString());
  * FYI SigData is compatible with:
  *  - `pact -u` on the command line
  *  - SigBuilder in Chainweaver
- * @param {array} signers the output of mkSigner-class functions
+ * @param {Signers} signers the output of mkSigner-class functions
  * @param {string} networkId
- * @param {object} meta output of mkMeta
- * @param {SigDataOptArgs} optArgs `{nonce}`
- * @return {object} cmdJSON object for an exec tx
+ * @param {MetaData} meta output of mkMeta
+ * @param {SigDataOptArgs} [optArgs] only `{nonce}` applicable
+ * @returns {CmdTemplate} cmdJSON object for an exec tx
  */
  const mkCmdTemplate = (
   signers,
@@ -179,16 +220,25 @@ const autoNonce = () => JSON.stringify(new Date().toISOString());
 };
 
 /**
+ * @typedef {object} CmdJSON - fully populated `cmd:<CmdJSON>`
+ * @property {Signers} signers
+ * @property {string} networkId
+ * @property {MetaData} meta
+ * @property {string} nonce
+ * @property {object} payload
+ */
+
+/**
  * Generates a correctly formatted exec `cmd` field for use in the SigData type
  * FYI SigData is compatible with:
  *  - `pact -u` on the command line
  *  - SigBuilder in Chainweaver
  * @param {string} pactCode the pact code of the command
- * @param {array} signers the output of mkSigner-class functions
+ * @param {Signers} signers the output of mkSigner-class functions
  * @param {string} networkId
- * @param {object} meta output of mkMeta
- * @param {SigDataOptArgs} optArgs `{data, nonce}`
- * @return {object} cmdJSON object for an exec tx
+ * @param {MetaData} meta output of mkMeta
+ * @param {SigDataOptArgs} [optArgs] only `{data, nonce}` apply
+ * @returns {CmdJSON} cmdJSON object for an exec tx
  */
 const mkExecPayload = (
   pactCode, 
@@ -222,11 +272,11 @@ const mkExecPayload = (
  *  - SigBuilder in Chainweaver
  * @param {string} pactId of the cont
  * @param {integer} step of the pact to be continued
- * @param {array} signers the output of mkSigner-class functions
+ * @param {Signers} signers the output of mkSigner-class functions
  * @param {string} networkId
- * @param {object} meta output of mkMeta
- * @param {SigDataOptArgs} optArgs `{nonce,data,proof,rollback}`
- * @return {object} cmdJSON object for a cont tx
+ * @param {MetaData} meta output of mkMeta
+ * @param {SigDataOptArgs} [optArgs] `{nonce,data,proof,rollback}`
+ * @returns {CmdJSON} cmdJSON object for a cont tx
  */
 const mkContPayload = (
   pactId,
@@ -264,8 +314,8 @@ const mkContPayload = (
 
 /**
  * Get the pubKeys from a signers field
- * @param {array} signers the signers field from cmdJSON
- * @return {array} signer keys used in tx
+ * @param {Signers} signers the signers field from cmdJSON
+ * @returns {Array.<PubKeyEd25519>} signer keys used in tx
  */
 const pubKeysFromSigners = (signers) => {
   enforceArray(signers, "pubKeysFromSigners' signers must be an array");
@@ -273,10 +323,25 @@ const pubKeysFromSigners = (signers) => {
 };
 
 /**
+ * @typedef {string} CmdJSONasString
+ * 
+ * @typedef {string} SigDataHash
+ * 
+ * @typedef {string | null} SignatureEd25519
+ * 
+ * @typedef {Object.<PubKeyEd25519, SignatureEd25519>} Sigs 
+ * 
+ * @typedef {object} SigData
+ * @property {SigDataHash} hash - hash of stringified `CmdJSON`
+ * @property {CmdJSONasString} cmd - stringified `CmdJSON`
+ * @property {Sigs} sigs - Required Sigs of `CmdJSON`
+ */
+
+/**
  * Create the SigData Object for txs
- * @param {object} cmdJSON returned from mkExecPayload or mkContPayload
- * @param {array} signers is an optional array of pubKeys, overrides those found in signers's caps
- * @return {object} the SigData object for use in SigBuilder 
+ * @param {CmdJSON} cmdJSON returned from mkExecPayload or mkContPayload
+ * @param {Signers} [signers=[]] is an optional array of pubKeys, overrides those found in signers's caps
+ * @returns {SigData} the SigData object for use in SigBuilder 
  */
 const mkSigData = (cmdJSON, signers=[]) => {
   var unsignedSigs = {};
@@ -290,7 +355,8 @@ const mkSigData = (cmdJSON, signers=[]) => {
         unsignedSigs[pubKey] = null;
         return null;
     });
-  }
+  };
+
   const cmdJSONasString = JSON.stringify(cmdJSON);
   const sigDataExec = {hash: Pact.crypto.hash(cmdJSONasString), cmd: cmdJSONasString, sigs: unsignedSigs};
   debug("mkSigData", sigDataExec);

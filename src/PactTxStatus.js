@@ -300,6 +300,9 @@ export const TxSigner = ({
         </AppBar>
         <List>
           <ListItem>
+            <ListItemText primary="Read Me" secondary="Until WalletConnect integration is completed, only the latest versions of Chaineweaver w/ SigBuilder UI is supported in Marmalade (see https://chainweaver.kadena.network for the latest). Please copy the SigData blob below, paste it into the SigBuilder UI in Chainweaver, and then review+sign+submit the transaction through Chainweaver. Once completed, come back to this page and click the 'I have submitted the transaction' button." />
+          </ListItem>
+          <ListItem>
             <ListItemText primary="Copy The Transaction's SigData To Clipboard" secondary={JSON.stringify(tx)} />
           </ListItem>
           <Divider />

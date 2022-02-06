@@ -19,7 +19,9 @@ import {
   MakeForm,
  } from "../util.js";
 import { ScrollableTabs } from "../ScrollableTabs.js";
-import { usePactWallet, addGasCap } from "../PactWallet.js";
+import { usePactWallet } from "../PactWallet.js";
+import { SigData } from '../Pact.SigBuilder.js';
+import { signNewPactTx } from '../PactTxStatus.js';
 
 const useStyles = makeStyles(() => ({
   formControl: {
@@ -31,101 +33,36 @@ const useStyles = makeStyles(() => ({
   },
 }));
 
-export const sendHftCommand = async (
-  setTx,
-  setTxStatus,
-  setTxRes,
-  refresh,
+export const signExecHftCommand = (
+  sender,
   signingKey,
+  pactTxStatus,
   networkId,
   gasPrice,
   cmd, envData={}, caps=[]
 ) => {
-    try {
-      //creates transaction to send to wallet
-      const toSign = {
-          pactCode: cmd,
-          caps: addGasCap(caps),
-          signingPubKey: signingKey,
-          networkId: networkId,
-          gasPrice: gasPrice,
-          gasLimit: hftAPI.meta.gasLimit,
-          chainId: hftAPI.meta.chainId,
-          ttl: hftAPI.meta.ttl,
-          sender: signingKey,
-          envData: envData
-      }
-      console.log("toSign", toSign)
-      //sends transaction to wallet to sign and awaits signed transaction
-      const signed = await Pact.wallet.sign(toSign)
-      console.log("signed", signed)
-      if ( typeof signed === 'object' && 'hash' in signed ) {
-        setTx(signed);
-      } else {
-        throw new Error("Signing API Failed");
-      }
-
-      try {
-        //sends signed transaction to blockchain
-        const txReqKeys = await Pact.wallet.sendSigned(signed, hftAPI.meta.host)
-        console.log("txReqKeys", txReqKeys)
-        //set html to wait for transaction response
-        //set state to wait for transaction response
-        setTxStatus('pending')
-        //listens to response to transaction sent
-        //  note method will timeout in two minutes
-        //    for lower level implementations checkout out Pact.fetch.poll() in pact-lang-api
-        let retries = 8;
-        let res = {};
-        while (retries > 0) {
-          //sleep the polling
-          await new Promise(r => setTimeout(r, 15000));
-          res = await Pact.fetch.poll(txReqKeys, hftAPI.meta.host);
-          try {
-            if (res[signed.hash].result.status) {
-              retries = -1;
-            } else {
-              retries = retries - 1;
-            }
-          } catch(e) {
-              retries = retries - 1;
-          }
-        };
-        //keep transaction response in local state
-        setTxRes(res)
-        if (res[signed.hash].result.status === "success"){
-          console.log("tx status set to success");
-          //set state for transaction success
-          setTxStatus('success');
-          refresh();
-        } else if (retries === 0) {
-          console.log("tx status set to timeout");
-          setTxStatus('timeout');
-          refresh();
-        } else {
-          console.log("tx status set to failure");
-          //set state for transaction failure
-          setTxStatus('failure');
-        }
-      } catch(e) {
-        // TODO: use break in the while loop to capture if timeout occured
-        console.log("tx api failure",e);
-        setTxRes(e);
-        setTxStatus('failure');
-      }
-    } catch(e) {
-      console.log("tx status set to validation error",e);
-      //set state for transaction construction error
-      setTxStatus('validation-error');
-    }
+  const meta = Pact.lang.mkMeta(sender, hftAPI.meta.chainId, Number.parseFloat(gasPrice), hftAPI.meta.gasLimit, SigData.util.autoCreationTime(), hftAPI.meta.ttl);
+  const capsWithGas = SigData.util.addGasCap(caps);
+  console.log("signExecHftCommand", capsWithGas);
+  const signers = SigData.mkSignerCList(signingKey, capsWithGas);
+  const cmdJSON = SigData.mkExecPayload(
+    cmd,
+    signers,
+    networkId,
+    meta,
+    {data: envData}
+  );
+  const execSigData = SigData.mkSigData(cmdJSON);
+  signNewPactTx(execSigData, pactTxStatus);
 };
 
-const CreateGuardPolicyToken = (props) => {
-  const {refresh, mfCache} = props;
-  const {txStatus, setTxStatus,
-    tx, setTx,
-    txRes, setTxRes} = props.pactTxStatus;
-  const {current: {signingKey, networkId, gasPrice}} = usePactWallet();
+const CreateGuardPolicyToken = ({
+  refresh,
+  mfCache,
+  pactTxStatus
+}) => {
+  const {setTxRes, setTxStatus} = pactTxStatus;
+  const {current: {signingKey, networkId, gasPrice, accountName}} = usePactWallet();
   const [id,setId] = useState("");
   const [manifest,setManifest] = useState("");
   const [precision,setPrecision] = useState(12);
@@ -138,15 +75,13 @@ const CreateGuardPolicyToken = (props) => {
   const handleSubmit = (evt) => {
       evt.preventDefault();
       try {
-        sendHftCommand(setTx,setTxStatus,setTxRes,refresh
-          ,signingKey, networkId, Number.parseFloat(gasPrice)
-          ,`(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${gtpAPI.contractAddress})`
-          ,{"manifest": JSON.parse(manifest),
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, 
+          `(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${gtpAPI.contractAddress})`,
+          {"manifest": JSON.parse(manifest),
             "mint-guard": JSON.parse(mintGrd),
             "burn-guard": JSON.parse(burnGrd),
             "sale-guard": JSON.parse(saleGrd),
-            "transfer-guard": JSON.parse(transferGrd),
-          }
+            "transfer-guard": JSON.parse(transferGrd)}
           );
       } catch (e) {
         console.log("create-token Submit Error",typeof e, e, {id, manifest: JSON.parse(manifest), precision,mintGrd,saleGrd,burnGrd,transferGrd});
@@ -211,17 +146,19 @@ const CreateGuardPolicyToken = (props) => {
     <MakeForm
       inputFields={inputFields}
       onSubmit={handleSubmit}
-      tx={tx} txStatus={txStatus} txRes={txRes}
-      setTxStatus={setTxStatus}/>
+      pactTxStatus={pactTxStatus}
+      refresh={refresh}
+      />
   );
 };
 
-const CreateFixedQuotePolicyToken = (props) => {
-  const {refresh, mfCache} = props;
-  const {txStatus, setTxStatus,
-    tx, setTx,
-    txRes, setTxRes} = props.pactTxStatus;
-  const {current: {signingKey, networkId, gasPrice}} = usePactWallet();
+const CreateFixedQuotePolicyToken = ({
+  refresh,
+  mfCache,
+  pactTxStatus
+}) => {
+  const {setTxStatus, setTxRes} = pactTxStatus;
+  const {current: {signingKey, networkId, gasPrice, accountName}} = usePactWallet();
   const [id,setId] = useState("");
   const [manifest,setManifest] = useState("");
   const [precision,setPrecision] = useState(12);
@@ -233,10 +170,9 @@ const CreateFixedQuotePolicyToken = (props) => {
   const handleSubmit = (evt) => {
       evt.preventDefault();
       try {
-        sendHftCommand(setTx,setTxStatus,setTxRes,refresh
-          ,signingKey, networkId, Number.parseFloat(gasPrice)
-          ,`(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${fqpAPI.contractAddress})`
-          ,{"manifest": JSON.parse(manifest),
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, 
+          `(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${fqpAPI.contractAddress})`,
+          {"manifest": JSON.parse(manifest),
             "mint-guard": JSON.parse(mintGrd),
             "max-supply": Number.parseFloat(maxSupply),
             "min-amount": Number.parseFloat(minAmount),
@@ -294,17 +230,19 @@ const CreateFixedQuotePolicyToken = (props) => {
     <MakeForm
       inputFields={inputFields}
       onSubmit={handleSubmit}
-      tx={tx} txStatus={txStatus} txRes={txRes}
-      setTxStatus={setTxStatus}/>
+      pactTxStatus={pactTxStatus}
+      refresh={refresh}
+    />
   );
 };
 
-const CreateFixedQuoteRoyaltyPolicyToken = (props) => {
-  const {refresh, mfCache} = props;
-  const {txStatus, setTxStatus,
-    tx, setTx,
-    txRes, setTxRes} = props.pactTxStatus;
-  const {current: {signingKey, networkId, gasPrice}} = usePactWallet();
+const CreateFixedQuoteRoyaltyPolicyToken = ({
+  refresh,
+  mfCache,
+  pactTxStatus
+}) => {
+  const {setTxStatus, setTxRes} = pactTxStatus;
+  const {current: {signingKey, networkId, gasPrice, accountName}} = usePactWallet();
   const [id,setId] = useState("");
   const [manifest,setManifest] = useState("");
   const [precision,setPrecision] = useState(12);
@@ -320,10 +258,9 @@ const CreateFixedQuoteRoyaltyPolicyToken = (props) => {
   const handleSubmit = (evt) => {
       evt.preventDefault();
       try {
-        sendHftCommand(setTx,setTxStatus,setTxRes,refresh
-          ,signingKey, networkId, Number.parseFloat(gasPrice)
-          ,`(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${fqrpAPI.contractAddress})`
-          ,{"manifest": JSON.parse(manifest),
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, 
+          `(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${fqrpAPI.contractAddress})`,
+          {"manifest": JSON.parse(manifest),
             "token_spec": {
               "fungible": {
                 "refName": {
@@ -425,16 +362,19 @@ const CreateFixedQuoteRoyaltyPolicyToken = (props) => {
     <MakeForm
       inputFields={inputFields}
       onSubmit={handleSubmit}
-      tx={tx} txStatus={txStatus} txRes={txRes}
-      setTxStatus={setTxStatus}/>
+      pactTxStatus={pactTxStatus}
+      refresh={refresh}
+    />
   );
 };
 
-const Mint = ({hftTokens, refresh,
-  pactTxStatus: {txStatus, setTxStatus,
-    tx, setTx,
-    txRes, setTxRes}}) => {
-  const {current: {signingKey, networkId, gasPrice}} = usePactWallet();
+const Mint = ({
+  hftTokens, 
+  refresh,
+  pactTxStatus
+  }) => {
+  const {setTxStatus, setTxRes} = pactTxStatus;
+  const {current: {signingKey, networkId, gasPrice, accountName}} = usePactWallet();
   const [token,setToken] = useState("");
   const [account,setAccount] = useState("");
   const [newKs,setNewKs] = useState({});
@@ -448,16 +388,10 @@ const Mint = ({hftTokens, refresh,
               , `${hftAPI.contractAddress}.MINT`
               , [token, account, Number.parseInt(amount)]));
       try {
-        sendHftCommand(setTx,setTxStatus,setTxRes,refresh
-          ,signingKey, networkId, Number.parseFloat(gasPrice)
-          ,`(${hftAPI.contractAddress}.mint "${token}" "${account}" (read-keyset 'ks) (read-decimal 'amount))`
-          ,{ks: JSON.parse(newKs),
-            amount}
-          , [Pact.lang.mkCap("MINT Cap"
-              , "Authenticates that you can mint"
-              , `${hftAPI.contractAddress}.MINT`
-              , [token, account, Number.parseFloat(amount)])
-            ]
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, 
+          `(${hftAPI.contractAddress}.mint "${token}" "${account}" (read-keyset 'ks) (read-decimal 'amount))`,
+          {ks: JSON.parse(newKs), amount},
+          [SigData.mkCap(`${hftAPI.contractAddress}.MINT`,[token, account, Number.parseFloat(amount)])]
         );
       } catch (e) {
         console.log("mint Submit Error",typeof e, e, token, account, newKs, amount);
@@ -501,19 +435,22 @@ const Mint = ({hftTokens, refresh,
     <MakeForm
       inputFields={inputFields}
       onSubmit={handleSubmit}
-      tx={tx} txStatus={txStatus} txRes={txRes}
-      setTxStatus={setTxStatus}/>
+      pactTxStatus={pactTxStatus}
+      refresh={refresh}
+    />
   );
 };
 
 
 
-const TransferCreate = (props) => {
-  const {hftTokens, hftLedger, refresh} = props;
-  const {txStatus, setTxStatus,
-    tx, setTx,
-    txRes, setTxRes} = props.pactTxStatus;
-  const {current: {signingKey, networkId, gasPrice}} = usePactWallet();
+const TransferCreate = ({
+  hftTokens, 
+  hftLedger, 
+  refresh,
+  pactTxStatus
+}) => {
+  const {setTxStatus, setTxRes} = pactTxStatus;
+  const {current: {signingKey, networkId, gasPrice, accountName}} = usePactWallet();
   const [token,setToken] = useState("");
   const [sender,setSender] = useState("");
   const [receiver,setReceiver] = useState("");
@@ -524,15 +461,10 @@ const TransferCreate = (props) => {
   const handleSubmit = (evt) => {
       evt.preventDefault();
       try {
-        sendHftCommand(setTx,setTxStatus,setTxRes,refresh
-          ,signingKey, networkId, Number.parseFloat(gasPrice)
-          ,`(${hftAPI.contractAddress}.transfer-create "${token}" "${sender}" "${receiver}" (read-keyset 'ks) (read-decimal 'amount))`
-          ,{ks: JSON.parse(newKs), amount: amount}
-          , [Pact.lang.mkCap("Transfer Cap"
-              , "Authenticates that you can transfer"
-              , `${hftAPI.contractAddress}.TRANSFER`
-              , [token, sender, receiver, Number.parseFloat(amount)])
-            ]
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, 
+          `(${hftAPI.contractAddress}.transfer-create "${token}" "${sender}" "${receiver}" (read-keyset 'ks) (read-decimal 'amount))`,
+          {ks: JSON.parse(newKs), amount: amount},
+          [SigData.mkCap(`${hftAPI.contractAddress}.TRANSFER`, [token, sender, receiver, Number.parseFloat(amount)])]
         );
       } catch (e) {
         console.log("transfer-create Submit Error",typeof e, e, token, sender, receiver, newKs, amount);
@@ -584,18 +516,21 @@ const TransferCreate = (props) => {
     <MakeForm
       inputFields={inputFields}
       onSubmit={handleSubmit}
-      tx={tx} txStatus={txStatus} txRes={txRes}
-      setTxStatus={setTxStatus}/>
+      pactTxStatus={pactTxStatus}
+      refresh={refresh}
+    />
   );
 };
 
 
-const Transfer = (props) => {
-  const {hftTokens, hftLedger, refresh} = props;
-  const {txStatus, setTxStatus,
-    tx, setTx,
-    txRes, setTxRes} = props.pactTxStatus;
-  const {current: {signingKey, networkId, gasPrice}} = usePactWallet();
+const Transfer = ({
+  hftTokens, 
+  hftLedger, 
+  refresh,
+  pactTxStatus
+}) => {
+  const {setTxStatus, setTxRes} = pactTxStatus;
+  const {current: {signingKey, networkId, gasPrice, accountName}} = usePactWallet();
   const [token,setToken] = useState("");
   const [sender,setSender] = useState("");
   const [receiver,setReceiver] = useState("");
@@ -605,15 +540,10 @@ const Transfer = (props) => {
   const handleSubmit = (evt) => {
       evt.preventDefault();
       try {
-        sendHftCommand(setTx,setTxStatus,setTxRes,refresh
-          ,signingKey, networkId, Number.parseFloat(gasPrice)
-          ,`(${hftAPI.contractAddress}.transfer "${token}" "${sender}" "${receiver}" (read-decimal 'amount))`
-          ,{amount: amount}
-          , [Pact.lang.mkCap("Transfer Cap"
-              , "Authenticates that you can transfer"
-              , `${hftAPI.contractAddress}.TRANSFER`
-              , [token, sender, receiver, Number.parseFloat(amount)])
-            ]
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, 
+          `(${hftAPI.contractAddress}.transfer "${token}" "${sender}" "${receiver}" (read-decimal 'amount))`,
+          {amount: amount},
+          [SigData.mkCap(`${hftAPI.contractAddress}.TRANSFER`, [token, sender, receiver, Number.parseFloat(amount)])]
         );
       } catch (e) {
         console.log("transfer Submit Error",typeof e, e, token, sender, receiver, amount);
@@ -657,18 +587,21 @@ const Transfer = (props) => {
     <MakeForm
       inputFields={inputFields}
       onSubmit={handleSubmit}
-      tx={tx} txStatus={txStatus} txRes={txRes}
-      setTxStatus={setTxStatus}/>
+      pactTxStatus={pactTxStatus}
+      refresh={refresh}
+    />
   );
 };
 
 
-const CreateAccount = (props) => {
-  const {hftTokens, hftLedger, refresh} = props;
-  const {txStatus, setTxStatus,
-    tx, setTx,
-    txRes, setTxRes} = props.pactTxStatus;
-  const {current: {signingKey, networkId, gasPrice}, allKeys} = usePactWallet();
+const CreateAccount = ({
+  hftTokens, 
+  hftLedger, 
+  refresh,
+  pactTxStatus
+}) => {
+  const {setTxStatus, setTxRes} = pactTxStatus;
+  const {current: {signingKey, networkId, gasPrice, accountName}, allKeys} = usePactWallet();
   const [token,setToken] = useState("");
   const [account,setAccount] = useState("");
   const [grdKeys,setGrdKeys] = useState([]);
@@ -680,10 +613,9 @@ const CreateAccount = (props) => {
       const newKeys = _.map(grdKeys, (k) => k.inputValue ? k.inputValue : k);
       console.debug("create-account", token, account, grdPred, grdKeys, {ks:{pred:grdPred, keys:newKeys}});
       try {
-        sendHftCommand(setTx,setTxStatus,setTxRes,refresh
-          ,signingKey, networkId, Number.parseFloat(gasPrice)
-          ,`(${hftAPI.contractAddress}.create-account "${token}" "${account}" (read-keyset 'ks))`
-          ,{ks:{pred:grdPred, keys:newKeys}}
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, 
+          `(${hftAPI.contractAddress}.create-account "${token}" "${account}" (read-keyset 'ks))`,
+          {ks:{pred:grdPred, keys:newKeys}}
         );
       } catch (e) {
         console.log("create-account Submit Error",typeof e, e, token, account, grdPred, grdKeys);
@@ -728,8 +660,9 @@ const CreateAccount = (props) => {
     <MakeForm
       inputFields={inputFields}
       onSubmit={handleSubmit}
-      tx={tx} txStatus={txStatus} txRes={txRes}
-      setTxStatus={setTxStatus}/>
+      pactTxStatus={pactTxStatus}
+      refresh={refresh}
+    />
   );
 };
 

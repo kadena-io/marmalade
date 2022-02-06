@@ -487,13 +487,6 @@ export const WalletConfig = () => {
         //   gasPrice: Number.parseFloat(gasPrice),
         //   gasLimit: 10000
         // });
-        // mkWalletTestCmd({
-        //   user: signingKey,
-        //   signingPubKey: signingKey, 
-        //   networkId,
-        //   gasPrice: Number.parseFloat(gasPrice),
-        //   gasLimit: 10000
-        // });
         signNewPactTx(sigData, pactTxStatus);
       } else {
         const n = {walletName:walletName, signingKey:signingKey, gasPrice:gasPrice, networkId:networkId, accountName:accountName};
@@ -542,4 +535,12 @@ export const WalletConfig = () => {
       { txStatus === 'pending' ? <LinearProgress /> : null }
       <PactTxStatus pactTxStatus={pactTxStatus} host={host}/>
   </Container>
+};
+
+export const hostFromNetworkId = (networkId) => {
+  if (networkId === "testnet04") {
+    return `https://api.testnet.chainweb.com/chainweb/0.0/${networkId}/chain/0/pact`;
+  } else {
+    return `https://api.chainweb.com/chainweb/0.0/${networkId}/chain/0/pact`
+  }
 };

@@ -26,6 +26,19 @@ import { hftAPI } from "./kadena-config.js";
 import {dashStyleNames2Text, PactSingleJsonAsTable} from "./util.js";
 import Pact from "pact-lang-api";
 
+var debugMode = false;
+
+const debug = (...args) => {
+  if (debugMode && args.length) {
+    console.debug("[PactTxStatus]", ...args);
+  };
+};
+
+export const toggleDebug = () => {
+  debugMode = !debugMode;
+  console.log("[PactTxStatus] debugMode set to", debugMode);
+};
+
 const useStyles = makeStyles((theme) => ({
   root: {
     width: '100%',
@@ -35,17 +48,26 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+export const signNewPactTx = (
+  sigData, 
+  {setTx, setTxRes, setTxStatus}
+) => {
+  setTx(sigData);
+  setTxRes({});
+  setTxStatus('do-signing');
+};
+
 const trackSigDataResult = async (
   sigData,
   setTxStatus,
   setTxRes,
-  host
+  host,
+  refresh=(()=>{})
 ) => {
-    console.debug("[trackSigDataResults] start", {sigData, host});
+    debug("trackSigDataResults start", {sigData, host});
     try {
       //sends signed transaction to blockchain
       const txReqKey = sigData.hash 
-      console.debug("[trackSigDataResult] txReqKeys", txReqKey);
       //set html to wait for transaction response
       //set state to wait for transaction response
       setTxStatus('pending')
@@ -55,12 +77,11 @@ const trackSigDataResult = async (
         //    for lower level implementations checkout out Pact.fetch.poll() in pact-lang-api
         let retries = 8;
         let res = {};
-        console.debug("[trackSigDataResult] poll beginning", txReqKey);
         while (retries > 0) {
           //sleep the polling
           await new Promise(r => setTimeout(r, 15000));
           res = await Pact.fetch.poll({requestKeys:[txReqKey]}, host);
-          console.debug("[trackSigDataResult] res", res);
+          debug("trackSigDataResult", {res});
           try {
             if (res[txReqKey].result.status) {
               retries = -1;
@@ -74,42 +95,37 @@ const trackSigDataResult = async (
         //keep transaction response in local state
         setTxRes(res)
         if (res[txReqKey].result.status === "success"){
-          console.log("tx status set to success");
+          debug("tx status set to success");
           //set state for transaction success
           setTxStatus('success');
+          refresh();
         } else if (retries === 0) {
-          console.log("tx status set to timeout");
+          debug("tx status set to timeout");
           setTxStatus('timeout');
+          refresh();
         } else {
-          console.log("tx status set to failure");
+          debug("tx status set to failure");
           //set state for transaction failure
           setTxStatus('failure');
         }
       } catch(e) {
         // TODO: use break in the while loop to capture if timeout occured
-        console.log("tx api failure",e);
+        debug("tx api failure",e);
         setTxRes(e);
         setTxStatus('failure');
       }
     } catch(e) {
       setTxRes(e.toString());
-      console.log("tx status set to validation error",e);
+      debug("tx status set to validation error",e);
       //set state for transaction construction error
       setTxStatus('validation-error');
     }
 };
 
-export const signNewPactTx = (
-  sigData, 
-  {setTx, setTxRes, setTxStatus}
-) => {
-  setTx(sigData);
-  setTxRes({});
-  setTxStatus('do-signing');
-};
-
 export const PactTxStatus = ({
-  pactTxStatus, host,
+  pactTxStatus, 
+  host, 
+  refresh=(()=>{})
 }) => {
   const {tx, txRes, setTxRes, txStatus, setTxStatus} = pactTxStatus;
   const [open,setOpen] = useState(true);
@@ -126,7 +142,7 @@ export const PactTxStatus = ({
   useEffect(()=>{
     if (txStatus === "submitted") {
       console.log("[PactTxStatus] trackSigDataResults", {tx, host});
-      trackSigDataResult(tx,setTxStatus,setTxRes,host);
+      trackSigDataResult(tx,setTxStatus,setTxRes,host,refresh);
     }
   }, [txStatus])
 

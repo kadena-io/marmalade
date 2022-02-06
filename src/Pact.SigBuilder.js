@@ -122,6 +122,17 @@ const mkSignerGas = (publicKey) => {
 };
 
 /**
+ * Convinence function to add a gasCap to a list of caps
+ * @param {CList} caps a ED25519 public key for the caps argument
+ * @returns {CList} A properly formatted element for the `signers` array field in SigBuilder
+ */
+const addGasCap = (caps) => {
+  enforceArray(caps,"addGasCap's caps");
+  caps.push(gasCap);
+  return caps;
+};
+
+/**
  * Make a Capabilites "signer" array for inclusion in a SigBuilder.
  * @param {PubKeyEd25519} publicKey a ED25519 public key for the caps argument
  * @param {CList} caps an array of caps created with SigBuilder.mkCap
@@ -447,8 +458,10 @@ export const SigData = {
                 mkSignerUnrestricted,
                 mkExecPayload,
                 mkContPayload,
+                mkSigData,
                 util: {
                   gasCap,
+                  addGasCap,
                   mergeSigners,
                   autoCreationTime,
                   autoNonce,

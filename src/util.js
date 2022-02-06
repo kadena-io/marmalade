@@ -27,7 +27,7 @@ import {
 //config file for blockchain calls
 import { PactTxStatus } from "./PactTxStatus.js";
 import { MDEditor } from "./Markdown";
-import { KeySelector, usePactWallet } from "./PactWallet.js";
+import { KeySelector, usePactWallet, hostFromNetworkId } from "./PactWallet.js";
 
 export const useInputStyles = makeStyles((theme) => ({
   root: {
@@ -373,13 +373,15 @@ export const MakeInputField = (props) => {
 
 };
 
-export const MakeForm = (props) => {
-  const {
-    inputFields,
-    onSubmit,
-    tx, txRes, txStatus, setTxStatus
-  } = props;
-  const {current: {walletName, signingKey}} = usePactWallet();
+export const MakeForm = ({
+  inputFields,
+  onSubmit,
+  pactTxStatus,
+  refresh
+}) => {
+  const { txStatus } = pactTxStatus;
+  const {current: {walletName, signingKey, networkId}} = usePactWallet();
+  const host = hostFromNetworkId(networkId);
   const [wasSubmitted,setWasSubmitted] = useState(false);
   useEffect(()=>setWasSubmitted(false),[inputFields]);
   useEffect(()=>txStatus !== "" ? setWasSubmitted(true) : setWasSubmitted(wasSubmitted), [txStatus])
@@ -404,7 +406,7 @@ export const MakeForm = (props) => {
         </CardActions>
       </form>
       { txStatus === 'pending' ? <LinearProgress /> : null }
-      <PactTxStatus tx={tx} txRes={txRes} txStatus={txStatus} setTxStatus={setTxStatus}/>
+      <PactTxStatus pactTxStatus={pactTxStatus} host={host} refresh={refresh}/>
     </div>
   )
 };

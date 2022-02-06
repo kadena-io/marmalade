@@ -113,27 +113,40 @@ export const renderPactValue = (val) => {
 
 export const FlatPaper = ({...rest}) => <Paper elevation={0} {...rest}/>;
 
-const useToplevelTableStyles = makeStyles({
-  table: {
-    minWidth: 650,
-  },
-});
-
-const useNestedTableStyles = makeStyles({
-  table: {
-    minWidth: 650,
-  },
-  root: {
-    '& > *': {
-      borderBottom: 'unset',
-    },
-  },
-});
+const useTableStyles = (isNested,height=false) => {
+  var styles;
+  if (isNested) {
+    styles = makeStyles({
+      table: {
+        minWidth: 650,
+      },
+      root: {
+        '& > *': {
+          borderBottom: 'unset',
+        },
+      },
+    });
+  } else {
+    if (height === false) {
+      styles = makeStyles({
+          table: {
+            minWidth: 650,
+          },});
+    } else {
+      styles = makeStyles({
+          table: {
+            height: height,
+            minWidth: 650,
+          },});
+        }
+  }
+  return styles
+};
 
 export const PactSingleJsonAsTable = (props) => {
   const json = props.json || {};
   const isNested = props.isNested || false;
-  const classes = isNested ? useNestedTableStyles : useToplevelTableStyles;
+  const classes = useTableStyles(isNested)();
   const header = props.header || [];
   const keyFormatter = props.keyFormatter ? props.keyFormatter : (k) => {return (k)};
   const valFormatter = props.valFormatter ? props.valFormatter : (str) => <code>{renderPactValue(str)}</code>;
@@ -190,9 +203,11 @@ export const PactSingleJsonAsTable = (props) => {
 )};
 
 export const PactJsonListAsTable = (props) => {
+  const height = props.isNested ? false : (props.height ? props.height : '500px');
   const json = _.isArray(props.json) ? props.json : [];
   const isNested = props.isNested || false;
-  const classes = isNested ? useNestedTableStyles : useToplevelTableStyles;
+  const classes = useTableStyles(isNested, height)();
+  console.log({classes, height, isNested});
   const header = props.header || [];
   let keyOrder = [];
   if (props.keyOrder) {
@@ -258,8 +273,8 @@ export const PactJsonListAsTable = (props) => {
         {internals()}
       </Table>
     ) : (
-    <TableContainer component={FlatPaper}>
-      <Table className={classes.table} size='small' aria-label="simple table">
+    <TableContainer component={FlatPaper} className={classes.table}>
+      <Table className={classes.table} size='small' aria-label="pact read table toplevel">
         {internals()}
       </Table>
     </TableContainer>

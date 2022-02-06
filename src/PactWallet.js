@@ -56,7 +56,7 @@ import ExpandMore from '@material-ui/icons/ExpandMore';
 import Pact from "pact-lang-api";
 import {SigData} from './Pact.SigBuilder';
 //config file for blockchain calls
-import { PactTxStatus } from "./PactTxStatus.js";
+import { PactTxStatus, signNewPactTx } from "./PactTxStatus.js";
 import {
   PactJsonListAsTable,
   PactSingleJsonAsTable,
@@ -198,85 +198,6 @@ export const WalletApp = ({
   )
 };
 export const addGasCap = (otherCaps) => _.concat([Pact.lang.mkCap("Gas Cap", "Gas Cap", "coin.GAS", [])], otherCaps);
-
-const prepareSigBuilderExecCmd = ({
-  pactCode, 
-  envData, 
-  caps,
-  networkId,
-  chainId,
-  gasAccount,
-  gasPrice,
-  gasLimit,
-  ttl
-}) => {
-  const creationTime = Math.round(new Date().getTime() / 1000) - 15;
-  const nonce = new Date().toISOString();
-    
-  var cmdJSON = {
-    networkId: networkId,
-    payload: {
-      exec: {
-        data: envData || {},
-        code: pactCode
-      }
-    },
-    signers: caps,
-    meta: Pact.lang.mkMeta(gasAccount, chainId, gasPrice, gasLimit, creationTime, ttl),
-    nonce: JSON.stringify(nonce)
-  };
-  console.debug('cmdJSON', cmdJSON);
-  return JSON.stringify(cmdJSON);
-};
-
-var mkSigner = function(kp) {
-  if (kp.clist) {
-    return {
-      clist: asArray(kp.clist),
-      pubKey: kp.publicKey
-    }
-  } else {
-    return {pubKey: kp.publicKey}
-  }
-};
-
-var asArray = function(singleOrArray) {
-  if (Array.isArray(singleOrArray)) {
-    return singleOrArray;
-  } else {
-    return [singleOrArray];
-  }
-};
-
-const mkWalletTestCmd = ({
-  user, 
-  signingPubKey, 
-  networkId,
-  gasPrice,
-}) => {
-  //creates transaction to send to wallet
-  const caps = [
-    {clist: [{name: "coin.GAS", args: []}],
-    pubKey: signingPubKey}
-  ];
-  console.debug("caps", caps);
-  const toSign = prepareSigBuilderExecCmd({
-      pactCode: "(+ 1 1)",
-      envData: {foo: "bar"},
-      caps,
-      networkId: networkId,
-      chainId: "0",
-      gasAccount: user,
-      gasLimit: 1000,
-      gasPrice: gasPrice,
-      signingPubKey: signingPubKey,
-      ttl: 28800,
-  });
-  var unsignedSigs = {};
-  unsignedSigs[signingPubKey] = null;
-  console.debug("toSign", {hash: Pact.crypto.hash(toSign), cmd: toSign, sigs: unsignedSigs});
-  return toSign;
-};
 
 const trackSigDataResult = async (
   sigData,
@@ -506,9 +427,12 @@ export const WalletConfig = () => {
   const [tx, setTx] = useState({});
   const [txRes, setTxRes] = useState({});
   const [host, setHost] = useState("");
+  const pactTxStatus = {
+    tx:tx,setTx:setTx,
+    txStatus:txStatus,setTxStatus:setTxStatus,
+    txRes:txRes,setTxRes:setTxRes,
+  };
 
-  const [modalOpen, setModalOpen] = useState(false);
-  const [sigData, setSigData] = useState({hash:"",cmd:"",sigs:""});
   const [wasSubmitted,setWasSubmitted] = useState(false);
 
   useEffect(()=> {
@@ -570,8 +494,7 @@ export const WalletConfig = () => {
         //   gasPrice: Number.parseFloat(gasPrice),
         //   gasLimit: 10000
         // });
-        setSigData(sigData);
-        setModalOpen(true);
+        signNewPactTx(sigData, pactTxStatus);
       } else {
         const n = {walletName:walletName, signingKey:signingKey, gasPrice:gasPrice, networkId:networkId, accountName:accountName};
         walletDispatch({type: 'updateWallet', newWallet: n});
@@ -580,12 +503,6 @@ export const WalletConfig = () => {
       }
   };
   
-  useEffect(()=>{
-    if (wasSubmitted) {
-      trackSigDataResult(sigData,setTxStatus,setTxRes,host);
-    }
-  },[wasSubmitted]);
-
   const inputFields = [
     {
       type:'textFieldSingle',
@@ -614,7 +531,6 @@ export const WalletConfig = () => {
               <Button variant="outlined" color="default" type="submit">
                 Test Current Settings
               </Button>
-              <SigningDialog sigData={sigData} setWasSubmitted={setWasSubmitted} open={modalOpen} setOpen={setModalOpen}/>
             </React.Fragment>)
           : 
             <Button variant="outlined" color="default" type="submit">
@@ -624,69 +540,6 @@ export const WalletConfig = () => {
         </CardActions>
       </form>
       { txStatus === 'pending' ? <LinearProgress /> : null }
-      <PactTxStatus tx={tx} txRes={txRes} txStatus={txStatus} setTxStatus={setTxStatus}/>
+      <PactTxStatus pactTxStatus={pactTxStatus} host={host}/>
   </Container>
-};
-
-const signingModalStyles = makeStyles((theme) => ({
-  appBar: {
-    position: 'relative',
-  },
-  title: {
-    marginLeft: theme.spacing(2),
-    flex: 1,
-  },
-}));
-
-const SigningDialogTransition = React.forwardRef(function Transition(props, ref) {
-  return <Slide direction="up" ref={ref} {...props} />;
-});
-
-export const SigningDialog = ({
-  sigData,
-  setWasSubmitted,
-  open, setOpen,
-}) => {
-
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
-
-  const handleTxSubmit = () => {
-    setWasSubmitted(true);
-    setOpen(false);
-  };
-
-  const classes = signingModalStyles();
-
-  return (
-      <Dialog fullScreen open={open} onClose={handleClose} TransitionComponent={SigningDialogTransition}>
-        <AppBar className={classes.appBar}>
-          <Toolbar>
-            <IconButton edge="start" color="inherit" onClick={handleClose} aria-label="close">
-              <CloseIcon />
-            </IconButton>
-            <Typography variant="h6" className={classes.title}>
-              New Transaction
-            </Typography>
-            <Button autoFocus variant="outlined" color="default" onClick={handleTxSubmit}>
-              I Submitted the Transaction 
-            </Button>
-          </Toolbar>
-        </AppBar>
-        <List>
-          <ListItem>
-            <ListItemText primary="Copy The Transaction's SigData To Clipboard" secondary={JSON.stringify(sigData)} />
-          </ListItem>
-          <Divider />
-          <ListItem>
-            <ListItemText primary="Transaction Hash" secondary={sigData.hash} />
-          </ListItem>
-        </List>
-      </Dialog>
-  );
 };

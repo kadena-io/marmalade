@@ -9,6 +9,14 @@ import {
   Box,
   Grid,
   Divider,
+  List,
+  ListItem,
+  ListItemText,
+  Typography,
+  Dialog,
+  AppBar,
+  Toolbar,
+  Slide,
 } from '@material-ui/core';
 import { Modal, Button } from '@material-ui/core';
 import Collapse from '@material-ui/core/Collapse';
@@ -16,6 +24,7 @@ import IconButton from '@material-ui/core/IconButton';
 
 import { hftAPI } from "./kadena-config.js";
 import {dashStyleNames2Text, PactSingleJsonAsTable} from "./util.js";
+import Pact from "pact-lang-api";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -26,11 +35,83 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-export const PactTxStatus = (props) => {
-  // TODO: make these msgs hideable
-  const tx = props.tx;
-  const txRes = props.txRes;
-  const txStatus = props.txStatus;
+const trackSigDataResult = async (
+  sigData,
+  setTxStatus,
+  setTxRes,
+  host
+) => {
+    console.debug("[trackSigDataResults] start", {sigData, host});
+    try {
+      //sends signed transaction to blockchain
+      const txReqKey = sigData.hash 
+      console.debug("[trackSigDataResult] txReqKeys", txReqKey);
+      //set html to wait for transaction response
+      //set state to wait for transaction response
+      setTxStatus('pending')
+      try {
+        //listens to response to transaction sent
+        //  note method will timeout in two minutes
+        //    for lower level implementations checkout out Pact.fetch.poll() in pact-lang-api
+        let retries = 8;
+        let res = {};
+        console.debug("[trackSigDataResult] poll beginning", txReqKey);
+        while (retries > 0) {
+          //sleep the polling
+          await new Promise(r => setTimeout(r, 15000));
+          res = await Pact.fetch.poll({requestKeys:[txReqKey]}, host);
+          console.debug("[trackSigDataResult] res", res);
+          try {
+            if (res[txReqKey].result.status) {
+              retries = -1;
+            } else {
+              retries = retries - 1;
+            }
+          } catch(e) {
+              retries = retries - 1;
+          }
+        };
+        //keep transaction response in local state
+        setTxRes(res)
+        if (res[txReqKey].result.status === "success"){
+          console.log("tx status set to success");
+          //set state for transaction success
+          setTxStatus('success');
+        } else if (retries === 0) {
+          console.log("tx status set to timeout");
+          setTxStatus('timeout');
+        } else {
+          console.log("tx status set to failure");
+          //set state for transaction failure
+          setTxStatus('failure');
+        }
+      } catch(e) {
+        // TODO: use break in the while loop to capture if timeout occured
+        console.log("tx api failure",e);
+        setTxRes(e);
+        setTxStatus('failure');
+      }
+    } catch(e) {
+      setTxRes(e.toString());
+      console.log("tx status set to validation error",e);
+      //set state for transaction construction error
+      setTxStatus('validation-error');
+    }
+};
+
+export const signNewPactTx = (
+  sigData, 
+  {setTx, setTxRes, setTxStatus}
+) => {
+  setTx(sigData);
+  setTxRes({});
+  setTxStatus('do-signing');
+};
+
+export const PactTxStatus = ({
+  pactTxStatus, host,
+}) => {
+  const {tx, txRes, setTxRes, txStatus, setTxStatus} = pactTxStatus;
   const [open,setOpen] = useState(true);
   const [modalOpen,setModalOpen] = useState(false);
   const classes = useStyles();
@@ -42,9 +123,20 @@ export const PactTxStatus = (props) => {
     setOpen(true)
   ,[txStatus]);
 
+  useEffect(()=>{
+    if (txStatus === "submitted") {
+      console.log("[PactTxStatus] trackSigDataResults", {tx, host});
+      trackSigDataResult(tx,setTxStatus,setTxRes,host);
+    }
+  }, [txStatus])
+
   return (
-    txStatus ?
-      <div className={classes.root}>
+    (
+      txStatus === "do-signing" ?
+        <TxSigner pactTxStatus={pactTxStatus}/> 
+    : txStatus === "" || txStatus === "submitted" ? 
+        <React.Fragment/> 
+    : <div className={classes.root}>
         <Collapse in={open}>
           <Alert
             severity={severity}
@@ -140,6 +232,65 @@ export const PactTxStatus = (props) => {
           </Alert>
         </Collapse>
       </div>
-    : <React.Fragment/>
+    )
   );
 };
+
+const txSignerStyles = makeStyles((theme) => ({
+  appBar: {
+    position: 'relative',
+  },
+  title: {
+    marginLeft: theme.spacing(2),
+    flex: 1,
+  },
+}));
+
+const TxSignerTransition = React.forwardRef(function Transition(props, ref) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
+
+export const TxSigner = ({
+  pactTxStatus: {tx, setTxStatus}
+}) => {
+  const [open,setOpen] = useState(true);
+
+  const handleClose = () => {
+    setTxStatus("");
+    setOpen(false);
+  };
+
+  const handleTxSubmit = () => {
+    setTxStatus("submitted");
+    setOpen(false);
+  };
+
+  const classes = txSignerStyles();
+
+  return (
+      <Dialog fullScreen open={open} onClose={handleClose} TransitionComponent={TxSignerTransition}>
+        <AppBar className={classes.appBar}>
+          <Toolbar>
+            <IconButton edge="start" color="inherit" onClick={handleClose} aria-label="close">
+              <CloseIcon />
+            </IconButton>
+            <Typography variant="h6" className={classes.title}>
+              New Transaction
+            </Typography>
+            <Button autoFocus variant="outlined" color="default" onClick={handleTxSubmit}>
+              I Submitted the Transaction 
+            </Button>
+          </Toolbar>
+        </AppBar>
+        <List>
+          <ListItem>
+            <ListItemText primary="Copy The Transaction's SigData To Clipboard" secondary={JSON.stringify(tx)} />
+          </ListItem>
+          <Divider />
+          <ListItem>
+            <ListItemText primary="Transaction Hash" secondary={tx.hash} />
+          </ListItem>
+        </List>
+      </Dialog>
+  );
+}

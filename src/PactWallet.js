@@ -129,7 +129,7 @@ const pactWalletReducer = (state, action) => {
 
 export const PactWallet = ({globalConfig, contractConfigs, children}) => {
   //PactWallet State
-  const usePersistedWallet = createPersistedState("pactWallet6");
+  const usePersistedWallet = createPersistedState("pactWallet7");
   const [persistedPactWallet,setPersistedPactWallet] = usePersistedWallet({});
   const [wallet,walletDispatch] = useReducer(pactWalletReducer, _.size(persistedPactWallet) ? _.cloneDeep(persistedPactWallet) : pactWalletContextDefault);
   // Experimental wrapper for "emit" bug found in https://github.com/donavon/use-persisted-state/issues/56
@@ -196,69 +196,6 @@ export const WalletApp = ({
       {setAppRoute({app:"wallet", ui:"config"})}
   </React.Fragment>
   )
-};
-export const addGasCap = (otherCaps) => _.concat([Pact.lang.mkCap("Gas Cap", "Gas Cap", "coin.GAS", [])], otherCaps);
-
-const trackSigDataResult = async (
-  sigData,
-  setTxStatus,
-  setTxRes,
-  host
-) => {
-    try {
-      //sends signed transaction to blockchain
-      const txReqKey = sigData.hash 
-      console.log("txReqKeys", txReqKey)
-      //set html to wait for transaction response
-      //set state to wait for transaction response
-      setTxStatus('pending')
-      try {
-        //listens to response to transaction sent
-        //  note method will timeout in two minutes
-        //    for lower level implementations checkout out Pact.fetch.poll() in pact-lang-api
-        let retries = 8;
-        let res = {};
-        while (retries > 0) {
-          //sleep the polling
-          await new Promise(r => setTimeout(r, 15000));
-          res = await Pact.fetch.poll({requestKeys:[txReqKey]}, host);
-          console.log("Pact.poll Result", res);
-          try {
-            if (res[txReqKey].result.status) {
-              retries = -1;
-            } else {
-              retries = retries - 1;
-            }
-          } catch(e) {
-              retries = retries - 1;
-          }
-        };
-        //keep transaction response in local state
-        setTxRes(res)
-        if (res[txReqKey].result.status === "success"){
-          console.log("tx status set to success");
-          //set state for transaction success
-          setTxStatus('success');
-        } else if (retries === 0) {
-          console.log("tx status set to timeout");
-          setTxStatus('timeout');
-        } else {
-          console.log("tx status set to failure");
-          //set state for transaction failure
-          setTxStatus('failure');
-        }
-      } catch(e) {
-        // TODO: use break in the while loop to capture if timeout occured
-        console.log("tx api failure",e);
-        setTxRes(e);
-        setTxStatus('failure');
-      }
-    } catch(e) {
-      setTxRes(e.toString());
-      console.log("tx status set to validation error",e);
-      //set state for transaction construction error
-      setTxStatus('validation-error');
-    }
 };
 
 const filter = createFilterOptions();
@@ -421,6 +358,7 @@ export const WalletConfig = () => {
   const [signingKey, setSigningKey] = useState("");
   const [networkId, setNetworkId] = useState("testnet04");
   const [gasPrice, setGasPrice] = useState("0.000001");
+  const [gasLimit, setGasLimit] = useState("10000");
   const classes = useStyles();
 
   const [txStatus, setTxStatus] = useState("");
@@ -442,6 +380,7 @@ export const WalletConfig = () => {
         if (wallet.current.signingKey) {setSigningKey(wallet.current.signingKey)}
         if (wallet.current.accountName) {setAccountName(wallet.current.accountName)}
         if (wallet.current.gasPrice) {setGasPrice(wallet.current.gasPrice)}
+        if (wallet.current.gasLimit) {setGasLimit(wallet.current.gasLimit)}
         if (wallet.current.networkId) {setNetworkId(wallet.current.networkId)}
     } 
   }
@@ -451,8 +390,11 @@ export const WalletConfig = () => {
     if (_.size(wallet.otherWallets[walletName])) {
       const loadingWallet = wallet.otherWallets[walletName];
       console.debug("PactWalletConfig updating entries", loadingWallet)
-        if (loadingWallet.walletName && loadingWallet.signingKey && loadingWallet.gasPrice && loadingWallet.networkId && loadingWallet.accountName) {
+        if (loadingWallet.walletName && loadingWallet.signingKey && 
+            loadingWallet.gasPrice && loadingWallet.gasLimit && 
+            loadingWallet.networkId && loadingWallet.accountName) {
           setGasPrice(loadingWallet.gasPrice);
+          setGasLimit(loadingWallet.gasLimit);
           setSigningKey(loadingWallet.signingKey);
           setAccountName(loadingWallet.accountName);
           setNetworkId(loadingWallet.networkId);
@@ -464,21 +406,19 @@ export const WalletConfig = () => {
   useEffect(()=>{
     setSaved(false);
     setWasSubmitted(false);
-  },[walletName,signingKey,gasPrice,networkId,accountName]);
+  },[walletName,signingKey,gasPrice,gasLimit,networkId,accountName]);
 
   const handleSubmit = (evt) => {
       evt.preventDefault();
       if (saved) {
-        setHost(networkId === "testnet04" ? 
-          `https://api.testnet.chainweb.com/chainweb/0.0/${networkId}/chain/0/pact` : 
-          `https://api.chainweb.com/chainweb/0.0/${networkId}/chain/0/pact`);
+        setHost(hostFromNetworkId(networkId));
         SigData.debug.toggleDebug();
         const sigData = SigData.ex.execCmdExample1({
           user: accountName,
           signingPubKey: signingKey, 
           networkId,
           gasPrice: Number.parseFloat(gasPrice),
-          gasLimit: 10000
+          gasLimit: Number.parseFloat(gasLimit)
         });
         // SigData.ex.contCmdExample1({
         //   user: signingKey,
@@ -489,7 +429,9 @@ export const WalletConfig = () => {
         // });
         signNewPactTx(sigData, pactTxStatus);
       } else {
-        const n = {walletName:walletName, signingKey:signingKey, gasPrice:gasPrice, networkId:networkId, accountName:accountName};
+        const n = {walletName:walletName, signingKey:signingKey, 
+          gasPrice:gasPrice, gasLimit:gasLimit, 
+          networkId:networkId, accountName:accountName};
         walletDispatch({type: 'updateWallet', newWallet: n});
         setSaved(true);
         console.debug("WalletConfig set. locale: ", n, " while context is: ", wallet.current);
@@ -503,7 +445,14 @@ export const WalletConfig = () => {
       className:classes.formControl,
       value:gasPrice,
       onChange:setGasPrice,
-    }];
+    },{
+      type:'textFieldSingle',
+      label:'Gas Limit',
+      className:classes.formControl,
+      value:gasLimit,
+      onChange:setGasLimit,
+    }
+  ];
 
   return <Container style={{"paddingTop":"1em"}}>
     <Typography component="h2">Add or Update Wallet</Typography>

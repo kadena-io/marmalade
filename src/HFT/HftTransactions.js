@@ -39,9 +39,10 @@ export const signExecHftCommand = (
   pactTxStatus,
   networkId,
   gasPrice,
+  gasLimit,
   cmd, envData={}, caps=[]
 ) => {
-  const meta = Pact.lang.mkMeta(sender, hftAPI.meta.chainId, Number.parseFloat(gasPrice), hftAPI.meta.gasLimit, SigData.util.autoCreationTime(), hftAPI.meta.ttl);
+  const meta = Pact.lang.mkMeta(sender, hftAPI.meta.chainId, Number.parseFloat(gasPrice), Number.parseFloat(gasLimit), SigData.util.autoCreationTime(), hftAPI.meta.ttl);
   const capsWithGas = SigData.util.addGasCap(caps);
   console.log("signExecHftCommand", capsWithGas);
   const signers = SigData.mkSignerCList(signingKey, capsWithGas);
@@ -62,7 +63,7 @@ const CreateGuardPolicyToken = ({
   pactTxStatus
 }) => {
   const {setTxRes, setTxStatus} = pactTxStatus;
-  const {current: {signingKey, networkId, gasPrice, accountName}} = usePactWallet();
+  const {current: {signingKey, networkId, gasPrice, gasLimit, accountName}} = usePactWallet();
   const [id,setId] = useState("");
   const [manifest,setManifest] = useState("");
   const [precision,setPrecision] = useState(12);
@@ -75,7 +76,7 @@ const CreateGuardPolicyToken = ({
   const handleSubmit = (evt) => {
       evt.preventDefault();
       try {
-        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, 
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit, 
           `(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${gtpAPI.contractAddress})`,
           {"manifest": JSON.parse(manifest),
             "mint-guard": JSON.parse(mintGrd),
@@ -158,7 +159,7 @@ const CreateFixedQuotePolicyToken = ({
   pactTxStatus
 }) => {
   const {setTxStatus, setTxRes} = pactTxStatus;
-  const {current: {signingKey, networkId, gasPrice, accountName}} = usePactWallet();
+  const {current: {signingKey, networkId, gasPrice, gasLimit, accountName}} = usePactWallet();
   const [id,setId] = useState("");
   const [manifest,setManifest] = useState("");
   const [precision,setPrecision] = useState(12);
@@ -170,7 +171,7 @@ const CreateFixedQuotePolicyToken = ({
   const handleSubmit = (evt) => {
       evt.preventDefault();
       try {
-        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, 
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit, 
           `(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${fqpAPI.contractAddress})`,
           {"manifest": JSON.parse(manifest),
             "mint-guard": JSON.parse(mintGrd),
@@ -242,7 +243,7 @@ const CreateFixedQuoteRoyaltyPolicyToken = ({
   pactTxStatus
 }) => {
   const {setTxStatus, setTxRes} = pactTxStatus;
-  const {current: {signingKey, networkId, gasPrice, accountName}} = usePactWallet();
+  const {current: {signingKey, networkId, gasPrice, gasLimit, accountName}} = usePactWallet();
   const [id,setId] = useState("");
   const [manifest,setManifest] = useState("");
   const [precision,setPrecision] = useState(12);
@@ -258,7 +259,7 @@ const CreateFixedQuoteRoyaltyPolicyToken = ({
   const handleSubmit = (evt) => {
       evt.preventDefault();
       try {
-        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, 
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit, 
           `(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${fqrpAPI.contractAddress})`,
           {"manifest": JSON.parse(manifest),
             "token_spec": {
@@ -374,7 +375,7 @@ const Mint = ({
   pactTxStatus
   }) => {
   const {setTxStatus, setTxRes} = pactTxStatus;
-  const {current: {signingKey, networkId, gasPrice, accountName}} = usePactWallet();
+  const {current: {signingKey, networkId, gasPrice, gasLimit, accountName}} = usePactWallet();
   const [token,setToken] = useState("");
   const [account,setAccount] = useState("");
   const [newKs,setNewKs] = useState({});
@@ -388,7 +389,7 @@ const Mint = ({
               , `${hftAPI.contractAddress}.MINT`
               , [token, account, Number.parseInt(amount)]));
       try {
-        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, 
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit, 
           `(${hftAPI.contractAddress}.mint "${token}" "${account}" (read-keyset 'ks) (read-decimal 'amount))`,
           {ks: JSON.parse(newKs), amount},
           [SigData.mkCap(`${hftAPI.contractAddress}.MINT`,[token, account, Number.parseFloat(amount)])]
@@ -450,7 +451,7 @@ const TransferCreate = ({
   pactTxStatus
 }) => {
   const {setTxStatus, setTxRes} = pactTxStatus;
-  const {current: {signingKey, networkId, gasPrice, accountName}} = usePactWallet();
+  const {current: {signingKey, networkId, gasPrice, gasLimit, accountName}} = usePactWallet();
   const [token,setToken] = useState("");
   const [sender,setSender] = useState("");
   const [receiver,setReceiver] = useState("");
@@ -461,7 +462,7 @@ const TransferCreate = ({
   const handleSubmit = (evt) => {
       evt.preventDefault();
       try {
-        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, 
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit, 
           `(${hftAPI.contractAddress}.transfer-create "${token}" "${sender}" "${receiver}" (read-keyset 'ks) (read-decimal 'amount))`,
           {ks: JSON.parse(newKs), amount: amount},
           [SigData.mkCap(`${hftAPI.contractAddress}.TRANSFER`, [token, sender, receiver, Number.parseFloat(amount)])]
@@ -530,7 +531,7 @@ const Transfer = ({
   pactTxStatus
 }) => {
   const {setTxStatus, setTxRes} = pactTxStatus;
-  const {current: {signingKey, networkId, gasPrice, accountName}} = usePactWallet();
+  const {current: {signingKey, networkId, gasPrice, gasLimit, accountName}} = usePactWallet();
   const [token,setToken] = useState("");
   const [sender,setSender] = useState("");
   const [receiver,setReceiver] = useState("");
@@ -540,7 +541,7 @@ const Transfer = ({
   const handleSubmit = (evt) => {
       evt.preventDefault();
       try {
-        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, 
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit, 
           `(${hftAPI.contractAddress}.transfer "${token}" "${sender}" "${receiver}" (read-decimal 'amount))`,
           {amount: amount},
           [SigData.mkCap(`${hftAPI.contractAddress}.TRANSFER`, [token, sender, receiver, Number.parseFloat(amount)])]
@@ -601,7 +602,7 @@ const CreateAccount = ({
   pactTxStatus
 }) => {
   const {setTxStatus, setTxRes} = pactTxStatus;
-  const {current: {signingKey, networkId, gasPrice, accountName}, allKeys} = usePactWallet();
+  const {current: {signingKey, networkId, gasPrice, gasLimit, accountName}, allKeys} = usePactWallet();
   const [token,setToken] = useState("");
   const [account,setAccount] = useState("");
   const [grdKeys,setGrdKeys] = useState([]);
@@ -613,7 +614,7 @@ const CreateAccount = ({
       const newKeys = _.map(grdKeys, (k) => k.inputValue ? k.inputValue : k);
       console.debug("create-account", token, account, grdPred, grdKeys, {ks:{pred:grdPred, keys:newKeys}});
       try {
-        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, 
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit, 
           `(${hftAPI.contractAddress}.create-account "${token}" "${account}" (read-keyset 'ks))`,
           {ks:{pred:grdPred, keys:newKeys}}
         );

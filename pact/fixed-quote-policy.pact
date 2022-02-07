@@ -52,9 +52,11 @@
     (enforce-ledger)
     (bind (get-policy token)
       { 'mint-guard:=mint-guard:guard
+      , 'min-amount:=min-amount:decimal
       , 'max-supply:=max-supply:decimal
       }
       (enforce-guard (at 'mint-guard (get-policy token)))
+      (enforce (>= min-amount 0.0) "Invalid min-amount")
       (enforce (<= (+ amount (at 'supply token)) max-supply) "Exceeds max supply")
   ))
 
@@ -71,11 +73,17 @@
     ( token:object{token-info}
     )
     (enforce-ledger)
+    (let* ( (mint-guard:guard (read-keyset 'mint-guard ))
+            (max-supply:decimal (read-decimal 'max-supply ))
+            (min-amount:decimal (read-decimal 'min-amount ))
+            )
+    (enforce (>= min-amount 0.0) "Invalid min-amount")
+    (enforce (>= max-supply 0.0) "Invalid max-supply")
     (insert policies (at 'id token)
-      { 'mint-guard: (read-keyset 'mint-guard)
-      , 'max-supply: (read-decimal 'max-supply)
-      , 'min-amount: (read-decimal 'min-amount) })
-    true
+      { 'mint-guard: mint-guard
+      , 'max-supply: max-supply
+      , 'min-amount: min-amount })
+    true)
   )
 
   (defun enforce-offer:bool
@@ -92,13 +100,15 @@
             (price:decimal (at 'price spec))
             (recipient:string (at 'recipient spec))
             (recipient-guard:guard (at 'recipient-guard spec))
-            (recipient-details:object (fungible::details recipient)) )
-      (fungible::enforce-unit price)
-      (enforce (< 0.0 price) "Offer amount must be positive")
+            (recipient-details:object (fungible::details recipient))
+            (sale-price:decimal (* amount price)) )
+      (fungible::enforce-unit sale-price)
+      (enforce (< 0.0 price) "Offer price must be positive")
       (enforce (=
         (at 'guard recipient-details) recipient-guard)
         "Recipient guard does not match")
       (insert quotes sale-id { 'id: (at 'id token), 'spec: spec }))
+      true
   )
 
   (defun enforce-buy:bool
@@ -120,6 +130,7 @@
         (fungible::transfer-create buyer recipient recipient-guard (* amount price))
       )
     )
+    true
   )
 
   (defun enforce-sale-pact:bool (sale:string)

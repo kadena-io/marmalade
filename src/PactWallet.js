@@ -37,7 +37,14 @@ import {
   TextField,
   Tooltip,
   Typography,
+  Modal,
+  Dialog,
+  AppBar,
+  Toolbar,
+  Slide,
 } from '@material-ui/core';
+import CloseIcon from '@material-ui/icons/Close';
+
 import {
   makeStyles,
 } from '@material-ui/styles';
@@ -47,8 +54,9 @@ import ExpandLess from '@material-ui/icons/ExpandLess';
 import ExpandMore from '@material-ui/icons/ExpandMore';
 //pact-lang-api for blockchain calls
 import Pact from "pact-lang-api";
+import {SigData} from './Pact.SigBuilder';
 //config file for blockchain calls
-import { PactTxStatus } from "./PactTxStatus.js";
+import { PactTxStatus, signNewPactTx } from "./PactTxStatus.js";
 import {
   PactJsonListAsTable,
   PactSingleJsonAsTable,
@@ -121,7 +129,7 @@ const pactWalletReducer = (state, action) => {
 
 export const PactWallet = ({globalConfig, contractConfigs, children}) => {
   //PactWallet State
-  const usePersistedWallet = createPersistedState("pactWallet5");
+  const usePersistedWallet = createPersistedState("pactWallet7");
   const [persistedPactWallet,setPersistedPactWallet] = usePersistedWallet({});
   const [wallet,walletDispatch] = useReducer(pactWalletReducer, _.size(persistedPactWallet) ? _.cloneDeep(persistedPactWallet) : pactWalletContextDefault);
   // Experimental wrapper for "emit" bug found in https://github.com/donavon/use-persisted-state/issues/56
@@ -188,100 +196,6 @@ export const WalletApp = ({
       {setAppRoute({app:"wallet", ui:"config"})}
   </React.Fragment>
   )
-};
-export const addGasCap = (otherCaps) => _.concat([Pact.lang.mkCap("Gas Cap", "Gas Cap", "coin.GAS", [])], otherCaps);
-
-const walletCmd = async (
-  setTx,
-  setTxStatus,
-  setTxRes,
-  user, 
-  signingPubKey, 
-  networkId,
-  gasPrice,
-  host
-) => {
-    try {
-      //creates transaction to send to wallet
-      const toSign = {
-          pactCode: "(+ 1 1)",
-          caps: [
-            Pact.lang.mkCap("Gas Cap"
-                           , "Gas Cap"
-                           , "coin.GAS"
-                           , [])
-          ],
-          gasLimit: 1000,
-          gasPrice: gasPrice,
-          chainId: "0",
-          signingPubKey: signingPubKey,
-          networkId: networkId,
-          ttl: 28800,
-          sender: user,
-          envData: {foo: "bar"}
-      }
-      console.log("toSign", toSign)
-      //sends transaction to wallet to sign and awaits signed transaction
-      const signed = await Pact.wallet.sign(toSign)
-      console.log("signed", signed)
-      if ( typeof signed === 'object' && 'hash' in signed ) {
-        setTx(signed);
-      } else {
-        throw new Error("Signing API Failed");
-      }
-
-      //sends signed transaction to blockchain
-      const txReqKeys = await Pact.wallet.sendSigned(signed, host)
-      console.log("txReqKeys", txReqKeys)
-      //set html to wait for transaction response
-      //set state to wait for transaction response
-      setTxStatus('pending')
-      try {
-        //listens to response to transaction sent
-        //  note method will timeout in two minutes
-        //    for lower level implementations checkout out Pact.fetch.poll() in pact-lang-api
-        let retries = 8;
-        let res = {};
-        while (retries > 0) {
-          //sleep the polling
-          await new Promise(r => setTimeout(r, 15000));
-          res = await Pact.fetch.poll(txReqKeys, host);
-          try {
-            if (res[signed.hash].result.status) {
-              retries = -1;
-            } else {
-              retries = retries - 1;
-            }
-          } catch(e) {
-              retries = retries - 1;
-          }
-        };
-        //keep transaction response in local state
-        setTxRes(res)
-        if (res[signed.hash].result.status === "success"){
-          console.log("tx status set to success");
-          //set state for transaction success
-          setTxStatus('success');
-        } else if (retries === 0) {
-          console.log("tx status set to timeout");
-          setTxStatus('timeout');
-        } else {
-          console.log("tx status set to failure");
-          //set state for transaction failure
-          setTxStatus('failure');
-        }
-      } catch(e) {
-        // TODO: use break in the while loop to capture if timeout occured
-        console.log("tx api failure",e);
-        setTxRes(e);
-        setTxStatus('failure');
-      }
-    } catch(e) {
-      setTxRes(e.toString());
-      console.log("tx status set to validation error",e);
-      //set state for transaction construction error
-      setTxStatus('validation-error');
-    }
 };
 
 const filter = createFilterOptions();
@@ -440,21 +354,33 @@ export const WalletConfig = () => {
   const {wallet, walletDispatch} = useContext(PactWalletContext);
   const [saved,setSaved] = useState(false);
   const [walletName,setWalletName] = useState("");
+  const [accountName, setAccountName] = useState("");
   const [signingKey, setSigningKey] = useState("");
   const [networkId, setNetworkId] = useState("testnet04");
-  const [gasPrice, setGasPrice] = useState("");
+  const [gasPrice, setGasPrice] = useState("0.000001");
+  const [gasLimit, setGasLimit] = useState("10000");
   const classes = useStyles();
 
   const [txStatus, setTxStatus] = useState("");
   const [tx, setTx] = useState({});
   const [txRes, setTxRes] = useState({});
+  const [host, setHost] = useState("");
+  const pactTxStatus = {
+    tx:tx,setTx:setTx,
+    txStatus:txStatus,setTxStatus:setTxStatus,
+    txRes:txRes,setTxRes:setTxRes,
+  };
+
+  const [wasSubmitted,setWasSubmitted] = useState(false);
 
   useEffect(()=> {
     console.debug("WalletConfig useEffect on load fired with", wallet)
     if (_.size(wallet.current)) {
         if (wallet.current.walletName) {setWalletName(wallet.current.walletName)}
         if (wallet.current.signingKey) {setSigningKey(wallet.current.signingKey)}
+        if (wallet.current.accountName) {setAccountName(wallet.current.accountName)}
         if (wallet.current.gasPrice) {setGasPrice(wallet.current.gasPrice)}
+        if (wallet.current.gasLimit) {setGasLimit(wallet.current.gasLimit)}
         if (wallet.current.networkId) {setNetworkId(wallet.current.networkId)}
     } 
   }
@@ -464,39 +390,54 @@ export const WalletConfig = () => {
     if (_.size(wallet.otherWallets[walletName])) {
       const loadingWallet = wallet.otherWallets[walletName];
       console.debug("PactWalletConfig updating entries", loadingWallet)
-        if (loadingWallet.walletName && loadingWallet.signingKey && loadingWallet.gasPrice && loadingWallet.networkId) {
+        if (loadingWallet.walletName && loadingWallet.signingKey && 
+            loadingWallet.gasPrice && loadingWallet.gasLimit && 
+            loadingWallet.networkId && loadingWallet.accountName) {
           setGasPrice(loadingWallet.gasPrice);
+          setGasLimit(loadingWallet.gasLimit);
           setSigningKey(loadingWallet.signingKey);
+          setAccountName(loadingWallet.accountName);
           setNetworkId(loadingWallet.networkId);
           setWalletName(loadingWallet.walletName);
         }
     }
   },[walletName])
 
-  useEffect(()=>setSaved(false),[walletName,signingKey,gasPrice,networkId]);
+  useEffect(()=>{
+    setSaved(false);
+    setWasSubmitted(false);
+  },[walletName,signingKey,gasPrice,gasLimit,networkId,accountName]);
 
   const handleSubmit = (evt) => {
       evt.preventDefault();
       if (saved) {
-        const host = networkId === "testnet04" ? 
-          `https://api.testnet.chainweb.com/chainweb/0.0/${networkId}/chain/0/pact` : 
-          `https://api.chainweb.com/chainweb/0.0/${networkId}/chain/0/pact`; 
-        walletCmd(
-          setTx,
-          setTxStatus,
-          setTxRes,
-          signingKey,
-          signingKey, 
+        setHost(hostFromNetworkId(networkId));
+        SigData.debug.toggleDebug();
+        const sigData = SigData.ex.execCmdExample1({
+          user: accountName,
+          signingPubKey: signingKey, 
           networkId,
-          Number.parseFloat(gasPrice), 
-          host);
+          gasPrice: Number.parseFloat(gasPrice),
+          gasLimit: Number.parseFloat(gasLimit)
+        });
+        // SigData.ex.contCmdExample1({
+        //   user: signingKey,
+        //   signingPubKey: signingKey, 
+        //   networkId,
+        //   gasPrice: Number.parseFloat(gasPrice),
+        //   gasLimit: 10000
+        // });
+        signNewPactTx(sigData, pactTxStatus);
       } else {
-        const n = {walletName:walletName, signingKey:signingKey, gasPrice:gasPrice, networkId:networkId};
+        const n = {walletName:walletName, signingKey:signingKey, 
+          gasPrice:gasPrice, gasLimit:gasLimit, 
+          networkId:networkId, accountName:accountName};
         walletDispatch({type: 'updateWallet', newWallet: n});
         setSaved(true);
         console.debug("WalletConfig set. locale: ", n, " while context is: ", wallet.current);
       }
   };
+  
   const inputFields = [
     {
       type:'textFieldSingle',
@@ -504,7 +445,14 @@ export const WalletConfig = () => {
       className:classes.formControl,
       value:gasPrice,
       onChange:setGasPrice,
-    }];
+    },{
+      type:'textFieldSingle',
+      label:'Gas Limit',
+      className:classes.formControl,
+      value:gasLimit,
+      onChange:setGasLimit,
+    }
+  ];
 
   return <Container style={{"paddingTop":"1em"}}>
     <Typography component="h2">Add or Update Wallet</Typography>
@@ -516,14 +464,32 @@ export const WalletConfig = () => {
         {inputFields.map(f =>
           <MakeInputField inputField={f}/>
         )}
+        <EntrySelector label="Account Name" getVal={accountName} setVal={setAccountName} allOpts={_.map(wallet.otherWallets, 'accountName')}/>
         <EntrySelector label="Select Signing Key" getVal={signingKey} setVal={setSigningKey} allOpts={wallet.allKeys}/>
         <CardActions>
+          {saved ? 
+            (wasSubmitted ? <React.Fragment/> 
+            : <React.Fragment>
+              <Button variant="outlined" color="default" type="submit">
+                Test Current Settings
+              </Button>
+            </React.Fragment>)
+          : 
             <Button variant="outlined" color="default" type="submit">
-                {saved ? "Test Current Settings" : "Save New Settings" }
+              Save Current Settings
             </Button>
+          }
         </CardActions>
       </form>
       { txStatus === 'pending' ? <LinearProgress /> : null }
-      <PactTxStatus tx={tx} txRes={txRes} txStatus={txStatus} setTxStatus={setTxStatus}/>
+      <PactTxStatus pactTxStatus={pactTxStatus} host={host}/>
   </Container>
-}
+};
+
+export const hostFromNetworkId = (networkId) => {
+  if (networkId === "testnet04") {
+    return `https://api.testnet.chainweb.com/chainweb/0.0/${networkId}/chain/0/pact`;
+  } else {
+    return `https://api.chainweb.com/chainweb/0.0/${networkId}/chain/0/pact`
+  }
+};

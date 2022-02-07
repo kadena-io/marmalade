@@ -1,0 +1,84 @@
+Arguments: 
+  /usr/local/Cellar/node/17.4.0/bin/node /usr/local/Cellar/yarn/1.22.17_2/libexec/bin/yarn.js install
+
+PATH: 
+  /Users/wjm/opt/miniconda3/bin:/Users/wjm/opt/miniconda3/condabin:/usr/local/sbin:/Users/wjm/bin:/usr/local/bin:/Users/wjm/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Applications/Little Snitch.app/Contents/Components
+
+Yarn version: 
+  1.22.17
+
+Node version: 
+  17.4.0
+
+Platform: 
+  darwin x64
+
+Trace: 
+  SyntaxError: /Users/wjm/repos/hft/package.json: Unexpected token } in JSON at position 1365
+      at JSON.parse (<anonymous>)
+      at /usr/local/Cellar/yarn/1.22.17_2/libexec/lib/cli.js:1625:59
+      at Generator.next (<anonymous>)
+      at step (/usr/local/Cellar/yarn/1.22.17_2/libexec/lib/cli.js:310:30)
+      at /usr/local/Cellar/yarn/1.22.17_2/libexec/lib/cli.js:321:13
+
+npm manifest: 
+  {
+    "name": "hft-frontend",
+    "version": "0.1.0",
+    "private": true,
+    "dependencies": {
+      "@material-ui/core": "^4.11.4",
+      "@material-ui/icons": "^4.11.2",
+      "@material-ui/lab": "^4.0.0-alpha.58",
+      "@testing-library/jest-dom": "^4.2.4",
+      "@testing-library/react": "^9.3.2",
+      "@testing-library/user-event": "^7.1.2",
+      "clsx": "^1.1.1",
+      "lowdash": "^1.2.0",
+      "pact-lang-api": "^4.3.0",
+      "prop-types": "^15.7.2",
+      "query-string": "^7.0.1",
+      "react": "^16.13.1",
+      "react-dom": "^16.13.1",
+      "react-json-view": "^1.21.3",
+      "react-markdown": "^6.0.2",
+      "react-mde": "^11.5.0",
+      "react-router-dom": "^5.2.0",
+      "react-scripts": "@4.0.3",
+      "remark-gfm": "^1.0.0",
+      "stream-http": "^3.2.0",
+      "use-persisted-state": "^0.3.3",
+      "use-query-params": "^1.2.2"
+    },
+    "devDependencies": {
+      "webpack": "^4.46.0"
+    },
+    "scripts": {
+      "start": "react-scripts start",
+      "build": "react-scripts build",
+      "test": "react-scripts test",
+      "eject": "react-scripts eject"
+    },
+    "eslintConfig": {
+      "extends": "react-app"
+    },
+    "browserslist": {
+      "production": [
+        ">0.2%",
+        "not dead",
+        "not op_mini all"
+      ],
+      "development": [
+        "last 1 chrome version",
+        "last 1 firefox version",
+        "last 1 safari version"
+      ]
+    },
+    "homepage": "https://kadena-io.github.io/marmalade",
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile

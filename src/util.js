@@ -27,7 +27,7 @@ import {
 //config file for blockchain calls
 import { PactTxStatus } from "./PactTxStatus.js";
 import { MDEditor } from "./Markdown";
-import { KeySelector, usePactWallet } from "./PactWallet.js";
+import { KeySelector, usePactWallet, hostFromNetworkId } from "./PactWallet.js";
 
 export const useInputStyles = makeStyles((theme) => ({
   root: {
@@ -113,27 +113,40 @@ export const renderPactValue = (val) => {
 
 export const FlatPaper = ({...rest}) => <Paper elevation={0} {...rest}/>;
 
-const useToplevelTableStyles = makeStyles({
-  table: {
-    minWidth: 650,
-  },
-});
-
-const useNestedTableStyles = makeStyles({
-  table: {
-    minWidth: 650,
-  },
-  root: {
-    '& > *': {
-      borderBottom: 'unset',
-    },
-  },
-});
+const useTableStyles = (isNested,height=false) => {
+  var styles;
+  if (isNested) {
+    styles = makeStyles({
+      table: {
+        minWidth: 650,
+      },
+      root: {
+        '& > *': {
+          borderBottom: 'unset',
+        },
+      },
+    });
+  } else {
+    if (height === false) {
+      styles = makeStyles({
+          table: {
+            minWidth: 650,
+          },});
+    } else {
+      styles = makeStyles({
+          table: {
+            height: height,
+            minWidth: 650,
+          },});
+        }
+  }
+  return styles
+};
 
 export const PactSingleJsonAsTable = (props) => {
   const json = props.json || {};
   const isNested = props.isNested || false;
-  const classes = isNested ? useNestedTableStyles : useToplevelTableStyles;
+  const classes = useTableStyles(isNested)();
   const header = props.header || [];
   const keyFormatter = props.keyFormatter ? props.keyFormatter : (k) => {return (k)};
   const valFormatter = props.valFormatter ? props.valFormatter : (str) => <code>{renderPactValue(str)}</code>;
@@ -190,9 +203,11 @@ export const PactSingleJsonAsTable = (props) => {
 )};
 
 export const PactJsonListAsTable = (props) => {
+  const height = props.isNested ? false : (props.height ? props.height : '500px');
   const json = _.isArray(props.json) ? props.json : [];
   const isNested = props.isNested || false;
-  const classes = isNested ? useNestedTableStyles : useToplevelTableStyles;
+  const classes = useTableStyles(isNested, height)();
+  console.log({classes, height, isNested});
   const header = props.header || [];
   let keyOrder = [];
   if (props.keyOrder) {
@@ -258,8 +273,8 @@ export const PactJsonListAsTable = (props) => {
         {internals()}
       </Table>
     ) : (
-    <TableContainer component={FlatPaper}>
-      <Table className={classes.table} size='small' aria-label="simple table">
+    <TableContainer component={FlatPaper} className={classes.table}>
+      <Table className={classes.table} size='small' aria-label="pact read table toplevel">
         {internals()}
       </Table>
     </TableContainer>
@@ -373,13 +388,15 @@ export const MakeInputField = (props) => {
 
 };
 
-export const MakeForm = (props) => {
-  const {
-    inputFields,
-    onSubmit,
-    tx, txRes, txStatus, setTxStatus
-  } = props;
-  const {current: {walletName, signingKey}} = usePactWallet();
+export const MakeForm = ({
+  inputFields,
+  onSubmit,
+  pactTxStatus,
+  refresh
+}) => {
+  const { txStatus } = pactTxStatus;
+  const {current: {walletName, signingKey, networkId}} = usePactWallet();
+  const host = hostFromNetworkId(networkId);
   const [wasSubmitted,setWasSubmitted] = useState(false);
   useEffect(()=>setWasSubmitted(false),[inputFields]);
   useEffect(()=>txStatus !== "" ? setWasSubmitted(true) : setWasSubmitted(wasSubmitted), [txStatus])
@@ -404,7 +421,7 @@ export const MakeForm = (props) => {
         </CardActions>
       </form>
       { txStatus === 'pending' ? <LinearProgress /> : null }
-      <PactTxStatus tx={tx} txRes={txRes} txStatus={txStatus} setTxStatus={setTxStatus}/>
+      <PactTxStatus pactTxStatus={pactTxStatus} host={host} refresh={refresh}/>
     </div>
   )
 };

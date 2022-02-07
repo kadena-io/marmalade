@@ -94,7 +94,6 @@
       (enforce (=
         (at 'guard creator-details) creator-guard)
         "Creator guard does not match")
-      (fungible::enforce-unit royalty-rate)
       (enforce (and
         (>= royalty-rate 0.0) (<= royalty-rate 1.0))
         "Invalid royalty rate")
@@ -164,7 +163,7 @@
             (if
               (> (* sale-price royalty-rate) 0.0)
               (fungible::transfer-create buyer creator creator-guard (* sale-price royalty-rate))
-              true)
+              "No royalty")
             (fungible::transfer-create buyer recipient recipient-guard (* sale-price (- 1 royalty-rate))))
         )
       ))

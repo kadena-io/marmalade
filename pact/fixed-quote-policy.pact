@@ -100,8 +100,9 @@
             (price:decimal (at 'price spec))
             (recipient:string (at 'recipient spec))
             (recipient-guard:guard (at 'recipient-guard spec))
-            (recipient-details:object (fungible::details recipient)) )
-      (fungible::enforce-unit price)
+            (recipient-details:object (fungible::details recipient))
+            (sale-price:decimal (* amount price)) )
+      (fungible::enforce-unit sale-price)
       (enforce (< 0.0 price) "Offer price must be positive")
       (enforce (=
         (at 'guard recipient-details) recipient-guard)

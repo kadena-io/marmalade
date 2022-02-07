@@ -127,10 +127,7 @@
             (recipient-guard:guard (at 'recipient-guard spec))
             (recipient-details:object (fungible::details recipient))
             (sale-price:decimal (* amount price)) )
-      (if
-        (= royalty-rate 0.0)
-        (fungible::enforce-unit sale-price)
-        (fungible::enforce-unit (* sale-price royalty-rate)))
+      (fungible::enforce-unit sale-price)
       (enforce (< 0.0 price) "Offer price must be positive")
       (enforce (=
         (at 'guard recipient-details) recipient-guard)
@@ -161,15 +158,17 @@
           , 'recipient := recipient:string
           , 'recipient-guard := recipient-guard:guard
           }
-          (let ((sale-price (* amount price)))
+          (let* ((sale-price:decimal (* amount price))
+                 (royalty-payout:decimal
+                    (floor (* sale-price royalty-rate) (fungible::precision)))
+                 (payout:decimal (- sale-price royalty-payout)) )
             (if
-              (> (* sale-price royalty-rate) 0.0)
-              (fungible::transfer-create buyer creator creator-guard (* sale-price royalty-rate))
+              (> royalty-payout 0.0)
+              (fungible::transfer-create buyer creator creator-guard royalty-payout)
               "No royalty")
-            (fungible::transfer-create buyer recipient recipient-guard (* sale-price (- 1 royalty-rate))))
+            (fungible::transfer-create buyer recipient recipient-guard payout)))
             true
-        )
-      ))
+        ))
   )
 
   (defun enforce-sale-pact:bool (sale:string)

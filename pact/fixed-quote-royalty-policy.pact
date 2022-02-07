@@ -136,7 +136,9 @@
         (at 'guard recipient-details) recipient-guard)
         "Recipient guard does not match")
       (insert quotes sale-id { 'id: (at 'id token), 'spec: spec }))
-  ))
+      true
+  )
+  )
 
   (defun enforce-buy:bool
     ( token:object{token-info}
@@ -165,6 +167,7 @@
               (fungible::transfer-create buyer creator creator-guard (* sale-price royalty-rate))
               "No royalty")
             (fungible::transfer-create buyer recipient recipient-guard (* sale-price (- 1 royalty-rate))))
+            true
         )
       ))
   )

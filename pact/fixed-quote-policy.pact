@@ -107,6 +107,7 @@
         (at 'guard recipient-details) recipient-guard)
         "Recipient guard does not match")
       (insert quotes sale-id { 'id: (at 'id token), 'spec: spec }))
+      true
   )
 
   (defun enforce-buy:bool
@@ -128,6 +129,7 @@
         (fungible::transfer-create buyer recipient recipient-guard (* amount price))
       )
     )
+    true
   )
 
   (defun enforce-sale-pact:bool (sale:string)

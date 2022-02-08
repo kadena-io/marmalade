@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import {
   Switch,
 } from 'react-router-dom';
-import { 
+import {
   useQueryParams,
   StringParam,
   withDefault
@@ -15,7 +15,7 @@ import {
   Container} from '@material-ui/core';
 import { NavDrawer } from "./NavDrawer.js";
 
-import { 
+import {
   walletDrawerEntries,
   WalletApp,
  } from "./PactWallet.js";
@@ -25,7 +25,7 @@ import {
   HftApp
 } from "./HFT/Hft.js";
 import { getHftState } from "./HFT/HftState.js";
-
+import { getSaleEvents, saleBlocks } from "./HFT/HftEvents.js"
 const App = () => {
   //Top level UI Routing Params
   const [appRoute,setAppRoute] = useQueryParams({
@@ -68,6 +68,7 @@ const App = () => {
   useEffect(() => {
     getHftLedger();
     getHftTokens();
+    getSaleEvents(saleBlocks)
     console.debug('App.useEffect[] fired');
   }, []);
 
@@ -86,7 +87,7 @@ const App = () => {
       setAppRoute={setAppRoute}
     />
     : appRoute.app === "hft" ?
-    <HftApp 
+    <HftApp
       appRoute={appRoute}
       setAppRoute={setAppRoute}
       hftLedger={hftLedger}

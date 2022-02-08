@@ -58,9 +58,11 @@
     (enforce-ledger)
     (bind (get-policy token)
       { 'mint-guard:=mint-guard:guard
+      , 'min-amount:=min-amount:decimal
       , 'max-supply:=max-supply:decimal
       }
       (enforce-guard (at 'mint-guard (get-policy token)))
+      (enforce (>= min-amount 0.0) "Invalid min-amount")
       (enforce (<= (+ amount (at 'supply token)) max-supply) "Exceeds max supply")
   ))
 
@@ -87,7 +89,8 @@
             (royalty-rate:decimal (at 'royalty-rate spec))
             (creator-details:object (fungible::details creator ))
             )
-      (fungible::enforce-unit royalty-rate)
+      (enforce (>= min-amount 0.0) "Invalid min-amount")
+      (enforce (>= max-supply 0.0) "Invalid max-supply")
       (enforce (=
         (at 'guard creator-details) creator-guard)
         "Creator guard does not match")
@@ -124,13 +127,15 @@
             (recipient-guard:guard (at 'recipient-guard spec))
             (recipient-details:object (fungible::details recipient))
             (sale-price:decimal (* amount price)) )
-      (fungible::enforce-unit (* sale-price royalty-rate))
-      (enforce (< 0.0 price) "Offer amount must be positive")
+      (fungible::enforce-unit sale-price)
+      (enforce (< 0.0 price) "Offer price must be positive")
       (enforce (=
         (at 'guard recipient-details) recipient-guard)
         "Recipient guard does not match")
       (insert quotes sale-id { 'id: (at 'id token), 'spec: spec }))
-  ))
+      true
+  )
+  )
 
   (defun enforce-buy:bool
     ( token:object{token-info}
@@ -153,11 +158,17 @@
           , 'recipient := recipient:string
           , 'recipient-guard := recipient-guard:guard
           }
-          (let ((sale-price (* amount price)))
-            (fungible::transfer-create buyer creator creator-guard (* sale-price royalty-rate))
-            (fungible::transfer-create buyer recipient recipient-guard (* sale-price (- 1 royalty-rate))))
-        )
-      ))
+          (let* ((sale-price:decimal (* amount price))
+                 (royalty-payout:decimal
+                    (floor (* sale-price royalty-rate) (fungible::precision)))
+                 (payout:decimal (- sale-price royalty-payout)) )
+            (if
+              (> royalty-payout 0.0)
+              (fungible::transfer-create buyer creator creator-guard royalty-payout)
+              "No royalty")
+            (fungible::transfer-create buyer recipient recipient-guard payout)))
+            true
+        ))
   )
 
   (defun enforce-sale-pact:bool (sale:string)

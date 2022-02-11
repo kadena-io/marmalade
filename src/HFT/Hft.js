@@ -2,11 +2,12 @@
 import React, {  } from "react";
 //semantic ui for styling
 import {
-  Card, CardHeader, CardContent} from '@material-ui/core';
+  Card, CardHeader, CardContent, Button} from '@material-ui/core';
 import { ScrollableTabs } from "../ScrollableTabs.js";
 
 import { hftAPI } from "../kadena-config.js";
-import { HftConfig } from "./HftConfig.js"
+import { HftConfig } from "./HftConfig.js";
+import { syncEventsFromCWData } from "./HftEvents.js";
 import { RenderHftLedger, RenderHftTokens } from "./HftState.js";
 import { LedgerForms, TokenForms } from "./HftTransactions.js";
 import { RenderUri, RenderManifest, RenderDatum, ManifestForms } from "./Manifest.js";
@@ -44,11 +45,13 @@ export const HftApp = ({
   refresh}) => {
 
   const {getHftLedger, getHftTokens} = refresh;
+  
   return (
     appRoute.ui === "config" ?
     <Card>
       <CardHeader title="Contract and UI Configuration"/>
       <CardContent>
+      <Button onClick={() => { syncEventsFromCWData('marmalade.ledger', 50, 4) }}>Test Block Event Sync</Button>
         <HftConfig/>
       </CardContent>
     </Card>

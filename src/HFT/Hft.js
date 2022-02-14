@@ -1,14 +1,15 @@
 //basic React api imports
-import React, {  } from "react";
+import React, { useEffect, useState } from "react";
 //semantic ui for styling
 import {
   Card, CardHeader, CardContent, Button} from '@material-ui/core';
+import RefreshIcon from '@material-ui/icons/Refresh';
 import { ScrollableTabs } from "../ScrollableTabs.js";
 
 import { hftAPI } from "../kadena-config.js";
 import { HftConfig } from "./HftConfig.js";
 import { syncEventsFromCWData } from "./HftEvents.js";
-import { RenderHftLedger, RenderHftTokens } from "./HftState.js";
+import { RenderHftLedger, RenderHftTokens, RenderHftOrderBook } from "./HftState.js";
 import { LedgerForms, TokenForms } from "./HftTransactions.js";
 import { RenderUri, RenderManifest, RenderDatum, ManifestForms } from "./Manifest.js";
 
@@ -27,6 +28,9 @@ export const hftDrawerEntries = {
         primary:"Ledger",
         to:{app:"hft", ui: "ledger"}
       },{
+        primary:"Order Book",
+        to:{app:"hft", ui: "orderBook"}
+      },{
         primary:"Manifest",
         to:{app:"hft", ui: "manifest"}
       }]
@@ -39,20 +43,41 @@ export const HftApp = ({
   setAppRoute,
   hftLedger,
   hftTokens,
+  hftEvents,
+  orderBook,
   mfCache,
   setMfCache,
   pactTxStatus,
   refresh}) => {
+  const [obRefreshing,setObRefreshing] = useState(false);
 
-  const {getHftLedger, getHftTokens} = refresh;
-  
+  useEffect(()=>setObRefreshing(false), [orderBook]);
+
   return (
     appRoute.ui === "config" ?
     <Card>
       <CardHeader title="Contract and UI Configuration"/>
       <CardContent>
-      <Button onClick={() => { syncEventsFromCWData('marmalade.ledger', 50, 4) }}>Test Block Event Sync</Button>
         <HftConfig/>
+      </CardContent>
+    </Card>
+  : appRoute.ui === "orderBook" ?
+    <Card>
+      <CardHeader title="Order Book"/>
+      <CardContent>
+        <Button
+          variant="contained"
+          color="secondary"
+          disabled={obRefreshing}
+          onClick={() => {
+            setObRefreshing(true);
+            refresh.getHftEvents();
+          } }
+          startIcon={<RefreshIcon />}
+        >
+          Refresh Order Book
+        </Button>
+        <RenderHftOrderBook orderBook={orderBook}/>
       </CardContent>
     </Card>
   : appRoute.ui === "tokens" ?

@@ -79,3 +79,33 @@ export const RenderHftTokens = ({hftTokens}) => {
     />
   )
 };
+
+export const RenderHftOrderBook = ({orderBook}) => {
+  const pretty = _.map(orderBook,v=> {
+    return {"blockTime":v.blockTime, 
+            "token-id": v["params"]["id"], 
+            type:v.name.substring("marmalade.ledger.".length), 
+            amount:v["params"]["amount"].toString(),
+            contents: v};});
+  console.debug("renderHFTLedger", {orderBook,pretty});
+  return (
+   <PactJsonListAsTable
+    json={pretty}
+    header={["Block Time", "Token ID", "Type", "Amount", "Details"]}
+    keyOrder={["blockTime", "token-id", "type", "amount", "contents"]}
+    kvFunc={
+      {'contents': v => {
+        return <ReactJson 
+          src={v.contents}
+          name={false}
+          collapsed={0}
+          enableClipboard={false}
+          displayDataTypes={false}
+          displayObjectSize={false}
+        />}
+      }
+    }
+    keyFormatter={dashStyleNames2Text}
+    />
+  )
+};

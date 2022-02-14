@@ -25,7 +25,7 @@ import {
   HftApp
 } from "./HFT/Hft.js";
 import { getHftState } from "./HFT/HftState.js";
-import { getSaleEvents, saleBlocks } from "./HFT/HftEvents.js"
+import { syncEventsFromCWData, onlyOrderBookEvents } from "./HFT/HftEvents.js"
 const App = () => {
   //Top level UI Routing Params
   const [appRoute,setAppRoute] = useQueryParams({
@@ -47,20 +47,28 @@ const App = () => {
   const [hftLedger,setHftLedger] = createPersistedState("hftLedger6")({});
   const [hftTokens,setHftTokens] = createPersistedState("hftTokens6")({});
   const [mfCache,setMfCache] = createPersistedState("mfCache4")([]);
+  const [hftEvents, setHftEvents] = createPersistedState("hftEvents0")([]);
+  const [orderBook, setOrderBook] = createPersistedState("orderBook0")([]);
+
+  const getHftEvents = async () => {
+    const res = await syncEventsFromCWData('marmalade.ledger', 100, 4, true);
+    setHftEvents(res);
+  };
 
   const getHftLedger = async () => {
     const res = await getHftState("get-ledger");
     setHftLedger(res);
-  }
+  };
 
   const getHftTokens = async () => {
     const res = await getHftState("get-tokens");
     setHftTokens(res);
-  }
+  };
 
   const refresh = {
     getHftLedger: getHftLedger,
-    getHftTokens: getHftTokens
+    getHftTokens: getHftTokens,
+    getHftEvents: getHftEvents
   };
 
   const refreshAll = async () => _.forIn(refresh,(k,v) => v());
@@ -68,9 +76,14 @@ const App = () => {
   useEffect(() => {
     getHftLedger();
     getHftTokens();
-    getSaleEvents(saleBlocks)
+    getHftEvents();
     console.debug('App.useEffect[] fired');
   }, []);
+
+  useEffect(()=>{
+    setOrderBook(onlyOrderBookEvents(hftEvents))
+    console.debug('App.useEffect[hftEvents,setOrderBook] fired');
+  },[hftEvents]);
 
   return (
           <NavDrawer
@@ -92,6 +105,8 @@ const App = () => {
       setAppRoute={setAppRoute}
       hftLedger={hftLedger}
       hftTokens={hftTokens}
+      hftEvents={hftEvents}
+      orderBook={orderBook}
       mfCache={mfCache}
       setMfCache={setMfCache}
       pactTxStatus={pactTxStatus}

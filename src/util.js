@@ -207,7 +207,7 @@ export const PactJsonListAsTable = (props) => {
   const json = _.isArray(props.json) ? props.json : [];
   const isNested = props.isNested || false;
   const classes = useTableStyles(isNested, height)();
-  console.log({classes, height, isNested});
+  // console.log({classes, height, isNested});
   const header = props.header || [];
   let keyOrder = [];
   if (props.keyOrder) {

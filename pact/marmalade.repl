@@ -904,7 +904,8 @@
   (marmalade.ledger.get-balance 'project-2 (sale-account)))
 
 (expect "OFFER events"
-   [{"name": "marmalade.ledger.OFFER","params": ["project-2" "bob" 0.2 120]}
+   [{"name": "coin.TRANSFER","params": ["" "coin-buyer" 2.0]}
+    {"name": "marmalade.ledger.OFFER","params": ["project-2" "bob" 0.2 120]}
     {"name": "marmalade.ledger.SALE","params": ["project-2" "bob" 0.2 120 (pact-id)]}
     {"name": "marmalade.ledger.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}]
   (map (remove 'module-hash) (env-events true)))
@@ -1020,7 +1021,8 @@
   (marmalade.ledger.get-balance 'project-2 (sale-account)))
 
 (expect "OFFER events"
-   [{"name": "marmalade.ledger.OFFER","params": ["project-2" "bob" 0.2 120]}
+   [{"name": "coin.TRANSFER","params": ["" "coin-buyer" 2.0]}
+    {"name": "marmalade.ledger.OFFER","params": ["project-2" "bob" 0.2 120]}
     {"name": "marmalade.ledger.SALE","params": ["project-2" "bob" 0.2 120 (pact-id)]}
     {"name": "marmalade.ledger.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}]
   (map (remove 'module-hash) (env-events true)))
@@ -1240,7 +1242,8 @@
   (marmalade.ledger.get-balance 'project-3 (sale-account)))
 
 (expect "OFFER events"
-   [{"name": "marmalade.ledger.OFFER","params": ["project-3" "bob" 0.2 120]}
+   [{"name": "coin.TRANSFER","params": ["" "coin-buyer" 2.0]}
+    {"name": "marmalade.ledger.OFFER","params": ["project-3" "bob" 0.2 120]}
     {"name": "marmalade.ledger.SALE","params": ["project-3" "bob" 0.2 120 (pact-id)]}
     {"name": "marmalade.ledger.TRANSFER","params": ["project-3" "bob" (sale-account) 0.2]}]
   (map (remove 'module-hash) (env-events true)))
@@ -1372,7 +1375,8 @@
   (marmalade.ledger.get-balance 'project-3 (sale-account)))
 
 (expect "OFFER events"
-   [{"name": "marmalade.ledger.OFFER","params": ["project-3" "bob" 0.2 120]}
+   [{"name": "coin.TRANSFER","params": ["" "coin-buyer" 2.0]}
+    {"name": "marmalade.ledger.OFFER","params": ["project-3" "bob" 0.2 120]}
     {"name": "marmalade.ledger.SALE","params": ["project-3" "bob" 0.2 120 (pact-id)]}
     {"name": "marmalade.ledger.TRANSFER","params": ["project-3" "bob" (sale-account) 0.2]}]
   (map (remove 'module-hash) (env-events true)))

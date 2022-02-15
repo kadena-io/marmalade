@@ -55,7 +55,7 @@
       , 'min-amount:=min-amount:decimal
       , 'max-supply:=max-supply:decimal
       }
-      (enforce-guard (at 'mint-guard (get-policy token)))
+      (enforce-guard mint-guard)
       (enforce (>= min-amount 0.0) "Invalid min-amount")
       (enforce (<= (+ amount (at 'supply token)) max-supply) "Exceeds max supply")
   ))

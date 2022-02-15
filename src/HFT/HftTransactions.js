@@ -723,7 +723,7 @@ const SaleFixedQuotePolicy = ({
           { amount: amount,
             timeout: timeLimit,
             quote: {
-              fungible: {
+              "fungible": {
                 "refName": {
                   "namespace":null,
                   "name":fungible
@@ -734,12 +734,12 @@ const SaleFixedQuotePolicy = ({
                   "name":"fungible-v2"
                 }]
               },
-              price: price,
-              recipient: recipient,
-              recipientGrd: recipientGrd
+              "price": Number.parseFloat(price),
+              "recipient": recipient,
+              "recipient-guard": JSON.parse(recipientGrd)
             }
           },
-          [SigData.mkCap(`${hftAPI.contractAddress}.OFFER`,[token, seller, Number.parseFloat(amount), timeLimit])]
+          [SigData.mkCap(`${hftAPI.contractAddress}.OFFER`,[token, seller, Number.parseFloat(amount), {int: timeLimit}])]
         );
       } catch (e) {
         console.log("Sale Submit Error",typeof e, e, token, seller, amount, timeLimit);
@@ -839,7 +839,7 @@ const BuyFixedQuotePolicy = ({
       try {
         signContHftCommand(saleId, 1, false, accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
           { buyer: buyer,
-            buyerGrd: buyerGrd,
+            buyerGrd: JSON.parse(buyerGrd),
           },
           [SigData.mkCap(`${hftAPI.contractAddress}.BUY`,[token, seller, buyer, Number.parseFloat(amount), timeLimit, saleId])]
         );

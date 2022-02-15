@@ -4,7 +4,7 @@ import ReactJson from 'react-json-view'
 //config file for blockchain calls
 import Pact from "pact-lang-api";
 import Chainweb from "chainweb";
-import { hftAPI } from "../kadena-config.js";
+import { hftAPI, globalConfig } from "../kadena-config.js";
 import { PactJsonListAsTable, dashStyleNames2Text } from "../util.js";
 
 /** takes a pactRep and makes it more friendly */
@@ -102,5 +102,19 @@ export const syncEventsFromCWData = async (name, limit=50, threads=4, newestToOl
 };
 
 const orderBookRE = /marmalade.ledger.(SALE|WITHDRAW|BUY)/;
-
 export const onlyOrderBookEvents = (evs) => evs.filter(({name})=>orderBookRE.test(name));
+
+const saleEvRE = /marmalade.ledger.SALE/;
+export const onlySaleEvents = (evs) => evs.filter(({name})=>saleEvRE.test(name));
+
+export const getQuotesForSaleEvents = async (evs) => {
+  let p = {};
+  for (const {name, requestKey, blockHash} of evs) {
+    console.debug([hftAPI.meta.chainId, blockHash, hftAPI.meta.networkId, hftAPI.meta.apiHost]);
+    debugger;
+    p[requestKey] = await Chainweb.transaction.blockHash(hftAPI.meta.chainId, blockHash, hftAPI.meta.networkId, hftAPI.meta.apiHost);
+  };
+  // await Promise.allSettled(p);
+  console.debug("getQuotesForSaleEvents", p);
+  return p;
+}

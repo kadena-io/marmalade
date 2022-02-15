@@ -40,7 +40,7 @@ export const RenderHftLedger = ({hftLedger}) => {
     keyOrder={["id","contents"]}
     kvFunc={
       {'contents': v => {
-        return <ReactJson 
+        return <ReactJson
           src={v.contents}
           name={false}
           collapsed={1}
@@ -65,7 +65,7 @@ export const RenderHftTokens = ({hftTokens}) => {
     keyOrder={["id","contents"]}
     kvFunc={
       {'contents': v => {
-        return <ReactJson 
+        return <ReactJson
           src={v.contents}
           name={false}
           collapsed={1}
@@ -82,9 +82,9 @@ export const RenderHftTokens = ({hftTokens}) => {
 
 export const RenderHftOrderBook = ({orderBook}) => {
   const pretty = _.map(orderBook,v=> {
-    return {"blockTime":v.blockTime, 
-            "token-id": v["params"]["id"], 
-            type:v.name.substring("marmalade.ledger.".length), 
+    return {"blockTime":v.blockTime,
+            "token-id": v["params"]["id"],
+            type:v.name.substring("marmalade.ledger.".length),
             amount:v["params"]["amount"].toString(),
             contents: v};});
   console.debug("renderHFTLedger", {orderBook,pretty});
@@ -95,7 +95,7 @@ export const RenderHftOrderBook = ({orderBook}) => {
     keyOrder={["blockTime", "token-id", "type", "amount", "contents"]}
     kvFunc={
       {'contents': v => {
-        return <ReactJson 
+        return <ReactJson
           src={v.contents}
           name={false}
           collapsed={0}

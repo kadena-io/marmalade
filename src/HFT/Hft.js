@@ -52,7 +52,7 @@ export const HftApp = ({
   const [obRefreshing,setObRefreshing] = useState(false);
 
   useEffect(()=>setObRefreshing(false), [orderBook]);
-
+  console.log(hftEvents)
   return (
     appRoute.ui === "config" ?
     <Card>

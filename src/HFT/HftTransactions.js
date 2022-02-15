@@ -57,6 +57,35 @@ export const signExecHftCommand = (
   signNewPactTx(execSigData, pactTxStatus);
 };
 
+export const signContHftCommand = (
+  pactId,
+  step,
+  rollback,
+  sender,
+  signingKey,
+  pactTxStatus,
+  networkId,
+  gasPrice,
+  gasLimit,
+  envData={}, caps=[]
+) => {
+  const meta = Pact.lang.mkMeta(sender, hftAPI.meta.chainId, Number.parseFloat(gasPrice), Number.parseFloat(gasLimit), SigData.util.autoCreationTime(), hftAPI.meta.ttl);
+  const capsWithGas = SigData.util.addGasCap(caps);
+  console.log("signExecHftCommand", capsWithGas);
+  const signers = SigData.mkSignerCList(signingKey, capsWithGas);
+  const cmdJSON = SigData.mkContPayload(
+    pactId,
+    step,
+    signers,
+    networkId,
+    meta,
+    { data: envData,
+      rollback: rollback}
+  );
+  const execSigData = SigData.mkSigData(cmdJSON);
+  signNewPactTx(execSigData, pactTxStatus);
+};
+
 const CreateGuardPolicyToken = ({
   refresh,
   mfCache,
@@ -76,7 +105,7 @@ const CreateGuardPolicyToken = ({
   const handleSubmit = (evt) => {
       evt.preventDefault();
       try {
-        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit, 
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
           `(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${gtpAPI.contractAddress})`,
           {"manifest": JSON.parse(manifest),
             "mint-guard": JSON.parse(mintGrd),
@@ -171,7 +200,7 @@ const CreateFixedQuotePolicyToken = ({
   const handleSubmit = (evt) => {
       evt.preventDefault();
       try {
-        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit, 
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
           `(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${fqpAPI.contractAddress})`,
           {"manifest": JSON.parse(manifest),
             "mint-guard": JSON.parse(mintGrd),
@@ -259,7 +288,7 @@ const CreateFixedQuoteRoyaltyPolicyToken = ({
   const handleSubmit = (evt) => {
       evt.preventDefault();
       try {
-        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit, 
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
           `(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${fqrpAPI.contractAddress})`,
           {"manifest": JSON.parse(manifest),
             "token_spec": {
@@ -370,7 +399,7 @@ const CreateFixedQuoteRoyaltyPolicyToken = ({
 };
 
 const Mint = ({
-  hftTokens, 
+  hftTokens,
   refresh,
   pactTxStatus
   }) => {
@@ -389,7 +418,7 @@ const Mint = ({
               , `${hftAPI.contractAddress}.MINT`
               , [token, account, Number.parseInt(amount)]));
       try {
-        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit, 
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
           `(${hftAPI.contractAddress}.mint "${token}" "${account}" (read-keyset 'ks) (read-decimal 'amount))`,
           {ks: JSON.parse(newKs), amount},
           [SigData.mkCap(`${hftAPI.contractAddress}.MINT`,[token, account, Number.parseFloat(amount)])]
@@ -445,8 +474,8 @@ const Mint = ({
 
 
 const TransferCreate = ({
-  hftTokens, 
-  hftLedger, 
+  hftTokens,
+  hftLedger,
   refresh,
   pactTxStatus
 }) => {
@@ -462,7 +491,7 @@ const TransferCreate = ({
   const handleSubmit = (evt) => {
       evt.preventDefault();
       try {
-        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit, 
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
           `(${hftAPI.contractAddress}.transfer-create "${token}" "${sender}" "${receiver}" (read-keyset 'ks) (read-decimal 'amount))`,
           {ks: JSON.parse(newKs), amount: amount},
           [SigData.mkCap(`${hftAPI.contractAddress}.TRANSFER`, [token, sender, receiver, Number.parseFloat(amount)])]
@@ -525,8 +554,8 @@ const TransferCreate = ({
 
 
 const Transfer = ({
-  hftTokens, 
-  hftLedger, 
+  hftTokens,
+  hftLedger,
   refresh,
   pactTxStatus
 }) => {
@@ -541,7 +570,7 @@ const Transfer = ({
   const handleSubmit = (evt) => {
       evt.preventDefault();
       try {
-        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit, 
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
           `(${hftAPI.contractAddress}.transfer "${token}" "${sender}" "${receiver}" (read-decimal 'amount))`,
           {amount: amount},
           [SigData.mkCap(`${hftAPI.contractAddress}.TRANSFER`, [token, sender, receiver, Number.parseFloat(amount)])]
@@ -596,8 +625,8 @@ const Transfer = ({
 
 
 const CreateAccount = ({
-  hftTokens, 
-  hftLedger, 
+  hftTokens,
+  hftLedger,
   refresh,
   pactTxStatus
 }) => {
@@ -614,7 +643,7 @@ const CreateAccount = ({
       const newKeys = _.map(grdKeys, (k) => k.inputValue ? k.inputValue : k);
       console.debug("create-account", token, account, grdPred, grdKeys, {ks:{pred:grdPred, keys:newKeys}});
       try {
-        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit, 
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
           `(${hftAPI.contractAddress}.create-account "${token}" "${account}" (read-keyset 'ks))`,
           {ks:{pred:grdPred, keys:newKeys}}
         );
@@ -667,6 +696,220 @@ const CreateAccount = ({
   );
 };
 
+const SaleFixedQuotePolicy = ({
+  hftTokens,
+  hftLedger,
+  refresh,
+  pactTxStatus
+}) => {
+  const {setTxStatus, setTxRes} = pactTxStatus;
+  const {current: {signingKey, networkId, gasPrice, gasLimit, accountName}, allKeys} = usePactWallet();
+  const [token,setToken] = useState("");
+  const [seller,setSeller] = useState("");
+  const [amount,setAmount] = useState(0);
+  const [timeLimit,setTimeLimit] = useState(0);
+  const [fungible, setFungible] = useState("")
+  const [price, setPrice] = useState(0);
+  const [recipient, setRecipient] = useState("");
+  const [recipientGrd, setRecipientGrd] = useState({})
+  const classes = useStyles();
+
+  const handleSubmit = (evt) => {
+      evt.preventDefault();
+      console.debug("sale", token, seller);
+      try {
+        signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
+          `(${hftAPI.contractAddress}.sale "${token}" "${seller}" (read-decimal 'amount) (read-integer 'timeout))`,
+          { amount: amount,
+            timeout: timeLimit,
+            quote: {
+              fungible: {
+                "refName": {
+                  "namespace":null,
+                  "name":fungible
+                },
+                "refSpec": [
+                  {
+                  "namespace":null,
+                  "name":"fungible-v2"
+                }]
+              },
+              price: price,
+              recipient: recipient,
+              recipientGrd: recipientGrd
+            }
+          },
+          [SigData.mkCap(`${hftAPI.contractAddress}.SALE`,[token, seller, Number.parseFloat(amount), timeLimit])]
+        );
+      } catch (e) {
+        console.log("Sale Submit Error",typeof e, e, token, seller, amount, timeLimit);
+        setTxRes(e);
+        setTxStatus("validation-error");
+      }
+      };
+
+  const inputFields = [
+    {
+      type:'select',
+      label:'Select Token',
+      className:classes.formControl,
+      onChange:setToken,
+      options:hftTokens.map((g)=>g['id']),
+    },
+    {
+      type:'textFieldSingle',
+      label:'Seller Name',
+      className:classes.formControl,
+      value:seller,
+      onChange:setSeller
+    },
+    {
+      type:'textFieldSingle',
+      label:'Sale Amount',
+      className:classes.formControl,
+      value:amount,
+      onChange:setAmount
+    },
+    {
+      type:'textFieldSingle',
+      label:'Timeout (Block height)',
+      className:classes.formControl,
+      value:timeLimit,
+      onChange:setTimeLimit
+    },
+    {
+      type:'textFieldSingle',
+      label:'fungible',
+      className:classes.formControl,
+      value:fungible,
+      onChange:setFungible
+    },
+    {
+      type:'textFieldSingle',
+      label:'Price',
+      className:classes.formControl,
+      value:price,
+      onChange:setPrice
+    },
+    {
+      type:'textFieldSingle',
+      label:'Recipient',
+      className:classes.formControl,
+      value:recipient,
+      onChange:setRecipient
+    },
+    {
+      type:'textFieldMulti',
+      label:'Recipient Keyset',
+      className:classes.formControl,
+      placeholder:JSON.stringify({"pred":"keys-all","keys":["8c59a322800b3650f9fc5b6742aa845bc1c35c2625dabfe5a9e9a4cada32c543"]},undefined,2),
+      value:recipientGrd,
+      onChange:setRecipientGrd,
+    }
+  ];
+
+  return (
+    <MakeForm
+      inputFields={inputFields}
+      onSubmit={handleSubmit}
+      pactTxStatus={pactTxStatus}
+      refresh={refresh}
+    />
+  );
+};
+
+const BuyFixedQuotePolicy = ({
+  hftTokens,
+  hftLedger,
+  saleEvent,
+  refresh,
+  pactTxStatus
+}) => {
+  const {setTxStatus, setTxRes} = pactTxStatus;
+  const {current: {signingKey, networkId, gasPrice, gasLimit, accountName}, allKeys} = usePactWallet();
+  const [token,setToken] = useState("");
+  const [buyer,setBuyer] = useState("");
+  const [buyerGrd, setBuyerGrd] = useState({})
+  const {seller, amount, timeLimit, saleId}= saleEvent;
+  const classes = useStyles();
+
+  const handleSubmit = (evt) => {
+      evt.preventDefault();
+      console.debug("buy", token, buyer);
+      try {
+        signContHftCommand(saleId, 1, false, accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
+          { buyer: buyer,
+            buyerGrd: buyerGrd,
+          },
+          [SigData.mkCap(`${hftAPI.contractAddress}.BUY`,[token, seller, buyer, Number.parseFloat(amount), timeLimit, saleId])]
+        );
+      } catch (e) {
+        console.log("Sale Submit Error",typeof e, e, token, seller, amount, timeLimit);
+        setTxRes(e);
+        setTxStatus("validation-error");
+      }
+    };
+
+  const inputFields = [
+    {
+      type:'textFieldSingle',
+      label:'Buyer Name',
+      className:classes.formControl,
+      value:buyer,
+      onChange:setBuyer
+    },
+    {
+      type:'textFieldMulti',
+      label:'Buyer Keyset',
+      className:classes.formControl,
+      placeholder:JSON.stringify({"pred":"keys-all","keys":["8c59a322800b3650f9fc5b6742aa845bc1c35c2625dabfe5a9e9a4cada32c543"]},undefined,2),
+      value:buyerGrd,
+      onChange:setBuyerGrd,
+    }
+  ];
+
+  return (
+    <MakeForm
+      inputFields={inputFields}
+      onSubmit={handleSubmit}
+      pactTxStatus={pactTxStatus}
+      refresh={refresh}
+    />
+  );
+};
+
+const WithdrawFixedQuotePolicy = ({
+  hftTokens,
+  hftLedger,
+  saleEvent,
+  refresh,
+  pactTxStatus
+}) => {
+  const {setTxStatus, setTxRes} = pactTxStatus;
+  const {current: {signingKey, networkId, gasPrice, gasLimit, accountName}, allKeys} = usePactWallet();
+  const [token,setToken] = useState("");
+  const {seller, amount, timeLimit, saleId}= saleEvent;
+  const classes = useStyles();
+
+  const handleSubmit = (evt) => {
+      evt.preventDefault();
+      try {
+        signContHftCommand(saleId, 0, true, accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit);
+      } catch (e) {
+        console.log("Sale Submit Error",typeof e, e, token, seller, amount, timeLimit);
+        setTxRes(e);
+        setTxStatus("validation-error");
+      }
+    };
+
+  return (
+    <MakeForm
+      onSubmit={handleSubmit}
+      pactTxStatus={pactTxStatus}
+      refresh={refresh}
+    />
+  );
+};
 
 export const LedgerForms = ({
   hftLedger,

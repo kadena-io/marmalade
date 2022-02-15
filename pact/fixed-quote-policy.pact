@@ -17,8 +17,17 @@
   )
 
   (deftable policies:{policy-schema})
+  
+  (defcap QUOTE:bool
+    ( sale-id:string
+      token-id:string
+      spec:object{quote-spec}
+    )
+    @event
+    true
+  )
 
-  (defconst QUOTE "quote"
+  (defconst QUOTE-MSG-KEY "quote"
     @doc "Payload field for quote spec")
 
   (defschema quote-spec
@@ -95,7 +104,7 @@
     @doc "Capture quote spec for SALE of TOKEN from message"
     (enforce-ledger)
     (enforce-sale-pact sale-id)
-    (let* ( (spec:object{quote-spec} (read-msg QUOTE))
+    (let* ( (spec:object{quote-spec} (read-msg QUOTE-MSG-KEY))
             (fungible:module{fungible-v2} (at 'fungible spec) )
             (price:decimal (at 'price spec))
             (recipient:string (at 'recipient spec))
@@ -107,7 +116,8 @@
       (enforce (=
         (at 'guard recipient-details) recipient-guard)
         "Recipient guard does not match")
-      (insert quotes sale-id { 'id: (at 'id token), 'spec: spec }))
+      (insert quotes sale-id { 'id: (at 'id token), 'spec: spec })
+      (emit-event (QUOTE sale-id (at 'id token) spec)))
       true
   )
 

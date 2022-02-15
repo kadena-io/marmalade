@@ -18,6 +18,8 @@
 
   (implements fungible-v2)
 
+  (bless "ut_J_ZNkoyaPUEJhiwVeWnkSQn9JT9sQCWKdjjVVrWo")
+
   ; --------------------------------------------------------------------------
   ; Schemas and Tables
 
@@ -88,6 +90,15 @@
       (enforce (>= newbal 0.0)
         (format "TRANSFER exceeded for balance {}" [managed]))
       newbal)
+  )
+
+  ; v3 capabilities
+  (defcap RELEASE_ALLOCATION
+    ( account:string
+      amount:decimal
+    )
+    @doc "Event for allocation release, can be used for sig scoping."
+    @event true
   )
 
   ; --------------------------------------------------------------------------
@@ -207,6 +218,8 @@
       (enforce (>= refund 0.0)
         "refund must be a non-negative quantity")
 
+      (emit-event (TRANSFER sender miner fee)) ;v3
+
         ; directly update instead of credit
       (with-capability (CREDIT sender)
         (if (> refund 0.0)
@@ -229,6 +242,7 @@
     @model [ (property (valid-account account)) ]
 
     (validate-account account)
+    (enforce-reserved account guard)
 
     (insert coin-table account
       { "balance" : 0.0
@@ -333,6 +347,7 @@
     (enforce-unit amount)
 
     (require-capability (COINBASE))
+    (emit-event (TRANSFER "" account amount)) ;v3
     (with-capability (CREDIT account)
       (credit account account-guard amount))
     )
@@ -352,6 +367,7 @@
     (enforce-unit amount)
 
     (require-capability (REMEDIATE))
+    (emit-event (TRANSFER "" account amount)) ;v3
     (with-read coin-table account
       { "balance" := balance }
 
@@ -422,17 +438,42 @@
 
     (require-capability (CREDIT account))
     (with-default-read coin-table account
-      { "balance" : 0.0, "guard" : guard }
+      { "balance" : -1.0, "guard" : guard }
       { "balance" := balance, "guard" := retg }
       ; we don't want to overwrite an existing guard with the user-supplied one
       (enforce (= retg guard)
         "account guards do not match")
 
-      (write coin-table account
-        { "balance" : (+ balance amount)
-        , "guard"   : retg
-        })
+      (let ((is-new
+             (if (= balance -1.0)
+                 (enforce-reserved account guard)
+               false)))
+
+        (write coin-table account
+          { "balance" : (if is-new amount (+ balance amount))
+          , "guard"   : retg
+          }))
       ))
+
+  (defun check-reserved:string (account:string)
+    " Checks ACCOUNT for reserved name and returns type if \
+    \ found or empty string. Reserved names start with a \
+    \ single char and colon, e.g. 'c:foo', which would return 'c' as type."
+    (let ((pfx (take 2 account)))
+      (if (= ":" (take -1 pfx)) (take 1 pfx) "")))
+
+  (defun enforce-reserved:bool (account:string guard:guard)
+    @doc "Enforce reserved account name protocols."
+    (let ((r (check-reserved account)))
+      (if (= "" r) true
+        (if (= "k" r)
+          (enforce
+            (= (format "{}" [guard])
+               (format "KeySet {keys: [{}],pred: keys-all}"
+                       [(drop 2 account)]))
+            "Single-key account protocol violation")
+          (enforce false
+            (format "Unrecognized reserved protocol: {}" [r]))))))
 
 
   (defschema crosschain-schema
@@ -471,6 +512,8 @@
         ;; step 1 - debit delete-account on current chain
         (debit sender amount)
 
+        (emit-event (TRANSFER sender "" amount))
+
         (let
           ((crosschain-details:object{crosschain-schema}
             { "receiver" : receiver
@@ -486,7 +529,7 @@
         , "receiver-guard" := receiver-guard
         , "amount" := amount
         }
-
+        (emit-event (TRANSFER "" receiver amount))
         ;; step 2 - credit create account on target chain
         (with-capability (CREDIT receiver)
           (credit receiver receiver-guard amount))
@@ -567,9 +610,12 @@
           (>= curr-time release-time)
           (format "funds locked until {}. current time: {}" [release-time curr-time]))
 
+        (with-capability (RELEASE_ALLOCATION account balance)
+
         (enforce-guard guard)
 
         (with-capability (CREDIT account)
+          (emit-event (TRANSFER "" account balance))
           (credit account guard balance)
 
           (update allocation-table account
@@ -577,7 +623,7 @@
             , "balance" : 0.0
             })
 
-          "Allocation successfully released to main ledger")
+          "Allocation successfully released to main ledger"))
     )))
 
 )

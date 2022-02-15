@@ -819,38 +819,45 @@ const SaleFixedQuotePolicy = ({
 };
 
 const BuyFixedQuotePolicy = ({
-  hftTokens,
   hftLedger,
-  saleEvent,
+  orderBook,
   refresh,
   pactTxStatus
 }) => {
   const {setTxStatus, setTxRes} = pactTxStatus;
   const {current: {signingKey, networkId, gasPrice, gasLimit, accountName}, allKeys} = usePactWallet();
-  const [token,setToken] = useState("");
+  const [saleId,setSaleId] = useState("");
   const [buyer,setBuyer] = useState("");
   const [buyerGrd, setBuyerGrd] = useState({})
-  const {seller, amount, timeLimit, saleId}= saleEvent;
+  const [seller, setSeller] = useState("");
+  const [amount, setAmount] = useState("");
+  const [timeLimit, setTimeLimit] = useState(0);
   const classes = useStyles();
-
+  
   const handleSubmit = (evt) => {
       evt.preventDefault();
-      console.debug("buy", token, buyer);
-      try {
-        signContHftCommand(saleId, 1, false, accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
-          { buyer: buyer,
-            buyerGrd: JSON.parse(buyerGrd),
-          },
-          [SigData.mkCap(`${hftAPI.contractAddress}.BUY`,[token, seller, buyer, Number.parseFloat(amount), timeLimit, saleId])]
-        );
-      } catch (e) {
-        console.log("Sale Submit Error",typeof e, e, token, seller, amount, timeLimit);
-        setTxRes(e);
-        setTxStatus("validation-error");
-      }
+      // try {
+      //   signContHftCommand(saleId, 1, false, accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
+      //     { buyer: buyer,
+      //       buyerGrd: JSON.parse(buyerGrd),
+      //     },
+      //     [SigData.mkCap(`${hftAPI.contractAddress}.BUY`,[token, seller, buyer, Number.parseFloat(amount), timeLimit, saleId])]
+      //   );
+      // } catch (e) {
+      //   console.log("Sale Submit Error",typeof e, e, token, seller, amount, timeLimit);
+      //   setTxRes(e);
+      //   setTxStatus("validation-error");
+      // }
     };
 
   const inputFields = [
+    {
+      type:'select',
+      label:'Select Sale',
+      className:classes.formControl,
+      onChange:setSaleId,
+      options:orderBook.map((g)=> g['params']['sale-id'])
+    },
     {
       type:'textFieldSingle',
       label:'Buyer Name',
@@ -879,36 +886,46 @@ const BuyFixedQuotePolicy = ({
 };
 
 const WithdrawFixedQuotePolicy = ({
-  hftTokens,
+  orderBook,
   hftLedger,
-  saleEvent,
   refresh,
   pactTxStatus
 }) => {
   const {setTxStatus, setTxRes} = pactTxStatus;
   const {current: {signingKey, networkId, gasPrice, gasLimit, accountName}, allKeys} = usePactWallet();
-  const [token,setToken] = useState("");
-  const {seller, amount, timeLimit, saleId}= saleEvent;
+  const [saleId,setSaleId] = useState("");
+  // const {seller, amount, timeLimit, saleId}= saleEvent;
   const classes = useStyles();
 
   const handleSubmit = (evt) => {
       evt.preventDefault();
-      try {
-        signContHftCommand(saleId, 0, true, accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit);
-      } catch (e) {
-        console.log("Sale Submit Error",typeof e, e, token, seller, amount, timeLimit);
-        setTxRes(e);
-        setTxStatus("validation-error");
-      }
+      // try {
+      //   signContHftCommand(saleId, 0, true, accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit);
+      // } catch (e) {
+      //   console.log("Sale Submit Error",typeof e, e, token, seller, amount, timeLimit);
+      //   setTxRes(e);
+      //   setTxStatus("validation-error");
+      // }
     };
 
-  return (
-    <MakeForm
-      onSubmit={handleSubmit}
-      pactTxStatus={pactTxStatus}
-      refresh={refresh}
-    />
-  );
+    const inputFields = [
+      {
+        type:'select',
+        label:'Select Sale',
+        className:classes.formControl,
+        onChange:setSaleId,
+        options:orderBook.map((g)=> g['params']['sale-id'])
+      }
+    ];
+
+    return (
+      <MakeForm
+        inputFields={inputFields}
+        onSubmit={handleSubmit}
+        pactTxStatus={pactTxStatus}
+        refresh={refresh}
+      />
+    );
 };
 
 export const LedgerForms = ({
@@ -996,14 +1013,53 @@ export const TokenForms = ({
                 pactTxStatus={pactTxStatus}
                 hftTokens={hftTokens}
                 refresh={()=>getHftLedger()}/>
-          },{
+              }
+      ]}/>
+  );
+};
+
+export const OrderForms = ({
+  hftTokens,
+  orderBook,
+  mfCache,
+  tabIdx,
+  pactTxStatus,
+  refresh: {
+    getHftLedger,
+    getHftTokens,
+  },
+}) => {
+  console.log(orderBook)
+  return (
+    <ScrollableTabs
+      tabIdx={tabIdx}
+      tabEntries={[
+          {
             label:"Sale Fixed Quote Policy Token",
             component:
               <SaleFixedQuotePolicy
                 pactTxStatus={pactTxStatus}
-                hftTokens={hftTokens}
+                hftTokens={hftTokens.filter(token => {
+                  return token.policy.refName.name === "fixed-quote-policy";
+                })}
                 refresh={()=>getHftLedger()}/>
-          }
+          },
+          {
+            label:"Buy Fixed Quote Policy Token",
+            component:
+              <BuyFixedQuotePolicy
+                pactTxStatus={pactTxStatus}
+                orderBook={orderBook.filter((g)=>g['name'] === "marmalade.ledger.SALE")}
+                refresh={()=>getHftLedger()}/>
+          },
+          {
+            label:"Withdraw Fixed Quote Policy Token",
+            component:
+              <WithdrawFixedQuotePolicy
+                pactTxStatus={pactTxStatus}
+                orderBook={orderBook.filter((g)=>g['name'] === "marmalade.ledger.SALE")}
+                refresh={()=>getHftLedger()}/>
+          },
       ]}/>
   );
 };

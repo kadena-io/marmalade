@@ -10,7 +10,7 @@ import { hftAPI } from "../kadena-config.js";
 import { HftConfig } from "./HftConfig.js";
 import { syncEventsFromCWData } from "./HftEvents.js";
 import { RenderHftLedger, RenderHftTokens, RenderHftOrderBook } from "./HftState.js";
-import { LedgerForms, TokenForms } from "./HftTransactions.js";
+import { LedgerForms, TokenForms, OrderForms } from "./HftTransactions.js";
 import { RenderUri, RenderManifest, RenderDatum, ManifestForms } from "./Manifest.js";
 
 export const hftDrawerEntries = {
@@ -52,7 +52,7 @@ export const HftApp = ({
   const [obRefreshing,setObRefreshing] = useState(false);
 
   useEffect(()=>setObRefreshing(false), [orderBook]);
-  console.log(hftEvents)
+
   return (
     appRoute.ui === "config" ?
     <Card>
@@ -78,6 +78,7 @@ export const HftApp = ({
           Refresh Order Book
         </Button>
         <RenderHftOrderBook orderBook={orderBook}/>
+        <OrderForms pactTxStatus={pactTxStatus} tabIdx={"hftTabT"} hftTokens={hftTokens} orderBook={orderBook} mfCache={mfCache} refresh={refresh}/>
       </CardContent>
     </Card>
   : appRoute.ui === "tokens" ?

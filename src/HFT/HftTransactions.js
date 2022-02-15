@@ -739,7 +739,7 @@ const SaleFixedQuotePolicy = ({
               recipientGrd: recipientGrd
             }
           },
-          [SigData.mkCap(`${hftAPI.contractAddress}.SALE`,[token, seller, Number.parseFloat(amount), timeLimit])]
+          [SigData.mkCap(`${hftAPI.contractAddress}.OFFER`,[token, seller, Number.parseFloat(amount), timeLimit])]
         );
       } catch (e) {
         console.log("Sale Submit Error",typeof e, e, token, seller, amount, timeLimit);
@@ -993,6 +993,13 @@ export const TokenForms = ({
             label:"Mint HFT Token",
             component:
               <Mint
+                pactTxStatus={pactTxStatus}
+                hftTokens={hftTokens}
+                refresh={()=>getHftLedger()}/>
+          },{
+            label:"Sale Fixed Quote Policy Token",
+            component:
+              <SaleFixedQuotePolicy
                 pactTxStatus={pactTxStatus}
                 hftTokens={hftTokens}
                 refresh={()=>getHftLedger()}/>

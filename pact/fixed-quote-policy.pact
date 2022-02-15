@@ -17,12 +17,13 @@
   )
 
   (deftable policies:{policy-schema})
-  
+
   (defcap QUOTE:bool
     ( sale-id:string
       token-id:string
       spec:object{quote-spec}
     )
+    @doc "For event emission purposes"
     @event
     true
   )

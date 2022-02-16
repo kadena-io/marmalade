@@ -24,6 +24,9 @@ const networkId = "testnet04";
 //network node
 const node = "api.testnet.chainweb.com";
 
+//data host
+const dataHost = "data.testnet.chainweb.com:8080";
+
 //unique contract name
 const hftNamespace = "marmalade";
 const hftContractName = "ledger";
@@ -65,6 +68,7 @@ const creationTime = () => Math.round(new Date().getTime() / 1000) - 15;
 const globalConfig = {
   explorerURL: `https://explorer.chainweb.com/${networkId.slice(0, -2)}`,
   networkId: networkId,
+  dataHost: dataHost,
   host: host,
   creationTime: creationTime,
   //gas price at lowest possible denomination

@@ -9,7 +9,7 @@ import { ScrollableTabs } from "../ScrollableTabs.js";
 import { hftAPI } from "../kadena-config.js";
 import { HftConfig } from "./HftConfig.js";
 import { syncEventsFromCWData, onlySaleEvents, getQuotesForSaleEvents } from "./HftEvents.js";
-import { RenderHftLedger, RenderHftTokens, RenderHftOrderBook } from "./HftState.js";
+import { RenderHftLedger, RenderHftTokens, RenderHftOrderBook, RenderHftQuotes } from "./HftState.js";
 import { LedgerForms, TokenForms, OrderForms } from "./HftTransactions.js";
 import { RenderUri, RenderManifest, RenderDatum, ManifestForms } from "./Manifest.js";
 
@@ -45,6 +45,7 @@ export const HftApp = ({
   hftTokens,
   hftEvents,
   orderBook,
+  quotes,
   mfCache,
   setMfCache,
   pactTxStatus,
@@ -77,18 +78,8 @@ export const HftApp = ({
         >
           Refresh Order Book
         </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => {
-            getQuotesForSaleEvents(onlySaleEvents(orderBook));
-          } }
-          startIcon={<RefreshIcon />}
-        >
-          Get Quotes
-        </Button>
-        <RenderHftOrderBook orderBook={orderBook}/>
-        <OrderForms pactTxStatus={pactTxStatus} tabIdx={"hftTabT"} hftTokens={hftTokens} orderBook={orderBook} mfCache={mfCache} refresh={refresh}/>
+        <RenderHftQuotes orderBook={orderBook} quotes={quotes}/>
+        <OrderForms pactTxStatus={pactTxStatus} tabIdx={"hftTabT"} hftTokens={hftTokens} orderBook={orderBook} quotes={quotes} mfCache={mfCache} refresh={refresh}/>
       </CardContent>
     </Card>
   : appRoute.ui === "tokens" ?

@@ -4,7 +4,7 @@ import ReactJson from 'react-json-view'
 //config file for blockchain calls
 import Pact from "pact-lang-api";
 import Chainweb from "chainweb";
-import { hftAPI, globalConfig } from "../kadena-config.js";
+import { hftAPI, fqpAPI, fqrpAPI, globalConfig } from "../kadena-config.js";
 import { PactJsonListAsTable, dashStyleNames2Text } from "../util.js";
 
 /** takes a pactRep and makes it more friendly */
@@ -47,6 +47,10 @@ const convertMarmaladeParams = (name, params) => {
       return _.zipObject(["id", "seller", "amount", "timeout", "sale-id"], ps);
     case `${hftAPI.namespace}.${hftAPI.contractName}.BUY`:
       return _.zipObject(["id", "buyer", "seller", "amount", "timeout", "sale-id"], ps);
+    case `${fqpAPI.namespace}.${fqpAPI.contractName}.QUOTE`:
+      return _.zipObject(["pact-id", "token-id", "spec"], ps);
+    case `${fqrpAPI.namespace}.${fqrpAPI.contractName}.QUOTE`:
+      return _.zipObject(["pact-id", "token-id", "spec"], ps);
     default:
       throw new Error(`Event converstion match failed: ${name}`);
   }
@@ -64,7 +68,7 @@ const parseEventParams = (convertParams, events) => {
 
 const getCWDataEvents = async (name, offset, limit=50) => {
   console.debug('fetching marm events', {limit, offset})
-  const raw = fetch(`http://data.testnet.chainweb.com:8080/txs/events\?name\=${name}\&limit\=${limit}\&offset\=${offset}`);
+  const raw = fetch(`http://${globalConfig.dataHost}/txs/events\?name\=${name}\&limit\=${limit}\&offset\=${offset}`);
   const rawRes = await raw;
   const res = await rawRes;
   if (res.ok){
@@ -101,20 +105,26 @@ export const syncEventsFromCWData = async (name, limit=50, threads=4, newestToOl
   return stateObj;
 };
 
-const orderBookRE = /marmalade.ledger.(SALE|WITHDRAW|BUY)/;
+const orderBookRE = new RegExp(String.raw`${hftAPI.contractAddress}.(SALE|WITHDRAW|BUY)`);
 export const onlyOrderBookEvents = (evs) => evs.filter(({name})=>orderBookRE.test(name));
 
-const saleEvRE = /marmalade.ledger.SALE/;
+const saleEvRE = new RegExp(String.raw`${hftAPI.contractAddress}.SALE`);
 export const onlySaleEvents = (evs) => evs.filter(({name})=>saleEvRE.test(name));
 
-export const getQuotesForSaleEvents = async (evs) => {
-  let p = {};
-  for (const {name, requestKey, blockHash} of evs) {
-    console.debug([hftAPI.meta.chainId, blockHash, hftAPI.meta.networkId, hftAPI.meta.apiHost]);
-    debugger;
-    p[requestKey] = await Chainweb.transaction.blockHash(hftAPI.meta.chainId, blockHash, hftAPI.meta.networkId, hftAPI.meta.apiHost);
-  };
-  // await Promise.allSettled(p);
-  console.debug("getQuotesForSaleEvents", p);
-  return p;
-}
+const quoteEvRE = new RegExp(String.raw`(${fqpAPI.contractAddress}|${fqrpAPI.contractAddress}).QUOTE`);
+export const onlyQuoteEvents = (evs) => evs.filter(({name})=>quoteEvRE.test(name));
+
+export const getSaleForQuote = (orderBook, quote) => _.filter(onlySaleEvents(orderBook), {requestKey: quote["params"]["sale-id"]});
+
+// TODO: finish this, blocked on bug in Chainweb.js that defaults host back to mainnet. This is for id-ing orphaned events
+// export const getQuotesForSaleEvents = async (evs) => {
+//   let p = {};
+//   for (const {name, requestKey, blockHash} of evs) {
+//     console.debug([hftAPI.meta.chainId, blockHash, hftAPI.meta.networkId, hftAPI.meta.apiHost]);
+//     debugger;
+//     p[requestKey] = await Chainweb.transaction.blockHash(hftAPI.meta.chainId, blockHash, hftAPI.meta.networkId, hftAPI.meta.apiHost);
+//   };
+//   // await Promise.allSettled(p);
+//   console.debug("getQuotesForSaleEvents", p);
+//   return p;
+// }

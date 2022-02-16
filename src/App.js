@@ -20,12 +20,15 @@ import {
   WalletApp,
  } from "./PactWallet.js";
 
+// TODO: switch this to use pact wallet
+import { fqpAPI, fqrpAPI } from "./kadena-config.js";
+
 import {
   hftDrawerEntries,
   HftApp
 } from "./HFT/Hft.js";
 import { getHftState } from "./HFT/HftState.js";
-import { syncEventsFromCWData, onlyOrderBookEvents } from "./HFT/HftEvents.js"
+import { syncEventsFromCWData, onlyOrderBookEvents, onlyQuoteEvents } from "./HFT/HftEvents.js"
 const App = () => {
   //Top level UI Routing Params
   const [appRoute,setAppRoute] = useQueryParams({
@@ -49,9 +52,14 @@ const App = () => {
   const [mfCache,setMfCache] = createPersistedState("mfCache4")([]);
   const [hftEvents, setHftEvents] = createPersistedState("hftEvents0")([]);
   const [orderBook, setOrderBook] = createPersistedState("orderBook0")([]);
+  const [quotes, setQuotes] = createPersistedState("quotes0")([]);
 
   const getHftEvents = async () => {
-    const res = await syncEventsFromCWData('marmalade.ledger', 100, 4, true);
+    const fqpQuotes = await syncEventsFromCWData(`${fqpAPI.contractAddress}`, 100, 4, true);
+    const fqrpQuotes = await syncEventsFromCWData(`${fqrpAPI.contractAddress}`, 100, 4, true);
+    const marmEvents = await syncEventsFromCWData('marmalade.ledger', 100, 4, true);
+    const res = _.flatten([fqpQuotes, fqrpQuotes, marmEvents]);
+    console.debug("getHftEvents", {fqpQuotes, fqrpQuotes, marmEvents});
     setHftEvents(res);
   };
 
@@ -81,8 +89,9 @@ const App = () => {
   }, []);
 
   useEffect(()=>{
-    setOrderBook(onlyOrderBookEvents(hftEvents))
-    console.debug('App.useEffect[hftEvents,setOrderBook] fired');
+    setOrderBook(onlyOrderBookEvents(hftEvents));
+    setQuotes(onlyQuoteEvents(hftEvents));
+    console.debug('App.useEffect[hftEvents,setOrderBook] fired', {quotes, orderBook});
   },[hftEvents]);
 
   return (
@@ -107,6 +116,7 @@ const App = () => {
       hftTokens={hftTokens}
       hftEvents={hftEvents}
       orderBook={orderBook}
+      quotes={quotes}
       mfCache={mfCache}
       setMfCache={setMfCache}
       pactTxStatus={pactTxStatus}

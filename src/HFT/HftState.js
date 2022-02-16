@@ -6,6 +6,7 @@ import ReactJson from 'react-json-view'
 import Pact from "pact-lang-api";
 import { hftAPI } from "../kadena-config.js";
 import { PactJsonListAsTable, dashStyleNames2Text } from "../util.js";
+import { getSaleForQuote } from "./HftEvents.js";
 
 export const getHftState = async (cmd) => {
   //calling get-all() function from smart contract
@@ -87,12 +88,45 @@ export const RenderHftOrderBook = ({orderBook}) => {
             type:v.name.substring("marmalade.ledger.".length),
             amount:v["params"]["amount"].toString(),
             contents: v};});
-  console.debug("renderHFTLedger", {orderBook,pretty});
+  console.debug("renderHftOrderBook", {orderBook,pretty});
   return (
    <PactJsonListAsTable
     json={pretty}
     header={["Block Time", "Token ID", "Type", "Amount", "Details"]}
     keyOrder={["blockTime", "token-id", "type", "amount", "contents"]}
+    kvFunc={
+      {'contents': v => {
+        return <ReactJson
+          src={v.contents}
+          name={false}
+          collapsed={0}
+          enableClipboard={false}
+          displayDataTypes={false}
+          displayObjectSize={false}
+        />}
+      }
+    }
+    keyFormatter={dashStyleNames2Text}
+    />
+  )
+};
+
+export const RenderHftQuotes = ({orderBook, quotes}) => {
+  const pretty = _.map(quotes,v=> {
+    return {"blockTime":v.blockTime,
+            "token-id": v["params"]["token-id"],
+            "sale-id": v["params"]["sale-id"],
+            price:v["params"]["price"].toString(),
+            contents: {
+              sale: getSaleForQuote(orderBook,v),
+              quote: v}
+            };});
+  console.debug("renderHftQuotes", {quotes,pretty});
+  return (
+   <PactJsonListAsTable
+    json={pretty}
+    header={["Block Time", "Token ID", "Type", "price", "Details"]}
+    keyOrder={["blockTime", "token-id", "sale-id", "price", "contents"]}
     kvFunc={
       {'contents': v => {
         return <ReactJson

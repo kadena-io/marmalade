@@ -907,6 +907,7 @@
    [{"name": "coin.TRANSFER","params": ["" "coin-buyer" 2.0]}
     {"name": "marmalade.ledger.OFFER","params": ["project-2" "bob" 0.2 120]}
     {"name": "marmalade.ledger.SALE","params": ["project-2" "bob" 0.2 120 (pact-id)]}
+    {"name": "marmalade.fixed-quote-policy.QUOTE","params": [(pact-id) "project-2" (read-msg "quote")]}
     {"name": "marmalade.ledger.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}]
   (map (remove 'module-hash) (env-events true)))
 
@@ -1024,6 +1025,7 @@
    [{"name": "coin.TRANSFER","params": ["" "coin-buyer" 2.0]}
     {"name": "marmalade.ledger.OFFER","params": ["project-2" "bob" 0.2 120]}
     {"name": "marmalade.ledger.SALE","params": ["project-2" "bob" 0.2 120 (pact-id)]}
+    {"name": "marmalade.fixed-quote-policy.QUOTE","params": [(pact-id) "project-2" (read-msg "quote")]}
     {"name": "marmalade.ledger.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}]
   (map (remove 'module-hash) (env-events true)))
 
@@ -1245,6 +1247,7 @@
    [{"name": "coin.TRANSFER","params": ["" "coin-buyer" 2.0]}
     {"name": "marmalade.ledger.OFFER","params": ["project-3" "bob" 0.2 120]}
     {"name": "marmalade.ledger.SALE","params": ["project-3" "bob" 0.2 120 (pact-id)]}
+    {"name": "marmalade.fixed-quote-royalty-policy.QUOTE","params": [(pact-id) "project-3" (read-msg "quote")]}
     {"name": "marmalade.ledger.TRANSFER","params": ["project-3" "bob" (sale-account) 0.2]}]
   (map (remove 'module-hash) (env-events true)))
 
@@ -1378,6 +1381,7 @@
    [{"name": "coin.TRANSFER","params": ["" "coin-buyer" 2.0]}
     {"name": "marmalade.ledger.OFFER","params": ["project-3" "bob" 0.2 120]}
     {"name": "marmalade.ledger.SALE","params": ["project-3" "bob" 0.2 120 (pact-id)]}
+    {"name": "marmalade.fixed-quote-royalty-policy.QUOTE","params": [(pact-id) "project-3" (read-msg "quote")]}
     {"name": "marmalade.ledger.TRANSFER","params": ["project-3" "bob" (sale-account) 0.2]}]
   (map (remove 'module-hash) (env-events true)))
 
@@ -1603,6 +1607,7 @@
 (expect "OFFER events"
    [{"name": "marmalade.ledger.OFFER","params": ["project-4" "bob" 0.2 120]}
     {"name": "marmalade.ledger.SALE","params": ["project-4" "bob" 0.2 120 (pact-id)]}
+    {"name": "marmalade.fixed-quote-royalty-policy.QUOTE","params": [(pact-id) "project-4" (read-msg "quote")]}
     {"name": "marmalade.ledger.TRANSFER","params": ["project-4" "bob" (sale-account) 0.2]}]
   (map (remove 'module-hash) (env-events true)))
 

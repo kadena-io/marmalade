@@ -906,7 +906,7 @@
 (expect "OFFER events"
    [{"name": "marmalade.ledger.OFFER","params": ["project-2" "bob" 0.2 120]}
     {"name": "marmalade.ledger.SALE","params": ["project-2" "bob" 0.2 120 (pact-id)]}
-    {"name": "marmalade.fixed-quote-policy.QUOTE","params": ["gpplCkSYRYPuMk0HbK_KogMFhhYYVaHuawOOHuNoRVw" "project-2" (read-msg "quote")]}
+    {"name": "marmalade.fixed-quote-policy.QUOTE","params": [(pact-id) "project-2" (read-msg "quote")]}
     {"name": "marmalade.ledger.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}]
   (map (remove 'module-hash) (env-events true)))
 
@@ -1023,7 +1023,7 @@
 (expect "OFFER events"
    [{"name": "marmalade.ledger.OFFER","params": ["project-2" "bob" 0.2 120]}
     {"name": "marmalade.ledger.SALE","params": ["project-2" "bob" 0.2 120 (pact-id)]}
-    {"name": "marmalade.fixed-quote-policy.QUOTE","params": ["eQa74fLfD-KjZZjZsYIscvXkfLlYBKk4qWumyQdSPpk" "project-2" (read-msg "quote")]}
+    {"name": "marmalade.fixed-quote-policy.QUOTE","params": [(pact-id) "project-2" (read-msg "quote")]}
     {"name": "marmalade.ledger.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}]
   (map (remove 'module-hash) (env-events true)))
 
@@ -1244,7 +1244,7 @@
 (expect "OFFER events"
    [{"name": "marmalade.ledger.OFFER","params": ["project-3" "bob" 0.2 120]}
     {"name": "marmalade.ledger.SALE","params": ["project-3" "bob" 0.2 120 (pact-id)]}
-    {"name": "marmalade.fixed-quote-royalty-policy.QUOTE","params": ["r16eHtsr25ZItR8E8VhE7upWiOy-aFLd6a3NVLEgOeM" "project-3" (read-msg "quote")]}
+    {"name": "marmalade.fixed-quote-royalty-policy.QUOTE","params": [(pact-id) "project-3" (read-msg "quote")]}
     {"name": "marmalade.ledger.TRANSFER","params": ["project-3" "bob" (sale-account) 0.2]}]
   (map (remove 'module-hash) (env-events true)))
 
@@ -1377,7 +1377,7 @@
 (expect "OFFER events"
    [{"name": "marmalade.ledger.OFFER","params": ["project-3" "bob" 0.2 120]}
     {"name": "marmalade.ledger.SALE","params": ["project-3" "bob" 0.2 120 (pact-id)]}
-    {"name": "marmalade.fixed-quote-royalty-policy.QUOTE","params": ["FqFFS8rYT2V0KKP4Pae9N5S1rKrIccJsnZhbWqY1W2k" "project-3" (read-msg "quote")]}
+    {"name": "marmalade.fixed-quote-royalty-policy.QUOTE","params": [(pact-id) "project-3" (read-msg "quote")]}
     {"name": "marmalade.ledger.TRANSFER","params": ["project-3" "bob" (sale-account) 0.2]}]
   (map (remove 'module-hash) (env-events true)))
 
@@ -1603,7 +1603,7 @@
 (expect "OFFER events"
    [{"name": "marmalade.ledger.OFFER","params": ["project-4" "bob" 0.2 120]}
     {"name": "marmalade.ledger.SALE","params": ["project-4" "bob" 0.2 120 (pact-id)]}
-    {"name": "marmalade.fixed-quote-royalty-policy.QUOTE","params": ["-devIf68B-tPsRADvW0NVQgF8yE0CAEBAS5Nh3tg2Ks" "project-4" (read-msg "quote")]}
+    {"name": "marmalade.fixed-quote-royalty-policy.QUOTE","params": [(pact-id) "project-4" (read-msg "quote")]}
     {"name": "marmalade.ledger.TRANSFER","params": ["project-4" "bob" (sale-account) 0.2]}]
   (map (remove 'module-hash) (env-events true)))
 

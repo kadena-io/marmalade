@@ -21,6 +21,9 @@
   (defcap QUOTE:bool
     ( sale-id:string
       token-id:string
+      amount:decimal
+      price:decimal
+      sale-price:decimal
       spec:object{quote-spec}
     )
     @doc "For event emission purposes"
@@ -118,7 +121,7 @@
         (at 'guard recipient-details) recipient-guard)
         "Recipient guard does not match")
       (insert quotes sale-id { 'id: (at 'id token), 'spec: spec })
-      (emit-event (QUOTE sale-id (at 'id token) spec)))
+      (emit-event (QUOTE sale-id (at 'id token) amount price sale-price spec)))
       true
   )
 

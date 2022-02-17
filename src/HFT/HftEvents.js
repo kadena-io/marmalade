@@ -48,22 +48,20 @@ const convertMarmaladeParams = (name, params) => {
     case `${hftAPI.namespace}.${hftAPI.contractName}.BUY`:
       return _.zipObject(["id", "buyer", "seller", "amount", "timeout", "sale-id"], ps);
     case `${fqpAPI.namespace}.${fqpAPI.contractName}.QUOTE`:
-      return _.zipObject(["sale-id", "token-id", "spec"], ps);
+      return _.zipObject(["sale-id", "token-id", "amount", "price", "sale-price", "spec"], ps);
     case `${fqrpAPI.namespace}.${fqrpAPI.contractName}.QUOTE`:
-      return _.zipObject(["sale-id", "token-id", "spec"], ps);
+      return _.zipObject(["sale-id", "token-id", "amount", "price", "sale-price", "royalty-payout", "creator", "spec"], ps);
     default:
       throw new Error(`Event converstion match failed: ${name} -- ${ps}`);
   }
 };
 
-const parseEventParams = (convertParams, events) => {
-  return _.map(events, ({name, params, ...rest}) => {
-    return {
-      name,
-      params: convertParams(name, params),
-      ...rest
-    }
-  })
+const parseEventParams = (convertParams, {name, params, ...rest}) => {
+  return {
+    name,
+    params: convertParams(name, params),
+    ...rest
+  }
 };
 
 const getCWDataEvents = async (name, offset, limit=50) => {
@@ -85,7 +83,7 @@ const sortEvents = (ev1, ev2, newestToOldest=false) => {
   return newestToOldest ? ev2.height-ev1.height : ev1.height-ev2.height;
 };
 
-export const syncEventsFromCWData = async (name, limit=50, threads=4, newestToOldest=false) => {
+export const syncEventsFromCWData = async (name, limit=50, threads=4, newestToOldest=false, moduleHashBlacklist=[]) => {
   console.debug(`starting to get ${name} events`)
   var offset = 0;
   var promisedResults = [];
@@ -101,9 +99,10 @@ export const syncEventsFromCWData = async (name, limit=50, threads=4, newestToOl
     // once a batch comes back empty, we're caught up
     continueSync = _.every(_.map(completedResults, (v) => v.length >= limit));
   };
-  console.debug(`${name} raw events`, completedResults);
-  const stateObj = _.concat(..._.map(completedResults, (evs) => parseEventParams(convertMarmaladeParams, evs))).sort((a,b)=>sortEvents(a,b,newestToOldest));
-  console.debug("event state obj", stateObj);
+  // console.debug(`${name} raw events`, _.flatten(completedResults));
+  completedResults = _.filter(_.flatten(completedResults), ({moduleHash}) => {return !moduleHashBlacklist.includes(moduleHash);});
+  const stateObj = _.map(completedResults, (ev) => parseEventParams(convertMarmaladeParams, ev)).sort((a,b)=>sortEvents(a,b,newestToOldest));
+  console.debug(`${name}'s events`, stateObj);
   return stateObj;
 };
 

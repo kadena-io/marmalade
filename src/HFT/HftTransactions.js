@@ -697,6 +697,17 @@ const CreateAccount = ({
   );
 };
 
+const filterTokensByPolicy = (hftTokens, {namespace, names}) => {
+  return _.filter(hftTokens, 
+    ({policy}) => names.includes(policy.refName.name) && namespace === policy.refName.namespace)
+};
+
+const getPossibleAccounts = (hftLedger, tokenId) => {
+  return _.filter(hftLedger, ({guard, id}) => {
+    if (guard.pred && guard.keys && id === tokenId) {return true} else {return false}
+  });
+};
+
 const SaleFixedQuotePolicy = ({
   hftTokens,
   hftLedger,
@@ -707,38 +718,53 @@ const SaleFixedQuotePolicy = ({
   const {current: {signingKey, networkId, gasPrice, gasLimit, accountName}, allKeys} = usePactWallet();
   const [token,setToken] = useState("");
   const [seller,setSeller] = useState("");
-  const [amount,setAmount] = useState(0);
-  const [timeLimit,setTimeLimit] = useState(0);
-  const [fungible, setFungible] = useState("")
-  const [price, setPrice] = useState(0);
+  const [possibleSellers,setPossibleSellers] = useState([]);
+  const [amount,setAmount] = useState("0.0");
+  const [timeLimit,setTimeLimit] = useState("");
+  const [fungible, setFungible] = useState("coin")
+  const [price, setPrice] = useState("0.0");
+  // recipient should be the seller
   const [recipient, setRecipient] = useState("");
-  const [recipientGrd, setRecipientGrd] = useState({})
+  const [possibleBuyers,setPossibleBuyers] = useState([]);
   const classes = useStyles();
+  const possibleTokens = filterTokensByPolicy(hftTokens, {names: ["fixed-quote-royalty-policy","fixed-quote-policy"], namespace: "marmalade"});
+
+  useEffect(()=>{
+    setPossibleSellers(_.filter(getPossibleAccounts(hftLedger,token),({balance})=> {
+      return balance > 0;
+    }).map(({account})=>account));
+    setPossibleBuyers(_.filter(getPossibleAccounts(hftLedger,token),({account})=> {
+      return account !== seller;}))
+  },[token,hftLedger,seller]);
 
   const handleSubmit = (evt) => {
       evt.preventDefault();
       console.debug("sale", token, seller);
       try {
+        const recipientGrd = _.find(possibleBuyers, {account: recipient})["guard"];
+        const quote = {
+          "price": Number.parseFloat(price),
+          "recipient": recipient,
+          "recipient-guard": recipientGrd
+        };
+        if (_.find(possibleTokens, {id: token})["policy"]["refName"]["name"] === "fixed-quote-policy") {
+          quote["fungible"] = {
+            "refName": {
+              "namespace":null,
+              "name":fungible
+            },
+            "refSpec": [
+              {
+              "namespace":null,
+              "name":"fungible-v2"
+            }]
+          }; 
+        } 
         signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
           `(${hftAPI.contractAddress}.sale "${token}" "${seller}" (read-decimal 'amount) (read-integer 'timeout))`,
           { amount: amount,
             timeout: timeLimit,
-            quote: {
-              "fungible": {
-                "refName": {
-                  "namespace":null,
-                  "name":fungible
-                },
-                "refSpec": [
-                  {
-                  "namespace":null,
-                  "name":"fungible-v2"
-                }]
-              },
-              "price": Number.parseFloat(price),
-              "recipient": recipient,
-              "recipient-guard": JSON.parse(recipientGrd)
-            }
+            quote
           },
           [SigData.mkCap(`${hftAPI.contractAddress}.OFFER`,[token, seller, Number.parseFloat(amount), {int: timeLimit}])]
         );
@@ -755,14 +781,14 @@ const SaleFixedQuotePolicy = ({
       label:'Select Token',
       className:classes.formControl,
       onChange:setToken,
-      options:hftTokens.map((g)=>g['id']),
+      options:possibleTokens.map((g)=>g['id']),
     },
     {
-      type:'textFieldSingle',
-      label:'Seller Name',
+      type:'select',
+      label:'Select Seller',
       className:classes.formControl,
-      value:seller,
-      onChange:setSeller
+      onChange:setSeller,
+      options:possibleSellers
     },
     {
       type:'textFieldSingle',
@@ -793,20 +819,20 @@ const SaleFixedQuotePolicy = ({
       onChange:setPrice
     },
     {
-      type:'textFieldSingle',
+      type:'select',
       label:'Recipient',
       className:classes.formControl,
-      value:recipient,
-      onChange:setRecipient
-    },
-    {
-      type:'textFieldMulti',
-      label:'Recipient Keyset',
-      className:classes.formControl,
-      placeholder:JSON.stringify({"pred":"keys-all","keys":["8c59a322800b3650f9fc5b6742aa845bc1c35c2625dabfe5a9e9a4cada32c543"]},undefined,2),
-      value:recipientGrd,
-      onChange:setRecipientGrd,
+      onChange:setRecipient,
+      options:possibleBuyers.map(({account})=>account)
     }
+    // {
+    //   type:'textFieldMulti',
+    //   label:'Recipient Keyset',
+    //   className:classes.formControl,
+    //   placeholder:JSON.stringify({"pred":"keys-all","keys":["8c59a322800b3650f9fc5b6742aa845bc1c35c2625dabfe5a9e9a4cada32c543"]},undefined,2),
+    //   value:recipientGrd,
+    //   onChange:setRecipientGrd,
+    // }
   ];
 
   return (
@@ -838,9 +864,7 @@ const BuyFixedQuotePolicy = ({
     try {
       const quote = _.find(quotes,{params: {'sale-id': saleId}});
       const tokenId = quote["params"]["token-id"];
-      const buyers = _.filter(hftLedger, ({guard, id}) => {
-        if (guard.pred && guard.keys && id === tokenId) {return true} else {return false}
-      });
+      const buyers = getPossibleAccounts(hftLedger, tokenId);
       console.debug("Getting Applicable Buyers", {hftLedger, buyers, saleId});
       setPossibleBuyers(buyers);
     } catch (e) {
@@ -1056,9 +1080,13 @@ export const OrderForms = ({
   refresh: {
     getHftLedger,
     getHftTokens,
+    getHftEvents,
   },
 }) => {
-  console.log(orderBook)
+  const refresh = () => {
+    getHftEvents();
+    getHftLedger();
+  };
   return (
     <ScrollableTabs
       tabIdx={tabIdx}
@@ -1068,10 +1096,9 @@ export const OrderForms = ({
             component:
               <SaleFixedQuotePolicy
                 pactTxStatus={pactTxStatus}
-                hftTokens={hftTokens.filter(token => {
-                  return token.policy.refName.name === "fixed-quote-policy";
-                })}
-                refresh={()=>getHftLedger()}/>
+                hftTokens={hftTokens.filter(token => ["fixed-quote-policy", "fixed-quote-royalty-policy"].includes(token.policy.refName.name))}
+                hftLedger={hftLedger}
+                refresh={refresh}/>
           },
           {
             label:"Buy Fixed Quote Policy Token",
@@ -1082,7 +1109,7 @@ export const OrderForms = ({
                 quotes={quotes}
                 hftTokens={hftTokens}
                 hftLedger={hftLedger}
-                refresh={()=>getHftLedger()}/>
+                refresh={refresh}/>
           },
           {
             label:"Withdraw Fixed Quote Policy Token",
@@ -1093,7 +1120,7 @@ export const OrderForms = ({
                 quotes={quotes}
                 hftTokens={hftTokens}
                 hftLedger={hftLedger}
-                refresh={()=>getHftLedger()}/>
+                refresh={refresh}/>
           },
       ]}/>
   );

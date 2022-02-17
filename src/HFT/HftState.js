@@ -114,15 +114,16 @@ export const RenderHftOrderBook = ({orderBook}) => {
 export const RenderHftQuotes = ({orderBook, quotes}) => {
   const pretty = _.map(quotes,v=> {
     const saleId = v["params"]["sale-id"];
+    const recipient = v["params"]["spec"]["recipient"];
     const sale = getSaleForQuote(orderBook,saleId);
     const type = v.name === `${fqpAPI.contractAddress}.QUOTE` ? "FQP" : "FQRP";
     return {"blockTime":v.blockTime,
             "token-id": v["params"]["token-id"],
             type,
-            "sale-id": "".concat(saleId.slice(0,5), "...", saleId.slice(-5)),
-            "amount": sale.params.amount.toString(),
+            "sale-id": "".concat(saleId.slice(0,4), "...", saleId.slice(-4)),
+            "buyer": "".concat(recipient.slice(0,6), "...", recipient.slice(-4)),
             "timeout": sale.params.timeout.toString(),
-            price:v["params"]["spec"]["price"].toString(),
+            price:v["params"]["sale-price"].toString(),
             contents: {
               sale: sale,
               quote: v}
@@ -131,14 +132,14 @@ export const RenderHftQuotes = ({orderBook, quotes}) => {
   return (
    <PactJsonListAsTable
     json={pretty}
-    header={["Block Time", "Token", "Sale Id", "Type", "Amount", "Price", "Timeout", "Details"]}
-    keyOrder={["blockTime", "token-id", "sale-id", "type", "amount", "price", "timeout", "contents"]}
+    header={["Block Time", ""     , "Token", "buyer", "Sale Id", "Price", "Timeout", "Details"]}
+    keyOrder={["blockTime", "type", "token-id", "buyer", "sale-id", "price", "timeout", "contents"]}
     kvFunc={
       {'contents': v => {
         return <ReactJson
           src={v.contents}
           name={false}
-          collapsed={1}
+          collapsed={0}
           enableClipboard={false}
           displayDataTypes={false}
           displayObjectSize={false}

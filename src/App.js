@@ -55,9 +55,10 @@ const App = () => {
   const [quotes, setQuotes] = createPersistedState("quotes0")([]);
 
   const getHftEvents = async () => {
-    const fqpQuotes = await syncEventsFromCWData(`${fqpAPI.contractAddress}`, 100, 4, true);
-    const fqrpQuotes = await syncEventsFromCWData(`${fqrpAPI.contractAddress}`, 100, 4, true);
-    const marmEvents = await syncEventsFromCWData('marmalade.ledger', 100, 4, true);
+    const moduleHashBlacklist = ["WSIFGtnAlLCHFcFEHaKGrGeAG4qnTsZRj9BdvzzGa6w", "4m9KUKUzbd9hVZoN9uIlJkxYaf1NTz9G7Pc9C9rKTo4"]
+    const fqpQuotes = await syncEventsFromCWData(`${fqpAPI.contractAddress}`, 100, 4, true, moduleHashBlacklist);
+    const fqrpQuotes = await syncEventsFromCWData(`${fqrpAPI.contractAddress}`, 100, 4, true, moduleHashBlacklist);
+    const marmEvents = await syncEventsFromCWData('marmalade.ledger', 100, 4, true, moduleHashBlacklist);
     const res = _.flatten([fqpQuotes, fqrpQuotes, marmEvents]);
     console.debug("getHftEvents", {fqpQuotes, fqrpQuotes, marmEvents});
     setHftEvents(res);

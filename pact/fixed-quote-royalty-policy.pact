@@ -48,6 +48,11 @@
   (defcap QUOTE:bool
     ( sale-id:string
       token-id:string
+      amount:decimal
+      price:decimal
+      sale-price:decimal
+      royalty-payout:decimal
+      creator:string
       spec:object{quote-spec}
     )
     @doc "For event emission purposes"
@@ -130,20 +135,23 @@
     (bind (get-policy token)
       { 'fungible := fungible:module{fungible-v2}
        ,'royalty-rate:= royalty-rate:decimal
+       ,'creator:= creator:string
       }
     (let* ( (spec:object{quote-spec} (read-msg QUOTE-MSG-KEY))
             (price:decimal (at 'price spec))
             (recipient:string (at 'recipient spec))
             (recipient-guard:guard (at 'recipient-guard spec))
             (recipient-details:object (fungible::details recipient))
-            (sale-price:decimal (* amount price)) )
+            (sale-price:decimal (* amount price))
+            (royalty-payout:decimal
+               (floor (* sale-price royalty-rate) (fungible::precision))) )
       (fungible::enforce-unit sale-price)
       (enforce (< 0.0 price) "Offer price must be positive")
       (enforce (=
         (at 'guard recipient-details) recipient-guard)
         "Recipient guard does not match")
       (insert quotes sale-id { 'id: (at 'id token), 'spec: spec })
-      (emit-event (QUOTE sale-id (at 'id token) spec)))
+      (emit-event (QUOTE sale-id (at 'id token) amount price sale-price royalty-payout creator spec)))
       true
   )
   )

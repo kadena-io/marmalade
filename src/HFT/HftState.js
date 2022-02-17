@@ -113,26 +113,28 @@ export const RenderHftOrderBook = ({orderBook}) => {
 
 export const RenderHftQuotes = ({orderBook, quotes}) => {
   const pretty = _.map(quotes,v=> {
+    const sale = getSaleForQuote(orderBook,v);
     return {"blockTime":v.blockTime,
             "token-id": v["params"]["token-id"],
-            "sale-id": v["params"]["sale-id"],
-            price:v["params"]["price"].toString(),
+            "amount": sale.params.amount.toString(),
+            "timeout": sale.params.timeout.toString(),
+            price:v["params"]["spec"]["price"].toString(),
             contents: {
-              sale: getSaleForQuote(orderBook,v),
+              sale: sale,
               quote: v}
             };});
   console.debug("renderHftQuotes", {quotes,pretty});
   return (
    <PactJsonListAsTable
     json={pretty}
-    header={["Block Time", "Token ID", "Type", "price", "Details"]}
-    keyOrder={["blockTime", "token-id", "sale-id", "price", "contents"]}
+    header={["Block Time", "Token ID", "Amount", "Price", "Timeout", "Details"]}
+    keyOrder={["blockTime", "token-id", "amount", "price", "timeout", "contents"]}
     kvFunc={
       {'contents': v => {
         return <ReactJson
           src={v.contents}
           name={false}
-          collapsed={0}
+          collapsed={1}
           enableClipboard={false}
           displayDataTypes={false}
           displayObjectSize={false}

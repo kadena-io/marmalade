@@ -50,7 +50,7 @@ const convertMarmaladeParams = (name, params) => {
     case `${fqpAPI.namespace}.${fqpAPI.contractName}.QUOTE`:
       return _.zipObject(["pact-id", "token-id", "spec"], ps);
     case `${fqrpAPI.namespace}.${fqrpAPI.contractName}.QUOTE`:
-      return _.zipObject(["pact-id", "token-id", "spec"], ps);
+      return _.zipObject(["sale-id", "token-id", "spec"], ps);
     default:
       throw new Error(`Event converstion match failed: ${name}`);
   }
@@ -68,7 +68,8 @@ const parseEventParams = (convertParams, events) => {
 
 const getCWDataEvents = async (name, offset, limit=50) => {
   console.debug('fetching marm events', {limit, offset})
-  const raw = fetch(`http://${globalConfig.dataHost}/txs/events\?name\=${name}\&limit\=${limit}\&offset\=${offset}`);
+  const raw = fetch(`http://data.testnet.chainweb.com:8080/txs/events\?name\=${name}\&limit\=${limit}\&offset\=${offset}`);
+  //const raw = fetch(`http://${globalConfig.dataHost}/txs/events\?name\=${name}\&limit\=${limit}\&offset\=${offset}`);
   const rawRes = await raw;
   const res = await rawRes;
   if (res.ok){
@@ -114,7 +115,7 @@ export const onlySaleEvents = (evs) => evs.filter(({name})=>saleEvRE.test(name))
 const quoteEvRE = new RegExp(String.raw`(${fqpAPI.contractAddress}|${fqrpAPI.contractAddress}).QUOTE`);
 export const onlyQuoteEvents = (evs) => evs.filter(({name})=>quoteEvRE.test(name));
 
-export const getSaleForQuote = (orderBook, quote) => _.filter(onlySaleEvents(orderBook), {requestKey: quote["params"]["sale-id"]});
+export const getSaleForQuote = (orderBook, {requestKey}) => _.find(onlySaleEvents(orderBook), {requestKey});
 
 // TODO: finish this, blocked on bug in Chainweb.js that defaults host back to mainnet. This is for id-ing orphaned events
 // export const getQuotesForSaleEvents = async (evs) => {

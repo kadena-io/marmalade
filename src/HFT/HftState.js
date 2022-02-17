@@ -4,7 +4,7 @@ import _ from 'lodash';
 import ReactJson from 'react-json-view'
 //config file for blockchain calls
 import Pact from "pact-lang-api";
-import { hftAPI } from "../kadena-config.js";
+import { hftAPI, fqpAPI } from "../kadena-config.js";
 import { PactJsonListAsTable, dashStyleNames2Text } from "../util.js";
 import { getSaleForQuote } from "./HftEvents.js";
 
@@ -113,9 +113,13 @@ export const RenderHftOrderBook = ({orderBook}) => {
 
 export const RenderHftQuotes = ({orderBook, quotes}) => {
   const pretty = _.map(quotes,v=> {
-    const sale = getSaleForQuote(orderBook,v);
+    const saleId = v["params"]["sale-id"];
+    const sale = getSaleForQuote(orderBook,saleId);
+    const type = v.name === `${fqpAPI.contractAddress}.QUOTE` ? "FQP" : "FQRP";
     return {"blockTime":v.blockTime,
             "token-id": v["params"]["token-id"],
+            type,
+            "sale-id": "".concat(saleId.slice(0,5), "...", saleId.slice(-5)),
             "amount": sale.params.amount.toString(),
             "timeout": sale.params.timeout.toString(),
             price:v["params"]["spec"]["price"].toString(),
@@ -127,8 +131,8 @@ export const RenderHftQuotes = ({orderBook, quotes}) => {
   return (
    <PactJsonListAsTable
     json={pretty}
-    header={["Block Time", "Token ID", "Amount", "Price", "Timeout", "Details"]}
-    keyOrder={["blockTime", "token-id", "amount", "price", "timeout", "contents"]}
+    header={["Block Time", "Token", "Sale Id", "Type", "Amount", "Price", "Timeout", "Details"]}
+    keyOrder={["blockTime", "token-id", "sale-id", "type", "amount", "price", "timeout", "contents"]}
     kvFunc={
       {'contents': v => {
         return <ReactJson

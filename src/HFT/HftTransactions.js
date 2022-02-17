@@ -22,6 +22,7 @@ import { ScrollableTabs } from "../ScrollableTabs.js";
 import { usePactWallet } from "../PactWallet.js";
 import { SigData } from '../Pact.SigBuilder.js';
 import { signNewPactTx } from '../PactTxStatus.js';
+import { getSaleForQuote } from "./HftEvents.js";
 
 const useStyles = makeStyles(() => ({
   formControl: {
@@ -71,7 +72,7 @@ export const signContHftCommand = (
 ) => {
   const meta = Pact.lang.mkMeta(sender, hftAPI.meta.chainId, Number.parseFloat(gasPrice), Number.parseFloat(gasLimit), SigData.util.autoCreationTime(), hftAPI.meta.ttl);
   const capsWithGas = SigData.util.addGasCap(caps);
-  console.log("signExecHftCommand", capsWithGas);
+  console.log("signContHftCommand", capsWithGas);
   const signers = SigData.mkSignerCList(signingKey, capsWithGas);
   const cmdJSON = SigData.mkContPayload(
     pactId,
@@ -820,34 +821,60 @@ const SaleFixedQuotePolicy = ({
 
 const BuyFixedQuotePolicy = ({
   hftLedger,
+  hftTokens,
   orderBook,
+  quotes,
   refresh,
   pactTxStatus
 }) => {
   const {setTxStatus, setTxRes} = pactTxStatus;
-  const {current: {signingKey, networkId, gasPrice, gasLimit, accountName}, allKeys} = usePactWallet();
+  const {current: {signingKey, networkId, gasPrice, gasLimit, accountName}} = usePactWallet();
   const [saleId,setSaleId] = useState("");
   const [buyer,setBuyer] = useState("");
-  const [buyerGrd, setBuyerGrd] = useState({})
-  const [seller, setSeller] = useState("");
-  const [amount, setAmount] = useState("");
-  const [timeLimit, setTimeLimit] = useState(0);
+  const [possibleBuyers, setPossibleBuyers] = useState([]);
   const classes = useStyles();
-  
+
+  useEffect(()=>{
+    try {
+      const quote = _.find(quotes,{params: {'sale-id': saleId}});
+      const tokenId = quote["params"]["token-id"];
+      const buyers = _.filter(hftLedger, ({guard, id}) => {
+        if (guard.pred && guard.keys && id === tokenId) {return true} else {return false}
+      });
+      console.debug("Getting Applicable Buyers", {hftLedger, buyers, saleId});
+      setPossibleBuyers(buyers);
+    } catch (e) {
+      console.debug("Getting applicable buyers failed with", e);
+      setPossibleBuyers([]);
+    }
+  },[saleId, hftLedger, quotes]);
+
   const handleSubmit = (evt) => {
       evt.preventDefault();
-      // try {
-      //   signContHftCommand(saleId, 1, false, accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
-      //     { buyer: buyer,
-      //       buyerGrd: JSON.parse(buyerGrd),
-      //     },
-      //     [SigData.mkCap(`${hftAPI.contractAddress}.BUY`,[token, seller, buyer, Number.parseFloat(amount), timeLimit, saleId])]
-      //   );
-      // } catch (e) {
-      //   console.log("Sale Submit Error",typeof e, e, token, seller, amount, timeLimit);
-      //   setTxRes(e);
-      //   setTxStatus("validation-error");
-      // }
+      const quote = _.find(quotes,{params: {'sale-id': saleId}});
+      const sale = getSaleForQuote(orderBook,saleId);
+      const amount = sale.params.amount;
+      const price = quote.params.spec.price;
+      const seller = sale.params.seller;
+      const recipient = quote.params.spec.recipient;
+      const timeout = sale.params.timeout;
+      const tokenId = quote["params"]["token-id"];
+      const buyerGrd = _.find(possibleBuyers, {account:buyer})["guard"];
+      try {
+        signContHftCommand(saleId, 1, false, accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
+          { buyer: buyer,
+            "buyer-guard": buyerGrd,
+          },
+          [
+            SigData.mkCap(`${hftAPI.contractAddress}.BUY`,[tokenId, seller, buyer, amount, {"int": timeout}, saleId]),
+            SigData.mkCap(`coin.TRANSFER`, [buyer, recipient, amount*price])
+          ]
+        );
+      } catch (e) {
+        console.log("Sale Submit Error",typeof e, e, {quote, sale, amount, price, transfer: (amount*price), seller, timeout});
+        setTxRes(e);
+        setTxStatus("validation-error");
+      }
     };
 
   const inputFields = [
@@ -856,23 +883,23 @@ const BuyFixedQuotePolicy = ({
       label:'Select Sale',
       className:classes.formControl,
       onChange:setSaleId,
-      options:orderBook.map((g)=> g['params']['sale-id'])
+      options:quotes.map((g)=> g['params']['sale-id'])
     },
     {
-      type:'textFieldSingle',
+      type:'select',
       label:'Buyer Name',
       className:classes.formControl,
-      value:buyer,
-      onChange:setBuyer
-    },
-    {
-      type:'textFieldMulti',
-      label:'Buyer Keyset',
-      className:classes.formControl,
-      placeholder:JSON.stringify({"pred":"keys-all","keys":["8c59a322800b3650f9fc5b6742aa845bc1c35c2625dabfe5a9e9a4cada32c543"]},undefined,2),
-      value:buyerGrd,
-      onChange:setBuyerGrd,
+      onChange:setBuyer,
+      options:possibleBuyers.map(({account}) => account)
     }
+    // {
+    //   type:'textFieldMulti',
+    //   label:'Buyer Keyset',
+    //   className:classes.formControl,
+    //   placeholder:JSON.stringify({"pred":"keys-all","keys":["8c59a322800b3650f9fc5b6742aa845bc1c35c2625dabfe5a9e9a4cada32c543"]},undefined,2),
+    //   value:buyerGrd,
+    //   onChange:setBuyerGrd,
+    // }
   ];
 
   return (
@@ -1020,7 +1047,9 @@ export const TokenForms = ({
 
 export const OrderForms = ({
   hftTokens,
+  hftLedger,
   orderBook,
+  quotes,
   mfCache,
   tabIdx,
   pactTxStatus,
@@ -1050,6 +1079,9 @@ export const OrderForms = ({
               <BuyFixedQuotePolicy
                 pactTxStatus={pactTxStatus}
                 orderBook={orderBook.filter((g)=>g['name'] === "marmalade.ledger.SALE")}
+                quotes={quotes}
+                hftTokens={hftTokens}
+                hftLedger={hftLedger}
                 refresh={()=>getHftLedger()}/>
           },
           {
@@ -1058,6 +1090,9 @@ export const OrderForms = ({
               <WithdrawFixedQuotePolicy
                 pactTxStatus={pactTxStatus}
                 orderBook={orderBook.filter((g)=>g['name'] === "marmalade.ledger.SALE")}
+                quotes={quotes}
+                hftTokens={hftTokens}
+                hftLedger={hftLedger}
                 refresh={()=>getHftLedger()}/>
           },
       ]}/>

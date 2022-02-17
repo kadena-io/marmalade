@@ -193,7 +193,7 @@ const fqpAPI = {
 };
 
 const fqrpAPI = {
-  contractName: fqpContractName,
+  contractName: fqrpContractName,
   gasStationName: gasStationName,
   namespace: fqrpNamespace,
   contractAddress: `${fqrpNamespace}.${fqrpContractName}`,

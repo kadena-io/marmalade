@@ -48,11 +48,11 @@ const convertMarmaladeParams = (name, params) => {
     case `${hftAPI.namespace}.${hftAPI.contractName}.BUY`:
       return _.zipObject(["id", "buyer", "seller", "amount", "timeout", "sale-id"], ps);
     case `${fqpAPI.namespace}.${fqpAPI.contractName}.QUOTE`:
-      return _.zipObject(["pact-id", "token-id", "spec"], ps);
+      return _.zipObject(["sale-id", "token-id", "spec"], ps);
     case `${fqrpAPI.namespace}.${fqrpAPI.contractName}.QUOTE`:
       return _.zipObject(["sale-id", "token-id", "spec"], ps);
     default:
-      throw new Error(`Event converstion match failed: ${name}`);
+      throw new Error(`Event converstion match failed: ${name} -- ${ps}`);
   }
 };
 
@@ -101,6 +101,7 @@ export const syncEventsFromCWData = async (name, limit=50, threads=4, newestToOl
     // once a batch comes back empty, we're caught up
     continueSync = _.every(_.map(completedResults, (v) => v.length >= limit));
   };
+  console.debug(`${name} raw events`, completedResults);
   const stateObj = _.concat(..._.map(completedResults, (evs) => parseEventParams(convertMarmaladeParams, evs))).sort((a,b)=>sortEvents(a,b,newestToOldest));
   console.debug("event state obj", stateObj);
   return stateObj;
@@ -115,7 +116,7 @@ export const onlySaleEvents = (evs) => evs.filter(({name})=>saleEvRE.test(name))
 const quoteEvRE = new RegExp(String.raw`(${fqpAPI.contractAddress}|${fqrpAPI.contractAddress}).QUOTE`);
 export const onlyQuoteEvents = (evs) => evs.filter(({name})=>quoteEvRE.test(name));
 
-export const getSaleForQuote = (orderBook, {requestKey}) => _.find(onlySaleEvents(orderBook), {requestKey});
+export const getSaleForQuote = (orderBook, saleId) => _.find(onlySaleEvents(orderBook), {requestKey: saleId});
 
 // TODO: finish this, blocked on bug in Chainweb.js that defaults host back to mainnet. This is for id-ing orphaned events
 // export const getQuotesForSaleEvents = async (evs) => {

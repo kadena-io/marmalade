@@ -303,7 +303,7 @@ const mkContPayload = (
   enforceType(networkId, "string", "mkContPayload's networkId");
   enforceType(meta, "object", "mkContPayload's meta");
   if (nonce) {enforceType(nonce, "string", "mkContPayload's nonce");};
-  if (proof) {enforceType(proof, "string", "mkContPayload's proof");};
+  if (proof) {enforceType(proof, "string", "mkContPayload's proof");} else {proof = null;};
   if (data) {enforceType(data, "object", "mkContPayload's data");} else {data = null;};
   if (rollback) {enforceType(rollback, "boolean", "mkContPayload's rollback");} else {rollback = false;};
   
@@ -313,12 +313,10 @@ const mkContPayload = (
         pactId,
         step,
         rollback,
-        data
+        data,
+        proof
       }
   };
-  if (proof) {
-    cmdJSON.payload.cont["proof"] = proof;
-  }
   debug('contPayload', cmdJSON);
   return cmdJSON;
 };

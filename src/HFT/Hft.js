@@ -79,7 +79,14 @@ export const HftApp = ({
           Refresh Order Book
         </Button>
         <RenderHftQuotes orderBook={orderBook} quotes={quotes}/>
-        <OrderForms pactTxStatus={pactTxStatus} tabIdx={"hftTabT"} hftTokens={hftTokens} orderBook={orderBook} quotes={quotes} mfCache={mfCache} refresh={refresh}/>
+        <OrderForms pactTxStatus={pactTxStatus} 
+          tabIdx={"hftTabT"} 
+          hftTokens={hftTokens} 
+          hftLedger={hftLedger} 
+          orderBook={orderBook} 
+          quotes={quotes} 
+          mfCache={mfCache} 
+          refresh={refresh}/>
       </CardContent>
     </Card>
   : appRoute.ui === "tokens" ?

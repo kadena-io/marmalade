@@ -47,8 +47,8 @@ const App = () => {
   };
 
   //HFT Top Level States
-  const [hftLedger,setHftLedger] = createPersistedState("hftLedger6")({});
-  const [hftTokens,setHftTokens] = createPersistedState("hftTokens6")({});
+  const [hftLedger,setHftLedger] = createPersistedState("hftLedger6")([]);
+  const [hftTokens,setHftTokens] = createPersistedState("hftTokens6")([]);
   const [mfCache,setMfCache] = createPersistedState("mfCache4")([]);
   const [hftEvents, setHftEvents] = createPersistedState("hftEvents0")([]);
   const [orderBook, setOrderBook] = createPersistedState("orderBook0")([]);
@@ -65,12 +65,42 @@ const App = () => {
   };
 
   const getHftLedger = async () => {
-    const res = await getHftState("get-ledger");
+    let res = [];
+    try {
+      const ledgerKeys = await getHftState("get-ledger-keys");
+      for (const ledgerKey of ledgerKeys) {
+        try {
+          getHftState(`get-ledger-entry "${ledgerKey}"`).then(v=>{
+            res.push(v);
+          });
+        } catch (e) {
+          console.debug("get-ledger failed", {ledgerKey, e});
+        }
+      };
+    } catch (e) {
+      console.debug("get-ledger-keys failed", e);
+    };
+    Promise.all(res);
     setHftLedger(res);
   };
 
   const getHftTokens = async () => {
-    const res = await getHftState("get-tokens");
+    let res = [];
+    try {
+      const tokenKeys = await getHftState("get-token-keys");
+      for (const tokenKey of tokenKeys) {
+        try {
+          getHftState(`get-token "${tokenKey}"`).then(v=>{
+            res.push(v);
+          });
+        } catch (e) {
+          console.debug("get-token failed", {tokenKey, e});
+        }
+      };
+    } catch (e) {
+      console.debug("get-token-keys failed", e);
+    };
+    Promise.all(res);
     setHftTokens(res);
   };
 

@@ -10,6 +10,7 @@ import { getSaleForQuote } from "./HftEvents.js";
 
 export const getHftState = async (cmd) => {
   //calling get-all() function from smart contract
+  try {
     const res = await Pact.fetch.local(
       {
         pactCode: `(${hftAPI.contractAddress}.${cmd})`,
@@ -29,6 +30,10 @@ export const getHftState = async (cmd) => {
     //sorts memories by least recent
     console.debug(`local query data: (${hftAPI.contractAddress}.${cmd})`,all);
     return(all);
+    } catch (e) {
+      console.debug(`(${hftAPI.contractAddress}.${cmd}) FAILED with error`,{error: e});
+      return [];
+    }
 };
 
 export const RenderHftLedger = ({hftLedger}) => {

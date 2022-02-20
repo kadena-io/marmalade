@@ -54,6 +54,16 @@
     (compose-capability (CREDIT id receiver))
   )
 
+  (defcap CREATE-ACCOUNT
+    ( id:string
+      account:string
+      account-guard:guard
+    )
+    @doc "Event for Dapp Developtment"
+    @event
+    true
+  )
+
   (defun TRANSFER-mgr:decimal
     ( managed:decimal
       requested:decimal
@@ -144,6 +154,7 @@
     )
     (enforce-valid-account account)
     (enforce-reserved account guard)
+    (emit-event (CREATE-ACCOUNT id account guard))
     (insert ledger (key id account)
       { "balance" : 0.0
       , "guard"   : guard
@@ -242,6 +253,7 @@
       "sender cannot be the receiver of a transfer")
     (enforce-valid-transfer sender receiver (precision id) amount)
 
+    (emit-event (CREATE-ACCOUNT id receiver receiver-guard))
     (with-capability (TRANSFER id sender receiver amount)
       (enforce-transfer-policy id sender receiver amount)
       (debit id sender amount)

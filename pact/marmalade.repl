@@ -322,8 +322,9 @@
   "Write succeeded"
   (transfer-create "project-0" "bob" "alice" (read-keyset 'alice-ks) 2.0))
 
-(expect "TRANSFER event"
-   [{"name": "marmalade.ledger.TRANSFER","params": ["project-0" "bob" "alice" 2.0]}
+(expect "TRANSFER and CREATE-ACCOUNT event"
+   [{"name": "marmalade.ledger.CREATE-ACCOUNT","params": ["project-0" "alice" (read-keyset "alice-ks")]}
+    {"name": "marmalade.ledger.TRANSFER","params": ["project-0" "bob" "alice" 2.0]}
    ]
   (map (remove 'module-hash) (env-events true)))
 
@@ -500,11 +501,10 @@
     (marmalade.ledger.key 'project-0 "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4")))
 
 
-(expect "TRANSFER events"
-  [{
-  "name": "marmalade.ledger.TRANSFER",
-  "params": ["project-0", "bob", "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4", 0.02]
-  }]
+(expect "TRANSFER and CREATE-ACCOUNT events"
+  [{"name": "marmalade.ledger.CREATE-ACCOUNT", "params": ["project-0" "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4" (read-keyset "k")]}
+   {"name": "marmalade.ledger.TRANSFER", "params": ["project-0", "bob", "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4", 0.02]}
+  ]
   (map (remove 'module-hash) (env-events true)))
 
 (rollback-tx)

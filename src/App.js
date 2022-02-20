@@ -81,6 +81,7 @@ const App = () => {
       console.debug("get-ledger-keys failed", e);
     };
     Promise.all(res);
+    console.debug("getHftLedger", {res});
     setHftLedger(res);
   };
 
@@ -101,6 +102,7 @@ const App = () => {
       console.debug("get-token-keys failed", e);
     };
     Promise.all(res);
+    console.debug("getHftTokens", {res});
     setHftTokens(res);
   };
 

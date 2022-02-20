@@ -725,23 +725,24 @@ const SaleFixedQuotePolicy = ({
   const [price, setPrice] = useState("0.0");
   // recipient should be the seller
   const [recipient, setRecipient] = useState("");
-  const [possibleBuyers,setPossibleBuyers] = useState([]);
+  const [recipientGrd, setRecipientGrd] = useState("");
+  const [possibleTokens, setPossibleTokens] = useState([]);
   const classes = useStyles();
-  const possibleTokens = filterTokensByPolicy(hftTokens, {names: ["fixed-quote-royalty-policy","fixed-quote-policy"], namespace: "marmalade"});
+
+  useEffect(()=>{
+    setPossibleTokens(filterTokensByPolicy(hftTokens, {names: ["fixed-quote-royalty-policy","fixed-quote-policy"], namespace: "marmalade"}));
+  },[hftTokens]);
 
   useEffect(()=>{
     setPossibleSellers(_.filter(getPossibleAccounts(hftLedger,token),({balance})=> {
       return balance > 0;
     }).map(({account})=>account));
-    setPossibleBuyers(_.filter(getPossibleAccounts(hftLedger,token),({account})=> {
-      return account !== seller;}))
   },[token,hftLedger,seller]);
 
   const handleSubmit = (evt) => {
       evt.preventDefault();
       console.debug("sale", token, seller);
       try {
-        const recipientGrd = _.find(possibleBuyers, {account: recipient})["guard"];
         const quote = {
           "price": Number.parseFloat(price),
           "recipient": recipient,
@@ -819,20 +820,20 @@ const SaleFixedQuotePolicy = ({
       onChange:setPrice
     },
     {
-      type:'select',
+      type:'textFieldSingle',
       label:'Recipient',
       className:classes.formControl,
       onChange:setRecipient,
-      options:possibleBuyers.map(({account})=>account)
+      value:recipient
+    },
+    {
+      type:'textFieldMulti',
+      label:'Recipient Keyset',
+      className:classes.formControl,
+      placeholder:JSON.stringify({"pred":"keys-all","keys":["8c59a322800b3650f9fc5b6742aa845bc1c35c2625dabfe5a9e9a4cada32c543"]},undefined,2),
+      value:recipientGrd,
+      onChange:setRecipientGrd,
     }
-    // {
-    //   type:'textFieldMulti',
-    //   label:'Recipient Keyset',
-    //   className:classes.formControl,
-    //   placeholder:JSON.stringify({"pred":"keys-all","keys":["8c59a322800b3650f9fc5b6742aa845bc1c35c2625dabfe5a9e9a4cada32c543"]},undefined,2),
-    //   value:recipientGrd,
-    //   onChange:setRecipientGrd,
-    // }
   ];
 
   return (

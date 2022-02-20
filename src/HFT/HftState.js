@@ -28,12 +28,12 @@ export const getHftState = async (cmd) => {
     );
     const all = res.result.data;
     //sorts memories by least recent
-    console.debug(`local query data: (${hftAPI.contractAddress}.${cmd})`,all);
+    // console.debug(`local query data: (${hftAPI.contractAddress}.${cmd})`,all);
     return(all);
-    } catch (e) {
-      console.debug(`(${hftAPI.contractAddress}.${cmd}) FAILED with error`,{error: e});
-      return [];
-    }
+  } catch (e) {
+    console.debug(`(${hftAPI.contractAddress}.${cmd}) FAILED with error`,{error: e});
+    return [];
+  }
 };
 
 export const RenderHftLedger = ({hftLedger}) => {

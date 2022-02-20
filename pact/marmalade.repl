@@ -322,8 +322,9 @@
   "Write succeeded"
   (transfer-create "project-0" "bob" "alice" (read-keyset 'alice-ks) 2.0))
 
-(expect "TRANSFER event"
-   [{"name": "marmalade.ledger.TRANSFER","params": ["project-0" "bob" "alice" 2.0]}
+(expect "TRANSFER and CREATE-ACCOUNT event"
+   [{"name": "marmalade.ledger.CREATE-ACCOUNT","params": ["project-0" "alice" (read-keyset "alice-ks")]}
+    {"name": "marmalade.ledger.TRANSFER","params": ["project-0" "bob" "alice" 2.0]}
    ]
   (map (remove 'module-hash) (env-events true)))
 
@@ -500,11 +501,10 @@
     (marmalade.ledger.key 'project-0 "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4")))
 
 
-(expect "TRANSFER events"
-  [{
-  "name": "marmalade.ledger.TRANSFER",
-  "params": ["project-0", "bob", "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4", 0.02]
-  }]
+(expect "TRANSFER and CREATE-ACCOUNT events"
+  [{"name": "marmalade.ledger.CREATE-ACCOUNT", "params": ["project-0" "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4" (read-keyset "k")]}
+   {"name": "marmalade.ledger.TRANSFER", "params": ["project-0", "bob", "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4", 0.02]}
+  ]
   (map (remove 'module-hash) (env-events true)))
 
 (rollback-tx)
@@ -529,14 +529,6 @@
   (create-manifest (uri "text" "project-0-uri") [])
   (get-manifest 'project-0))
 
-(expect "Returns tokens"
-  ["project-0","token"]
-  (map (at 'id) (get-tokens)))
-
-(expect "Returns token keys"
-   ["project-0","token"]
-  (get-token-keys))
-
 (expect "Returns project-0 token"
   { 'id: "project-0"
   , 'manifest: (create-manifest (uri "text" "project-0-uri") [])
@@ -546,13 +538,6 @@
   }
   (get-token "project-0"))
 
-(expect "Returns ledger keys"
-  [ "project-0:alice"
-    "project-0:bob"
-    "token:FUNDER_ACCT"
-  ]
-  (get-ledger-keys))
-
 (expect "get ledger entry"
   { 'account: "bob"
   , 'balance: 3.0
@@ -560,10 +545,6 @@
   , 'id: "project-0"
   }
   (get-ledger-entry (key 'project-0 'bob)))
-
-(expect "get ledger"
- [ "alice" "bob" "FUNDER_ACCT" ]
- (map (at 'account) (get-ledger)))
 
 (rollback-tx)
 

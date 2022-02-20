@@ -400,14 +400,6 @@
   (defun get-manifest:object{manifest} (id:string)
     (at 'manifest (read tokens id)))
 
-  (defun get-token-keys:[string] ()
-    "Get all token identifiers"
-    (keys tokens))
-
-  (defun get-tokens:[object{token-schema}] ()
-    "Get all tokens"
-     (map (read tokens) (keys tokens)))
-
   (defun get-token:object{token-schema} (id:string)
     "Read token"
     (read tokens id)
@@ -533,14 +525,8 @@
     (format "sale-{}" [(pact-id)])
   )
 
-  (defun get-ledger-keys ()
-    (keys ledger))
-
   (defun get-ledger-entry (key:string)
     (read ledger key))
-
-  (defun get-ledger ()
-    (map (read ledger) (keys ledger)))
 
 )
 

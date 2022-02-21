@@ -78,6 +78,12 @@
   ;; Implementation caps
   ;;
 
+  (defcap ACCOUNT-BALANCE (id:string account:string balance:decimal)
+    @doc "Event for tracking account balances"
+    @event
+    true
+  )
+
   (defcap ROTATE (id:string account:string)
     @doc "Autonomously managed capability for guard rotation"
     @managed
@@ -289,12 +295,13 @@
 
     (with-read ledger (key id account)
       { "balance" := balance }
-
-      (enforce (<= amount balance) "Insufficient funds")
-
-      (update ledger (key id account)
-        { "balance" : (- balance amount) }
-        ))
+      (let ((new-balance (- balance amount)))
+        (enforce (<= amount balance) "Insufficient funds")
+        (emit-event (ACCOUNT-BALANCE id account new-balance))
+        (update ledger (key id account)
+          { "balance" : new-balance })
+      )
+    )
   )
 
   (defun credit:string
@@ -319,17 +326,20 @@
       (enforce (= retg guard)
         "account guards do not match")
 
-      (let ((is-new
+      (let* ((is-new
              (if (= balance -1.0)
                  (enforce-reserved account guard)
-               false)))
+               false))
+             (new-balance (if is-new amount (+ balance amount)))
+            )
 
-      (write ledger (key id account)
-        { "balance" : (if is-new amount (+ balance amount))
-        , "guard"   : retg
-        , "id"   : id
-        , "account" : account
-        })))
+        (emit-event (ACCOUNT-BALANCE id account new-balance))
+        (write ledger (key id account)
+          { "balance" : new-balance
+          , "guard"   : retg
+          , "id"   : id
+          , "account" : account
+          })))
   )
 
   (defun credit-account:string
@@ -387,14 +397,6 @@
 
   (defun get-manifest:object{manifest} (id:string)
     (at 'manifest (read tokens id)))
-
-  (defun get-token-keys:[string] ()
-    "Get all token identifiers"
-    (keys tokens))
-
-  (defun get-tokens:[object{token-schema}] ()
-    "Get all tokens"
-     (map (read tokens) (keys tokens)))
 
   (defun get-token:object{token-schema} (id:string)
     "Read token"
@@ -521,14 +523,8 @@
     (format "sale-{}" [(pact-id)])
   )
 
-  (defun get-ledger-keys ()
-    (keys ledger))
-
   (defun get-ledger-entry (key:string)
     (read ledger key))
-
-  (defun get-ledger ()
-    (map (read ledger) (keys ledger)))
 
 )
 

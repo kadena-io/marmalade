@@ -69,7 +69,7 @@
     @event true
   )
 
-  (defcap TOKEN:bool (id:string)
+  (defcap TOKEN:bool (id:string precision:integer policy:module{kip.token-policy-v1})
     @event
     true
   )
@@ -78,7 +78,7 @@
   ;; Implementation caps
   ;;
 
-  (defcap ACCOUNT-BALANCE (id:string account:string balance:decimal)
+  (defcap ACCOUNT_BALANCE (id:string account:string balance:decimal)
     @doc "Event for tracking account balances"
     @event
     true
@@ -156,6 +156,7 @@
       , "id" : id
       , "account" : account
       })
+    (emit-event (ACCOUNT_BALANCE id account 0.0))
   )
 
   (defun total-supply:decimal (id:string)
@@ -174,7 +175,7 @@
     (enforce-verify-manifest manifest)
     (policy::enforce-init
       { 'id: id, 'supply: 0.0, 'precision: precision, 'manifest: manifest })
-    (emit-event (TOKEN id))
+    (emit-event (TOKEN id precision policy))
     (insert tokens id {
       "id": id,
       "precision": precision,
@@ -297,7 +298,7 @@
       { "balance" := balance }
       (let ((new-balance (- balance amount)))
         (enforce (<= amount balance) "Insufficient funds")
-        (emit-event (ACCOUNT-BALANCE id account new-balance))
+        (emit-event (ACCOUNT_BALANCE id account new-balance))
         (update ledger (key id account)
           { "balance" : new-balance })
       )
@@ -333,7 +334,7 @@
              (new-balance (if is-new amount (+ balance amount)))
             )
 
-        (emit-event (ACCOUNT-BALANCE id account new-balance))
+        (emit-event (ACCOUNT_BALANCE id account new-balance))
         (write ledger (key id account)
           { "balance" : new-balance
           , "guard"   : retg

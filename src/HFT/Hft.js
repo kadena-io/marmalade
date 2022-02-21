@@ -50,9 +50,6 @@ export const HftApp = ({
   setMfCache,
   pactTxStatus,
   refresh}) => {
-  const [obRefreshing,setObRefreshing] = useState(false);
-
-  useEffect(()=>setObRefreshing(false), [orderBook]);
 
   return (
     appRoute.ui === "config" ?
@@ -66,18 +63,6 @@ export const HftApp = ({
     <Card>
       <CardHeader title="Order Book"/>
       <CardContent>
-        <Button
-          variant="contained"
-          color="secondary"
-          disabled={obRefreshing}
-          onClick={() => {
-            setObRefreshing(true);
-            refresh.getHftEvents();
-          } }
-          startIcon={<RefreshIcon />}
-        >
-          Refresh Order Book
-        </Button>
         <RenderHftQuotes orderBook={orderBook} quotes={quotes}/>
         <OrderForms pactTxStatus={pactTxStatus} 
           tabIdx={"hftTabT"} 

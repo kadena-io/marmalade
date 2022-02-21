@@ -730,13 +730,15 @@ const SaleFixedQuotePolicy = ({
   const classes = useStyles();
 
   useEffect(()=>{
-    setPossibleTokens(filterTokensByPolicy(hftTokens, {names: ["fixed-quote-royalty-policy","fixed-quote-policy"], namespace: "marmalade"}));
+    setPossibleTokens(hftTokens);
+    // setPossibleTokens(filterTokensByPolicy(hftTokens, {names: ["fixed-quote-royalty-policy","fixed-quote-policy"], namespace: "marmalade"}));
   },[hftTokens]);
 
   useEffect(()=>{
-    setPossibleSellers(_.filter(getPossibleAccounts(hftLedger,token),({balance})=> {
-      return balance > 0;
-    }).map(({account})=>account));
+    setPossibleSellers(hftLedger.map(({account})=>account));
+    // setPossibleSellers(_.filter(getPossibleAccounts(hftLedger,token),({balance})=> {
+    //   return balance > 0;
+    // }).map(({account})=>account));
   },[token,hftLedger,seller]);
 
   const handleSubmit = (evt) => {
@@ -1097,7 +1099,7 @@ export const OrderForms = ({
             component:
               <SaleFixedQuotePolicy
                 pactTxStatus={pactTxStatus}
-                hftTokens={hftTokens.filter(token => ["fixed-quote-policy", "fixed-quote-royalty-policy"].includes(token.policy.refName.name))}
+                hftTokens={hftTokens}
                 hftLedger={hftLedger}
                 refresh={refresh}/>
           },

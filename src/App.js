@@ -56,12 +56,25 @@ const App = () => {
 
   const getHftEvents = async () => {
     const moduleHashBlacklist = ["WSIFGtnAlLCHFcFEHaKGrGeAG4qnTsZRj9BdvzzGa6w", "4m9KUKUzbd9hVZoN9uIlJkxYaf1NTz9G7Pc9C9rKTo4"]
-    const fqpQuotes = await syncEventsFromCWData(`${fqpAPI.contractAddress}`, 100, 4, true, moduleHashBlacklist);
-    const fqrpQuotes = await syncEventsFromCWData(`${fqrpAPI.contractAddress}`, 100, 4, true, moduleHashBlacklist);
-    const marmEvents = await syncEventsFromCWData('marmalade.ledger', 100, 4, true, moduleHashBlacklist);
-    const res = _.flatten([fqpQuotes, fqrpQuotes, marmEvents]);
-    console.debug("getHftEvents", {fqpQuotes, fqrpQuotes, marmEvents});
-    setHftEvents(res);
+    // Some hacky "streaming" until the streaming api is back in
+    // TODO: hacky orphan detection
+    const forkDepth = 100;
+    const newEventHeight = hftEvents.length ? hftEvents[0]["blockHeight"] - forkDepth : 0;
+    const oldHftEvents = _.dropWhile(hftEvents,({height})=>height>newEventHeight);
+    const marmEvents = await syncEventsFromCWData('marmalade.', 100, 4, true, moduleHashBlacklist);
+    const newHftEvents = _.takeWhile(marmEvents,({height})=>height>=newEventHeight);
+    const mergedEvents = [...newHftEvents, ...oldHftEvents];
+    console.debug("getHftEvents", {mergedEvents, newHftEvents, oldHftEvents});
+    setHftEvents(mergedEvents);
+  };
+
+  const jankyStreaming = async () => {
+    // this is just a hack until we get the steaming API online for events
+    while (true) {
+      await new Promise(r => setTimeout(r, 30000));
+      await getHftEvents();
+      console.debug('janky streaming fired...');
+    }
   };
 
   const getHftLedgerFromEvents= (evs) => {
@@ -132,6 +145,7 @@ const App = () => {
 
   useEffect(() => {
     getHftEvents();
+    jankyStreaming();
     console.debug('App.useEffect[] fired');
   }, []);
 

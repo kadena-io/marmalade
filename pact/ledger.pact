@@ -78,7 +78,7 @@
   ;; Implementation caps
   ;;
 
-  (defcap ACCOUNT_BALANCE (id:string account:string balance:decimal)
+  (defcap ACCOUNT_BALANCE (id:string account:string balance:decimal guard:guard)
     @doc "Event for tracking account balances"
     @event
     true
@@ -266,6 +266,7 @@
         { 'policy := policy:module{kip.token-policy-v1}
         , 'token := token }
         (policy::enforce-mint token account guard amount))
+      (emit-event (TRANSFER "" account amount))
       (credit id account guard amount)
       (update-supply id amount))
   )
@@ -280,6 +281,7 @@
         { 'policy := policy:module{kip.token-policy-v1}
         , 'token := token }
         (policy::enforce-burn token account amount))
+      (emit-event (TRANSFER account "" amount))
       (debit id account amount)
       (update-supply id (- amount)))
   )
@@ -295,10 +297,11 @@
     (enforce-unit id amount)
 
     (with-read ledger (key id account)
-      { "balance" := balance }
+      { "balance" := balance
+      , "guard" := grd }
       (let ((new-balance (- balance amount)))
         (enforce (<= amount balance) "Insufficient funds")
-        (emit-event (ACCOUNT_BALANCE id account new-balance))
+        (emit-event (ACCOUNT_BALANCE id account new-balance guard))
         (update ledger (key id account)
           { "balance" : new-balance })
       )
@@ -334,7 +337,7 @@
              (new-balance (if is-new amount (+ balance amount)))
             )
 
-        (emit-event (ACCOUNT_BALANCE id account new-balance))
+        (emit-event (ACCOUNT_BALANCE id account new-balance retg))
         (write ledger (key id account)
           { "balance" : new-balance
           , "guard"   : retg

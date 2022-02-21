@@ -37,12 +37,12 @@ export const getHftState = async (cmd) => {
 };
 
 export const RenderHftLedger = ({hftLedger}) => {
-  const pretty = _.map(hftLedger,v=> {return {id: v.id, contents: v};});
+  const pretty = _.map(hftLedger,v=> {return {id: v.ledgerKey, contents: v};});
   console.debug("renderHFTLedger", {hftLedger,pretty});
   return (
    <PactJsonListAsTable
     json={pretty}
-    header={["ID", "Contents"]}
+    header={["Ledger Key", "Contents"]}
     keyOrder={["id","contents"]}
     kvFunc={
       {'contents': v => {

@@ -28,7 +28,7 @@ import {
   HftApp
 } from "./HFT/Hft.js";
 import { getHftState } from "./HFT/HftState.js";
-import { syncEventsFromCWData, onlyOrderBookEvents, onlyQuoteEvents } from "./HFT/HftEvents.js"
+import { syncEventsFromCWData, onlyOrderBookEvents, onlyQuoteEvents, onlyTransferEvents, isPactContinuation, onlyMintEvents, onlyTokenEvents } from "./HFT/HftEvents.js"
 const App = () => {
   //Top level UI Routing Params
   const [appRoute,setAppRoute] = useQueryParams({
@@ -47,12 +47,12 @@ const App = () => {
   };
 
   //HFT Top Level States
-  const [hftLedger,setHftLedger] = createPersistedState("hftLedger6")([]);
-  const [hftTokens,setHftTokens] = createPersistedState("hftTokens6")([]);
-  const [mfCache,setMfCache] = createPersistedState("mfCache4")([]);
-  const [hftEvents, setHftEvents] = createPersistedState("hftEvents0")([]);
-  const [orderBook, setOrderBook] = createPersistedState("orderBook0")([]);
-  const [quotes, setQuotes] = createPersistedState("quotes0")([]);
+  const [hftLedger,setHftLedger] = useState([]);
+  const [hftTokens,setHftTokens] = useState([]);
+  const [mfCache,setMfCache] = useState([]);
+  const [hftEvents, setHftEvents] = useState([]);
+  const [orderBook, setOrderBook] = useState([]);
+  const [quotes, setQuotes] = useState([]);
 
   const getHftEvents = async () => {
     const moduleHashBlacklist = ["WSIFGtnAlLCHFcFEHaKGrGeAG4qnTsZRj9BdvzzGa6w", "4m9KUKUzbd9hVZoN9uIlJkxYaf1NTz9G7Pc9C9rKTo4"]
@@ -64,59 +64,73 @@ const App = () => {
     setHftEvents(res);
   };
 
-  const getHftLedger = async () => {
-    let res = [];
-    try {
-      const ledgerKeys = await getHftState("get-ledger-keys");
-      for (const ledgerKey of ledgerKeys) {
-        try {
-          getHftState(`get-ledger-entry "${ledgerKey}"`).then(v=>{
-            res.push(v);
-          });
-        } catch (e) {
-          console.debug("get-ledger failed", {ledgerKey, e});
-        }
+  const getHftLedgerFromEvents= (evs) => {
+    // this function misses account's made via `create-account`
+    let existingEntries = new Set(hftLedger.map(({ledgerKey})=>ledgerKey));
+    let newEntries = []; 
+    const transferEvs = onlyTransferEvents(evs);
+    for (const {params} of transferEvs) {
+      const sender = params.sender;
+      const receiver = params.receiver;
+      const tokenId = params.id;
+      const senderLedgerKey = `${tokenId}:${sender}`;
+      const receiverLedgerKey = `${tokenId}:${receiver}`;
+      if (!existingEntries.has(senderLedgerKey) && !isPactContinuation(sender)) {
+        existingEntries.add(senderLedgerKey);
+        newEntries.push({
+          id: tokenId,
+          account: sender, 
+          ledgerKey: senderLedgerKey,
+        });
+      }; 
+      if (!existingEntries.has(receiverLedgerKey) && !isPactContinuation(receiver)) {
+        existingEntries.add(receiverLedgerKey);
+        newEntries.push({
+          id: tokenId,
+          account: receiver, 
+          ledgerKey: receiverLedgerKey,
+        });
       };
-    } catch (e) {
-      console.debug("get-ledger-keys failed", e);
     };
-    Promise.all(res);
-    console.debug("getHftLedger", {res});
-    setHftLedger(res);
+
+    if (_.size(newEntries)) {
+      const newHftLedger = [...hftLedger, ...newEntries];
+      console.debug("getHftLedger", {newHftLedger});
+      setHftLedger(newHftLedger);
+    } else {
+      console.debug("getHftLedger fired w/o new entries", {existingEntries, transferEvs, hftLedger});
+    };
   };
 
-  const getHftTokens = async () => {
-    let res = [];
-    try {
-      const tokenKeys = await getHftState("get-token-keys");
-      for (const tokenKey of tokenKeys) {
-        try {
-          getHftState(`get-token "${tokenKey}"`).then(v=>{
-            res.push(v);
-          });
-        } catch (e) {
-          console.debug("get-token failed", {tokenKey, e});
-        }
-      };
-    } catch (e) {
-      console.debug("get-token-keys failed", e);
+  const getHftTokensFromEvents = (evs) => {
+    let existingEntries = new Set(hftTokens.map(({id})=>id));
+    let newEntries = [];
+    const tokenEvs = onlyTokenEvents(evs);
+    for (const {params} of tokenEvs) {
+      const tokenId = params.id;
+      if (!existingEntries.has(tokenId)) {
+        existingEntries.add(tokenId);
+        newEntries.push({
+          id: tokenId
+        })
+      }
     };
-    Promise.all(res);
-    console.debug("getHftTokens", {res});
-    setHftTokens(res);
+    if (_.size(newEntries)) {
+      const newHftTokens = [...hftTokens, ...newEntries];
+      console.debug("getHftTokens", {newHftTokens});
+      setHftTokens(newHftTokens);
+    } else {
+      console.debug("getHftTokens fired w/o new entries", {existingEntries, tokenEvs, hftLedger});
+    }
   };
 
   const refresh = {
-    getHftLedger: getHftLedger,
-    getHftTokens: getHftTokens,
+    getHftLedger: getHftEvents,
+    getHftTokens: getHftEvents,
     getHftEvents: getHftEvents
   };
 
-  const refreshAll = async () => _.forIn(refresh,(k,v) => v());
-
   useEffect(() => {
-    getHftLedger();
-    getHftTokens();
     getHftEvents();
     console.debug('App.useEffect[] fired');
   }, []);
@@ -124,6 +138,8 @@ const App = () => {
   useEffect(()=>{
     setOrderBook(onlyOrderBookEvents(hftEvents));
     setQuotes(onlyQuoteEvents(hftEvents));
+    getHftTokensFromEvents(hftEvents);
+    getHftLedgerFromEvents(hftEvents);
     console.debug('App.useEffect[hftEvents,setOrderBook] fired', {quotes, orderBook});
   },[hftEvents]);
 

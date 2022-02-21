@@ -115,7 +115,19 @@ export const onlySaleEvents = (evs) => evs.filter(({name})=>saleEvRE.test(name))
 const quoteEvRE = new RegExp(String.raw`(${fqpAPI.contractAddress}|${fqrpAPI.contractAddress}).QUOTE`);
 export const onlyQuoteEvents = (evs) => evs.filter(({name})=>quoteEvRE.test(name));
 
+const transferEvRE = new RegExp(String.raw`${hftAPI.contractAddress}.TRANSFER`);
+export const onlyTransferEvents = (evs) => evs.filter(({name})=>transferEvRE.test(name));
+
+const mintEvRE = new RegExp(String.raw`${hftAPI.contractAddress}.MINT`);
+export const onlyMintEvents = (evs) => evs.filter(({name})=>mintEvRE.test(name));
+
+const tokenEvRE = new RegExp(String.raw`${hftAPI.contractAddress}.TOKEN`);
+export const onlyTokenEvents = (evs) => evs.filter(({name})=>tokenEvRE.test(name));
+
 export const getSaleForQuote = (orderBook, saleId) => _.find(onlySaleEvents(orderBook), {requestKey: saleId});
+
+const pactTxRe = new RegExp('sale-.*')
+export const isPactContinuation = (ledgerKey) => pactTxRe.test(ledgerKey); 
 
 // TODO: finish this, blocked on bug in Chainweb.js that defaults host back to mainnet. This is for id-ing orphaned events
 // export const getQuotesForSaleEvents = async (evs) => {

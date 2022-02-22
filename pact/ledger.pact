@@ -266,7 +266,7 @@
         { 'policy := policy:module{kip.token-policy-v1}
         , 'token := token }
         (policy::enforce-mint token account guard amount))
-      (emit-event (TRANSFER "" account amount))
+      (emit-event (TRANSFER id "" account amount))
       (credit id account guard amount)
       (update-supply id amount))
   )
@@ -281,7 +281,7 @@
         { 'policy := policy:module{kip.token-policy-v1}
         , 'token := token }
         (policy::enforce-burn token account amount))
-      (emit-event (TRANSFER account "" amount))
+      (emit-event (TRANSFER id account "" amount))
       (debit id account amount)
       (update-supply id (- amount)))
   )

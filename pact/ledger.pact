@@ -74,6 +74,47 @@
     true
   )
 
+  (defschema sender-balance-change
+    @doc "For use in RECONCILE events"
+    account:string
+    previous:decimal
+    current:decimal
+  )
+
+  (defschema receiver-balance-change
+    @doc "For use in RECONCILE events"
+    account:string
+    previous:decimal
+    current:decimal
+  )
+
+  (defconst SENDER_EMPTY_BAL_CNG:object{sender-balance-change}
+    {'account: "", 'previous: 0.0, 'current: 0.0}
+  )
+
+  (defconst RECEIVER_EMPTY_BAL_CNG:object{receiver-balance-change}
+    {'account: "", 'previous: 0.0, 'current: 0.0}
+  )
+
+  (defcap RECONCILE
+    ( tokenId:string
+      amount:decimal
+      sender:object{sender-balance-change}
+      receiver:object{receiver-balance-change}
+    )
+    @doc " For accounting via events. \
+         \ sender = {account: '', previous: 0.0, current: 0.0} for mint \
+         \ receiver = {account: '', previous: 0.0, current: 0.0} for burn"
+    @event
+    true
+  )
+
+  (defcap ACCOUNT_GUARD (id:string account:string guard:guard)
+    @doc "For accounting/frontend via events"
+    @event
+    true
+  )
+
   ;;
   ;; Implementation caps
   ;;
@@ -144,6 +185,7 @@
     )
     (enforce-valid-account account)
     (enforce-reserved account guard)
+    (emit-event (ACCOUNT_GUARD id account guard))
     (insert ledger (key id account)
       { "balance" : 0.0
       , "guard"   : guard
@@ -198,6 +240,7 @@
         { "guard" := old-guard }
 
         (enforce-guard old-guard)
+        (emit-event (ACCOUNT_GUARD id account new-guard))
         (update ledger (key id account)
           { "guard" : new-guard }))))
 
@@ -212,10 +255,15 @@
     (enforce-valid-transfer sender receiver (precision id) amount)
     (with-capability (TRANSFER id sender receiver amount)
       (enforce-transfer-policy id sender receiver amount)
-      (debit id sender amount)
       (with-read ledger (key id receiver)
         { "guard" := g }
-        (credit id receiver g amount))
+        (let
+          ( (sender-bal (debit id sender amount))
+            (receiver-bal (credit id receiver g amount))
+          )
+          (emit-event (RECONCILE id amount sender-bal receiver-bal))
+        )
+      )
     )
   )
 
@@ -259,8 +307,10 @@
         { 'policy := policy:module{kip.token-policy-v1}
         , 'token := token }
         (policy::enforce-mint token account guard amount))
-      (credit id account guard amount)
-      (update-supply id amount))
+      (let ((receiver (credit id account guard amount)))
+        (update-supply id amount)
+        (emit-event id amount RECEIVER_EMPTY_BAL_CNG receiver)
+      ))
   )
 
   (defun burn:string
@@ -273,11 +323,13 @@
         { 'policy := policy:module{kip.token-policy-v1}
         , 'token := token }
         (policy::enforce-burn token account amount))
-      (debit id account amount)
-      (update-supply id (- amount)))
+      (let ((sender (debit id account amount)))
+        (update-supply id (- amount))
+        (emit-event id amount sender RECEIVER_EMPTY_BAL_CNG)
+      ))
   )
 
-  (defun debit:string
+  (defun debit:object{sender-balance-change}
     ( id:string
       account:string
       amount:decimal
@@ -288,16 +340,19 @@
     (enforce-unit id amount)
 
     (with-read ledger (key id account)
-      { "balance" := balance }
+      { "balance" := old-bal }
 
-      (enforce (<= amount balance) "Insufficient funds")
+      (enforce (<= amount old-bal) "Insufficient funds")
 
-      (update ledger (key id account)
-        { "balance" : (- balance amount) }
-        ))
+      (let ((new-bal (- old-bal amount)))
+        (update ledger (key id account)
+          { "balance" : new-bal }
+          )
+        {'account: account, 'previous: old-bal, 'current: new-bal}
+      ))
   )
 
-  (defun credit:string
+  (defun credit:object{receiver-balance-change}
     ( id:string
       account:string
       guard:guard
@@ -315,21 +370,25 @@
 
     (with-default-read ledger (key id account)
       { "balance" : -1.0, "guard" : guard }
-      { "balance" := balance, "guard" := retg }
+      { "balance" := old-bal, "guard" := retg }
       (enforce (= retg guard)
         "account guards do not match")
 
-      (let ((is-new
-             (if (= balance -1.0)
-                 (enforce-reserved account guard)
-               false)))
+      (let* ((is-new
+               (if (= old-bal -1.0)
+                   (enforce-reserved account guard)
+                 false))
+              (new-bal (if is-new amount (+ old-bal amount)))
+            )
 
       (write ledger (key id account)
-        { "balance" : (if is-new amount (+ balance amount))
+        { "balance" : (if is-new amount (+ old-bal amount))
         , "guard"   : retg
         , "id"   : id
         , "account" : account
-        })))
+        })
+        {'account: account, 'previous: old-bal, 'current: new-bal}
+      ))
   )
 
   (defun credit-account:string

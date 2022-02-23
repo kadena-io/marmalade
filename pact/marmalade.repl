@@ -33,7 +33,7 @@
 (load "ns-marmalade.pact")
 (load "ledger.pact")
 (load "policy.pact")
-(typecheck "marmalade.ledger")
+(typecheck "marmalade.ledger" true)
 (commit-tx)
 
 ;; fungible test

@@ -88,14 +88,6 @@
     current:decimal
   )
 
-  (defconst SENDER_EMPTY_BAL_CNG:object{sender-balance-change}
-    {'account: "", 'previous: 0.0, 'current: 0.0}
-  )
-
-  (defconst RECEIVER_EMPTY_BAL_CNG:object{receiver-balance-change}
-    {'account: "", 'previous: 0.0, 'current: 0.0}
-  )
-
   (defcap RECONCILE
     ( tokenId:string
       amount:decimal
@@ -258,10 +250,10 @@
       (with-read ledger (key id receiver)
         { "guard" := g }
         (let
-          ( (sender-bal (debit id sender amount))
-            (receiver-bal (credit id receiver g amount))
+          ( (sender (debit id sender amount))
+            (receiver (credit id receiver g amount))
           )
-          (emit-event (RECONCILE id amount sender-bal receiver-bal))
+          (emit-event (RECONCILE id amount sender receiver))
         )
       )
     )
@@ -292,8 +284,13 @@
 
     (with-capability (TRANSFER id sender receiver amount)
       (enforce-transfer-policy id sender receiver amount)
-      (debit id sender amount)
-      (credit id receiver receiver-guard amount))
+      (let
+        (
+          (sender (debit id sender amount))
+          (receiver (credit id receiver receiver-guard amount))
+        )
+        (emit-event (RECONCILE id amount sender receiver))
+      ))
   )
 
   (defun mint:string
@@ -307,9 +304,14 @@
         { 'policy := policy:module{kip.token-policy-v1}
         , 'token := token }
         (policy::enforce-mint token account guard amount))
-      (let ((receiver (credit id account guard amount)))
+      (let
+        (
+          (receiver (credit id account guard amount))
+          (sender:object{sender-balance-change}
+            {'account: "", 'previous: 0.0, 'current: 0.0})
+        )
+        (emit-event (RECONCILE id amount sender receiver))
         (update-supply id amount)
-        (emit-event id amount RECEIVER_EMPTY_BAL_CNG receiver)
       ))
   )
 
@@ -323,9 +325,14 @@
         { 'policy := policy:module{kip.token-policy-v1}
         , 'token := token }
         (policy::enforce-burn token account amount))
-      (let ((sender (debit id account amount)))
+      (let
+        (
+          (sender (debit id account amount))
+          (receiver:object{receiver-balance-change}
+            {'account: "", 'previous: 0.0, 'current: 0.0})
+        )
+        (emit-event (RECONCILE id amount sender receiver))
         (update-supply id (- amount))
-        (emit-event id amount sender RECEIVER_EMPTY_BAL_CNG)
       ))
   )
 
@@ -534,9 +541,13 @@
       { 'policy := policy:module{kip.token-policy-v1}
       , 'token := token }
       (policy::enforce-offer token seller amount (pact-id)))
-    (debit id seller amount)
-    (credit id (sale-account) (create-pact-guard "SALE") amount)
-    (emit-event (TRANSFER id seller (sale-account) amount))
+    (let
+      (
+        (sender (debit id seller amount))
+        (receiver (credit id (sale-account) (create-pact-guard "SALE") amount))
+      )
+      (emit-event (TRANSFER id seller (sale-account) amount))
+      (emit-event (RECONCILE id amount sender receiver)))
   )
 
   (defun withdraw
@@ -546,9 +557,13 @@
     )
     @doc "Withdraw offer by SELLER of AMOUNT of TOKEN before TIMEOUT"
     (require-capability (SALE_PRIVATE (pact-id)))
-    (debit id (sale-account) amount)
-    (credit-account id seller amount)
-    (emit-event (TRANSFER id (sale-account) seller amount))
+    (let
+      (
+        (sender (debit id (sale-account) amount))
+        (receiver (credit-account id seller amount))
+      )
+      (emit-event (TRANSFER id (sale-account) seller amount))
+      (emit-event (RECONCILE id amount sender receiver)))
   )
 
 
@@ -566,9 +581,13 @@
       { 'policy := policy:module{kip.token-policy-v1}
       , 'token := token }
       (policy::enforce-buy token seller buyer amount sale-id))
-    (debit id (sale-account) amount)
-    (credit id buyer buyer-guard amount)
-    (emit-event (TRANSFER id (sale-account) buyer amount))
+    (let
+      (
+        (sender (debit id (sale-account) amount))
+        (receiver (credit id buyer buyer-guard amount))
+      )
+      (emit-event (TRANSFER id (sale-account) buyer amount))
+      (emit-event (RECONCILE id amount sender receiver)))
   )
 
   (defun sale-active (timeout:integer)

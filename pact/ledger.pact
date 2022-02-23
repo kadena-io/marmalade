@@ -69,7 +69,7 @@
     @event true
   )
 
-  (defcap TOKEN:bool (id:string)
+  (defcap TOKEN:bool (id:string precision:integer supply:decimal policy:module{kip.token-policy-v1})
     @event
     true
   )
@@ -202,7 +202,7 @@
     (enforce-verify-manifest manifest)
     (policy::enforce-init
       { 'id: id, 'supply: 0.0, 'precision: precision, 'manifest: manifest })
-    (emit-event (TOKEN id))
+    (emit-event (TOKEN id precision 0.0 policy))
     (insert tokens id {
       "id": id,
       "precision": precision,
@@ -454,19 +454,6 @@
   (defun get-manifest:object{manifest} (id:string)
     (at 'manifest (read tokens id)))
 
-  (defun get-token-keys:[string] ()
-    "Get all token identifiers"
-    (keys tokens))
-
-  (defun get-tokens:[object{token-schema}] ()
-    "Get all tokens"
-     (map (read tokens) (keys tokens)))
-
-  (defun get-token:object{token-schema} (id:string)
-    "Read token"
-    (read tokens id)
-  )
-
   ;;
   ;; sale
   ;;
@@ -598,15 +585,6 @@
   (defun sale-account:string ()
     (format "sale-{}" [(pact-id)])
   )
-
-  (defun get-ledger-keys ()
-    (keys ledger))
-
-  (defun get-ledger-entry (key:string)
-    (read ledger key))
-
-  (defun get-ledger ()
-    (map (read ledger) (keys ledger)))
 
 )
 

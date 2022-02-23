@@ -89,7 +89,7 @@
   )
 
   (defcap RECONCILE
-    ( tokenId:string
+    ( token-id:string
       amount:decimal
       sender:object{sender-balance-change}
       receiver:object{receiver-balance-change}
@@ -389,12 +389,13 @@
             )
 
       (write ledger (key id account)
-        { "balance" : (if is-new amount (+ old-bal amount))
+        { "balance" : new-bal
         , "guard"   : retg
         , "id"   : id
         , "account" : account
         })
-        {'account: account, 'previous: old-bal, 'current: new-bal}
+        (if is-new (emit-event (ACCOUNT_GUARD id account retg)) "")
+        {'account: account, 'previous: (if is-new 0.0 old-bal), 'current: new-bal}
       ))
   )
 

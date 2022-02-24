@@ -12,8 +12,8 @@
 
 (load "kip/account-protocols-v1.pact")
 (load "kip/manifest.pact")
-(load "kip/poly-fungible-v2.pact")
 (load "kip/token-policy-v1.pact")
+(load "kip/poly-fungible-v2.pact")
 
 (define-namespace 'util (sig-keyset) (sig-keyset))
 (load "util/fungible-util.pact")
@@ -33,7 +33,7 @@
 (load "ns-marmalade.pact")
 (load "ledger.pact")
 (load "policy.pact")
-(typecheck "marmalade.ledger")
+(typecheck "marmalade.ledger" true)
 (commit-tx)
 
 ;; fungible test
@@ -238,8 +238,8 @@
 
 (begin-tx)
 (env-data
- { 'bob-ks: ["bob"]
- , 'alice-ks: ["alice"]
+ { 'bob-guard: ["bob"]
+ , 'alice-guard: ["alice"]
  , 'mint-guard: ["mint"]
  , 'burn-guard: ["burn"]
  , 'sale-guard: ["sale"]
@@ -292,7 +292,7 @@
 
 (expect
   "bob creates a new token project-0"
-  "Write succeeded"
+  true
   (create-token
     "project-0"
     12
@@ -302,8 +302,8 @@
 
 (expect
   "bob mints a 5.0 of token"
-  "Write succeeded"
-  (mint "project-0" "bob" (read-keyset 'bob-ks) 5.0))
+  true
+  (mint "project-0" "bob" (read-keyset 'bob-guard) 5.0))
 
 (expect
   "total supply of project-0"
@@ -311,19 +311,26 @@
   (total-supply "project-0"))
 
 (expect "MINT events"
-   [{"name": "marmalade.ledger.TOKEN","params": ["project-0"]}
-   {"name": "marmalade.ledger.MINT","params": ["project-0" "bob" 5.0]}
-   {"name": "marmalade.ledger.SUPPLY","params": ["project-0" 5.0]} ]
+  [{"name": "marmalade.ledger.TOKEN","params": ["project-0" 12 0.0 marmalade.guard-token-policy]}
+  ,{"name": "marmalade.ledger.MINT","params": ["project-0" "bob" 5.0]}
+  ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-0" "bob" (read-keyset 'bob-guard) ]}
+  ,{"name": "marmalade.ledger.RECONCILE","params": ["project-0" 5.0
+    {"account": "","current": 0.0,"previous": 0.0}
+    {"account": "bob","current": 5.0,"previous": 0.0}]}
+  ,{"name": "marmalade.ledger.SUPPLY","params": ["project-0"  5.0]}]
   (map (remove 'module-hash) (env-events true)))
 
 ;;regular transfer
 (expect "Bob transfers 2.0 to Alice"
-  "Write succeeded"
-  (transfer-create "project-0" "bob" "alice" (read-keyset 'alice-ks) 2.0))
+  true
+  (transfer-create "project-0" "bob" "alice" (read-keyset 'alice-guard) 2.0))
 
 (expect "TRANSFER event"
-   [{"name": "marmalade.ledger.TRANSFER","params": ["project-0" "bob" "alice" 2.0]}
-   ]
+   [{"name": "marmalade.ledger.TRANSFER","params": ["project-0" "bob" "alice" 2.0]},
+    {"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-0" "alice" (read-keyset 'alice-guard )]},
+    {"name": "marmalade.ledger.RECONCILE","params": ["project-0" 2.0
+      {"account": "bob","current": 3.0,"previous": 5.0}
+      {"account": "alice","current": 2.0,"previous": 0.0}]}]
   (map (remove 'module-hash) (env-events true)))
 
 (commit-tx)
@@ -344,7 +351,7 @@
 (expect-failure
   "alice can't mint a project-0 token"
   "Keyset failure"
-  (mint "project-0" "alice" (read-keyset 'alice-ks) 5.0))
+  (mint "project-0" "alice" (read-keyset 'alice-guard) 5.0))
 
 (rollback-tx)
 
@@ -450,19 +457,10 @@
 
 (expect
   "single-key success, create-account"
-  "Write succeeded"
+  true
   (marmalade.ledger.create-account 'project-0
     "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
     (read-keyset 'k)))
-
-(expect
-  "Account is inserted to ledger with the key format id:account"
-  {"account": "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
-  ,"balance": 0.0
-  ,"guard": (read-keyset 'k)
-  ,"id": "project-0"}
-  (marmalade.ledger.get-ledger-entry
-    (marmalade.ledger.key 'project-0 "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4")))
 
 (rollback-tx)
 
@@ -481,7 +479,7 @@
 
 (expect
   "single-key success, transfer-create"
-  "Write succeeded"
+  true
   (marmalade.ledger.transfer-create
     'project-0
     'bob
@@ -489,80 +487,13 @@
     (read-keyset 'k)
     0.02))
 
-(expect
-  "Account is inserted to ledger with the key format id:account"
-  {"account": "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4"
-  ,"balance": 0.02
-  ,"guard": (read-keyset 'k)
-  ,"id": "project-0"}
-  (marmalade.ledger.get-ledger-entry
-    (marmalade.ledger.key 'project-0 "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4")))
-
-
 (expect "TRANSFER events"
-  [{
-  "name": "marmalade.ledger.TRANSFER",
-  "params": ["project-0", "bob", "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4", 0.02]
-  }]
+  [{"name": "marmalade.ledger.TRANSFER","params": ["project-0" "bob" "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4" 0.02]}
+  ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-0" "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4" (read-keyset "k")]}
+  ,{"name": "marmalade.ledger.RECONCILE","params": ["project-0" 0.02
+    {"account": "bob","current": 2.98,"previous": 3.0}
+    {"account": "k:5b4c9fc5207fcf700a5fbcb48c261820149c8ecd52e005282ed9e3f5febcd1f4","current": 0.02,"previous": 0.0}]}]
   (map (remove 'module-hash) (env-events true)))
-
-(rollback-tx)
-
-(begin-tx)
-
-;; Test ACCESSORS
-
-(use marmalade.ledger)
-(use kip.token-manifest)
-
-(env-data
- { 'bob-ks: ["bob"],
-   'alice-ks: ["alice"]
- })
-
-(expect "Returns key"
-  "project-0:bob"
-  (key 'project-0 'bob))
-
-(expect "Returns manifest"
-  (create-manifest (uri "text" "project-0-uri") [])
-  (get-manifest 'project-0))
-
-(expect "Returns tokens"
-  ["project-0","token"]
-  (map (at 'id) (get-tokens)))
-
-(expect "Returns token keys"
-   ["project-0","token"]
-  (get-token-keys))
-
-(expect "Returns project-0 token"
-  { 'id: "project-0"
-  , 'manifest: (create-manifest (uri "text" "project-0-uri") [])
-  , 'policy: marmalade.guard-token-policy
-  , 'precision: 12
-  , 'supply: 5.0
-  }
-  (get-token "project-0"))
-
-(expect "Returns ledger keys"
-  [ "project-0:alice"
-    "project-0:bob"
-    "token:FUNDER_ACCT"
-  ]
-  (get-ledger-keys))
-
-(expect "get ledger entry"
-  { 'account: "bob"
-  , 'balance: 3.0
-  , 'guard: (read-keyset 'bob-ks)
-  , 'id: "project-0"
-  }
-  (get-ledger-entry (key 'project-0 'bob)))
-
-(expect "get ledger"
- [ "alice" "bob" "FUNDER_ACCT" ]
- (map (at 'account) (get-ledger)))
 
 (rollback-tx)
 
@@ -585,7 +516,7 @@
 
 (env-data
  { 'buyer: "buyer",
-   'buyer-guard: {"keys": ["buyer"], "pred": "="}
+   'buyer-guard: {"keys": ["buyer"], "pred": "keys-all"}
  })
 
 (expect-failure "Offer fails due to small timeout"
@@ -628,9 +559,13 @@
   (marmalade.ledger.get-balance 'project-0 (sale-account)))
 
 (expect "OFFER events"
-  [{"name": "marmalade.ledger.OFFER","params": ["project-0" "bob" 0.1 110]}
-   {"name": "marmalade.ledger.SALE","params": ["project-0" "bob" 0.1 110 (hash "sale-tx1")]}
-   {"name": "marmalade.ledger.TRANSFER","params": ["project-0" "bob" (sale-account) 0.1]}]
+  [{"name": "marmalade.ledger.OFFER","params": ["project-0" "bob" 0.1 110]} ,
+   {"name": "marmalade.ledger.SALE","params": ["project-0" "bob" 0.1 110 (hash "sale-tx1")]} ,
+   {"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-0" (sale-account) (create-pact-guard "SALE")]} ,
+   {"name": "marmalade.ledger.TRANSFER","params": ["project-0" "bob" (sale-account) 0.1]} ,
+   {"name": "marmalade.ledger.RECONCILE","params": ["project-0" 0.1
+    {"account": "bob","current": 2.9,"previous": 3.0}
+    {"account": (sale-account),"current": 0.1,"previous": 0.0}]}]
   (map (remove 'module-hash) (env-events true)))
 
 (env-sigs
@@ -660,8 +595,12 @@
   (marmalade.ledger.get-balance 'project-0 'buyer))
 
 (expect "BUY events"
-  [{"name": "marmalade.ledger.BUY","params": ["project-0" "bob" "buyer" 0.1 110 (hash "sale-tx1")]}
-   {"name": "marmalade.ledger.TRANSFER","params": ["project-0" (sale-account) "buyer" 0.1]}]
+  [{"name": "marmalade.ledger.BUY","params": ["project-0" "bob" "buyer" 0.1 110 (hash "sale-tx1")]} ,
+  {"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-0" "buyer" (read-msg 'buyer-guard)]} ,
+  {"name": "marmalade.ledger.TRANSFER","params": ["project-0" (sale-account) "buyer" 0.1]} ,
+  {"name": "marmalade.ledger.RECONCILE","params": ["project-0" 0.1
+    {"account": (sale-account),"current": 0.0,"previous": 0.1}
+    {"account": "buyer","current": 0.1,"previous": 0.0}]}]
   (map (remove 'module-hash) (env-events true)))
 
 (rollback-tx)
@@ -684,7 +623,7 @@
 
 (env-data
  { 'buyer: "buyer",
-   'buyer-guard: {"keys": ["buyer"], "pred": "="}
+   'buyer-guard: {"keys": ["buyer"], "pred": "keys-all"}
  })
 
 (expect "Offer succeeds"
@@ -701,8 +640,13 @@
 
 (expect "OFFER events"
   [{"name": "marmalade.ledger.OFFER","params": ["project-0" "bob" 0.1 110]}
-  {"name": "marmalade.ledger.SALE","params": ["project-0" "bob" 0.1 110 (hash "sale-tx2")]}
-  {"name": "marmalade.ledger.TRANSFER","params": ["project-0" "bob" (sale-account) 0.1]}]
+  ,{"name": "marmalade.ledger.SALE","params": ["project-0" "bob" 0.1 110 (hash "sale-tx2")]}
+  ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-0" (sale-account) (create-pact-guard "SALE")]}
+  ,{"name": "marmalade.ledger.TRANSFER","params": ["project-0" "bob" (sale-account) 0.1]}
+  ,{"name": "marmalade.ledger.RECONCILE","params": ["project-0" 0.1
+    {"account": "bob","current": 2.9,"previous": 3.0}
+    {"account": (sale-account),"current": 0.1,"previous": 0.0}]}
+  ]
   (map (remove 'module-hash) (env-events true)))
 
 (env-chain-data {"block-height": 111})
@@ -725,7 +669,10 @@
 
 (expect "WITHDRAW events"
   [{"name": "marmalade.ledger.WITHDRAW","params": ["project-0" "bob" 0.1 110 (hash "sale-tx2")]}
-   {"name": "marmalade.ledger.TRANSFER","params": ["project-0" (sale-account) "bob" 0.1]}]
+  ,{"name": "marmalade.ledger.TRANSFER","params": ["project-0" (sale-account) "bob" 0.1]}
+  ,{"name": "marmalade.ledger.RECONCILE","params": ["project-0" 0.1
+    {"account": (sale-account),"current": 0.0,"previous": 0.1}
+    {"account": "bob","current": 3.0,"previous": 2.9}]}]
   (map (remove 'module-hash) (env-events true)))
 
 (rollback-tx)
@@ -753,7 +700,7 @@
 (use marmalade.ledger)
 
 (expect "Create token project-2"
-  "Write succeeded"
+  true
   (create-token "project-2" 1
     (create-manifest (uri "text" "project-2-uri") []) marmalade.fixed-quote-policy))
 
@@ -780,18 +727,23 @@
   (mint 'project-2 "bob" (read-keyset 'bob-guard) 10.1))
 
 (expect "bob mints project-2"
-  "Write succeeded"
+  true
   (mint 'project-2 "bob" (read-keyset 'bob-guard) 1.0))
 
 (expect "Bob is credited"
   1.0
   (get-balance 'project-2 'bob))
 
+(env-data {"bob-guard": ["bob"]})
 (expect "Create and mint fqp token EVENTS"
-  [ {"name": "marmalade.ledger.TOKEN","params": ["project-2"]}
-    {"name": "marmalade.ledger.MINT","params": ["project-2" "bob" 1.0]}
-    {"name": "marmalade.ledger.SUPPLY","params": ["project-2" 1.0]}]
-    (map (remove 'module-hash) (env-events true)))
+   [{"name": "marmalade.ledger.TOKEN","params": ["project-2" 1 0.0 marmalade.fixed-quote-policy]}
+   ,{"name": "marmalade.ledger.MINT","params": ["project-2" "bob" 1.0]}
+   ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-2" "bob" (read-keyset 'bob-guard)]}
+   ,{"name": "marmalade.ledger.RECONCILE","params": ["project-2" 1.0
+      {"account": "","current": 0.0,"previous": 0.0}
+      {"account": "bob","current": 1.0,"previous": 0.0}]}
+   ,{"name": "marmalade.ledger.SUPPLY","params": ["project-2" 1.0]}]
+   (map (remove 'module-hash) (env-events true)))
 
 (commit-tx)
 
@@ -811,7 +763,7 @@
       "fungible": coin
      ,"price": 1.0
      ,"recipient": "alice"
-     ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+     ,"recipient-guard": {"keys": ["alice"], "pred": "keys-all"}
    }
  })
 
@@ -826,9 +778,9 @@
        "fungible": coin
       ,"price": 1.0
       ,"recipient": "alice"
-      ,"recipient-guard": {"keys": ["wrong-alice"], "pred":"="}
+      ,"recipient-guard": {"keys": ["wrong-alice"], "pred": "keys-all"}
     }
-  ,"alice": {"keys": ["alice"], "pred":"="}
+  ,"alice": {"keys": ["alice"], "pred": "keys-all"}
  })
 (coin.create-account 'alice (read-keyset 'alice))
 
@@ -843,7 +795,7 @@
        "fungible": ns
       ,"price": 1.0
       ,"recipient": "alice"
-      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+      ,"recipient-guard": {"keys": ["alice"], "pred": "keys-all"}
     }
   })
 
@@ -858,7 +810,7 @@
        "fungible": coin
       ,"price": -1.0
       ,"recipient": "alice"
-      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+      ,"recipient-guard": {"keys": ["alice"], "pred": "keys-all"}
     }
   })
 
@@ -873,7 +825,7 @@
 (env-hash (hash "fixed-quote-sale-tx2"))
 (use marmalade.ledger)
 
-(env-data {"alice": {"keys": ["alice"], "pred":"="}})
+(env-data {"alice": {"keys": ["alice"], "pred": "keys-all"}})
 (coin.create-account 'alice (read-keyset 'alice))
 
 (env-sigs
@@ -888,11 +840,12 @@
        "fungible": coin
       ,"price": 1.0
       ,"recipient": "alice"
-      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+      ,"recipient-guard": {"keys": ["alice"], "pred": "keys-all"}
     }
   ,"buyer": "coin-buyer"
-  ,"buyer-guard": {"keys": ["buyer"], "pred": "="}
+  ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
   })
+
 (env-chain-data {"block-height": 100})
 
 (test-capability (coin.COINBASE))
@@ -915,13 +868,17 @@
   (marmalade.ledger.get-balance 'project-2 (sale-account)))
 
 (expect "OFFER events"
-   [{"name": "coin.TRANSFER","params": ["" "coin-buyer" 2.0]}
-    {"name": "marmalade.ledger.OFFER","params": ["project-2" "bob" 0.2 120]}
-    {"name": "marmalade.ledger.SALE","params": ["project-2" "bob" 0.2 120 (pact-id)]}
-    {"name": "marmalade.fixed-quote-policy.QUOTE","params": [(pact-id) "project-2" 0.2 1.0 0.2 (read-msg "quote")]}
-    {"name": "marmalade.ledger.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}]
+  [{"name": "coin.TRANSFER","params": ["" "coin-buyer" 2.0]}
+  ,{"name": "marmalade.ledger.OFFER","params": ["project-2" "bob" 0.2 120]}
+  ,{"name": "marmalade.ledger.SALE","params": ["project-2" "bob" 0.2 120 (pact-id)]}
+  ,{"name": "marmalade.fixed-quote-policy.QUOTE","params": [
+    (pact-id) "project-2" 0.2 1.0 0.2 (read-msg 'quote)]}
+  ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-2" (sale-account) (create-pact-guard "SALE")]}
+  ,{"name": "marmalade.ledger.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}
+  ,{"name": "marmalade.ledger.RECONCILE","params": ["project-2" 0.2
+    {"account": "bob","current": 0.8,"previous": 1.0}
+    {"account": (sale-account),"current": 0.2,"previous": 0.0}]}]
   (map (remove 'module-hash) (env-events true)))
-
 
 (expect-failure "Withdraw fails before timeout"
   "still active"
@@ -974,9 +931,13 @@
   (continue-pact 0 true))
 
 (expect "BUY events"
-   [{"name": "marmalade.ledger.BUY","params": ["project-2" "bob" "coin-buyer" 0.2 120 (pact-id)]}
-    {"name": "coin.TRANSFER","params": ["coin-buyer" "alice" 0.2]}
-    {"name": "marmalade.ledger.TRANSFER","params": ["project-2" (sale-account) "coin-buyer" 0.2]}]
+  [{"name": "marmalade.ledger.BUY","params": ["project-2" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-sale-tx2")]}
+  ,{"name": "coin.TRANSFER","params": ["coin-buyer" "alice" 0.2]}
+  ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-2" "coin-buyer" (read-msg 'buyer-guard)]}
+  ,{"name": "marmalade.ledger.TRANSFER","params": ["project-2" (sale-account) "coin-buyer" 0.2]}
+  ,{"name": "marmalade.ledger.RECONCILE","params": ["project-2" 0.2
+    {"account": (sale-account),"current": 0.0,"previous": 0.2}
+    {"account": "coin-buyer","current": 0.2,"previous": 0.0}]}]
   (map (remove 'module-hash) (env-events true)))
 
 (rollback-tx)
@@ -985,7 +946,7 @@
 (env-hash (hash "fixed-quote-sale-tx3"))
 (use marmalade.ledger)
 
-(env-data {"alice": {"keys": ["alice"], "pred":"="}})
+(env-data {"alice": {"keys": ["alice"], "pred": "keys-all"}})
 (coin.create-account 'alice (read-keyset 'alice))
 
 (env-sigs
@@ -1005,10 +966,10 @@
        "fungible": coin
       ,"price": 1.0
       ,"recipient": "alice"
-      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+      ,"recipient-guard": {"keys": ["alice"], "pred": "keys-all"}
     }
   ,"buyer": "coin-buyer"
-  ,"buyer-guard": {"keys": ["buyer"], "pred": "="}
+  ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
   })
 
 (env-chain-data {"block-height": 100})
@@ -1033,11 +994,16 @@
   (marmalade.ledger.get-balance 'project-2 (sale-account)))
 
 (expect "OFFER events"
-   [{"name": "coin.TRANSFER","params": ["" "coin-buyer" 2.0]}
-    {"name": "marmalade.ledger.OFFER","params": ["project-2" "bob" 0.2 120]}
-    {"name": "marmalade.ledger.SALE","params": ["project-2" "bob" 0.2 120 (pact-id)]}
-    {"name": "marmalade.fixed-quote-policy.QUOTE","params": [(pact-id) "project-2" 0.2 1.0 0.2 (read-msg "quote")]}
-    {"name": "marmalade.ledger.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}]
+  [{"name": "coin.TRANSFER","params": ["" "coin-buyer" 2.0]}
+  ,{"name": "marmalade.ledger.OFFER","params": ["project-2" "bob" 0.2 120]}
+  ,{"name": "marmalade.ledger.SALE","params": ["project-2" "bob" 0.2 120 (pact-id)]}
+  ,{"name": "marmalade.fixed-quote-policy.QUOTE","params": [
+    (pact-id) "project-2" 0.2 1.0 0.2 (read-msg 'quote)]}
+  ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-2" (sale-account) (create-pact-guard "SALE")]}
+  ,{"name": "marmalade.ledger.TRANSFER","params": ["project-2" "bob" (sale-account) 0.2]}
+  ,{"name": "marmalade.ledger.RECONCILE","params": ["project-2" 0.2
+    {"account": "bob","current": 0.8,"previous": 1.0}
+    {"account": (sale-account),"current": 0.2,"previous": 0.0}]}]
   (map (remove 'module-hash) (env-events true)))
 
 (env-chain-data {"block-height": 121})
@@ -1071,8 +1037,11 @@
   (continue-pact 0 true))
 
 (expect "WITHDRAW events"
-    [{"name": "marmalade.ledger.WITHDRAW","params": ["project-2" "bob" 0.2 120 (pact-id)]}
-    {"name": "marmalade.ledger.TRANSFER","params": ["project-2" (sale-account) "bob" 0.2]}]
+   [{"name": "marmalade.ledger.WITHDRAW","params": ["project-2" "bob" 0.2 120 (hash "fixed-quote-sale-tx3")]}
+   ,{"name": "marmalade.ledger.TRANSFER","params": ["project-2" (sale-account) "bob" 0.2]}
+   ,{"name": "marmalade.ledger.RECONCILE","params": ["project-2" 0.2
+    {"account": (sale-account),"current": 0.0,"previous": 0.2}
+    {"account": "bob","current": 1.0,"previous": 0.8}]}]
   (map (remove 'module-hash) (env-events true)))
 
 (rollback-tx)
@@ -1155,11 +1124,12 @@
     ,'royalty-rate: 0.03
     ,'max-supply: 10.0
     ,'min-amount: 1.0
-  }
+  },
+  'bob-guard: ["bob"]
   })
 
 (expect "Create token project-3 succeeds"
-  "Write succeeded"
+  true
   (create-token "project-3" 1
     (create-manifest (uri "text" "project-3-uri") []) marmalade.fixed-quote-royalty-policy))
 
@@ -1191,7 +1161,7 @@
   (mint 'project-3 "bob" (read-keyset 'bob-guard) 10.1))
 
 (expect "mint project-3 to bob, success"
-  "Write succeeded"
+  true
   (mint 'project-3 "bob" (read-keyset 'bob-guard) 1.0))
 
 (expect "Bob is credited"
@@ -1199,10 +1169,14 @@
   (get-balance 'project-3 'bob))
 
 (expect "Create and mint fqp token EVENTS"
-  [ {"name": "marmalade.ledger.TOKEN","params": ["project-3"]}
-    {"name": "marmalade.ledger.MINT","params": ["project-3" "bob" 1.0]}
-    {"name": "marmalade.ledger.SUPPLY","params": ["project-3" 1.0]}]
-    (map (remove 'module-hash) (env-events true)))
+  [{"name": "marmalade.ledger.TOKEN","params": ["project-3" 1 0.0 marmalade.fixed-quote-royalty-policy]}
+  ,{"name": "marmalade.ledger.MINT","params": ["project-3" "bob" 1.0]}
+  ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-3" "bob" (read-keyset 'bob-guard) ]}
+  ,{"name": "marmalade.ledger.RECONCILE","params": ["project-3" 1.0
+    {"account": "","current": 0.0,"previous": 0.0}
+    {"account": "bob","current": 1.0,"previous": 0.0}]}
+  ,{"name": "marmalade.ledger.SUPPLY","params": ["project-3" 1.0]}]
+  (map (remove 'module-hash) (env-events true)))
 
 (commit-tx)
 
@@ -1210,7 +1184,7 @@
 (env-hash (hash "fixed-quote-royalty-policy-sale-tx2"))
 (use marmalade.ledger)
 
-(env-data {"alice": {"keys": ["alice"], "pred":"="}})
+(env-data {"alice": {"keys": ["alice"], "pred": "keys-all"}})
 (coin.create-account 'alice (read-keyset 'alice))
 
 (env-sigs
@@ -1224,10 +1198,10 @@
    "quote": {
        "price": 0.000000000001
       ,"recipient": "alice"
-      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+      ,"recipient-guard": {"keys": ["alice"], "pred": "keys-all"}
     }
   ,"buyer": "coin-buyer"
-  ,"buyer-guard": {"keys": ["buyer"], "pred": "="}
+  ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
   })
 (env-chain-data {"block-height": 100})
 
@@ -1244,10 +1218,10 @@
    "quote": {
        "price": 0.01
       ,"recipient": "alice"
-      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+      ,"recipient-guard": {"keys": ["alice"], "pred": "keys-all"}
     }
   ,"buyer": "coin-buyer"
-  ,"buyer-guard": {"keys": ["buyer"], "pred": "="}
+  ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
   })
 
 (expect "Sale succeeds"
@@ -1267,13 +1241,17 @@
   (marmalade.ledger.get-balance 'project-3 (sale-account)))
 
 (expect "OFFER events"
-   [{"name": "coin.TRANSFER","params": ["" "coin-buyer" 2.0]}
-    {"name": "marmalade.ledger.OFFER","params": ["project-3" "bob" 0.2 120]}
-    {"name": "marmalade.ledger.SALE","params": ["project-3" "bob" 0.2 120 (pact-id)]}
-    {"name": "marmalade.fixed-quote-royalty-policy.QUOTE","params": [(pact-id) "project-3" 0.2 0.01 0.002 0.00006 "creator" (read-msg "quote")]}
-    {"name": "marmalade.ledger.TRANSFER","params": ["project-3" "bob" (sale-account) 0.2]}]
+  [{"name": "coin.TRANSFER","params": ["" "coin-buyer" 2.0]}
+  ,{"name": "marmalade.ledger.OFFER","params": ["project-3" "bob" 0.2 120]}
+  ,{"name": "marmalade.ledger.SALE","params": ["project-3" "bob" 0.2 120 (pact-id)]}
+  ,{"name": "marmalade.fixed-quote-royalty-policy.QUOTE","params": [
+    (pact-id) "project-3" 0.2 0.01 0.002 0.000060000000 "creator" (read-msg 'quote)]}
+  ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-3" (sale-account) (create-pact-guard "SALE")]}
+  ,{"name": "marmalade.ledger.TRANSFER","params": ["project-3" "bob" (sale-account) 0.2]}
+  ,{"name": "marmalade.ledger.RECONCILE","params": ["project-3" 0.2
+    {"account": "bob","current": 0.8,"previous": 1.0}
+    {"account": (sale-account),"current": 0.2,"previous": 0.0}]}]
   (map (remove 'module-hash) (env-events true)))
-
 
 (expect-failure "Withdraw fails before timeout"
   "still active"
@@ -1332,10 +1310,14 @@
   (continue-pact 0 true))
 
 (expect "BUY events"
-   [{"name": "marmalade.ledger.BUY","params": ["project-3" "bob" "coin-buyer" 0.2 120 (pact-id)]}
-    {"name": "coin.TRANSFER","params": ["coin-buyer" "creator" 0.00006]}
-    {"name": "coin.TRANSFER","params": ["coin-buyer" "alice" 0.00194]}
-    {"name": "marmalade.ledger.TRANSFER","params": ["project-3" (sale-account) "coin-buyer" 0.2]}]
+  [{"name": "marmalade.ledger.BUY","params": ["project-3" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-royalty-policy-sale-tx2")]}
+  ,{"name": "coin.TRANSFER","params": ["coin-buyer" "creator" 0.00006]}
+  ,{"name": "coin.TRANSFER","params": ["coin-buyer" "alice" 0.00194]}
+  ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-3" "coin-buyer" (read-msg 'buyer-guard) ]}
+  ,{"name": "marmalade.ledger.TRANSFER","params": ["project-3" (sale-account) "coin-buyer" 0.2]}
+  ,{"name": "marmalade.ledger.RECONCILE","params": ["project-3" 0.2
+    {"account": (sale-account),"current": 0.0,"previous": 0.2}
+    {"account": "coin-buyer","current": 0.2,"previous": 0.0}]}]
   (map (remove 'module-hash) (env-events true)))
 
 (rollback-tx)
@@ -1344,7 +1326,7 @@
 (env-hash (hash "fixed-quote-royalty-policy-sale-tx3"))
 (use marmalade.ledger)
 
-(env-data {"alice": {"keys": ["alice"], "pred":"="}})
+(env-data {"alice": {"keys": ["alice"], "pred": "keys-all"}})
 (coin.create-account 'alice (read-keyset 'alice))
 
 (env-sigs
@@ -1358,10 +1340,10 @@
    "quote": {
        "price": 0.000000000001
       ,"recipient": "alice"
-      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+      ,"recipient-guard": {"keys": ["alice"], "pred": "keys-all"}
     }
   ,"buyer": "coin-buyer"
-  ,"buyer-guard": {"keys": ["buyer"], "pred": "="}
+  ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
   })
 (env-chain-data {"block-height": 100})
 
@@ -1378,10 +1360,10 @@
    "quote": {
        "price": 0.00000000001
       ,"recipient": "alice"
-      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+      ,"recipient-guard": {"keys": ["alice"], "pred": "keys-all"}
     }
   ,"buyer": "coin-buyer"
-  ,"buyer-guard": {"keys": ["buyer"], "pred": "="}
+  ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
   })
 
 (expect "Sale succeeds"
@@ -1401,11 +1383,16 @@
   (marmalade.ledger.get-balance 'project-3 (sale-account)))
 
 (expect "OFFER events"
-   [{"name": "coin.TRANSFER","params": ["" "coin-buyer" 2.0]}
-    {"name": "marmalade.ledger.OFFER","params": ["project-3" "bob" 0.2 120]}
-    {"name": "marmalade.ledger.SALE","params": ["project-3" "bob" 0.2 120 (pact-id)]}
-    {"name": "marmalade.fixed-quote-royalty-policy.QUOTE","params": [(pact-id) "project-3" 0.2 0.00000000001 0.000000000002 0.0 "creator"(read-msg "quote")]}
-    {"name": "marmalade.ledger.TRANSFER","params": ["project-3" "bob" (sale-account) 0.2]}]
+[{"name": "coin.TRANSFER","params": ["" "coin-buyer" 2.0]}
+,{"name": "marmalade.ledger.OFFER","params": ["project-3" "bob" 0.2 120]}
+,{"name": "marmalade.ledger.SALE","params": ["project-3" "bob" 0.2 120 (pact-id)]}
+,{"name": "marmalade.fixed-quote-royalty-policy.QUOTE","params": [
+  (pact-id) "project-3" 0.2 0.00000000001 0.000000000002 0.0 "creator" (read-msg 'quote)]}
+,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-3" (sale-account) (create-pact-guard "SALE")]}
+,{"name": "marmalade.ledger.TRANSFER","params": ["project-3" "bob" (sale-account) 0.2]}
+,{"name": "marmalade.ledger.RECONCILE","params": ["project-3" 0.2
+  {"account": "bob","current": 0.8,"previous": 1.0}
+  {"account": (sale-account),"current": 0.2,"previous": 0.0}]}]
   (map (remove 'module-hash) (env-events true)))
 
 
@@ -1465,9 +1452,13 @@
   (continue-pact 0 true))
 
 (expect "BUY events"
-   [{"name": "marmalade.ledger.BUY","params": ["project-3" "bob" "coin-buyer" 0.2 120 (pact-id)]}
-    {"name": "coin.TRANSFER","params": ["coin-buyer" "alice" 0.000000000002]}
-    {"name": "marmalade.ledger.TRANSFER","params": ["project-3" (sale-account) "coin-buyer" 0.2]}]
+  [{"name": "marmalade.ledger.BUY","params": ["project-3" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-royalty-policy-sale-tx3")]}
+  ,{"name": "coin.TRANSFER","params": ["coin-buyer" "alice" 0.000000000002]}
+  ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-3" "coin-buyer" (read-msg 'buyer-guard) ]}
+  ,{"name": "marmalade.ledger.TRANSFER","params": ["project-3" (sale-account) "coin-buyer" 0.2]}
+  ,{"name": "marmalade.ledger.RECONCILE","params": ["project-3" 0.2
+    {"account": (sale-account),"current": 0.0,"previous": 0.2}
+    {"account": "coin-buyer","current": 0.2,"previous": 0.0}]}]
   (map (remove 'module-hash) (env-events true)))
 
 (rollback-tx)
@@ -1505,7 +1496,7 @@
 (use marmalade.ledger)
 
 (expect "Create token project-4"
-  "Write succeeded"
+  true
   (create-token "project-4" 1
     (create-manifest (uri "text" "project-4-uri") []) marmalade.fixed-quote-royalty-policy))
 
@@ -1520,7 +1511,7 @@
      ]}])
 
 (expect "mint project-4 to bob, success"
-  "Write succeeded"
+  true
   (mint 'project-4 "bob" (read-keyset 'bob-guard) 1.0))
 
 (expect "Bob is credited"
@@ -1528,10 +1519,14 @@
   (get-balance 'project-4 'bob))
 
 (expect "Create and mint fqp token EVENTS"
-  [ {"name": "marmalade.ledger.TOKEN","params": ["project-4"]}
-    {"name": "marmalade.ledger.MINT","params": ["project-4" "bob" 1.0]}
-    {"name": "marmalade.ledger.SUPPLY","params": ["project-4" 1.0]}]
-    (map (remove 'module-hash) (env-events true)))
+  [{"name": "marmalade.ledger.TOKEN","params": ["project-4" 1 0.0 marmalade.fixed-quote-royalty-policy]}
+  ,{"name": "marmalade.ledger.MINT","params": ["project-4" "bob" 1.0]}
+  ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-4" "bob" (read-keyset 'bob-guard) ]}
+  ,{"name": "marmalade.ledger.RECONCILE","params": ["project-4" 1.0
+    {"account": "","current": 0.0,"previous": 0.0}
+    {"account": "bob","current": 1.0,"previous": 0.0}]}
+  ,{"name": "marmalade.ledger.SUPPLY","params": ["project-4" 1.0]}]
+  (map (remove 'module-hash) (env-events true)))
 
 (commit-tx)
 
@@ -1539,7 +1534,7 @@
 (env-hash (hash "fixed-quote-royalty-policy-sale-tx5"))
 (use marmalade.ledger)
 
-(env-data {"alice": {"keys": ["alice"], "pred":"="}})
+(env-data {"alice": {"keys": ["alice"], "pred": "keys-all"}})
 (coin.create-account 'alice (read-keyset 'alice))
 
 (env-sigs
@@ -1553,10 +1548,10 @@
    "quote": {
        "price": -0.000000000001
       ,"recipient": "alice"
-      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+      ,"recipient-guard": {"keys": ["alice"], "pred": "keys-all"}
     }
   ,"buyer": "coin-buyer"
-  ,"buyer-guard": {"keys": ["buyer"], "pred": "="}
+  ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
   })
 (env-chain-data {"block-height": 100})
 
@@ -1572,10 +1567,10 @@
    "quote": {
        "price": 0.000000000001
       ,"recipient": "alice"
-      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+      ,"recipient-guard": {"keys": ["alice"], "pred": "keys-all"}
     }
   ,"buyer": "coin-buyer"
-  ,"buyer-guard": {"keys": ["buyer"], "pred": "="}
+  ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
   })
 
 (env-sigs
@@ -1605,10 +1600,10 @@
    "quote": {
        "price": 1.0
       ,"recipient": "alice"
-      ,"recipient-guard": {"keys": ["alice"], "pred":"="}
+      ,"recipient-guard": {"keys": ["alice"], "pred": "keys-all"}
     }
   ,"buyer": "coin-buyer"
-  ,"buyer-guard": {"keys": ["buyer"], "pred": "="}
+  ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
   })
 
 (expect "Sale succeeds"
@@ -1628,10 +1623,15 @@
   (marmalade.ledger.get-balance 'project-4 (sale-account)))
 
 (expect "OFFER events"
-   [{"name": "marmalade.ledger.OFFER","params": ["project-4" "bob" 0.2 120]}
-    {"name": "marmalade.ledger.SALE","params": ["project-4" "bob" 0.2 120 (pact-id)]}
-    {"name": "marmalade.fixed-quote-royalty-policy.QUOTE","params": [(pact-id) "project-4" 0.2 1.0 0.2 0.0 "creator" (read-msg "quote")]}
-    {"name": "marmalade.ledger.TRANSFER","params": ["project-4" "bob" (sale-account) 0.2]}]
+  [{"name": "marmalade.ledger.OFFER","params": ["project-4" "bob" 0.2 120]}
+  ,{"name": "marmalade.ledger.SALE","params": ["project-4" "bob" 0.2 120 (pact-id)]}
+  ,{"name": "marmalade.fixed-quote-royalty-policy.QUOTE","params": [
+    (pact-id) "project-4" 0.2 1.0 0.2 0.0 "creator" (read-msg "quote")]}
+  ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-4" (sale-account) (create-pact-guard "SALE")]}
+  ,{"name": "marmalade.ledger.TRANSFER","params": ["project-4" "bob" (sale-account) 0.2]}
+  ,{"name": "marmalade.ledger.RECONCILE","params": ["project-4" 0.2
+    {"account": "bob","current": 0.8,"previous": 1.0}
+    {"account": (sale-account),"current": 0.2,"previous": 0.0}]}]
   (map (remove 'module-hash) (env-events true)))
 
 
@@ -1691,9 +1691,13 @@
   (continue-pact 0 true))
 
 (expect "BUY events"
-   [{"name": "marmalade.ledger.BUY","params": ["project-4" "bob" "coin-buyer" 0.2 120 (pact-id)]}
-    {"name": "coin.TRANSFER","params": ["coin-buyer" "alice" 0.2]}
-    {"name": "marmalade.ledger.TRANSFER","params": ["project-4" (sale-account) "coin-buyer" 0.2]}]
+   [{"name": "marmalade.ledger.BUY","params": ["project-4" "bob" "coin-buyer" 0.2 120 (hash "fixed-quote-royalty-policy-sale-tx5")]}
+   ,{"name": "coin.TRANSFER","params": ["coin-buyer" "alice" 0.2]}
+   ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-4" "coin-buyer" (read-msg 'buyer-guard) ]}
+   ,{"name": "marmalade.ledger.TRANSFER","params": ["project-4" (sale-account) "coin-buyer" 0.2]}
+   ,{"name": "marmalade.ledger.RECONCILE","params": ["project-4" 0.2
+      {"account": (sale-account),"current": 0.0,"previous": 0.2}
+      {"account": "coin-buyer","current": 0.2,"previous": 0.0}]}]
   (map (remove 'module-hash) (env-events true)))
 
 (rollback-tx)
@@ -1710,9 +1714,9 @@
   })
 (load "ledger.pact")
 (load "fixed-quote-policy.pact")
-(typecheck "marmalade.fixed-quote-policy")
+(typecheck "marmalade.fixed-quote-policy" true)
 (load "fixed-quote-royalty-policy.pact")
-(typecheck "marmalade.fixed-quote-royalty-policy")
+(typecheck "marmalade.fixed-quote-royalty-policy" true)
 (load "policy.pact")
-(typecheck "marmalade.guard-token-policy")
+(typecheck "marmalade.guard-token-policy" true)
 (rollback-tx)

@@ -17,6 +17,20 @@
     balance:decimal
     guard:guard)
 
+  (defschema sender-balance-change
+    @doc "For use in RECONCILE events"
+    account:string
+    previous:decimal
+    current:decimal
+  )
+
+  (defschema receiver-balance-change
+    @doc "For use in RECONCILE events"
+    account:string
+    previous:decimal
+    current:decimal
+  )
+
   (defcap TRANSFER:bool
     ( id:string
       sender:string
@@ -39,12 +53,29 @@
   )
 
   (defcap SUPPLY:bool (id:string supply:decimal)
-    @doc " Emitted when supply is updated, if supported."
+    @doc " Emitted when SUPPLY is updated, if supported."
     @event
   )
 
-  (defcap TOKEN:bool (id:string)
+  (defcap TOKEN:bool (id:string precision:integer supply:decimal policy:module{kip.token-policy-v1})
     @doc " Emitted when token ID is created."
+    @event
+  )
+
+  (defcap ACCOUNT_GUARD:bool (id:string account:string guard:guard)
+    @doc " Emitted when ACCOUNT guard is updated."
+    @event
+  )
+
+  (defcap RECONCILE:bool
+    ( token-id:string
+      amount:decimal
+      sender:object{sender-balance-change}
+      receiver:object{receiver-balance-change}
+    )
+    @doc " For accounting via events. \
+         \ sender = {account: '', previous: 0.0, current: 0.0} for mint \
+         \ receiver = {account: '', previous: 0.0, current: 0.0} for burn"
     @event
   )
 
@@ -61,7 +92,7 @@
       " Enforce that AMOUNT meets minimum precision allowed for ID."
   )
 
-  (defun create-account:string
+  (defun create-account:bool
     ( id:string
       account:string
       guard:guard
@@ -90,7 +121,7 @@
       " Get details of ACCOUNT under ID. Fails if account does not exist."
   )
 
-  (defun rotate:string
+  (defun rotate:bool
     ( id:string
       account:string
       new-guard:guard )
@@ -103,7 +134,7 @@
 
   )
 
-  (defun transfer:string
+  (defun transfer:bool
     ( id:string
       sender:string
       receiver:string
@@ -121,7 +152,7 @@
       ]
   )
 
-  (defun transfer-create:string
+  (defun transfer-create:bool
     ( id:string
       sender:string
       receiver:string
@@ -142,7 +173,7 @@
       ]
   )
 
-  (defpact transfer-crosschain:string
+  (defpact transfer-crosschain:bool
     ( id:string
       sender:string
       receiver:string

@@ -12,7 +12,7 @@
   (use kip.token-manifest)
 
   (implements kip.poly-fungible-v2)
-  (use kip.poly-fungible-v2 [account-details])
+  (use kip.poly-fungible-v2 [account-details sender-balance-change receiver-balance-change])
 
   ;;
   ;; Tables/Schemas
@@ -66,10 +66,30 @@
   )
 
   (defcap SUPPLY:bool (id:string supply:decimal)
+    @doc " Emitted when supply is updated, if supported."
     @event true
   )
 
-  (defcap TOKEN:bool (id:string)
+  (defcap TOKEN:bool (id:string precision:integer supply:decimal policy:module{kip.token-policy-v1})
+    @event
+    true
+  )
+
+  (defcap RECONCILE:bool
+    ( token-id:string
+      amount:decimal
+      sender:object{sender-balance-change}
+      receiver:object{receiver-balance-change}
+    )
+    @doc " For accounting via events. \
+         \ sender = {account: '', previous: 0.0, current: 0.0} for mint \
+         \ receiver = {account: '', previous: 0.0, current: 0.0} for burn"
+    @event
+    true
+  )
+
+  (defcap ACCOUNT_GUARD:bool (id:string account:string guard:guard)
+    @doc " Emitted when ACCOUNT guard is updated."
     @event
     true
   )
@@ -88,7 +108,7 @@
   )
 
   (defun account-guard:guard (id:string account:string)
-    (with-read ledger (key id account) { 'guard := guard } guard)
+    (with-read ledger (key id account) { 'guard := g } g)
   )
 
   (defcap CREDIT (id:string receiver:string) true)
@@ -137,7 +157,7 @@
         } } )
   )
 
-  (defun create-account:string
+  (defun create-account:bool
     ( id:string
       account:string
       guard:guard
@@ -150,6 +170,7 @@
       , "id" : id
       , "account" : account
       })
+    (emit-event (ACCOUNT_GUARD id account guard))
   )
 
   (defun total-supply:decimal (id:string)
@@ -159,7 +180,7 @@
       s)
   )
 
-  (defun create-token
+  (defun create-token:bool
     ( id:string
       precision:integer
       manifest:object{manifest}
@@ -168,7 +189,6 @@
     (enforce-verify-manifest manifest)
     (policy::enforce-init
       { 'id: id, 'supply: 0.0, 'precision: precision, 'manifest: manifest })
-    (emit-event (TOKEN id))
     (insert tokens id {
       "id": id,
       "precision": precision,
@@ -176,6 +196,7 @@
       "supply": 0.0,
       "policy": policy
       })
+      (emit-event (TOKEN id precision 0.0 policy))
   )
 
   (defun truncate:decimal (id:string amount:decimal)
@@ -191,7 +212,7 @@
     (read ledger (key id account))
   )
 
-  (defun rotate:string (id:string account:string new-guard:guard)
+  (defun rotate:bool (id:string account:string new-guard:guard)
     (with-capability (ROTATE id account)
       (enforce-transfer-policy id account account 0.0)
       (with-read ledger (key id account)
@@ -199,9 +220,10 @@
 
         (enforce-guard old-guard)
         (update ledger (key id account)
-          { "guard" : new-guard }))))
+          { "guard" : new-guard })
+        (emit-event (ACCOUNT_GUARD id account new-guard)))))
 
-  (defun transfer:string
+  (defun transfer:bool
     ( id:string
       sender:string
       receiver:string
@@ -212,10 +234,15 @@
     (enforce-valid-transfer sender receiver (precision id) amount)
     (with-capability (TRANSFER id sender receiver amount)
       (enforce-transfer-policy id sender receiver amount)
-      (debit id sender amount)
       (with-read ledger (key id receiver)
         { "guard" := g }
-        (credit id receiver g amount))
+        (let
+          ( (sender (debit id sender amount))
+            (receiver (credit id receiver g amount))
+          )
+          (emit-event (RECONCILE id amount sender receiver))
+        )
+      )
     )
   )
 
@@ -231,7 +258,7 @@
       (policy::enforce-transfer token sender (account-guard id sender) receiver amount))
   )
 
-  (defun transfer-create:string
+  (defun transfer-create:bool
     ( id:string
       sender:string
       receiver:string
@@ -244,11 +271,16 @@
 
     (with-capability (TRANSFER id sender receiver amount)
       (enforce-transfer-policy id sender receiver amount)
-      (debit id sender amount)
-      (credit id receiver receiver-guard amount))
+      (let
+        (
+          (sender (debit id sender amount))
+          (receiver (credit id receiver receiver-guard amount))
+        )
+        (emit-event (RECONCILE id amount sender receiver))
+      ))
   )
 
-  (defun mint:string
+  (defun mint:bool
     ( id:string
       account:string
       guard:guard
@@ -259,11 +291,18 @@
         { 'policy := policy:module{kip.token-policy-v1}
         , 'token := token }
         (policy::enforce-mint token account guard amount))
-      (credit id account guard amount)
-      (update-supply id amount))
+      (let
+        (
+          (receiver (credit id account guard amount))
+          (sender:object{sender-balance-change}
+            {'account: "", 'previous: 0.0, 'current: 0.0})
+        )
+        (emit-event (RECONCILE id amount sender receiver))
+        (update-supply id amount)
+      ))
   )
 
-  (defun burn:string
+  (defun burn:bool
     ( id:string
       account:string
       amount:decimal
@@ -273,11 +312,18 @@
         { 'policy := policy:module{kip.token-policy-v1}
         , 'token := token }
         (policy::enforce-burn token account amount))
-      (debit id account amount)
-      (update-supply id (- amount)))
+      (let
+        (
+          (sender (debit id account amount))
+          (receiver:object{receiver-balance-change}
+            {'account: "", 'previous: 0.0, 'current: 0.0})
+        )
+        (emit-event (RECONCILE id amount sender receiver))
+        (update-supply id (- amount))
+      ))
   )
 
-  (defun debit:string
+  (defun debit:object{sender-balance-change}
     ( id:string
       account:string
       amount:decimal
@@ -288,16 +334,19 @@
     (enforce-unit id amount)
 
     (with-read ledger (key id account)
-      { "balance" := balance }
+      { "balance" := old-bal }
 
-      (enforce (<= amount balance) "Insufficient funds")
+      (enforce (<= amount old-bal) "Insufficient funds")
 
-      (update ledger (key id account)
-        { "balance" : (- balance amount) }
-        ))
+      (let ((new-bal (- old-bal amount)))
+        (update ledger (key id account)
+          { "balance" : new-bal }
+          )
+        {'account: account, 'previous: old-bal, 'current: new-bal}
+      ))
   )
 
-  (defun credit:string
+  (defun credit:object{receiver-balance-change}
     ( id:string
       account:string
       guard:guard
@@ -315,24 +364,29 @@
 
     (with-default-read ledger (key id account)
       { "balance" : -1.0, "guard" : guard }
-      { "balance" := balance, "guard" := retg }
+      { "balance" := old-bal, "guard" := retg }
       (enforce (= retg guard)
         "account guards do not match")
 
-      (let ((is-new
-             (if (= balance -1.0)
-                 (enforce-reserved account guard)
-               false)))
+      (let* ((is-new
+               (if (= old-bal -1.0)
+                   (enforce-reserved account guard)
+                 false))
+              (new-bal (if is-new amount (+ old-bal amount)))
+            )
 
       (write ledger (key id account)
-        { "balance" : (if is-new amount (+ balance amount))
+        { "balance" : new-bal
         , "guard"   : retg
         , "id"   : id
         , "account" : account
-        })))
+        })
+        (if is-new (emit-event (ACCOUNT_GUARD id account retg)) true)
+        {'account: account, 'previous: (if is-new 0.0 old-bal), 'current: new-bal}
+      ))
   )
 
-  (defun credit-account:string
+  (defun credit-account:object{receiver-balance-change}
     ( id:string
       account:string
       amount:decimal
@@ -341,16 +395,14 @@
     (credit id account (account-guard id account) amount)
   )
 
-
-
-  (defun update-supply (id:string amount:decimal)
+  (defun update-supply:bool (id:string amount:decimal)
     (require-capability (UPDATE_SUPPLY))
     (with-default-read tokens id
       { 'supply: 0.0 }
       { 'supply := s }
       (let ((new-supply (+ s amount)))
-        (emit-event (SUPPLY id new-supply))
-        (update tokens id {'supply: new-supply })))
+        (update tokens id {'supply: new-supply })
+        (emit-event (SUPPLY id new-supply))))
   )
 
   (defun enforce-unit:bool (id:string amount:decimal)
@@ -365,41 +417,26 @@
     (at 'precision (read tokens id))
   )
 
-  (defpact transfer-crosschain:string
+  (defpact transfer-crosschain:bool
     ( id:string
       sender:string
       receiver:string
       receiver-guard:guard
       target-chain:string
       amount:decimal )
-    (step (format "{}" [(enforce false "cross chain not supported")]))
-    )
+    (step (format "{}" [(enforce false "cross chain not supported")]) false))
 
   ;;
   ;; ACCESSORS
   ;;
 
-
-  (defun key ( id:string account:string )
+  (defun key:string ( id:string account:string )
     @doc "DB key for ledger account"
     (format "{}:{}" [id account])
   )
 
   (defun get-manifest:object{manifest} (id:string)
     (at 'manifest (read tokens id)))
-
-  (defun get-token-keys:[string] ()
-    "Get all token identifiers"
-    (keys tokens))
-
-  (defun get-tokens:[object{token-schema}] ()
-    "Get all tokens"
-     (map (read tokens) (keys tokens)))
-
-  (defun get-token:object{token-schema} (id:string)
-    "Read token"
-    (read tokens id)
-  )
 
   ;;
   ;; sale
@@ -443,7 +480,7 @@
     (compose-capability (SALE_PRIVATE sale-id))
   )
 
-  (defcap SALE_PRIVATE (sale-id:string) true)
+  (defcap SALE_PRIVATE:bool (sale-id:string) true)
 
   (defpact sale:bool
     ( id:string
@@ -464,7 +501,7 @@
           (buy id seller buyer buyer-guard amount (pact-id)))))
   )
 
-  (defun offer
+  (defun offer:bool
     ( id:string
       seller:string
       amount:decimal
@@ -475,25 +512,33 @@
       { 'policy := policy:module{kip.token-policy-v1}
       , 'token := token }
       (policy::enforce-offer token seller amount (pact-id)))
-    (debit id seller amount)
-    (credit id (sale-account) (create-pact-guard "SALE") amount)
-    (emit-event (TRANSFER id seller (sale-account) amount))
+    (let
+      (
+        (sender (debit id seller amount))
+        (receiver (credit id (sale-account) (create-pact-guard "SALE") amount))
+      )
+      (emit-event (TRANSFER id seller (sale-account) amount))
+      (emit-event (RECONCILE id amount sender receiver)))
   )
 
-  (defun withdraw
+  (defun withdraw:bool
     ( id:string
       seller:string
       amount:decimal
     )
     @doc "Withdraw offer by SELLER of AMOUNT of TOKEN before TIMEOUT"
     (require-capability (SALE_PRIVATE (pact-id)))
-    (debit id (sale-account) amount)
-    (credit-account id seller amount)
-    (emit-event (TRANSFER id (sale-account) seller amount))
+    (let
+      (
+        (sender (debit id (sale-account) amount))
+        (receiver (credit-account id seller amount))
+      )
+      (emit-event (TRANSFER id (sale-account) seller amount))
+      (emit-event (RECONCILE id amount sender receiver)))
   )
 
 
-  (defun buy
+  (defun buy:bool
     ( id:string
       seller:string
       buyer:string
@@ -507,12 +552,16 @@
       { 'policy := policy:module{kip.token-policy-v1}
       , 'token := token }
       (policy::enforce-buy token seller buyer amount sale-id))
-    (debit id (sale-account) amount)
-    (credit id buyer buyer-guard amount)
-    (emit-event (TRANSFER id (sale-account) buyer amount))
+    (let
+      (
+        (sender (debit id (sale-account) amount))
+        (receiver (credit id buyer buyer-guard amount))
+      )
+      (emit-event (TRANSFER id (sale-account) buyer amount))
+      (emit-event (RECONCILE id amount sender receiver)))
   )
 
-  (defun sale-active (timeout:integer)
+  (defun sale-active:bool (timeout:integer)
     @doc "Sale is active until TIMEOUT block height."
     (< (at 'block-height (chain-data)) timeout)
   )
@@ -520,15 +569,6 @@
   (defun sale-account:string ()
     (format "sale-{}" [(pact-id)])
   )
-
-  (defun get-ledger-keys ()
-    (keys ledger))
-
-  (defun get-ledger-entry (key:string)
-    (read ledger key))
-
-  (defun get-ledger ()
-    (map (read ledger) (keys ledger)))
 
 )
 

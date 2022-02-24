@@ -712,7 +712,19 @@
   [{'key:'mint
    ,'caps:
     [(marmalade.ledger.MINT "project-2" "bob" 1.0)
+     (marmalade.ledger.MINT "project-2" "bob" 0.9)
+     (marmalade.ledger.MINT "project-2" "bob" 10.1)
      ]}])
+
+(expect-failure
+  "invalid amount (min-amount)"
+  "mint amount < min-amount"
+  (mint 'project-2 "bob" (read-keyset 'bob-guard) 0.9))
+
+(expect-failure
+  "invalid amount (max-amount)"
+  "Exceeds max supply"
+  (mint 'project-2 "bob" (read-keyset 'bob-guard) 10.1))
 
 (expect "bob mints project-2"
   true
@@ -1130,11 +1142,23 @@
    ,'caps:
     [(marmalade.ledger.MINT "project-3" "bob" 1.0)
      (marmalade.ledger.MINT "project-3" "bob" -1.0)
+     (marmalade.ledger.MINT "project-3" "bob" 0.9)
+     (marmalade.ledger.MINT "project-3" "bob" 10.1)
      ]}])
 
 (expect-failure "mint project-3 to bob, invalid amount"
   "Amount must be positive"
   (mint 'project-3 "bob" (read-keyset 'bob-guard) -1.0))
+
+(expect-failure
+  "invalid amount (min-amount)"
+  "mint amount < min-amount"
+  (mint 'project-3 "bob" (read-keyset 'bob-guard) 0.9))
+
+(expect-failure
+  "invalid amount (max-amount)"
+  "Exceeds max supply"
+  (mint 'project-3 "bob" (read-keyset 'bob-guard) 10.1))
 
 (expect "mint project-3 to bob, success"
   true

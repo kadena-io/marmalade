@@ -11,8 +11,8 @@
   (use util.fungible-util)
   (use kip.token-manifest)
 
-  (implements kip.poly-fungible-v2)
-  (use kip.poly-fungible-v2 [account-details])
+  (implements kip.poly-fungible-v3)
+  (use kip.poly-fungible-v3 [account-details sender-balance-change receiver-balance-change])
 
   ;;
   ;; Tables/Schemas
@@ -38,7 +38,7 @@
     (enforce-guard (keyset-ref-guard 'marmalade-admin)))
 
   ;;
-  ;; poly-fungible-v2 caps
+  ;; poly-fungible-v3 caps
   ;;
 
   (defcap TRANSFER:bool
@@ -74,21 +74,7 @@
     true
   )
 
-  (defschema sender-balance-change
-    @doc "For use in RECONCILE events"
-    account:string
-    previous:decimal
-    current:decimal
-  )
-
-  (defschema receiver-balance-change
-    @doc "For use in RECONCILE events"
-    account:string
-    previous:decimal
-    current:decimal
-  )
-
-  (defcap RECONCILE
+  (defcap RECONCILE:bool
     ( token-id:string
       amount:decimal
       sender:object{sender-balance-change}
@@ -101,7 +87,7 @@
     true
   )
 
-  (defcap ACCOUNT_GUARD (id:string account:string guard:guard)
+  (defcap ACCOUNT_GUARD:bool (id:string account:string guard:guard)
     @doc "For accounting/frontend via events"
     @event
     true
@@ -170,20 +156,20 @@
         } } )
   )
 
-  (defun create-account:string
+  (defun create-account:bool
     ( id:string
       account:string
       guard:guard
     )
     (enforce-valid-account account)
     (enforce-reserved account guard)
-    (emit-event (ACCOUNT_GUARD id account guard))
     (insert ledger (key id account)
       { "balance" : 0.0
       , "guard"   : guard
       , "id" : id
       , "account" : account
       })
+    (emit-event (ACCOUNT_GUARD id account guard))
   )
 
   (defun total-supply:decimal (id:string)
@@ -193,7 +179,7 @@
       s)
   )
 
-  (defun create-token
+  (defun create-token:bool
     ( id:string
       precision:integer
       manifest:object{manifest}
@@ -202,7 +188,6 @@
     (enforce-verify-manifest manifest)
     (policy::enforce-init
       { 'id: id, 'supply: 0.0, 'precision: precision, 'manifest: manifest })
-    (emit-event (TOKEN id precision 0.0 policy))
     (insert tokens id {
       "id": id,
       "precision": precision,
@@ -210,6 +195,7 @@
       "supply": 0.0,
       "policy": policy
       })
+      (emit-event (TOKEN id precision 0.0 policy))
   )
 
   (defun truncate:decimal (id:string amount:decimal)
@@ -225,18 +211,18 @@
     (read ledger (key id account))
   )
 
-  (defun rotate:string (id:string account:string new-guard:guard)
+  (defun rotate:bool (id:string account:string new-guard:guard)
     (with-capability (ROTATE id account)
       (enforce-transfer-policy id account account 0.0)
       (with-read ledger (key id account)
         { "guard" := old-guard }
 
         (enforce-guard old-guard)
-        (emit-event (ACCOUNT_GUARD id account new-guard))
         (update ledger (key id account)
-          { "guard" : new-guard }))))
+          { "guard" : new-guard })
+        (emit-event (ACCOUNT_GUARD id account new-guard)))))
 
-  (defun transfer:string
+  (defun transfer:bool
     ( id:string
       sender:string
       receiver:string
@@ -271,7 +257,7 @@
       (policy::enforce-transfer token sender (account-guard id sender) receiver amount))
   )
 
-  (defun transfer-create:string
+  (defun transfer-create:bool
     ( id:string
       sender:string
       receiver:string
@@ -293,7 +279,7 @@
       ))
   )
 
-  (defun mint:string
+  (defun mint:bool
     ( id:string
       account:string
       guard:guard
@@ -315,7 +301,7 @@
       ))
   )
 
-  (defun burn:string
+  (defun burn:bool
     ( id:string
       account:string
       amount:decimal
@@ -394,12 +380,12 @@
         , "id"   : id
         , "account" : account
         })
-        (if is-new (emit-event (ACCOUNT_GUARD id account retg)) "")
+        (if is-new (emit-event (ACCOUNT_GUARD id account retg)) true)
         {'account: account, 'previous: (if is-new 0.0 old-bal), 'current: new-bal}
       ))
   )
 
-  (defun credit-account:string
+  (defun credit-account:object{receiver-balance-change}
     ( id:string
       account:string
       amount:decimal
@@ -408,16 +394,14 @@
     (credit id account (account-guard id account) amount)
   )
 
-
-
-  (defun update-supply (id:string amount:decimal)
+  (defun update-supply:bool (id:string amount:decimal)
     (require-capability (UPDATE_SUPPLY))
     (with-default-read tokens id
       { 'supply: 0.0 }
       { 'supply := s }
       (let ((new-supply (+ s amount)))
-        (emit-event (SUPPLY id new-supply))
-        (update tokens id {'supply: new-supply })))
+        (update tokens id {'supply: new-supply })
+        (emit-event (SUPPLY id new-supply))))
   )
 
   (defun enforce-unit:bool (id:string amount:decimal)
@@ -432,22 +416,20 @@
     (at 'precision (read tokens id))
   )
 
-  (defpact transfer-crosschain:string
+  (defpact transfer-crosschain:bool
     ( id:string
       sender:string
       receiver:string
       receiver-guard:guard
       target-chain:string
       amount:decimal )
-    (step (format "{}" [(enforce false "cross chain not supported")]))
-    )
+    (step (format "{}" [(enforce false "cross chain not supported")]) false))
 
   ;;
   ;; ACCESSORS
   ;;
 
-
-  (defun key ( id:string account:string )
+  (defun key:string ( id:string account:string )
     @doc "DB key for ledger account"
     (format "{}:{}" [id account])
   )
@@ -497,7 +479,7 @@
     (compose-capability (SALE_PRIVATE sale-id))
   )
 
-  (defcap SALE_PRIVATE (sale-id:string) true)
+  (defcap SALE_PRIVATE:bool (sale-id:string) true)
 
   (defpact sale:bool
     ( id:string
@@ -518,7 +500,7 @@
           (buy id seller buyer buyer-guard amount (pact-id)))))
   )
 
-  (defun offer
+  (defun offer:bool
     ( id:string
       seller:string
       amount:decimal
@@ -538,7 +520,7 @@
       (emit-event (RECONCILE id amount sender receiver)))
   )
 
-  (defun withdraw
+  (defun withdraw:bool
     ( id:string
       seller:string
       amount:decimal
@@ -555,7 +537,7 @@
   )
 
 
-  (defun buy
+  (defun buy:bool
     ( id:string
       seller:string
       buyer:string
@@ -578,7 +560,7 @@
       (emit-event (RECONCILE id amount sender receiver)))
   )
 
-  (defun sale-active (timeout:integer)
+  (defun sale-active:bool (timeout:integer)
     @doc "Sale is active until TIMEOUT block height."
     (< (at 'block-height (chain-data)) timeout)
   )

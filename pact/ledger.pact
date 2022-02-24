@@ -11,8 +11,8 @@
   (use util.fungible-util)
   (use kip.token-manifest)
 
-  (implements kip.poly-fungible-v3)
-  (use kip.poly-fungible-v3 [account-details sender-balance-change receiver-balance-change])
+  (implements kip.poly-fungible-v2)
+  (use kip.poly-fungible-v2 [account-details sender-balance-change receiver-balance-change])
 
   ;;
   ;; Tables/Schemas
@@ -38,7 +38,7 @@
     (enforce-guard (keyset-ref-guard 'marmalade-admin)))
 
   ;;
-  ;; poly-fungible-v3 caps
+  ;; poly-fungible-v2 caps
   ;;
 
   (defcap TRANSFER:bool

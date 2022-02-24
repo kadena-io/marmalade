@@ -13,7 +13,7 @@
 (load "kip/account-protocols-v1.pact")
 (load "kip/manifest.pact")
 (load "kip/token-policy-v1.pact")
-(load "kip/poly-fungible-v3.pact")
+(load "kip/poly-fungible-v2.pact")
 
 (define-namespace 'util (sig-keyset) (sig-keyset))
 (load "util/fungible-util.pact")

@@ -66,6 +66,7 @@
   )
 
   (defcap SUPPLY:bool (id:string supply:decimal)
+    @doc " Emitted when supply is updated, if supported."
     @event true
   )
 
@@ -88,7 +89,7 @@
   )
 
   (defcap ACCOUNT_GUARD:bool (id:string account:string guard:guard)
-    @doc "For accounting/frontend via events"
+    @doc " Emitted when ACCOUNT guard is updated."
     @event
     true
   )

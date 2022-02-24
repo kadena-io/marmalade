@@ -107,7 +107,7 @@
   )
 
   (defun account-guard:guard (id:string account:string)
-    (with-read ledger (key id account) { 'guard := guard } guard)
+    (with-read ledger (key id account) { 'guard := g } g)
   )
 
   (defcap CREDIT (id:string receiver:string) true)

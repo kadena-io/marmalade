@@ -28,7 +28,7 @@ import {
   HftApp
 } from "./HFT/Hft.js";
 import { getHftState } from "./HFT/HftState.js";
-import { syncEventsFromCWData, onlyOrderBookEvents, onlyQuoteEvents, onlyTransferEvents, isPactContinuation, onlyMintEvents, onlyTokenEvents } from "./HFT/HftEvents.js"
+import { syncEventsFromCWData, onlyOrderBookEvents, onlyQuoteEvents, onlyTransferEvents, onlyAcctGrdEvents, isPactContinuation, onlyMintEvents, onlyTokenEvents } from "./HFT/HftEvents.js"
 const App = () => {
   //Top level UI Routing Params
   const [appRoute,setAppRoute] = useQueryParams({
@@ -80,28 +80,18 @@ const App = () => {
   const getHftLedgerFromEvents= (evs) => {
     // this function misses account's made via `create-account`
     let existingEntries = new Set(hftLedger.map(({ledgerKey})=>ledgerKey));
-    let newEntries = []; 
-    const transferEvs = onlyTransferEvents(evs);
-    for (const {params} of transferEvs) {
-      const sender = params.sender;
-      const receiver = params.receiver;
+    let newEntries = [];
+    const acctEvs = onlyAcctGrdEvents(evs);
+    for (const {params} of acctEvs) {
+      const acct = params.account;
       const tokenId = params.id;
-      const senderLedgerKey = `${tokenId}:${sender}`;
-      const receiverLedgerKey = `${tokenId}:${receiver}`;
-      if (!existingEntries.has(senderLedgerKey) && !isPactContinuation(sender)) {
-        existingEntries.add(senderLedgerKey);
+      const acctLedgerKey = `${tokenId}:${acct}`;
+      if (!existingEntries.has(acctLedgerKey) && !isPactContinuation(acct)) {
+        existingEntries.add(acctLedgerKey);
         newEntries.push({
           id: tokenId,
-          account: sender, 
-          ledgerKey: senderLedgerKey,
-        });
-      }; 
-      if (!existingEntries.has(receiverLedgerKey) && !isPactContinuation(receiver)) {
-        existingEntries.add(receiverLedgerKey);
-        newEntries.push({
-          id: tokenId,
-          account: receiver, 
-          ledgerKey: receiverLedgerKey,
+          account: acct,
+          ledgerKey: acctLedgerKey,
         });
       };
     };
@@ -111,7 +101,7 @@ const App = () => {
       console.debug("getHftLedger", {newHftLedger});
       setHftLedger(newHftLedger);
     } else {
-      console.debug("getHftLedger fired w/o new entries", {existingEntries, transferEvs, hftLedger});
+      console.debug("getHftLedger fired w/o new entries", {existingEntries, acctEvs, hftLedger});
     };
   };
 
@@ -121,10 +111,16 @@ const App = () => {
     const tokenEvs = onlyTokenEvents(evs);
     for (const {params} of tokenEvs) {
       const tokenId = params.id;
+      const precision = params.precision;
+      const supply = params.supply;
+      const policy = params.policy;
       if (!existingEntries.has(tokenId)) {
         existingEntries.add(tokenId);
         newEntries.push({
           id: tokenId
+         ,precision: precision
+         ,supply: supply
+         ,policy: policy
         })
       }
     };

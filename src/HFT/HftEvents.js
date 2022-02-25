@@ -4,7 +4,7 @@ import ReactJson from 'react-json-view'
 //config file for blockchain calls
 import Pact from "pact-lang-api";
 import Chainweb from "chainweb";
-import { hftAPI, fqpAPI, fqrpAPI, globalConfig } from "../kadena-config.js";
+import { hftAPI, fqpAPI, fqrpAPI, globalConfig, chainId } from "../kadena-config.js";
 import { PactJsonListAsTable, dashStyleNames2Text } from "../util.js";
 
 /** takes a pactRep and makes it more friendly */
@@ -31,8 +31,10 @@ const convertMarmaladeParams = (name, params) => {
       return _.zipObject(["id", "sender", "receiver", "amount"], ps);
     case `${hftAPI.namespace}.${hftAPI.contractName}.SUPPLY`:
       return _.zipObject(["id", "supply"], ps);
+    case `${hftAPI.namespace}.${hftAPI.contractName}.ACCOUNT_GUARD`:
+      return _.zipObject(["id", "account", "guard"], ps);
     case `${hftAPI.namespace}.${hftAPI.contractName}.TOKEN`:
-      return _.zipObject(["id"], ps);
+      return _.zipObject(["id", "precision", "supply", "policy"], ps);
     case `${hftAPI.namespace}.${hftAPI.contractName}.ROTATE`:
       return _.zipObject(["id", "account"], ps);
     case `${hftAPI.namespace}.${hftAPI.contractName}.MINT`:
@@ -47,12 +49,14 @@ const convertMarmaladeParams = (name, params) => {
       return _.zipObject(["id", "seller", "amount", "timeout", "sale-id"], ps);
     case `${hftAPI.namespace}.${hftAPI.contractName}.BUY`:
       return _.zipObject(["id", "buyer", "seller", "amount", "timeout", "sale-id"], ps);
+    case `${hftAPI.namespace}.${hftAPI.contractName}.RECONCILE`:
+      return _.zipObject(["id", "amount", "seller-balance-change", "buyer-balance-change"], ps);
     case `${fqpAPI.namespace}.${fqpAPI.contractName}.QUOTE`:
       return _.zipObject(["sale-id", "token-id", "amount", "price", "sale-price", "spec"], ps);
     case `${fqrpAPI.namespace}.${fqrpAPI.contractName}.QUOTE`:
       return _.zipObject(["sale-id", "token-id", "amount", "price", "sale-price", "royalty-payout", "creator", "spec"], ps);
     default:
-      throw new Error(`Event converstion match failed: ${name} -- ${ps}`);
+      throw new Error(`Event converstion match failed: ${name} -- ${JSON.stringify(ps)}`);
   }
 };
 
@@ -118,6 +122,12 @@ export const onlyQuoteEvents = (evs) => evs.filter(({name})=>quoteEvRE.test(name
 const transferEvRE = new RegExp(String.raw`${hftAPI.contractAddress}.TRANSFER`);
 export const onlyTransferEvents = (evs) => evs.filter(({name})=>transferEvRE.test(name));
 
+const reconcileEvRE = new RegExp(String.raw`${hftAPI.contractAddress}.RECONCILE`);
+export const onlyReconcileEvents = (evs) => evs.filter(({name})=>reconcileEvRE.test(name));
+
+const acctGrdEvRE = new RegExp(String.raw`${hftAPI.contractAddress}.ACCOUNT_GUARD`);
+export const onlyAcctGrdEvents = (evs) => evs.filter(({name})=>acctGrdEvRE.test(name));
+
 const mintEvRE = new RegExp(String.raw`${hftAPI.contractAddress}.MINT`);
 export const onlyMintEvents = (evs) => evs.filter(({name})=>mintEvRE.test(name));
 
@@ -127,7 +137,7 @@ export const onlyTokenEvents = (evs) => evs.filter(({name})=>tokenEvRE.test(name
 export const getSaleForQuote = (orderBook, saleId) => _.find(onlySaleEvents(orderBook), {requestKey: saleId});
 
 const pactTxRe = new RegExp('sale-.*')
-export const isPactContinuation = (ledgerKey) => pactTxRe.test(ledgerKey); 
+export const isPactContinuation = (ledgerKey) => pactTxRe.test(ledgerKey);
 
 // TODO: finish this, blocked on bug in Chainweb.js that defaults host back to mainnet. This is for id-ing orphaned events
 // export const getQuotesForSaleEvents = async (evs) => {

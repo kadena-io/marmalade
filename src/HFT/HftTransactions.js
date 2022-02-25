@@ -106,6 +106,7 @@ const CreateGuardPolicyToken = ({
   const handleSubmit = (evt) => {
       evt.preventDefault();
       try {
+        console.log(mintGrd)
         signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
           `(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${gtpAPI.contractAddress})`,
           {"manifest": JSON.parse(manifest),
@@ -698,7 +699,7 @@ const CreateAccount = ({
 };
 
 const filterTokensByPolicy = (hftTokens, {namespace, names}) => {
-  return _.filter(hftTokens, 
+  return _.filter(hftTokens,
     ({policy}) => names.includes(policy.refName.name) && namespace === policy.refName.namespace)
 };
 
@@ -743,12 +744,13 @@ const SaleFixedQuotePolicy = ({
 
   const handleSubmit = (evt) => {
       evt.preventDefault();
-      console.debug("sale", token, seller);
+      console.debug("sale", token, seller, fungible);
       try {
+
         const quote = {
           "price": Number.parseFloat(price),
           "recipient": recipient,
-          "recipient-guard": recipientGrd
+          "recipient-guard": JSON.parse(recipientGrd)
         };
         if (_.find(possibleTokens, {id: token})["policy"]["refName"]["name"] === "fixed-quote-policy") {
           quote["fungible"] = {
@@ -761,8 +763,8 @@ const SaleFixedQuotePolicy = ({
               "namespace":null,
               "name":"fungible-v2"
             }]
-          }; 
-        } 
+          };
+        }
         signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
           `(${hftAPI.contractAddress}.sale "${token}" "${seller}" (read-decimal 'amount) (read-integer 'timeout))`,
           { amount: amount,
@@ -860,19 +862,15 @@ const BuyFixedQuotePolicy = ({
   const {current: {signingKey, networkId, gasPrice, gasLimit, accountName}} = usePactWallet();
   const [saleId,setSaleId] = useState("");
   const [buyer,setBuyer] = useState("");
-  const [possibleBuyers, setPossibleBuyers] = useState([]);
+  const [buyerGrd,setBuyerGrd] = useState("");
   const classes = useStyles();
 
   useEffect(()=>{
     try {
       const quote = _.find(quotes,{params: {'sale-id': saleId}});
       const tokenId = quote["params"]["token-id"];
-      const buyers = getPossibleAccounts(hftLedger, tokenId);
-      console.debug("Getting Applicable Buyers", {hftLedger, buyers, saleId});
-      setPossibleBuyers(buyers);
     } catch (e) {
       console.debug("Getting applicable buyers failed with", e);
-      setPossibleBuyers([]);
     }
   },[saleId, hftLedger, quotes]);
 
@@ -886,11 +884,10 @@ const BuyFixedQuotePolicy = ({
       const recipient = quote.params.spec.recipient;
       const timeout = sale.params.timeout;
       const tokenId = quote["params"]["token-id"];
-      const buyerGrd = _.find(possibleBuyers, {account:buyer})["guard"];
       try {
         signContHftCommand(saleId, 1, false, accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
           { buyer: buyer,
-            "buyer-guard": buyerGrd,
+            "buyer-guard": JSON.parse(buyerGrd),
           },
           [
             SigData.mkCap(`${hftAPI.contractAddress}.BUY`,[tokenId, seller, buyer, amount, {"int": timeout}, saleId]),
@@ -898,7 +895,7 @@ const BuyFixedQuotePolicy = ({
           ]
         );
       } catch (e) {
-        console.log("Sale Submit Error",typeof e, e, {quote, sale, amount, price, transfer: (amount*price), seller, timeout});
+        console.log("Buy Submit Error",typeof e, e, {quote, sale, amount, price, transfer: (amount*price), seller, timeout});
         setTxRes(e);
         setTxStatus("validation-error");
       }
@@ -913,11 +910,19 @@ const BuyFixedQuotePolicy = ({
       options:quotes.map((g)=> g['params']['sale-id'])
     },
     {
-      type:'select',
-      label:'Buyer Name',
+      type:'textFieldSingle',
+      label:'Buyer',
       className:classes.formControl,
       onChange:setBuyer,
-      options:possibleBuyers.map(({account}) => account)
+      value:buyer
+    },
+    {
+      type:'textFieldMulti',
+      label:'Buyer Keyset',
+      className:classes.formControl,
+      placeholder:JSON.stringify({"pred":"keys-all","keys":["8c59a322800b3650f9fc5b6742aa845bc1c35c2625dabfe5a9e9a4cada32c543"]},undefined,2),
+      value:buyerGrd,
+      onChange:setBuyerGrd,
     }
     // {
     //   type:'textFieldMulti',
@@ -940,27 +945,47 @@ const BuyFixedQuotePolicy = ({
 };
 
 const WithdrawFixedQuotePolicy = ({
-  orderBook,
   hftLedger,
+  hftTokens,
+  orderBook,
+  quotes,
   refresh,
   pactTxStatus
 }) => {
   const {setTxStatus, setTxRes} = pactTxStatus;
   const {current: {signingKey, networkId, gasPrice, gasLimit, accountName}, allKeys} = usePactWallet();
   const [saleId,setSaleId] = useState("");
-  // const {seller, amount, timeLimit, saleId}= saleEvent;
   const classes = useStyles();
 
-  const handleSubmit = (evt) => {
-      evt.preventDefault();
-      // try {
-      //   signContHftCommand(saleId, 0, true, accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit);
-      // } catch (e) {
-      //   console.log("Sale Submit Error",typeof e, e, token, seller, amount, timeLimit);
-      //   setTxRes(e);
-      //   setTxStatus("validation-error");
-      // }
-    };
+    useEffect(()=>{
+      try {
+        const quote = _.find(quotes,{params: {'sale-id': saleId}});
+        const tokenId = quote["params"]["token-id"];
+      } catch (e) {
+        console.debug("Getting applicable buyers failed with", e);
+      }
+    },[saleId, hftLedger, quotes]);
+
+    const handleSubmit = (evt) => {
+        evt.preventDefault();
+        const quote = _.find(quotes,{params: {'sale-id': saleId}});
+        const sale = getSaleForQuote(orderBook,saleId);
+        const amount = sale.params.amount;
+        const price = quote.params.spec.price;
+        const seller = sale.params.seller;
+        const recipient = quote.params.spec.recipient;
+        const timeout = sale.params.timeout;
+        const tokenId = quote["params"]["token-id"];
+        try {
+          signContHftCommand(saleId, 0, true, accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
+            []
+          );
+        } catch (e) {
+          console.log("Withdraw Submit Error",typeof e, e, {quote, sale, amount, price, transfer: (amount*price), seller, timeout});
+          setTxRes(e);
+          setTxStatus("validation-error");
+        }
+      };
 
     const inputFields = [
       {

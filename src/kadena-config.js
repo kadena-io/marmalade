@@ -16,7 +16,7 @@ BLOCKCHAIN CONFIGURATION FILE
 */
 
 //chain that contract lives on
-const chainId = "0";
+const chainId = "1";
 
 //id of network version
 const networkId = "testnet04";
@@ -69,6 +69,7 @@ const globalConfig = {
   networkId: networkId,
   dataHost: dataHost,
   host: host,
+  chainId: chainId,
   creationTime: creationTime,
   //gas price at lowest possible denomination
   gasPrice: 0.000001,

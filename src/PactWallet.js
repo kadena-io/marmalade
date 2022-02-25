@@ -64,7 +64,7 @@ import {
   updateParams,
   renderPactValue,
  } from "./util.js";
-import { keyFormatter } from "./kadena-config.js";
+import { chainId, keyFormatter } from "./kadena-config.js";
 
 const useStyles = makeStyles(() => ({
   formControl: {
@@ -162,7 +162,7 @@ export const usePactWalletContext = () => useContext(PactWalletContext);
 export const useContractConfig = (configName) => {
   // get a specific contract config
   const {wallet: {contractConfigs}} = useContext(PactWalletContext);
-  if (! _.has(contractConfigs, configName)) 
+  if (! _.has(contractConfigs, configName))
     {throw new Error(`usePactConfig attempted to get ${configName} but it was not present in ${JSON.stringify(contractConfigs)}`)};
   return contractConfigs[configName];
 };
@@ -178,7 +178,7 @@ export const walletDrawerEntries = {
 };
 
 export const WalletApp = ({
-  appRoute, 
+  appRoute,
   setAppRoute,
 }) => {
 
@@ -328,7 +328,7 @@ export const KeySelector = ({
 
 export const CurrentWallet = () => {
   const {current} = usePactWallet();
-  
+
   return <Container style={{"paddingTop":"2em"}}>
     <Typography component="h2">Active Wallet</Typography>
     <PactSingleJsonAsTable
@@ -340,7 +340,7 @@ export const CurrentWallet = () => {
 
 export const OtherWallets = () => {
   const {otherWallets} = usePactWallet();
-  
+
   return <Container style={{"paddingTop":"2em"}}>
     <Typography component="h2">All Saved PactWallets</Typography>
     <PactSingleJsonAsTable
@@ -382,16 +382,16 @@ export const WalletConfig = () => {
         if (wallet.current.gasPrice) {setGasPrice(wallet.current.gasPrice)}
         if (wallet.current.gasLimit) {setGasLimit(wallet.current.gasLimit)}
         if (wallet.current.networkId) {setNetworkId(wallet.current.networkId)}
-    } 
+    }
   }
   ,[]);
-  
+
   useEffect(()=>{
     if (_.size(wallet.otherWallets[walletName])) {
       const loadingWallet = wallet.otherWallets[walletName];
       console.debug("PactWalletConfig updating entries", loadingWallet)
-        if (loadingWallet.walletName && loadingWallet.signingKey && 
-            loadingWallet.gasPrice && loadingWallet.gasLimit && 
+        if (loadingWallet.walletName && loadingWallet.signingKey &&
+            loadingWallet.gasPrice && loadingWallet.gasLimit &&
             loadingWallet.networkId && loadingWallet.accountName) {
           setGasPrice(loadingWallet.gasPrice);
           setGasLimit(loadingWallet.gasLimit);
@@ -414,30 +414,31 @@ export const WalletConfig = () => {
         setHost(hostFromNetworkId(networkId));
         SigData.debug.toggleDebug();
         const sigData = SigData.ex.execCmdExample1({
+          chainId:chainId,
           user: accountName,
-          signingPubKey: signingKey, 
+          signingPubKey: signingKey,
           networkId,
           gasPrice: Number.parseFloat(gasPrice),
           gasLimit: Number.parseFloat(gasLimit)
         });
         // SigData.ex.contCmdExample1({
         //   user: signingKey,
-        //   signingPubKey: signingKey, 
+        //   signingPubKey: signingKey,
         //   networkId,
         //   gasPrice: Number.parseFloat(gasPrice),
         //   gasLimit: 10000
         // });
         signNewPactTx(sigData, pactTxStatus);
       } else {
-        const n = {walletName:walletName, signingKey:signingKey, 
-          gasPrice:gasPrice, gasLimit:gasLimit, 
+        const n = {walletName:walletName, signingKey:signingKey,
+          gasPrice:gasPrice, gasLimit:gasLimit,
           networkId:networkId, accountName:accountName};
         walletDispatch({type: 'updateWallet', newWallet: n});
         setSaved(true);
         console.debug("WalletConfig set. locale: ", n, " while context is: ", wallet.current);
       }
   };
-  
+
   const inputFields = [
     {
       type:'textFieldSingle',
@@ -467,14 +468,14 @@ export const WalletConfig = () => {
         <EntrySelector label="Account Name" getVal={accountName} setVal={setAccountName} allOpts={_.map(wallet.otherWallets, 'accountName')}/>
         <EntrySelector label="Select Signing Key" getVal={signingKey} setVal={setSigningKey} allOpts={wallet.allKeys}/>
         <CardActions>
-          {saved ? 
-            (wasSubmitted ? <React.Fragment/> 
+          {saved ?
+            (wasSubmitted ? <React.Fragment/>
             : <React.Fragment>
               <Button variant="outlined" color="default" type="submit">
                 Test Current Settings
               </Button>
             </React.Fragment>)
-          : 
+          :
             <Button variant="outlined" color="default" type="submit">
               Save Current Settings
             </Button>
@@ -488,8 +489,8 @@ export const WalletConfig = () => {
 
 export const hostFromNetworkId = (networkId) => {
   if (networkId === "testnet04") {
-    return `https://api.testnet.chainweb.com/chainweb/0.0/${networkId}/chain/0/pact`;
+    return `https://api.testnet.chainweb.com/chainweb/0.0/${networkId}/chain/${chainId}/pact`;
   } else {
-    return `https://api.chainweb.com/chainweb/0.0/${networkId}/chain/0/pact`
+    return `https://api.chainweb.com/chainweb/0.0/${networkId}/chain/${chainId}/pact`
   }
 };

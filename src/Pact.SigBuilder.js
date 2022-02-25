@@ -160,7 +160,7 @@ const mkSignerUnrestricted = (publicKey) => {
 };
 
 /**
- * Combine multiple signer arrays created by mkSigner* functions 
+ * Combine multiple signer arrays created by mkSigner* functions
  * @param  {Array.<Signers>} arrayOfSigners of pact capability to be signed
  * @returns {Signers} A properly formatted cap object required in SigBuilder
  */
@@ -177,7 +177,7 @@ const autoCreationTime = () => Math.round(new Date().getTime() / 1000) - 15;
 
 /**
  * Convinence function to get a nonce for use in Payload
- * @returns {string} the string "SigBuilder:".concat(Date.toISOString) 
+ * @returns {string} the string "SigBuilder:".concat(Date.toISOString)
  */
 const autoNonce = () => JSON.stringify(new Date().toISOString());
 
@@ -219,7 +219,7 @@ const autoNonce = () => JSON.stringify(new Date().toISOString());
   enforceType(networkId, "string", "mkCmdTemplate's networkId");
   enforceType(meta, "object", "mkCmdTemplate's");
   if (nonce) {enforceType(nonce, "string", "mkCmdTemplate's nonce");}
-    
+
   const corePayload = {
     networkId: networkId,
     signers: signers,
@@ -252,7 +252,7 @@ const autoNonce = () => JSON.stringify(new Date().toISOString());
  * @returns {CmdJSON} cmdJSON object for an exec tx
  */
 const mkExecPayload = (
-  pactCode, 
+  pactCode,
   signers,
   networkId,
   meta,
@@ -264,7 +264,7 @@ const mkExecPayload = (
   enforceType(meta, "object", "mkExecPayload's");
   if (data) {enforceType(data, "object", "mkExecPayload's envData");}
   if (nonce) {enforceType(nonce, "string", "mkExecPayload's nonce");}
-  
+
   var cmdJSON = mkCmdTemplate(signers,networkId,meta,{nonce});
   cmdJSON["payload"] = {
       exec: {
@@ -306,7 +306,7 @@ const mkContPayload = (
   if (proof) {enforceType(proof, "string", "mkContPayload's proof");} else {proof = null;};
   if (data) {enforceType(data, "object", "mkContPayload's data");} else {data = null;};
   if (rollback) {enforceType(rollback, "boolean", "mkContPayload's rollback");} else {rollback = false;};
-  
+
   var cmdJSON = mkCmdTemplate(signers,networkId,meta,{nonce});
   cmdJSON["payload"] = {
       cont: {
@@ -333,13 +333,13 @@ const pubKeysFromSigners = (signers) => {
 
 /**
  * @typedef {string} CmdJSONasString
- * 
+ *
  * @typedef {string} SigDataHash
- * 
+ *
  * @typedef {string | null} SignatureEd25519
- * 
- * @typedef {Object.<PubKeyEd25519, SignatureEd25519>} Sigs 
- * 
+ *
+ * @typedef {Object.<PubKeyEd25519, SignatureEd25519>} Sigs
+ *
  * @typedef {object} SigData
  * @property {SigDataHash} hash - hash of stringified `CmdJSON`
  * @property {CmdJSONasString} cmd - stringified `CmdJSON`
@@ -350,7 +350,7 @@ const pubKeysFromSigners = (signers) => {
  * Create the SigData Object for txs
  * @param {CmdJSON} cmdJSON returned from mkExecPayload or mkContPayload
  * @param {Signers} [signers=[]] is an optional array of pubKeys, overrides those found in signers's caps
- * @returns {SigData} the SigData object for use in SigBuilder 
+ * @returns {SigData} the SigData object for use in SigBuilder
  */
 const mkSigData = (cmdJSON, signers=[]) => {
   var unsignedSigs = {};
@@ -373,17 +373,18 @@ const mkSigData = (cmdJSON, signers=[]) => {
 };
 
 const execCmdExample1 = ({
-  user, 
-  signingPubKey, 
+  user,
+  signingPubKey,
   networkId,
   gasPrice,
   gasLimit
 }) => {
   //creates transaction to send to wallet
   const caps = mkSignerGas(signingPubKey);
+
   const ms = {
       sender: user,
-      chainId: "0",
+      chainId: "1",
       gasPrice: gasPrice,
       gasLimit: gasLimit,
       creationTime: autoCreationTime(),
@@ -399,19 +400,19 @@ const execCmdExample1 = ({
       meta: meta
   };
   const cmdJSON = mkExecPayload(
-    cs.pactCode, 
+    cs.pactCode,
     cs.signers,
     cs.networkId,
     cs.meta,
-    {data: cs.data} 
+    {data: cs.data}
     );
   const execSigData = mkSigData(cmdJSON);
   return execSigData;
 };
 
 const contCmdExample1 = ({
-  user, 
-  signingPubKey, 
+  user,
+  signingPubKey,
   networkId,
   gasPrice,
   gasLimit
@@ -438,7 +439,7 @@ const contCmdExample1 = ({
   };
   const cmdJSON = mkContPayload(
     cs.pactId,
-    cs.step, 
+    cs.step,
     cs.signers,
     cs.networkId,
     cs.meta,

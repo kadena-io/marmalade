@@ -121,12 +121,13 @@ export const RenderHftQuotes = ({orderBook, quotes}) => {
     const saleId = v["params"]["sale-id"];
     const recipient = v["params"]["spec"]["recipient"];
     const sale = getSaleForQuote(orderBook,saleId);
+    console.log( sale)
     const type = v.name === `${fqpAPI.contractAddress}.QUOTE` ? "FQP" : "FQRP";
     return {"blockTime":v.blockTime,
             "token-id": v["params"]["token-id"],
             type,
             "sale-id": "".concat(saleId.slice(0,4), "...", saleId.slice(-4)),
-            "buyer": "".concat(recipient.slice(0,6), "...", recipient.slice(-4)),
+            "seller": recipient.length>10 ? "".concat(recipient.slice(0,6), "...", recipient.slice(-4)) : recipient,
             "timeout": sale.params.timeout.toString(),
             price:v["params"]["sale-price"].toString(),
             contents: {

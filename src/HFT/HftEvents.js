@@ -134,7 +134,10 @@ export const onlyMintEvents = (evs) => evs.filter(({name})=>mintEvRE.test(name))
 const tokenEvRE = new RegExp(String.raw`${hftAPI.contractAddress}.TOKEN`);
 export const onlyTokenEvents = (evs) => evs.filter(({name})=>tokenEvRE.test(name));
 
-export const getSaleForQuote = (orderBook, saleId) => _.find(onlySaleEvents(orderBook), {requestKey: saleId});
+export const getSaleForQuote = (orderBook, saleId) => {
+  console.log(_.find(onlySaleEvents(orderBook), {requestKey: saleId}))
+  return _.find(onlySaleEvents(orderBook))}
+;
 
 const pactTxRe = new RegExp('sale-.*')
 export const isPactContinuation = (ledgerKey) => pactTxRe.test(ledgerKey);

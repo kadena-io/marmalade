@@ -121,7 +121,6 @@ export const RenderHftQuotes = ({orderBook, quotes}) => {
     const saleId = v["params"]["sale-id"];
     const recipient = v["params"]["spec"]["recipient"];
     const sale = getSaleForQuote(orderBook,saleId);
-    console.log( sale)
     const type = v.name === `${fqpAPI.contractAddress}.QUOTE` ? "FQP" : "FQRP";
     return {"blockTime":v.blockTime,
             "token-id": v["params"]["token-id"],

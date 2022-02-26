@@ -126,7 +126,7 @@ export const RenderHftQuotes = ({orderBook, quotes}) => {
             "token-id": v["params"]["token-id"],
             type,
             "sale-id": "".concat(saleId.slice(0,4), "...", saleId.slice(-4)),
-            "buyer": "".concat(recipient.slice(0,6), "...", recipient.slice(-4)),
+            "seller": recipient.length>10 ? "".concat(recipient.slice(0,6), "...", recipient.slice(-4)) : recipient,
             "timeout": sale.params.timeout.toString(),
             price:v["params"]["sale-price"].toString(),
             contents: {

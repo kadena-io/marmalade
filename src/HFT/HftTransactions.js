@@ -106,7 +106,6 @@ const CreateGuardPolicyToken = ({
   const handleSubmit = (evt) => {
       evt.preventDefault();
       try {
-        console.log(mintGrd)
         signExecHftCommand(accountName, signingKey, pactTxStatus, networkId, gasPrice, gasLimit,
           `(${hftAPI.contractAddress}.create-token "${id}" ${precision} (read-msg 'manifest) ${gtpAPI.contractAddress})`,
           {"manifest": JSON.parse(manifest),

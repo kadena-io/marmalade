@@ -1,14 +1,16 @@
 //basic React api imports
-import React, {  } from "react";
+import React, { useEffect, useState } from "react";
 //semantic ui for styling
 import {
-  Card, CardHeader, CardContent} from '@material-ui/core';
+  Card, CardHeader, CardContent, Button} from '@material-ui/core';
+import RefreshIcon from '@material-ui/icons/Refresh';
 import { ScrollableTabs } from "../ScrollableTabs.js";
 
 import { hftAPI } from "../kadena-config.js";
-import { HftConfig } from "./HftConfig.js"
-import { RenderHftLedger, RenderHftTokens } from "./HftState.js";
-import { LedgerForms, TokenForms } from "./HftTransactions.js";
+import { HftConfig } from "./HftConfig.js";
+import { syncEventsFromCWData, onlySaleEvents, getQuotesForSaleEvents } from "./HftEvents.js";
+import { RenderHftLedger, RenderHftTokens, RenderHftOrderBook, RenderHftQuotes } from "./HftState.js";
+import { LedgerForms, TokenForms, OrderForms } from "./HftTransactions.js";
 import { RenderUri, RenderManifest, RenderDatum, ManifestForms } from "./Manifest.js";
 
 export const hftDrawerEntries = {
@@ -26,6 +28,9 @@ export const hftDrawerEntries = {
         primary:"Ledger",
         to:{app:"hft", ui: "ledger"}
       },{
+        primary:"Order Book",
+        to:{app:"hft", ui: "orderBook"}
+      },{
         primary:"Manifest",
         to:{app:"hft", ui: "manifest"}
       }]
@@ -38,18 +43,35 @@ export const HftApp = ({
   setAppRoute,
   hftLedger,
   hftTokens,
+  hftEvents,
+  orderBook,
+  quotes,
   mfCache,
   setMfCache,
   pactTxStatus,
   refresh}) => {
 
-  const {getHftLedger, getHftTokens} = refresh;
   return (
     appRoute.ui === "config" ?
     <Card>
       <CardHeader title="Contract and UI Configuration"/>
       <CardContent>
         <HftConfig/>
+      </CardContent>
+    </Card>
+  : appRoute.ui === "orderBook" ?
+    <Card>
+      <CardHeader title="Order Book"/>
+      <CardContent>
+        <RenderHftQuotes orderBook={orderBook} quotes={quotes}/>
+        <OrderForms pactTxStatus={pactTxStatus} 
+          tabIdx={"hftTabT"} 
+          hftTokens={hftTokens} 
+          hftLedger={hftLedger} 
+          orderBook={orderBook} 
+          quotes={quotes} 
+          mfCache={mfCache} 
+          refresh={refresh}/>
       </CardContent>
     </Card>
   : appRoute.ui === "tokens" ?

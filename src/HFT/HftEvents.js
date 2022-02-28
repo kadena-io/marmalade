@@ -68,9 +68,11 @@ const parseEventParams = (convertParams, {name, params, ...rest}) => {
   }
 };
 
+const eventHost = "testnetqueries.kadena.network";
+
 const getCWDataEvents = async (name, offset, limit=50) => {
   console.debug('fetching marm events', {limit, offset})
-  const raw = fetch(`http://data.testnet.chainweb.com:8080/txs/events\?name\=${name}\&limit\=${limit}\&offset\=${offset}`);
+  const raw = fetch(`https://${eventHost}/txs/events\?name\=${name}\&limit\=${limit}\&offset\=${offset}`);
   //const raw = fetch(`http://${globalConfig.dataHost}/txs/events\?name\=${name}\&limit\=${limit}\&offset\=${offset}`);
   const rawRes = await raw;
   const res = await rawRes;

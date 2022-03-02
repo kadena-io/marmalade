@@ -370,6 +370,7 @@ export const WalletConfig = () => {
     txStatus:txStatus,setTxStatus:setTxStatus,
     txRes:txRes,setTxRes:setTxRes,
   };
+  const chainId = wallet.globalConfig.chainId;
 
   const [wasSubmitted,setWasSubmitted] = useState(false);
 
@@ -411,7 +412,7 @@ export const WalletConfig = () => {
   const handleSubmit = (evt) => {
       evt.preventDefault();
       if (saved) {
-        setHost(hostFromNetworkId(networkId));
+        setHost(hostFromNetworkId(networkId, chainId));
         SigData.debug.toggleDebug();
         const sigData = SigData.ex.execCmdExample1({
           chainId:chainId,
@@ -487,7 +488,7 @@ export const WalletConfig = () => {
   </Container>
 };
 
-export const hostFromNetworkId = (networkId) => {
+export const hostFromNetworkId = (networkId, chainId) => {
   if (networkId === "testnet04") {
     return `https://api.testnet.chainweb.com/chainweb/0.0/${networkId}/chain/${chainId}/pact`;
   } else {

@@ -321,11 +321,11 @@ export const MakeInputField = (props) => {
         label={label}
         value={value}
         onChange={e => {
-          // console.log(`Selected ${e.target.value}`,e); 
+          // console.log(`Selected ${e.target.value}`,e);
           onChange(e.target.value)}
           }
         >
-        
+
         { options.map(k =>
             <MenuItem key={k} value={k}>
               {k}
@@ -356,7 +356,7 @@ export const MakeInputField = (props) => {
         placeholder={placeholder}
         onChange={e => onChange(e.target.value)}
       />
-    : type === 'checkbox' ? 
+    : type === 'checkbox' ?
         <Checkbox
           checked={value}
           onChange={e=>onChange(e.target.value)}
@@ -395,8 +395,8 @@ export const MakeForm = ({
   refresh
 }) => {
   const { txStatus } = pactTxStatus;
-  const {current: {walletName, signingKey, networkId}} = usePactWallet();
-  const host = hostFromNetworkId(networkId);
+  const {current: {walletName, signingKey, networkId}, globalConfig: {chainId}} = usePactWallet();
+  const host = hostFromNetworkId(networkId, chainId);
   const [wasSubmitted,setWasSubmitted] = useState(false);
   useEffect(()=>setWasSubmitted(false),[inputFields]);
   useEffect(()=>txStatus !== "" ? setWasSubmitted(true) : setWasSubmitted(wasSubmitted), [txStatus])
@@ -413,7 +413,7 @@ export const MakeForm = ({
           {txStatus === 'pending'
             ? null
             : <Button variant="outlined" color="default" type="submit" disabled={wasSubmitted}>
-                {walletName ? 
+                {walletName ?
                   (wasSubmitted ? "Complete Signing in Wallet": `Sign with ${walletName} using key ${signingKey.substring(0,4)}...${signingKey.substring(signingKey.length - 4)}`)
                   : "Configure and select a wallet before proceeding"}
               </Button>

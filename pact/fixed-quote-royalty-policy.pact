@@ -160,6 +160,7 @@
     ( token:object{token-info}
       seller:string
       buyer:string
+      buyer-guard:guard
       amount:decimal
       sale-id:string )
     (enforce-ledger)

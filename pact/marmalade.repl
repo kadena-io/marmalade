@@ -64,6 +64,7 @@
 
 (env-data {
   "bob-guard": {"keys": ["bob"], "pred": "keys-all"}
+ ,"alice-guard": {"keys": ["alice"], "pred": "keys-all"}
   })
 
 (module test-ledger G
@@ -113,11 +114,12 @@
     ( token:object{token-info}
       seller:string
       buyer:string
+      buyer-guard:guard
       amount:decimal
       sale-id:string
       policy:module{kip.token-policy-v1}
     )
-    (policy::enforce-buy token seller buyer amount sale-id)
+    (policy::enforce-buy token seller buyer buyer-guard amount sale-id)
   )
 
   (defun enforce-transfer-policy
@@ -208,7 +210,7 @@
     "precision": 12,
     "manifest": (create-manifest (uri "text" "project-0-uri") [])
   }
-  "bob" "alice" 5.0 "test-id" marmalade.guard-token-policy ))
+  "bob" "alice" (read-keyset 'alice-guard) 5.0 "test-id" marmalade.guard-token-policy ))
 
 (expect-failure
   "enforce-transfer is called from an external ledger"

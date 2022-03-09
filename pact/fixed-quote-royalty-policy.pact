@@ -5,7 +5,7 @@
   @doc "Policy for fixed issuance with royalty and quoted sale in specified fungible."
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-ns-admin )))
+    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
   (implements kip.token-policy-v1)
   (use kip.token-policy-v1 [token-info])

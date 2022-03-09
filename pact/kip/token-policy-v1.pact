@@ -51,6 +51,7 @@
     ( token:object{token-info}
       seller:string
       buyer:string
+      buyer-guard:guard
       amount:decimal
       sale-id:string )
     @doc "Buy policy on SALE-ID by SELLER to BUYER AMOUNT of TOKEN."

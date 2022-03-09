@@ -551,7 +551,7 @@
     (bind (get-policy-info id)
       { 'policy := policy:module{kip.token-policy-v1}
       , 'token := token }
-      (policy::enforce-buy token seller buyer amount sale-id))
+      (policy::enforce-buy token seller buyer buyer-guard amount sale-id))
     (let
       (
         (sender (debit id (sale-account) amount))

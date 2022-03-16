@@ -54,11 +54,21 @@
     (compose-capability (CREDIT id receiver))
   )
 
+  (defcap XTRANSFER:bool
+    ( id:string
+      sender:string
+      receiver:string
+      target-chain:string
+      amount:decimal
+    )
+    @managed amount TRANSFER-mgr
+    (enforce false "cross chain not supported")
+  )
+
   (defun TRANSFER-mgr:decimal
     ( managed:decimal
       requested:decimal
     )
-
     (let ((newbal (- managed requested)))
       (enforce (>= newbal 0.0)
         (format "TRANSFER exceeded for balance {}" [managed]))

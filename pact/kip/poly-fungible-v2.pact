@@ -44,6 +44,18 @@
     @managed amount TRANSFER-mgr
   )
 
+  (defcap XTRANSFER:bool
+    ( id:string
+      sender:string
+      receiver:string
+      target-chain:string
+      amount:decimal
+    )
+    " Manage cross-chain transferring AMOUNT of ID from SENDER to RECEIVER \
+    \ on TARGET-CHAIN."
+    @managed amount TRANSFER-mgr
+  )
+
   (defun TRANSFER-mgr:decimal
     ( managed:decimal
       requested:decimal

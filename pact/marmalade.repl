@@ -327,6 +327,17 @@
   true
   (transfer-create "project-0" "bob" "alice" (read-keyset 'alice-guard) 2.0))
 
+(env-sigs [
+  { 'key: "bob"
+  , 'caps:
+    [ (marmalade.ledger.XTRANSFER "project-0" "bob" "alice" "2" 2.0)]
+  }])
+
+(expect-failure
+  "Unsupported cross chain transfer fails"
+  "cross chain not supported"
+  (transfer-crosschain "project-0" "bob" "alice" (read-keyset 'alice-guard) "2" 2.0))
+
 (expect "TRANSFER event"
    [{"name": "marmalade.ledger.TRANSFER","params": ["project-0" "bob" "alice" 2.0]},
     {"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["project-0" "alice" (read-keyset 'alice-guard )]},

@@ -52,7 +52,7 @@
       amount:decimal
     )
     " Manage cross-chain transferring AMOUNT of ID from SENDER to RECEIVER \
-    \ to TARGET-CHAIN."
+    \ on TARGET-CHAIN."
     @managed amount TRANSFER-mgr
   )
 

@@ -49,10 +49,10 @@ const App = () => {
   //HFT Top Level States
   const [hftLedger,setHftLedger] = useState([]);
   const [hftTokens,setHftTokens] = useState([]);
-  const [mfCache,setMfCache] = useState([]);
   const [hftEvents, setHftEvents] = useState([]);
   const [orderBook, setOrderBook] = useState([]);
   const [quotes, setQuotes] = useState([]);
+  const [mfCache,setMfCache] = createPersistedState("mfCache0")([]);
 
   const getHftEvents = async () => {
     const moduleHashBlacklist = [

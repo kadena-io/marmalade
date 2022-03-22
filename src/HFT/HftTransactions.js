@@ -1065,28 +1065,28 @@ export const TokenForms = ({
       tabIdx={tabIdx}
       tabEntries={[
           {
-            label:"Create Guard Policy HFT",
+            label:"Create Guard Policy Token",
             component:
               <CreateGuardPolicyToken
                 pactTxStatus={pactTxStatus}
                 mfCache={mfCache}
                 refresh={()=>getHftTokens()}/>
           },{
-            label:"Create Fixed Quote Policy HFT",
+            label:"Create Fixed Quote Policy Token",
             component:
               <CreateFixedQuotePolicyToken
                 pactTxStatus={pactTxStatus}
                 mfCache={mfCache}
                 refresh={()=>getHftTokens()}/>
           },{
-            label:"Create Fixed Quote Royalty Policy HFT",
+            label:"Create Fixed Quote Royalty Policy Token",
             component:
               <CreateFixedQuoteRoyaltyPolicyToken
                 pactTxStatus={pactTxStatus}
                 mfCache={mfCache}
                 refresh={()=>getHftTokens()}/>
           },{
-            label:"Mint HFT Token",
+            label:"Mint Token",
             component:
               <Mint
                 pactTxStatus={pactTxStatus}

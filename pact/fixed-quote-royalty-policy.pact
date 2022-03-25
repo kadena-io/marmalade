@@ -175,7 +175,6 @@
         (bind spec
           { 'price := price:decimal
           , 'recipient := recipient:string
-          , 'recipient-guard := recipient-guard:guard
           }
           (let* ((sale-price:decimal (* amount price))
                  (royalty-payout:decimal
@@ -185,7 +184,7 @@
               (> royalty-payout 0.0)
               (fungible::transfer buyer creator royalty-payout)
               "No royalty")
-            (fungible::transfer-create buyer recipient recipient-guard payout)))
+            (fungible::transfer buyer recipient payout)))
             true
         ))
   )

@@ -16,13 +16,16 @@ BLOCKCHAIN CONFIGURATION FILE
 */
 
 //chain that contract lives on
-const chainId = "0";
+const chainId = "1";
 
 //id of network version
 const networkId = "testnet04";
 
 //network node
 const node = "api.testnet.chainweb.com";
+
+//data host
+const dataHost = "data.testnet.chainweb.com:8080";
 
 //unique contract name
 const hftNamespace = "marmalade";
@@ -58,19 +61,20 @@ const apiHost = `https://${node}`;
 //pact api host to send requests
 const host = `https://${node}/chainweb/0.0/${networkId}/chain/${chainId}/pact`;
 
-
 //creation time for request
 const creationTime = () => Math.round(new Date().getTime() / 1000) - 15;
 
 const globalConfig = {
   explorerURL: `https://explorer.chainweb.com/${networkId.slice(0, -2)}`,
   networkId: networkId,
+  dataHost: dataHost,
   host: host,
+  chainId: chainId,
   creationTime: creationTime,
   //gas price at lowest possible denomination
-  gasPrice: 0.00000000001,
+  gasPrice: 0.000001,
   //high gas limit for tx
-  gasLimit: 10000,
+  gasLimit: 100000,
   //time a tx lives in mempool since creationTime
   ttl: 28800,
   //sender === gas payer of the transaction
@@ -91,9 +95,9 @@ const manifestAPI = {
     host: host,
     creationTime: creationTime,
     //gas price at lowest possible denomination
-    gasPrice: 0.000000001,
+    gasPrice: globalConfig.gasPrice,
     //high gas limit for tx
-    gasLimit: 10000,
+    gasLimit: globalConfig.gasLimit,
     //time a tx lives in mempool since creationTime
     ttl: 28800,
     //sender === gas payer of the transaction
@@ -120,9 +124,9 @@ const hftAPI = {
     apiHost: apiHost,
     creationTime: creationTime,
     //gas price at lowest possible denomination
-    gasPrice: 0.000000001,
+    gasPrice: globalConfig.gasPrice,
     //high gas limit for tx
-    gasLimit: 10000,
+    gasLimit: globalConfig.gasLimit,
     //time a tx lives in mempool since creationTime
     ttl: 28800,
     //sender === gas payer of the transaction
@@ -148,9 +152,9 @@ const gtpAPI = {
     host: host,
     creationTime: creationTime,
     //gas price at lowest possible denomination
-    gasPrice: 0.000000001,
+    gasPrice: globalConfig.gasPrice,
     //high gas limit for tx
-    gasLimit: 10000,
+    gasLimit: globalConfig.gasLimit,
     //time a tx lives in mempool since creationTime
     ttl: 28800,
     //sender === gas payer of the transaction
@@ -175,9 +179,9 @@ const fqpAPI = {
     host: host,
     creationTime: creationTime,
     //gas price at lowest possible denomination
-    gasPrice: 0.000000001,
+    gasPrice: globalConfig.gasPrice,
     //high gas limit for tx
-    gasLimit: 10000,
+    gasLimit: globalConfig.gasLimit,
     //time a tx lives in mempool since creationTime
     ttl: 28800,
     //sender === gas payer of the transaction
@@ -189,7 +193,7 @@ const fqpAPI = {
 };
 
 const fqrpAPI = {
-  contractName: fqpContractName,
+  contractName: fqrpContractName,
   gasStationName: gasStationName,
   namespace: fqrpNamespace,
   contractAddress: `${fqrpNamespace}.${fqrpContractName}`,
@@ -202,9 +206,9 @@ const fqrpAPI = {
     host: host,
     creationTime: creationTime,
     //gas price at lowest possible denomination
-    gasPrice: 0.000000001,
+    gasPrice: globalConfig.gasPrice,
     //high gas limit for tx
-    gasLimit: 10000,
+    gasLimit: globalConfig.gasLimit,
     //time a tx lives in mempool since creationTime
     ttl: 28800,
     //sender === gas payer of the transaction

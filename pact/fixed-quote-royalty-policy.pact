@@ -5,7 +5,7 @@
   @doc "Policy for fixed issuance with royalty and quoted sale in specified fungible."
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-ns-admin )))
+    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
   (implements kip.token-policy-v1)
   (use kip.token-policy-v1 [token-info])
@@ -77,7 +77,7 @@
       , 'max-supply:=max-supply:decimal
       }
       (enforce-guard mint-guard)
-      (enforce (>= min-amount 0.0) "Invalid min-amount")
+      (enforce (>= amount min-amount) "mint amount < min-amount")
       (enforce (<= (+ amount (at 'supply token)) max-supply) "Exceeds max supply")
   ))
 
@@ -160,6 +160,7 @@
     ( token:object{token-info}
       seller:string
       buyer:string
+      buyer-guard:guard
       amount:decimal
       sale-id:string )
     (enforce-ledger)

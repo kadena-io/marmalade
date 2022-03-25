@@ -1,21 +1,21 @@
 {
   "files": {
-    "main.js": "/marmalade/static/js/main.523dec70.chunk.js",
-    "main.js.map": "/marmalade/static/js/main.523dec70.chunk.js.map",
+    "main.js": "/marmalade/static/js/main.6352387c.chunk.js",
+    "main.js.map": "/marmalade/static/js/main.6352387c.chunk.js.map",
     "runtime-main.js": "/marmalade/static/js/runtime-main.e04e1f74.js",
     "runtime-main.js.map": "/marmalade/static/js/runtime-main.e04e1f74.js.map",
     "static/css/2.efc3ce0d.chunk.css": "/marmalade/static/css/2.efc3ce0d.chunk.css",
-    "static/js/2.8cae3021.chunk.js": "/marmalade/static/js/2.8cae3021.chunk.js",
-    "static/js/2.8cae3021.chunk.js.map": "/marmalade/static/js/2.8cae3021.chunk.js.map",
+    "static/js/2.de360f6c.chunk.js": "/marmalade/static/js/2.de360f6c.chunk.js",
+    "static/js/2.de360f6c.chunk.js.map": "/marmalade/static/js/2.de360f6c.chunk.js.map",
     "index.html": "/marmalade/index.html",
     "static/css/2.efc3ce0d.chunk.css.map": "/marmalade/static/css/2.efc3ce0d.chunk.css.map",
-    "static/js/2.8cae3021.chunk.js.LICENSE.txt": "/marmalade/static/js/2.8cae3021.chunk.js.LICENSE.txt",
+    "static/js/2.de360f6c.chunk.js.LICENSE.txt": "/marmalade/static/js/2.de360f6c.chunk.js.LICENSE.txt",
     "static/media/kadena_r_rev_3_whi_lor.7da4e7c0.png": "/marmalade/static/media/kadena_r_rev_3_whi_lor.7da4e7c0.png"
   },
   "entrypoints": [
     "static/js/runtime-main.e04e1f74.js",
     "static/css/2.efc3ce0d.chunk.css",
-    "static/js/2.8cae3021.chunk.js",
-    "static/js/main.523dec70.chunk.js"
+    "static/js/2.de360f6c.chunk.js",
+    "static/js/main.6352387c.chunk.js"
   ]
 }

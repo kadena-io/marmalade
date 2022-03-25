@@ -79,7 +79,6 @@ const trackSigDataResult = async (
         let res = {};
         while (retries > 0) {
           //sleep the polling
-          await new Promise(r => setTimeout(r, 15000));
           res = await Pact.fetch.poll({requestKeys:[txReqKey]}, host);
           debug("trackSigDataResult", {res});
           try {
@@ -91,6 +90,7 @@ const trackSigDataResult = async (
           } catch(e) {
               retries = retries - 1;
           }
+          await new Promise(r => setTimeout(r, 15000));
         };
         //keep transaction response in local state
         setTxRes(res)

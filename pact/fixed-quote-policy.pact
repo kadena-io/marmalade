@@ -69,7 +69,7 @@
       , 'max-supply:=max-supply:decimal
       }
       (enforce-guard mint-guard)
-      (enforce (>= min-amount 0.0) "Invalid min-amount")
+      (enforce (>= amount min-amount) "mint amount < min-amount")
       (enforce (<= (+ amount (at 'supply token)) max-supply) "Exceeds max supply")
   ))
 
@@ -129,6 +129,7 @@
     ( token:object{token-info}
       seller:string
       buyer:string
+      buyer-guard:guard
       amount:decimal
       sale-id:string )
     (enforce-ledger)

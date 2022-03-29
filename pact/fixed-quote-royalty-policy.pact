@@ -168,7 +168,6 @@
     (bind (get-policy token)
       { 'fungible := fungible:module{fungible-v2}
       , 'creator:= creator:string
-      , 'creator-guard:=creator-guard:guard
       , 'royalty-rate:= royalty-rate:decimal
       }
       (with-read quotes sale-id { 'id:= qtoken, 'spec:= spec:object{quote-spec} }
@@ -176,7 +175,6 @@
         (bind spec
           { 'price := price:decimal
           , 'recipient := recipient:string
-          , 'recipient-guard := recipient-guard:guard
           }
           (let* ((sale-price:decimal (* amount price))
                  (royalty-payout:decimal
@@ -184,9 +182,9 @@
                  (payout:decimal (- sale-price royalty-payout)) )
             (if
               (> royalty-payout 0.0)
-              (fungible::transfer-create buyer creator creator-guard royalty-payout)
+              (fungible::transfer buyer creator royalty-payout)
               "No royalty")
-            (fungible::transfer-create buyer recipient recipient-guard payout)))
+            (fungible::transfer buyer recipient payout)))
             true
         ))
   )

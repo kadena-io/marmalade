@@ -140,9 +140,8 @@
         { 'fungible := fungible:module{fungible-v2}
         , 'price := price:decimal
         , 'recipient := recipient:string
-        , 'recipient-guard := recipient-guard:guard
         }
-        (fungible::transfer-create buyer recipient recipient-guard (* amount price))
+        (fungible::transfer buyer recipient (* amount price))
       )
     )
     true

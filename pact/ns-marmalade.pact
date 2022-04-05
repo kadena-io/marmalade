@@ -5,3 +5,5 @@
   (keyset-ref-guard 'marmalade-admin )
   (keyset-ref-guard 'marmalade-admin )
 )
+(namespace (read-msg 'ns))
+(enforce-keyset 'marmalade-admin)

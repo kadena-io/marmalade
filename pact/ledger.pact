@@ -577,9 +577,8 @@
   )
 
   (defun sale-account:string ()
-    (format "sale-{}" [(pact-id)])
+    (create-principal (create-pact-guard "pact-guard"))
   )
-
 )
 
 (if (read-msg 'upgrade)

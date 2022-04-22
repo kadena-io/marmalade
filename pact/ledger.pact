@@ -525,7 +525,7 @@
     (let
       (
         (sender (debit id seller amount))
-        (receiver (credit id (sale-account) (create-pact-guard "SALE") amount))
+        (receiver (credit id (sale-account) (create-pact-guard "pact-guard") amount))
       )
       (emit-event (TRANSFER id seller (sale-account) amount))
       (emit-event (RECONCILE id amount sender receiver)))

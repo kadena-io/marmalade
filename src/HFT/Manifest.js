@@ -209,8 +209,8 @@ const CreateDatum = ({mfCache, setMfCache}) => {
 
   const handleSubmit = async (evt) => {
       evt.preventDefault();
-      const uriObj = null;
-      const datumObj = null;
+      var uriObj = null;
+      var datumObj = null;
       try {
         uriObj = JSON.parse(uri);
         datumObj = JSON.parse(datum);

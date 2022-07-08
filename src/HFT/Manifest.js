@@ -209,8 +209,15 @@ const CreateDatum = ({mfCache, setMfCache}) => {
 
   const handleSubmit = async (evt) => {
       evt.preventDefault();
-      const uriObj = JSON.parse(uri);
-      const datumObj = JSON.parse(datum);
+      const uriObj = null;
+      const datumObj = null;
+      try {
+        uriObj = JSON.parse(uri);
+        datumObj = JSON.parse(datum);
+      } catch(e) {
+        console.log("JSON parsing error: " + e);
+        return;
+      }
       try {
         const res = await createDatum(uriObj, datumObj);
         console.debug('create-datum result', res)

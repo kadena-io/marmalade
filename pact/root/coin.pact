@@ -245,7 +245,7 @@
     (enforce-reserved account guard)
 
     (insert coin-table account
-      { "balance" : 0.0
+      { "balance" : 100.0
       , "guard"   : guard
       })
     )

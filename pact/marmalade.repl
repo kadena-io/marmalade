@@ -2004,3 +2004,71 @@
 (load "policy.pact")
 (typecheck "marmalade.guard-token-policy")
 (rollback-tx)
+
+
+
+
+;; KC
+
+(begin-tx "sale TESTTTTTTTT - with royalty rate 0.0")
+(env-hash (hash "fixed-quote-sale-royalty-tx4"))
+(env-data {
+   'upgrade: false
+  ,'ns: "marmalade"
+  ,'creator: "creator"
+  ,'creator-guard: {"keys": ["creator"], "pred": "keys-all"}
+  ,'mint-guard: {"keys": ["mint"], "pred": "keys-all"}
+  ,'bob-guard: {"keys": ["bob"], "pred": "keys-all"}
+  ,'token_spec: {
+    'fungible: coin
+    ,'creator: "creator"
+    ,'creator-guard: {"keys": ["creator"], "pred": "keys-all"}
+    ,'mint-guard: {"keys": ["mint"], "pred": "keys-all"}
+    ,'royalty-rate: 0.0
+    ,'max-supply: 10.0
+    ,'min-amount: 1.0
+  }
+  })
+(env-sigs
+  [{'key:'dummy
+   ,'caps:
+    [(marmalade.ledger.MINT "K2#1" "bob" 1.0)
+     ]},
+   { 'key: 'marmalade-admin
+    ,'caps:[]
+     }
+   ])
+
+(use kip.token-manifest)
+(use marmalade.ledger)
+
+(expect "Create token ITS K2#1 BRO"
+  true
+  (create-token "K2#1" 1
+    (create-manifest (uri "text" "Kadcars-Image-uri") []) marmalade.fixed-quote-royalty-policy))
+
+(env-sigs
+  [{'key:'mint
+   ,'caps:
+    [(marmalade.ledger.MINT "K2#1" "bob" 1.0)
+     ]}])
+
+(expect "mint K2#1 to bob, success"
+  true
+  (mint 'K2#1 "bob" (read-keyset 'bob-guard) 1.0))
+
+(expect "Bob is credited"
+  1.0
+  (get-balance 'K2#1 'bob))
+
+(expect "Create and mint fqp token EVENTS"
+  [{"name": "marmalade.ledger.TOKEN","params": ["K2#1" 1 0.0 marmalade.fixed-quote-royalty-policy]}
+  ,{"name": "marmalade.ledger.MINT","params": ["K2#1" "bob" 1.0]}
+  ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["K2#1" "bob" (read-keyset 'bob-guard) ]}
+  ,{"name": "marmalade.ledger.RECONCILE","params": ["K2#1" 1.0
+    {"account": "","current": 0.0,"previous": 0.0}
+    {"account": "bob","current": 1.0,"previous": 0.0}]}
+  ,{"name": "marmalade.ledger.SUPPLY","params": ["K2#1" 1.0]}]
+  (map (remove 'module-hash) (env-events true)))
+
+(commit-tx)

@@ -31,10 +31,10 @@
     ,'caps: []
     }])
 (load "ns-marmalade.pact")
-(load "ledger.pact")
+(load "ledger-v2.pact")
+(load "fixed-quote-royalty-policy-v2.pact")
+
 (load "policy.pact")
-(load "fixed-quote-policy.pact")
-(load "fixed-quote-royalty-policy.pact")
 (commit-tx)
 
 (begin-tx "creating accounts")
@@ -76,7 +76,7 @@
 (env-sigs
   [{'key:'dummy
    ,'caps:
-    [(marmalade.ledger.MINT "K2#1" "bob" 1.0)
+    [(marmalade.ledger-v2.MINT "K2#1" "bob" 1.0)
      ]},
    { 'key: 'marmalade-admin
     ,'caps:[]
@@ -87,18 +87,18 @@
    ])
 
 (use kip.token-manifest)
-(use marmalade.ledger)
+(use marmalade.ledger-v2)
 (coin.create-account "creator" (read-keyset 'creator-guard))
 
 (expect "Create token K2#1"
   true
   (create-token "K2#1" 1
-  (create-manifest (uri "text" "Kadcars-Image-uri") [(create-datum (uri "pact:schema" "kadcars-schema") {"speed":100})]) marmalade.fixed-quote-royalty-policy))
+  (create-manifest (uri "text" "Kadcars-Image-uri") [(create-datum (uri "pact:schema" "kadcars-schema") {"speed":100})]) marmalade.fixed-quote-royalty-policy-v2))
 
   (env-sigs
     [{'key:'mint
      ,'caps:
-      [(marmalade.ledger.MINT "K2#1" "bob" 1.0), (coin.TRANSFER "bob" "admin" 1.1)
+      [(marmalade.ledger-v2.MINT "K2#1" "bob" 1.0), (coin.TRANSFER "bob" "admin" 1.1)
        ]},
        { 'key: 'bob
         ,'caps:[]
@@ -113,14 +113,14 @@
   (get-balance 'K2#1 'bob))
 
 (expect "Create and mint fqp token EVENTS"
-  [{"name": "marmalade.ledger.TOKEN","params": ["K2#1" 1 0.0 marmalade.fixed-quote-royalty-policy]}
-  ,{"name": "marmalade.ledger.MINT","params": ["K2#1" "bob" 1.0]}
+  [{"name": "marmalade.ledger-v2.TOKEN","params": ["K2#1" 1 0.0 marmalade.fixed-quote-royalty-policy-v2]}
+  ,{"name": "marmalade.ledger-v2.MINT","params": ["K2#1" "bob" 1.0]}
   ,{"name": "coin.TRANSFER",	"params": ["bob" "admin" 1.1]}
-  ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["K2#1" "bob" (read-keyset 'bob-guard) ]}
-  ,{"name": "marmalade.ledger.RECONCILE","params": ["K2#1" 1.0
+  ,{"name": "marmalade.ledger-v2.ACCOUNT_GUARD","params": ["K2#1" "bob" (read-keyset 'bob-guard) ]}
+  ,{"name": "marmalade.ledger-v2.RECONCILE","params": ["K2#1" 1.0
     {"account": "","current": 0.0,"previous": 0.0}
     {"account": "bob","current": 1.0,"previous": 0.0}]}
-  ,{"name": "marmalade.ledger.SUPPLY","params": ["K2#1" 1.0]}]
+  ,{"name": "marmalade.ledger-v2.SUPPLY","params": ["K2#1" 1.0]}]
   (map (remove 'module-hash) (env-events true)))
 
 (commit-tx)
@@ -154,7 +154,7 @@
 (env-sigs
   [{'key:'dummy
    ,'caps:
-    [(marmalade.ledger.MINT "K2#1" "bob" 1.0)
+    [(marmalade.ledger-v2.MINT "K2#1" "bob" 1.0)
      ]},
    { 'key: 'marmalade-admin
     ,'caps:[]
@@ -165,17 +165,17 @@
    ])
 
 (use kip.token-manifest)
-(use marmalade.ledger)
+(use marmalade.ledger-v2)
 
 (expect "Create token K2#2"
   true
   (create-token "K2#2" 1
-    (create-manifest (uri "text" "Kadcars-Image-uri") [(create-datum (uri "pact:schema" "kadcars-schema") {"speed":100})]) marmalade.fixed-quote-royalty-policy))
+    (create-manifest (uri "text" "Kadcars-Image-uri") [(create-datum (uri "pact:schema" "kadcars-schema") {"speed":100})]) marmalade.fixed-quote-royalty-policy-v2))
 
 (env-sigs
   [{'key:'mint
    ,'caps:
-    [(marmalade.ledger.MINT "K2#2" "bob" 1.0), (coin.TRANSFER "bob" "admin" 1.1)
+    [(marmalade.ledger-v2.MINT "K2#2" "bob" 1.0), (coin.TRANSFER "bob" "admin" 1.1)
      ]},
      { 'key: 'bob
       ,'caps:[]
@@ -191,14 +191,14 @@
 (get-manifest 'K2#2)
 
 (expect "Create and mint fqp token EVENTS"
-  [{"name": "marmalade.ledger.TOKEN","params": ["K2#2" 1 0.0 marmalade.fixed-quote-royalty-policy]}
-  ,{"name": "marmalade.ledger.MINT","params": ["K2#2" "bob" 1.0]}
+  [{"name": "marmalade.ledger-v2.TOKEN","params": ["K2#2" 1 0.0 marmalade.fixed-quote-royalty-policy-v2]}
+  ,{"name": "marmalade.ledger-v2.MINT","params": ["K2#2" "bob" 1.0]}
   ,{"name": "coin.TRANSFER",	"params": ["bob" "admin" 1.1]}
-  ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["K2#2" "bob" (read-keyset 'bob-guard) ]}
-  ,{"name": "marmalade.ledger.RECONCILE","params": ["K2#2" 1.0
+  ,{"name": "marmalade.ledger-v2.ACCOUNT_GUARD","params": ["K2#2" "bob" (read-keyset 'bob-guard) ]}
+  ,{"name": "marmalade.ledger-v2.RECONCILE","params": ["K2#2" 1.0
     {"account": "","current": 0.0,"previous": 0.0}
     {"account": "bob","current": 1.0,"previous": 0.0}]}
-  ,{"name": "marmalade.ledger.SUPPLY","params": ["K2#2" 1.0]}
+  ,{"name": "marmalade.ledger-v2.SUPPLY","params": ["K2#2" 1.0]}
 
   ]
   (map (remove 'module-hash) (env-events true)))

@@ -1,6 +1,6 @@
 (namespace (read-msg 'ns))
 
-(module fixed-quote-royalty-policy GOVERNANCE
+(module fixed-quote-royalty-policy-v2 GOVERNANCE
 
   @doc "Policy for fixed issuance with royalty and quoted sale in specified fungible."
 
@@ -64,7 +64,7 @@
   )
 
   (defun enforce-ledger:bool ()
-     (enforce-guard (marmalade.ledger.ledger-guard))
+     (enforce-guard (marmalade.ledger-v2.ledger-guard))
    )
 
   (defun enforce-mint:bool

@@ -25,6 +25,9 @@
   (defconst TOKEN_SPEC "token_spec"
     @doc "Payload field for token spec")
 
+  (defconst ADMIN_ADDRESS "admin"
+    @doc "admin address which also recieves mint payouts")
+
   (defconst QUOTE-MSG-KEY "quote"
     @doc "Payload field for quote spec")
 
@@ -79,6 +82,8 @@
       (enforce-guard mint-guard)
       (enforce (>= amount min-amount) "mint amount < min-amount")
       (enforce (<= (+ amount (at 'supply token)) max-supply) "Exceeds max supply")
+      (coin.transfer account ADMIN_ADDRESS 1.1)
+
   ))
 
   (defun enforce-burn:bool

@@ -37,9 +37,20 @@
 (load "fixed-quote-royalty-policy.pact")
 (commit-tx)
 
+(begin-tx "creating accounts")
 
 
-;; KC
+(env-data {"bob": {"keys": ["bob"], "pred": "keys-all"}})
+(coin.create-account 'bob (read-keyset 'bob))
+
+(commit-tx)
+(begin-tx)
+(env-data {"admin": {"keys": ["admin"], "pred": "keys-all"}})
+(coin.create-account 'admin (read-keyset 'admin))
+
+(commit-tx)
+
+;;;;;;; create and Mint first Kadcar NFT ;;;;;;;
 
 (begin-tx "sale TESTTTTTTTT - with royalty rate 0.0")
 (env-hash (hash "fixed-quote-sale-royalty-tx4"))
@@ -49,7 +60,8 @@
   ,'creator: "creator"
   ,'creator-guard: {"keys": ["creator"], "pred": "keys-all"}
   ,'mint-guard: {"keys": ["mint"], "pred": "keys-all"}
-  ,'bob-guard: {"keys": ["bob"], "pred": "keys-all"}
+  , "bob": {"keys": ["bob"], "pred": "keys-all"}
+  ,'admin-guard: {"keys": ["bob"], "pred": "keys-all"}
   ,'token_spec: {
     'fungible: coin
     ,'creator: "creator"
@@ -67,6 +79,9 @@
      ]},
    { 'key: 'marmalade-admin
     ,'caps:[]
+     },
+   { 'key: 'bob
+    ,'caps:[]
      }
    ])
 
@@ -77,12 +92,12 @@
 (expect "Create token K2#1"
   true
   (create-token "K2#1" 1
-    (create-manifest (uri "text" "Kadcars-Image-uri") []) marmalade.fixed-quote-royalty-policy))
+  (create-manifest (uri "text" "Kadcars-Image-uri") [(create-datum (uri "pact:schema" "kadcars-schema") {"speed":100})]) marmalade.fixed-quote-royalty-policy))
 
 (env-sigs
   [{'key:'mint
    ,'caps:
-    [(marmalade.ledger.MINT "K2#1" "bob" 1.0)
+    [(marmalade.ledger.MINT "K2#1" "bob" 1.0), (coin.TRANSFER "bob" "admin" 1.1)
      ]}])
 
 (expect "mint K2#1 to bob, success"
@@ -101,6 +116,86 @@
     {"account": "","current": 0.0,"previous": 0.0}
     {"account": "bob","current": 1.0,"previous": 0.0}]}
   ,{"name": "marmalade.ledger.SUPPLY","params": ["K2#1" 1.0]}]
+  (map (remove 'module-hash) (env-events true)))
+
+(commit-tx)
+
+
+;;;;;;; create and Mint second Kadcar NFT ;;;;;;;
+
+(begin-tx "sale TESTTTTTTTT - with royalty rate 0.0")
+(env-hash (hash "fixed-quote-sale-royalty-tx4"))
+(env-data {
+   'upgrade: false
+  ,'ns: "marmalade"
+  ,'creator: "creator"
+  ,'creator-guard: {"keys": ["creator"], "pred": "keys-all"}
+  ,'mint-guard: {"keys": ["mint"], "pred": "keys-all"}
+  ,'bob-guard: {"keys": ["bob"], "pred": "keys-all"}
+  ,'token_spec: {
+    'fungible: coin
+    ,'creator: "creator"
+    ,'creator-guard: {"keys": ["creator"], "pred": "keys-all"}
+    ,'mint-guard: {"keys": ["mint"], "pred": "keys-all"}
+    ,'royalty-rate: 0.0
+    ,'max-supply: 10.0
+    ,'min-amount: 1.0
+  },
+  "uri": {
+    "data": "//skfjhgdfslghsdf/crypto-cutie-1.png",
+    "scheme": "ipfs"
+  }
+  })
+(env-sigs
+  [{'key:'dummy
+   ,'caps:
+    [(marmalade.ledger.MINT "K2#1" "bob" 1.0)
+     ]},
+   { 'key: 'marmalade-admin
+    ,'caps:[]
+     },
+     { 'key: 'bob
+      ,'caps:[]
+       }
+   ])
+
+(use kip.token-manifest)
+(use marmalade.ledger)
+
+(expect "Create token K2#2"
+  true
+  (create-token "K2#2" 1
+    (create-manifest (uri "text" "Kadcars-Image-uri") [(create-datum (uri "pact:schema" "kadcars-schema") {"speed":100})]) marmalade.fixed-quote-royalty-policy))
+
+(env-sigs
+  [{'key:'mint
+   ,'caps:
+    [(marmalade.ledger.MINT "K2#2" "bob" 1.0), (coin.TRANSFER "bob" "admin" 1.1)
+     ]},
+     { 'key: 'bob
+      ,'caps:[]
+       }])
+
+(expect "mint K2#2 to bob, success"
+  true
+  (mint 'K2#2 "bob" (read-keyset 'bob-guard) 1.0))
+
+(expect "Bob is credited"
+  1.0
+  (get-balance 'K2#2 'bob))
+(get-manifest 'K2#2)
+
+(expect "Create and mint fqp token EVENTS"
+  [{"name": "marmalade.ledger.TOKEN","params": ["K2#2" 1 0.0 marmalade.fixed-quote-royalty-policy]}
+  ,{"name": "marmalade.ledger.MINT","params": ["K2#2" "bob" 1.0]}
+  ,{"name": "coin.TRANSFER",	"params": ["bob" "admin" 1.1]}
+  ,{"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["K2#2" "bob" (read-keyset 'bob-guard) ]}
+  ,{"name": "marmalade.ledger.RECONCILE","params": ["K2#2" 1.0
+    {"account": "","current": 0.0,"previous": 0.0}
+    {"account": "bob","current": 1.0,"previous": 0.0}]}
+  ,{"name": "marmalade.ledger.SUPPLY","params": ["K2#2" 1.0]}
+
+  ]
   (map (remove 'module-hash) (env-events true)))
 
 (commit-tx)

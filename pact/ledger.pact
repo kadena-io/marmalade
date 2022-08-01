@@ -2,7 +2,7 @@
 ;;
 ;; Collection organization to come in V2, for now just use policy if you need
 ;;
-;; Minimal changes to ledger to support compat.
+;; Minimal changes to ledger to support compat. from KC and friends
 ;;
 ;;
 (module ledger GOVERNANCE

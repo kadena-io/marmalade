@@ -18,12 +18,17 @@
     max-supply:decimal
     min-amount:decimal
     royalty-rate:decimal
+    owner:string
+    latest-spec
   )
 
   (deftable policies:{policy-schema})
 
   (defconst TOKEN_SPEC "token_spec"
     @doc "Payload field for token spec")
+
+  (defconst MINT_PRICE 1.1
+    @doc "MINT_PRICE")
 
   (defconst ADMIN_ADDRESS "admin"
     @doc "admin address which also recieves mint payouts")
@@ -42,11 +47,15 @@
     id:string
     spec:object{quote-spec})
 
+
   (deftable quotes:{quote-schema})
 
   (defun get-policy:object{policy-schema} (token:object{token-info})
     (read policies (at 'id token))
   )
+
+
+  ;;;;;;;;;;;;; DEFCAPS
 
   (defcap QUOTE:bool
     ( sale-id:string
@@ -62,6 +71,23 @@
     @event
     true
   )
+
+;;;;;;;;; caps
+  (defcap UPDATE-OWNER (token-id:string new-owner:string)
+    true
+  )
+
+  (defcap UPDATE-QUOTE (token-id:string new-latest)
+    true
+  )
+
+  (defcap BUY (id:string receiver:string)
+   (compose-capability (UPDATE-OWNER id receiver))
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 
   (defun enforce-ledger:bool ()
      (enforce-guard (marmalade.ledger.ledger-guard))
@@ -82,7 +108,7 @@
       (enforce-guard mint-guard)
       (enforce (>= amount min-amount) "mint amount < min-amount")
       (enforce (<= (+ amount (at 'supply token)) max-supply) "Exceeds max supply")
-      (coin.transfer account ADMIN_ADDRESS 1.1)
+      (coin.transfer account ADMIN_ADDRESS MINT_PRICE)
   ))
 
   (defun enforce-burn:bool
@@ -105,6 +131,7 @@
             (mint-guard:guard (at 'mint-guard spec))
             (max-supply:decimal (at 'max-supply spec))
             (min-amount:decimal (at 'min-amount spec))
+            (owner:string (at 'owner spec))
             (royalty-rate:decimal (at 'royalty-rate spec))
             (creator-details:object (fungible::details creator ))
             )
@@ -123,7 +150,9 @@
         , 'mint-guard: mint-guard
         , 'max-supply: max-supply
         , 'min-amount: min-amount
-        , 'royalty-rate: royalty-rate }))
+        , 'royalty-rate: royalty-rate
+        , 'owner: owner
+        , 'latest-spec: {} }))
     true
   )
 
@@ -155,10 +184,38 @@
         (at 'guard recipient-details) recipient-guard)
         "Recipient guard does not match")
       (insert quotes sale-id { 'id: (at 'id token), 'spec: spec })
+      (update-latest-sale-for-token (at 'id token) spec sale-id 2)
       (emit-event (QUOTE sale-id (at 'id token) amount price sale-price royalty-payout creator spec)))
       true
   )
   )
+
+  (defun update-latest-sale-for-token (token-id:string spec:object{quote-spec} sale-id:string timeout:integer)
+
+    (update-spec token-id {
+      'sale-id:sale-id,
+      'quote-spec:spec,
+      'timeout:timeout
+    })
+
+  )
+
+  (defun update-spec (token-id:string spec)
+    (enforce-valid-spec spec)
+    (update policies token-id
+      {'latest-spec: spec}
+    )
+  )
+
+  (defun enforce-valid-spec (spec:object{quote-expirey-schema})
+    true
+  )
+
+  (defschema quote-expirey-schema
+    sale-id:string
+    quote-spec:object{quote-spec}
+    timeout:integer)
+
 
   (defun enforce-buy:bool
     ( token:object{token-info}
@@ -169,28 +226,31 @@
       sale-id:string )
     (enforce-ledger)
     (enforce-sale-pact sale-id)
-    (bind (get-policy token)
-      { 'fungible := fungible:module{fungible-v2}
-      , 'creator:= creator:string
-      , 'royalty-rate:= royalty-rate:decimal
-      }
-      (with-read quotes sale-id { 'id:= qtoken, 'spec:= spec:object{quote-spec} }
-        (enforce (= qtoken (at 'id token)) "incorrect sale token")
-        (bind spec
-          { 'price := price:decimal
-          , 'recipient := recipient:string
-          }
-          (let* ((sale-price:decimal (* amount price))
-                 (royalty-payout:decimal
-                    (floor (* sale-price royalty-rate) (fungible::precision)))
-                 (payout:decimal (- sale-price royalty-payout)) )
-            (if
-              (> royalty-payout 0.0)
-              (fungible::transfer buyer creator royalty-payout)
-              "No royalty")
-            (fungible::transfer buyer recipient payout)))
-            true
-        ))
+    (with-capability (BUY (at 'id token) buyer)
+      (bind (get-policy token)
+        { 'fungible := fungible:module{fungible-v2}
+        , 'creator:= creator:string
+        , 'royalty-rate:= royalty-rate:decimal
+        }
+        (with-read quotes sale-id { 'id:= qtoken, 'spec:= spec:object{quote-spec} }
+          (enforce (= qtoken (at 'id token)) "incorrect sale token")
+          (bind spec
+            { 'price := price:decimal
+            , 'recipient := recipient:string
+            }
+            (let* ((sale-price:decimal (* amount price))
+                   (royalty-payout:decimal
+                      (floor (* sale-price royalty-rate) (fungible::precision)))
+                   (payout:decimal (- sale-price royalty-payout)) )
+              (if
+                (> royalty-payout 0.0)
+                (fungible::transfer buyer creator royalty-payout)
+                "No royalty")
+              (fungible::transfer buyer recipient payout)))
+              true
+              (update-owner qtoken buyer)
+          ))
+    )
   )
 
   (defun enforce-sale-pact:bool (sale:string)
@@ -205,7 +265,7 @@
       receiver:string
       amount:decimal )
     (enforce-ledger)
-    (enforce false "Transfer prohibited")
+    (enforce false "Transfer prohibited except for certain usecases that will come later..")
   )
 
   (defun enforce-crosschain:bool
@@ -218,7 +278,24 @@
     (enforce-ledger)
     (enforce false "Transfer prohibited")
   )
+
+
+
+  ;;;;;;;;;;;;;;;;;;;;;;;;;;;; POLICY LEVEL LEDGER DEFUNS
+
+  (defun update-owner (token-id:string new-owner:string)
+    (require-capability (UPDATE-OWNER token-id new-owner))
+    (update policies token-id
+      {'owner: new-owner}
+    )
+  )
+
+
+
+
+
 )
+
 
 
 (if (read-msg 'upgrade)

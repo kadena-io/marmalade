@@ -1,5 +1,10 @@
 (namespace (read-msg 'ns))
-
+;;
+;; Collection organization to come in V2, for now just use policy if you need
+;;
+;; Minimal changes to ledger to support compat.
+;;
+;;
 (module ledger GOVERNANCE
 
   @model
@@ -28,7 +33,35 @@
     policy:module{kip.token-policy-v1}
   )
 
+
+  ;; Schema to hold grouped tokens for collections.
+  ;; note : Tokens can be used without collections this is just a grouping
+  ;; mechanism and for projects to reserve a token 'namespace' for their collections
+  ;; you can totaly achieve this through policies too btw.
+  (defschema nft-collectioned-token-schema
+    id:string
+    ;; id and name duplicated for now, will be used down the line.
+    collection-name:string
+    ;; this is effectively collection floating supply
+    ;; assuming you can burn to stay below this if your POLICY
+    ;; impl allows for it.
+    max-unique-token-supply:integer
+    current-unique-token-supply:integer
+    collection-guard:guard
+    ;; this should be changed and decoupled from token POLICY
+    ;; there is actualy alot of good room to improve here but
+    ;; this is needed for now to enforce consistent guards (guard dog goes woof).
+    collection-wide-policy:module{kip.token-policy-v1}
+  )
+
+
+;  (defschema timestamped-change-certificate
+;    id:string
+;    witness-contract:module{kip.manifest-change-timestamping-int}
+;  )
+
   (deftable tokens:{token-schema})
+  (deftable collections:{nft-collectioned-token-schema})
 
   ;;
   ;; Capabilities
@@ -94,6 +127,15 @@
     @doc " For accounting via events. \
          \ sender = {account: '', previous: 0.0, current: 0.0} for mint \
          \ receiver = {account: '', previous: 0.0, current: 0.0} for burn"
+    @event
+    true
+  )
+
+  (defcap MANIFEST_UPDATE
+    ( token-id:string
+      new-manifest:object{manifest}
+    )
+    @doc "Event emitted when manifest for a token is changed"
     @event
     true
   )
@@ -209,6 +251,68 @@
       (emit-event (TOKEN id precision 0.0 policy))
   )
 
+
+  (defun create-token-for-collection:bool
+    ( collection-id:string
+      id:string
+      precision:integer
+      manifest:object{manifest}
+      policy:module{kip.token-policy-v1}
+    )
+    (enforce-verify-manifest manifest)
+    ;; enforce collection guard
+    ;; enforce max unique SUPPLY
+    (enforce-collection collection-id)
+
+    (bind (get-collection collection-id)
+      { 'collection-guard:=mint-guard:guard
+      , 'collection-name:=collection-name:string
+      , 'max-unique-token-supply:=max-amount:integer
+      , 'current-unique-token-supply:=curr-amount:integer
+      }
+
+      (policy::enforce-init
+        { 'id: id, 'supply: 0.0, 'precision: precision, 'manifest: manifest })
+      (insert tokens id {
+        "id": id,
+        "precision": precision,
+        "manifest": manifest,
+        "supply": 0.0,
+        "policy": policy
+        }
+      )
+
+      (update collections collection-name {
+        "current-unique-token-supply": (+ curr-amount 1)
+        }
+      )
+    )
+
+    (emit-event (TOKEN id precision 0.0 policy))
+  )
+
+;also check exist explicit
+  (defun enforce-collection
+    (
+      collection-id:string
+    )
+    (bind (get-collection collection-id)
+      { 'collection-guard:=collection-guard:guard
+      , 'max-unique-token-supply:=max-amount:integer
+      , 'current-unique-token-supply:=curr-amount:integer
+      }
+      (enforce-guard collection-guard)
+      (enforce (>= max-amount (+ curr-amount 1)) "Exceeds max collection nft supply")
+    )
+  )
+
+  (defun get-collection:object{nft-collectioned-token-schema}
+    (
+      collection-id:string
+    )
+
+    (read collections collection-id)
+  )
   (defun truncate:decimal (id:string amount:decimal)
     (floor amount (precision id))
   )
@@ -311,6 +415,21 @@
         (update-supply id amount)
       ))
   )
+
+
+  (defun upgrade-manifest:bool
+    ( id:string
+      new-manifest:object{manifest}
+    )
+    ;;enforce and others
+    ;;(time-stamping-auth::broadcast-change token-id old-manifest new-manifest block-time)
+    (update tokens id
+      { "manifest" : new-manifest }
+      )
+     (emit-event (MANIFEST_UPDATE id new-manifest))
+  )
+
+
 
   (defun burn:bool
     ( id:string
@@ -579,6 +698,19 @@
   (defun sale-account:string ()
     (create-principal (create-pact-guard "SALE"))
   )
+  (defun get-account-minted:integer (account:string)
+      (with-default-read ledger account
+        {"balance": 0}
+        {"balance":= balance}
+      balance
+      )
+    )
+
+
+    (defun get-ledger:guard ()
+      (keys ledger)
+    )
+
 )
 
 (if (read-msg 'upgrade)

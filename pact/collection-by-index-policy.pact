@@ -1,4 +1,4 @@
-(interface collectionByIndex
+(interface collection-by-index
 
   (defcap CREATE_COLLECTION (collection-id:string))
 
@@ -29,10 +29,8 @@
   (defschema account
     total-tokens-owned:integer)
 
-  (defun key:string (collection-id:string index:integer) )
-
+  (defun key:string (id:string index:integer) )
   (defun init-collection:bool (id:string))
-
   (defun get-collection-token-count:integer (collection-id:string))
   (defun get-account-token-count:integer (account-id:string))
   (defun get-collection-token (index:integer))

@@ -33,6 +33,7 @@
 (load "ns-marmalade.pact")
 (load "ledger.pact")
 (load "policy.pact")
+(load "collection-policy.pact")
 (typecheck "marmalade.ledger" true)
 (commit-tx)
 
@@ -2004,6 +2005,3 @@
 (load "policy.pact")
 (typecheck "marmalade.guard-token-policy")
 (rollback-tx)
-
-
-(load "collection-policy.pact")

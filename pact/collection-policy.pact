@@ -1,99 +1,73 @@
-(namespace (read-msg 'ns))
+(namespace 'kip)
 
 (interface whitelist-v1
-  (defun whitelist:bool (collection-id:string account:string))
+
+  (defcap WHITELIST:bool (whitelist-id:string))
+
+  (defschema whitelist
+    whitelisted: list
   )
 
-(interface whitelist-policy
-  (defschema whitelist
-    collection-id:string
-    whitelist:module{whitelist-v1}
-  )
-  (defun enforce-whitelist (collection-id:string account:string whitelist:module{whitelist-v1}))
+  (defun enforce-whitelist:bool (whitelist-id:string account:string))
 )
 
+(interface collection-v1
 
-(interface collection
+  (defcap CREATE_COLLECTION:bool (collection-id:string))
 
-  (defcap CREATE_COLLECTION (collection-id:string))
+  (defcap CREATE_TOKEN:bool (collection-id:string token-id:string))
 
-  (defcap CREATE_TOKEN (collection-id:string token-id:string))
-
-  (defcap COLLECTION (collection-id:string total-unique-tokens:integer)
+  (defcap COLLECTION:bool (collection-id:string)
     @event)
 
-  (defcap TOKEN (token-id:string supply:decimal)
+  (defcap TOKEN:bool (token-id:string collection-id:string supply:decimal)
     @event)
 
-  (defschema owner
+  (defschema account
     account:string
     guard:guard
-    owned-tokens:[string]
+    tokens:list
   )
 
   (defschema token
     id:string
     collection-id:string
-    owners: [string]
     supply:decimal
-    )
+  )
 
   (defschema collection
     id:string
-    tokens:[string]
-    total-unique-tokens:integer
-    )
+    tokens:list
+  )
 
-  (defun init-collection:bool (id:string))
-  (defun get-tokens (account:string))
-  (defun get-collection (collection-id:string ))
-  (defun get-token-collection (token-id:string))
+  (defun init-collection:bool (collection-id:string))
+  (defun get-collection:object{collection} (collection-id:string))
+  (defun get-token:object{token} (token-id:string))
+
 )
 
-(module collection-policy GOVERNANCE
+(namespace (read-msg 'ns))
+
+(module one-off-collection-policy GOVERNANCE
 
   @doc "Collection token policy."
-
-  (implements collection)
-  (implements whitelist-policy)
 
   (defcap GOVERNANCE ()
     (enforce-keyset 'admin))
 
   (implements kip.token-policy-v1)
+  (implements kip.collection-v1)
+  (implements kip.whitelist-v1)
   (use kip.token-policy-v1 [token-info])
 
-  (defschema owner
-    account:string
-    guard:guard
-    owned-tokens:[string]
-  )
 
-  (deftable owners:{owner})
+  (deftable accounts:{kip.collection-v1.account})
 
-  (defschema token
-    id:string
-    collection-id:string
-    owners: [string]
-    supply:decimal
-  )
+  (deftable tokens:{kip.collection-v1.token})
 
-  (deftable tokens:{token})
+  (deftable collections:{kip.collection-v1.collection})
 
-  (defschema collection
-    id:string
-    tokens:[string]
-    total-unique-tokens:integer
-    )
-
-  (deftable collections:{collection})
-
-  (defschema whitelist
-    collection-id:string
-    whitelist:module{whitelist-v1}
-    )
-
-  (deftable whitelists:{whitelist})
+  (deftable whitelists:{kip.whitelist-v1.whitelist})
 
   (defcap UPDATE_OWNER (id:string owner:string guard:guard )
     @event true)
@@ -101,20 +75,24 @@
   (defcap INTERNAL () true)
 
 
-  (defcap CREATE_COLLECTION (collection-id:string)
+  (defcap CREATE_COLLECTION:bool (collection-id:string)
     (enforce-keyset 'admin)
   )
 
-  (defcap CREATE_TOKEN (collection-id:string token-id:string)
+  (defcap CREATE_TOKEN:bool (collection-id:string token-id:string)
     (enforce-ledger)
     (enforce-keyset 'admin)
   )
 
-  (defcap COLLECTION (collection-id:string total-unique-tokens:integer)
+  (defcap WHITELIST:bool (whitelist-id:string)
+    (enforce-keyset 'admin)
+  )
+
+  (defcap COLLECTION:bool (collection-id:string)
     @event
     true)
 
-  (defcap TOKEN (token-id:string supply:decimal)
+  (defcap TOKEN:bool (token-id:string collection-id:string supply:decimal)
     @event
     true)
 
@@ -131,29 +109,66 @@
      (enforce-guard (marmalade.ledger.ledger-guard))
   )
 
-  (defun init-collection:bool
-    ( id:string )
+  (defun init-collection:bool ( collection-id:string )
     (with-capability (CREATE_COLLECTION)
-      (insert collection id {
-        "id": id,
-        "tokens": [],
-        "total-unique-tokens": 0
+      (insert collection collection-id {
+        "id": collection-id,
+        "tokens": []
         })
-      (insert whitelist id {
-        'collection-id: id,
-        'whitelist: (read-msg 'whitelist-module)
-        })
-      (emit-event COLLECTION id 0)
+      (emit-event COLLECTION collection-id 0)
       )
+  )
+
+  (defun add-whitelist:bool
+    ( token-id:string accounts:[string])
+    (with-capability (WHITELIST)
+      (insert whitelist token-id {
+        "whitelisted": accounts
+      })
     )
   )
 
-  (defun get-collection (collection-id:string )
-    (at 'tokens (read collection collection-id))
+  (defun get-collection:object{collection} (collection-id:string )
+    (read collection collection-id)
   )
 
-  (defun get-token-collection (token-id:string)
-    (at 'collection-id (read tokens token-id))
+  (defun get-token:object{token} (token-id:string )
+    (read tokens token-id)
+  )
+
+  (defun enforce-init:bool
+    ( token:object{token-info}
+    )
+    (let* ( (token-id:string  (at 'id token))
+            (collection-id:string (read-msg 'collection-id )))
+    (with-capability (CREATE_TOKEN (at 'id token))
+        (with-read collection (read-msg 'collection-id ) {
+          'tokens:= collection-list,
+          'total-unique-tokens:= total-unique-tokens
+          }
+        (enforce (=  (at 'precision token) 0) "Invalid precision")
+        (insert tokens token-id
+          { "id" : token-id
+           ,"supply": 0.0
+           ,"collection-id" : collection-id
+          })
+        (emit-event TOKEN token-id 0.0)
+        (update-collection collection-id (+ token-id collection-list) (+ 1 total-unique-tokens))
+        true))
+      ))
+
+  (defun enforce-whitelist:bool (whitelist-id:string account:string)
+    (with-capability (WHITELIST whitelist-id)
+      (with-read whitelists whitelist-id {
+        "whitelisted":= accounts
+        }
+        (enforce (contains account accounts) "not whitelisted"))
+      (with-read accounts account {
+          'guard:= guard
+        }
+        (enforce-guard guard)
+      )
+    )
   )
 
   (defun update-collection (collection-id:string token-list:list total-unique-tokens:integer)
@@ -166,47 +181,42 @@
    (emit-event COLLECTION collection-id token-list total-unique-tokens)
   )
 
-  (defun enforce-init:bool
-    ( token:object{token-info}
-    )
-    (with-capability (CREATE_TOKEN (at 'id token))
-        (with-read collection (read-msg 'collection-id ) {
-          'tokens:= collection-list,
-          'total-unique-tokens:= total-unique-tokens
-          }
-        (enforce (= precision 0) "Invalid precision")
-        (insert tokens id
-          { "id" : id
-           ,"owners": []
-           ,"supply": 0.0
-           ,"collection-id" : collection-id
-          })
-        (emit-event TOKEN id 0.0)
-        (update-collection collection-id (+ id collection-list) (+ 1 total-unique-tokens))
-        true))
-      )
-
-  (defun enforce-whitelist:bool (collection-id:string account:string whitelist:module{whitelist-v1})
-    (whitelist::whitelist collection-id account)
-  )
-
-  (defun update-token (token-id:string owners:list supply:decimal)
+  (defun update-token (token-id:string supply:decimal)
     (with-capability (INTERNAL)
       (update tokens token-id {
-         'owners: owners,
          'supply: supply
        })
      )
      (emit-event TOKEN token-id supply)
    )
 
-   (defun update-owner (account:string owned-tokens:list)
+   (defun add-token-in-account (token-id:string account:string guard:guard)
      (with-capability (INTERNAL)
-       (update owners account {
-           "owned-tokens": [owners]
-        })
+       (with-default-read accounts account {
+          'tokens: []
+        } {
+          'tokens:=tokens
+        }
+        (update accounts account {
+           'tokens: (+ token-id tokens)
+         })
+        )
       )
     )
+
+    (defun delete-token-in-account (token-id:string account:string guard:guard)
+      (with-capability (INTERNAL)
+        (with-default-read accounts account {
+           'tokens: []
+         } {
+           'tokens:=tokens
+         }
+         (update accounts account {
+            'tokens: (filter (!= token-id) tokens)
+          })
+       )
+     )
+   )
 
   (defun enforce-mint:bool
     ( token:object{token-info}
@@ -214,24 +224,22 @@
       guard:guard
       amount:decimal
     )
-    (let* ( (collection-id:string (get-token-collection (at 'id token))
-      (with-read whitelists collection-id) {
-        "whitelist":=whitelist
-        }
-      (enforce-whitelist collection-id account whitelist))))
+    (let* ( (token-id:string  (at 'id token))
+            (collection-id:string (at 'collection-id (get-token token-id))))
+    (enforce-whitelist token-id account)
     (with-capability (MINT (at 'id token))
       (with-read tokens (at 'id token) {
-        'owners:= owners,
         'supply:= supply
         }
-        (with-read owners account {
-          "owned-tokens":=owned-tokens
-          }
-      (update-owner account (+ (at 'id token) owned-tokens))
-      (update-token (at 'id token) (+ account owners) (+ amount supply))))
-      ;; filter duplicates
-      ;; first time owner creation
+        (enforce-1-off (+ amount supply))
+      (update-token (at 'id token) (+ amount supply)))
+      (add-token-in-account token-id account guard)
+      )
   ))
+
+  (defun enforce-1-off (supply:decimal)
+    (enforce (= 1.0 supply) "Only one token may be minted")
+  )
 
   (defun enforce-burn:bool
     ( token:object{token-info}
@@ -282,16 +290,8 @@
   )
 )
 
-(if (read-msg 'upgrade)
+(if (read-msg 'upgrade )
   ["upgrade complete"]
-  [ (create-table quotes)
+  [ (create-table accounts)
     (create-table tokens)
     (create-table collections) ])
-
-
-;;whitelist interface that reserves id's for minting
-;; enforce id in enforce-init for principals - manifest hash
-;; create-principal
-;; "t:{manifest-hash}" -front-run possible
-;; ignore indexing for now.
-;; distinguish collection-based token

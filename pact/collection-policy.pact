@@ -4,10 +4,6 @@
 
   (defcap WHITELIST:bool (whitelist-id:string))
 
-  (defschema whitelist
-    whitelisted: list
-  )
-
   (defun enforce-whitelist:bool (whitelist-id:string account:string))
 )
 
@@ -17,10 +13,8 @@
 
   (defcap CREATE_TOKEN:bool (collection-id:string token-id:string))
 
-  (defcap COLLECTION:bool (collection-id:string)
-    @event)
-
-  (defcap TOKEN:bool (token-id:string collection-id:string supply:decimal)
+  ;;append-only
+  (defcap ADD_TO_COLLECTION:bool (collection-id:string token-id:string total-unique-tokens:integer)
     @event)
 
   (defschema account
@@ -48,7 +42,7 @@
 
 (namespace (read-msg 'ns))
 
-(module one-off-collection-policy GOVERNANCE
+(module simple-1-off-whitelist-collection-policy GOVERNANCE
 
   @doc "Collection token policy."
 
@@ -60,6 +54,9 @@
   (implements kip.whitelist-v1)
   (use kip.token-policy-v1 [token-info])
 
+  (defschema whitelist
+    whitelisted: list
+  )
 
   (deftable accounts:{kip.collection-v1.account})
 
@@ -67,15 +64,15 @@
 
   (deftable collections:{kip.collection-v1.collection})
 
-  (deftable whitelists:{kip.whitelist-v1.whitelist})
+  (deftable whitelists:{whitelist})
 
   (defcap UPDATE_OWNER (id:string owner:string guard:guard )
     @event true)
 
   (defcap INTERNAL () true)
 
-
-  (defcap CREATE_COLLECTION:bool (collection-id:string)
+  ;;@managed only for resources, scoping exist for vanilla caps
+  (defcap ADD_TO_COLLECTION:bool (collection-id:string)
     (enforce-guard (keyset-ref-guard 'marmalade-admin ))
   )
 
@@ -88,14 +85,11 @@
     (enforce-guard (keyset-ref-guard 'marmalade-admin ))
   )
 
-  (defcap COLLECTION:bool (collection-id:string)
+  (defcap ADD_TO_COLLECTION:bool (collection-id:string token-id:string total-unique-tokens:integer)
     @event
     true)
-
-  (defcap TOKEN:bool (token-id:string collection-id:string supply:decimal)
-    @event
-    true)
-
+    ;; duplicate
+  
   (defcap MINT (id:string)
     (enforce-ledger)
     (enforce-guard (keyset-ref-guard 'marmalade-admin ))

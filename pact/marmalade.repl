@@ -1987,6 +1987,54 @@
 
 (rollback-tx)
 
+
+(begin-tx "collection policy")
+
+
+(use marmalade.ledger)
+
+(env-sigs [
+  { 'key: "bob"
+  , 'caps:
+    [
+     (MINT "project-0" "bob" 5.0),
+    ]
+  }])
+
+(use kip.token-manifest)
+
+(env-data {"collection-id": "collection-0"})
+(env-sigs [
+  { 'key: 'marmalade-admin
+   ,'caps: [(marmalade.one-off-collection-policy.CREATE_TOKEN "collection-0" "project-0")]
+   }])
+
+(expect-failure
+  "collection-0 does not exist"
+  (create-token
+    "project-0"
+    12
+    (create-manifest (uri "text" "project-0-uri") [])
+    marmalade.one-off-collection-policy)
+  )
+
+(env-sigs [
+  { 'key: 'marmalade-admin
+   ,'caps: [(marmalade.one-off-collection-policy.CREATE_COLLECTION "collection-0" )]
+   }])
+
+(expect "initiates collection-0"
+  "Write succeeded"
+  (marmalade.one-off-collection-policy.init-collection
+    "collection-0")
+)
+
+
+(rollback-tx)
+
+
+
+
 ;; Upgrade tests
 (begin-tx "Upgrade contracts")
 (env-sigs [

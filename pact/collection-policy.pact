@@ -53,7 +53,7 @@
   @doc "Collection token policy."
 
   (defcap GOVERNANCE ()
-    (enforce-keyset 'admin))
+    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
   (implements kip.token-policy-v1)
   (implements kip.collection-v1)
@@ -76,16 +76,16 @@
 
 
   (defcap CREATE_COLLECTION:bool (collection-id:string)
-    (enforce-keyset 'admin)
+    (enforce-guard (keyset-ref-guard 'marmalade-admin ))
   )
 
   (defcap CREATE_TOKEN:bool (collection-id:string token-id:string)
     (enforce-ledger)
-    (enforce-keyset 'admin)
+    (enforce-guard (keyset-ref-guard 'marmalade-admin ))
   )
 
   (defcap WHITELIST:bool (whitelist-id:string)
-    (enforce-keyset 'admin)
+    (enforce-guard (keyset-ref-guard 'marmalade-admin ))
   )
 
   (defcap COLLECTION:bool (collection-id:string)
@@ -98,7 +98,7 @@
 
   (defcap MINT (id:string)
     (enforce-ledger)
-    (enforce-keyset 'admin)
+    (enforce-guard (keyset-ref-guard 'marmalade-admin ))
   )
 
   (defun get-policy:object{token} (token:object{token-info})
@@ -110,7 +110,7 @@
   )
 
   (defun init-collection:bool ( collection-id:string )
-    (with-capability (CREATE_COLLECTION)
+    (with-capability (CREATE_COLLECTION collection-id)
       (insert collection collection-id {
         "id": collection-id,
         "tokens": []
@@ -141,8 +141,8 @@
     )
     (let* ( (token-id:string  (at 'id token))
             (collection-id:string (read-msg 'collection-id )))
-    (with-capability (CREATE_TOKEN (at 'id token))
-        (with-read collection (read-msg 'collection-id ) {
+    (with-capability (CREATE_TOKEN collection-id token-id)
+        (with-read collection collection-id {
           'tokens:= collection-list,
           'total-unique-tokens:= total-unique-tokens
           }

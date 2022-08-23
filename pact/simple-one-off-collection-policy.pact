@@ -21,6 +21,7 @@
     reservation-price:decimal
     reservation-fungible:module{fungible-v2}
     operator-account:string
+    operator-guard:guard
   )
 
   (defschema token
@@ -41,9 +42,11 @@
 
   (defcap INTERNAL () true)
 
-  (defcap OPERATOR ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin ))
-    true
+  (defcap OPERATOR (collection-id:string)
+    (with-read collections collection-id {
+      'operator-guard:= operator-guard:guard
+      }
+      (enforce-guard operator-guard))
   )
 
   (defcap MINT (token-id:string)
@@ -55,7 +58,7 @@
     @event
     true)
 
-  (defcap INIT_BID:bool (collection-id:string collection-size:integer fungible:module{fungible-v2} price:decimal operator:string)
+  (defcap INIT_COLLECTION:bool (collection-id:string collection-size:integer fungible:module{fungible-v2} price:decimal operator:string)
     @event
     true)
 
@@ -77,8 +80,13 @@
 
 
   ;;BIDDING
-  (defun init-bid:bool (collection-id:string collection-size:integer fungible:module{fungible-v2} price:decimal operator:string )
-    (with-capability (OPERATOR)
+  (defun init-collection:bool
+    (collection-id:string
+     collection-size:integer
+     fungible:module{fungible-v2}
+     price:decimal
+     operator:string
+     operator-guard:guard )
       (insert collections collection-id {
         "id": collection-id
        ,"collection-size": collection-size
@@ -88,9 +96,9 @@
        ,"reservation-price": price
        ,"reservation-fungible": fungible
        ,"operator-account": operator
+       ,"operator-guard": operator-guard
       })
-    )
-    (emit-event (INIT_BID collection-id collection-size fungible price operator))
+     (emit-event (INIT_COLLECTION collection-id collection-size fungible price operator))
   )
 
   (defun reserve-whitelist:bool (collection-id:string buyer:string)
@@ -108,6 +116,7 @@
         })
       (emit-event (RESERVE_SALE collection-id buyer (length slots)))))
 
+
   (defun whitelist-key (collection-id:string index:integer)
     (format "{}:{}"[collection-id index])
   )
@@ -117,12 +126,13 @@
       "slots":= slots
      ,"collection-size":= collection-size
       }
+      (with-capability (OPERATOR collection-id)
       (enforce (= collection-size (length slots)) "bid is in the process")
       (enforce (= (length token-ids) collection-size) "token list is invalid")
       (update collections collection-id {
         'tokens: (sort token-ids)
         }))
-      (emit-event (REVEAL_TOKENS collection-id (sort token-ids))))
+      (emit-event (REVEAL_TOKENS collection-id (sort token-ids)))))
 
   (defun token-id:string (token-manifest-hash:string)
     (format "t:{}" [token-manifest-hash])

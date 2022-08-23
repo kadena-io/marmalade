@@ -45,25 +45,20 @@
 (use kip.token-manifest)
 (use marmalade.simple-1-off-whitelist-collection-policy)
 
-(env-sigs [
-  { 'key: 'marmalade-admin
-   ,'caps: [(OPERATOR)]
-   }])
-
-(expect  "initiates collection-0 bid"
-  true
-  (init-bid "collection-0" 5 coin 5.0 "operator")
-  )
-
-(expect "INIT_BID events"
-  [{ "name": "marmalade.simple-1-off-whitelist-collection-policy.INIT_BID"
-    ,"params": ["collection-0" 5 coin 5.0 "operator"]}]
-  (map (remove 'module-hash )(env-events true))
-)
-
 (env-data {
   'buyer-0: ["buyer-0"], 'buyer-1: ["buyer-1"], 'buyer-2: ["buyer-2"], 'buyer-3: ["buyer-3"], 'buyer-4: ["buyer-4"], 'operator: ['operator]
   })
+
+(expect  "initiates collection-0 bid"
+  true
+  (init-collection "collection-0" 5 coin 5.0 "operator" (read-keyset 'operator))
+  )
+
+(expect "INIT_COLLECTION events"
+  [{ "name": "marmalade.simple-1-off-whitelist-collection-policy.INIT_COLLECTION"
+    ,"params": ["collection-0" 5 coin 5.0 "operator"]}]
+  (map (remove 'module-hash )(env-events true))
+)
 
 (test-capability (coin.COINBASE))
 (expect "fund buyers"
@@ -118,6 +113,10 @@
   (map (remove 'module-hash )(env-events true))
 )
 
+(env-sigs
+   [{ 'key: "operator" ,'caps: [(marmalade.simple-1-off-whitelist-collection-policy.OPERATOR "collection-0")] }
+])
+
 (expect-failure "Clear the bid fails - whitelist is not fully sold"
   "bid is in the process"
   (let*
@@ -144,6 +143,10 @@
     {"name": "marmalade.simple-1-off-whitelist-collection-policy.RESERVE_SALE","params": ["collection-0" "buyer-4" 4]} ]
   (map (remove 'module-hash )(env-events true))
 )
+
+(env-sigs
+   [{ 'key: "operator" ,'caps: [(marmalade.simple-1-off-whitelist-collection-policy.OPERATOR "collection-0")] }
+])
 
 (expect "Clear the bid succeeds"
   true

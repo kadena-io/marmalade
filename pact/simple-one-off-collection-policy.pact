@@ -14,7 +14,12 @@
 
   (defschema collection
     id:string
+    current-whitelist-index:integer
+    token-count:integer
     tokens:list
+    whitelist-price:decimal
+    whitelist-fungible:module{fungible-v2}
+    operator-account:string
   )
 
   (defschema token
@@ -30,8 +35,8 @@
   )
 
   (defschema whitelist
-    id:string
     collection-id:string
+    index:integer
     account:string
   )
 
@@ -51,7 +56,7 @@
   ;   (enforce-guard (keyset-ref-guard 'marmalade-admin ))
   ; )
 
-  (defcap ISSUER ()
+  (defcap OPERATOR ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin ))
     true
   )
@@ -77,35 +82,66 @@
      (enforce-guard (marmalade.ledger.ledger-guard))
   )
 
-  (defun init-collection:bool (collection-id:string whitelist-ids:list)
-    (with-capability (ISSUER)
+  ;;BIDDING
+  (defun init-bid:bool (collection-id:string token-count:integer fungible:module{fungible-v2} operator-account:string price:decimal)
+    (with-capability (OPERATOR)
       (insert collections collection-id {
-        "id": collection-id,
-        "tokens": []
-        })
-      (map (add-whitelist collection-id) whitelist-ids)
+        "id": collection-id
+       ,"token-count": token-count
+       ,"current-whitelist-index": 0
+       ,"tokens": []
+       ,"whitelist-price": price
+       ,"whitelist-fungible": fungible
+       ,"operator-account": operator-account
+      })
     )
     true
   )
 
-  (defun add-whitelist:bool (collection-id:string whitelist-id:string)
-    (with-capability (INTERNAL)
-      (insert whitelists whitelist-id {
-        'id: whitelist-id
-       ,'collection-id: collection-id
-       ,'account:""
-      })
-    )
-    (emit-event (ADD_WHITELIST whitelist-id collection-id))
+  ;; when buyer pays for the whitelist, issuer registers the whitelist
+  (defun reserve-whitelist:bool (collection-id:string buyer:string)
+      (with-read collections collection-id {
+        "current-whitelist-index":= curr-index:integer
+       ,"token-count":= max-index:integer
+       ,"whitelist-price":=amount:decimal
+       ,"whitelist-fungible":=fungible:module{fungible-v2}
+       ,"operator-account":=operator:string
+        }
+      (enforce (>= max-index curr-index) "bid has ended")
+        (fungible::transfer buyer operator amount)
+        (insert whitelists (whitelist-key collection-id curr-index) {
+          'collection-id:collection-id
+         ,'index: curr-index
+         ,'account: buyer
+        })
+        (if (= max-index curr-index)
+          true
+          (update collections collection-id {
+            "current-whitelist-index": (+ 1 curr-index)
+            })
+        )
+      true))
+
+  (defun whitelist-key (collection-id:string index:integer)
+    (format "{}:{}"[collection-id index])
   )
 
-  ;; when buyer pays for the whitelist, issuer registers the whitelist
-  (defun register-whitelist-buyer:bool (whitelist-id:string account:string)
-    (with-capability (ISSUER)
-      (update whitelists whitelist-id {
-        'account: account
-      }))
+  (defun reveal-whitelist:list (collection-id:string token-ids:list)
+    (with-read collections collection-id {
+      "current-whitelist-index":= curr-index,
+      "token-count":= max-index
+      }
+      (enforce (= max-index curr-index) "bid is in the process")
+      (enforce (= (length token-ids) max-index) "token list is invalid")
+      (update collections collection-id {
+        'tokens: (sort token-ids)
+        }))
     true)
+
+  (defun token-id:string (token-manifest-hash:string)
+    (format "t:{}" [token-manifest-hash])
+  )
+
 
   (defun enforce-init:bool
     ( token:object{token-info}
@@ -117,8 +153,8 @@
     ;;one-off
     (enforce (=  (at 'precision token) 0) "Invalid precision")
     ;;issuer creates token
-    (with-capability (ISSUER)
-      (with-read collection collection-id {
+    (with-capability (OPERATOR)
+      (with-read collections collection-id {
         'tokens:= collection-list,
         'total-unique-tokens:= total-unique-tokens
         }

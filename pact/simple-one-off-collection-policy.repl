@@ -1,0 +1,158 @@
+(begin-tx)
+(env-data
+  { 'ns-admin-keyset: []
+  , 'ns-genesis-keyset:[]
+  , 'ns-operate-keyset:[] })
+(load "root/fungible-v2.pact")
+(load "root/gas-payer-v1.pact")
+(load "root/coin.pact")
+(load "root/ns.pact")
+
+(define-namespace 'kip (sig-keyset) (sig-keyset))
+
+(load "kip/account-protocols-v1.pact")
+(load "kip/manifest.pact")
+(load "kip/token-policy-v1.pact")
+(load "kip/poly-fungible-v2.pact")
+
+(define-namespace 'util (sig-keyset) (sig-keyset))
+(load "util/fungible-util.pact")
+(commit-tx)
+
+(begin-tx)
+(env-data
+ { 'marmalade-admin: ["marmalade-admin"]
+ , 'marmalade-ns-user: ["marmalade-admin"]
+ , 'marmalade-ns-admin: ["marmalade-admin"]
+ , 'ns: "marmalade"
+ , 'upgrade: false })
+ (env-sigs [
+   { 'key: 'marmalade-admin
+    ,'caps: []
+    }])
+(load "ns-marmalade.pact")
+(load "ledger.pact")
+(load "simple-one-off-collection-policy.pact")
+(typecheck "marmalade.ledger" true)
+(commit-tx)
+
+
+(begin-tx "collection policy")
+
+
+(use marmalade.ledger)
+
+(env-sigs [
+  { 'key: "bob"
+  , 'caps:
+    [
+     (MINT "project-0" "bob" 5.0),
+    ]
+  }])
+
+(use kip.token-manifest)
+(use marmalade.simple-1-off-whitelist-collection-policy)
+
+(env-sigs [
+  { 'key: 'marmalade-admin
+   ,'caps: [(OPERATOR)]
+   }])
+
+(expect  "initiates collection-0"
+  true
+   (init-bid "collection-0" 5 coin "operator" 5.0)
+  )
+
+(env-data {
+  'buyer-0: ["buyer-0"], 'buyer-1: ["buyer-1"], 'buyer-2: ["buyer-2"], 'buyer-3: ["buyer-3"], 'buyer-4: ["buyer-4"], 'operator: ['operator]
+  })
+
+(test-capability (coin.COINBASE))
+(expect "fund buyers"
+   ["Write succeeded" "Write succeeded" "Write succeeded" "Write succeeded" "Write succeeded"]
+  (let*
+    ((buyer (lambda (index:integer) (format "buyer-{}" [index])))
+     (buyers (map buyer (enumerate 0 4)))
+     (fund (lambda (account:string) (coin.coinbase account (read-keyset account ) 5.0) ))
+     )
+     (map fund buyers))
+)
+
+(expect "create operator account"
+   "Write succeeded"
+   (coin.create-account 'operator (read-keyset 'operator))
+)
+
+(env-sigs
+   [{ 'key: "buyer-0" ,'caps: [(coin.TRANSFER "buyer-0" "operator" 5.0)] }
+    { 'key: "buyer-1" ,'caps: [(coin.TRANSFER "buyer-1" "operator" 5.0)] }
+    { 'key: "buyer-2" ,'caps: [(coin.TRANSFER "buyer-2" "operator" 5.0)] }
+    { 'key: "buyer-3" ,'caps: [(coin.TRANSFER "buyer-3" "operator" 5.0)] }
+])
+
+(expect  "4 buyers buy whitelist from collection-0"
+  [true true true true ]
+  (let*
+    ((buyer (lambda (index:integer) (format "buyer-{}" [index])))
+     (buyers (map buyer (enumerate 0 3))))
+    buyers
+   (map (reserve-whitelist "collection-0") buyers)
+  ))
+
+(expect-failure "Clear the bid fails - whitelist is not fully sold"
+  "bid is in the process"
+  (let*
+    ( (stringify-index (lambda (index:integer) (format "{}" [index])))
+      (get-manifest (lambda (index:integer)
+        (create-manifest (uri "text" (stringify-index index)) [])
+        ))
+      (manifests:list (map get-manifest (enumerate 0 29)))
+      (hashes:list (map (at 'hash ) manifests))
+      (tokens:list (map (token-id) hashes)) )
+      (reveal-whitelist "collection-0" tokens)
+      ))
+
+(env-sigs
+   [{ 'key: "buyer-4" ,'caps: [(coin.TRANSFER "buyer-4" "operator" 5.0)] }
+])
+
+(expect "last whitelist slot is sold"
+  true
+  (reserve-whitelist "collection-0" "buyer-4"))
+
+(expect "Clear the bid succeeds"
+  true
+  (let*
+    ( (stringify-index (lambda (index:integer) (format "{}" [index])))
+      (get-manifest (lambda (index:integer)
+        (create-manifest (uri "text" (stringify-index index)) [])
+        ))
+      (manifests:list (map get-manifest (enumerate 0 4)))
+      (hashes:list (map (at 'hash ) manifests))
+      (tokens:list (map (token-id) hashes)) )
+      (reveal-whitelist "collection-0" tokens)
+      ))
+
+(rollback-tx)
+
+
+; trustless fair nft auction
+;
+;
+; operator conducts the sale
+;
+;
+; 1. bid for slot = nft - collect money
+; 2. collect bid and buy
+
+; token id t: hash
+; slots, price
+
+; beginning:  30 slots
+; 5 kda a slot
+; until 30 slots are reserved, bidding is open
+; only one account per slot
+;
+; 1. bidding
+; 2. clearing  - upload t: list where the order matches the slot
+; 3. upload metadata

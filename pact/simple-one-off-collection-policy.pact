@@ -41,15 +41,6 @@
 
   (defcap INTERNAL () true)
 
-  ; (defcap ADD_TO_COLLECTION:bool (collection-id:string)
-  ;   (enforce-guard (keyset-ref-guard 'marmalade-admin ))
-  ; )
-  ;
-  ; (defcap CREATE_TOKEN:bool (collection-id:string token-id:string)
-  ;   (enforce-ledger)
-  ;   (enforce-guard (keyset-ref-guard 'marmalade-admin ))
-  ; )
-
   (defcap OPERATOR ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin ))
     true
@@ -64,7 +55,15 @@
     @event
     true)
 
-  (defcap ADD_WHITELIST:bool (whitelist-id:string collection-id:string)
+  (defcap INIT_BID:bool (collection-id:string collection-size:integer fungible:module{fungible-v2} price:decimal operator:string)
+    @event
+    true)
+
+  (defcap RESERVE_SALE:bool (collection-id:string account:string index:integer)
+    @event
+    true)
+
+  (defcap REVEAL_TOKENS:bool (collection-id:string tokens:list)
     @event
     true)
 
@@ -76,8 +75,9 @@
      (enforce-guard (marmalade.ledger.ledger-guard))
   )
 
+
   ;;BIDDING
-  (defun init-bid:bool (collection-id:string collection-size:integer fungible:module{fungible-v2} operator-account:string price:decimal)
+  (defun init-bid:bool (collection-id:string collection-size:integer fungible:module{fungible-v2} price:decimal operator:string )
     (with-capability (OPERATOR)
       (insert collections collection-id {
         "id": collection-id
@@ -87,10 +87,10 @@
        ,"slots": []
        ,"reservation-price": price
        ,"reservation-fungible": fungible
-       ,"operator-account": operator-account
+       ,"operator-account": operator
       })
     )
-    true
+    (emit-event (INIT_BID collection-id collection-size fungible price operator))
   )
 
   (defun reserve-whitelist:bool (collection-id:string buyer:string)
@@ -106,7 +106,7 @@
       (update collections collection-id {
         "slots": (+ [buyer] slots)
         })
-      true))
+      (emit-event (RESERVE_SALE collection-id buyer (length slots)))))
 
   (defun whitelist-key (collection-id:string index:integer)
     (format "{}:{}"[collection-id index])
@@ -122,7 +122,7 @@
       (update collections collection-id {
         'tokens: (sort token-ids)
         }))
-    true)
+      (emit-event (REVEAL_TOKENS collection-id (sort token-ids))))
 
   (defun token-id:string (token-manifest-hash:string)
     (format "t:{}" [token-manifest-hash])

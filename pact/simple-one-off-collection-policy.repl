@@ -42,14 +42,6 @@
 
 (use marmalade.ledger)
 
-(env-sigs [
-  { 'key: "bob"
-  , 'caps:
-    [
-     (MINT "project-0" "bob" 5.0),
-    ]
-  }])
-
 (use kip.token-manifest)
 (use marmalade.simple-1-off-whitelist-collection-policy)
 
@@ -58,10 +50,16 @@
    ,'caps: [(OPERATOR)]
    }])
 
-(expect  "initiates collection-0"
+(expect  "initiates collection-0 bid"
   true
-   (init-bid "collection-0" 5 coin "operator" 5.0)
+  (init-bid "collection-0" 5 coin 5.0 "operator")
   )
+
+(expect "INIT_BID events"
+  [{ "name": "marmalade.simple-1-off-whitelist-collection-policy.INIT_BID"
+    ,"params": ["collection-0" 5 coin 5.0 "operator"]}]
+  (map (remove 'module-hash )(env-events true))
+)
 
 (env-data {
   'buyer-0: ["buyer-0"], 'buyer-1: ["buyer-1"], 'buyer-2: ["buyer-2"], 'buyer-3: ["buyer-3"], 'buyer-4: ["buyer-4"], 'operator: ['operator]
@@ -76,6 +74,15 @@
      (fund (lambda (account:string) (coin.coinbase account (read-keyset account ) 5.0) ))
      )
      (map fund buyers))
+)
+
+(expect "COINBASE events"
+  [ {"name": "coin.TRANSFER","params": ["" "buyer-0" 5.0]}
+    {"name": "coin.TRANSFER","params": ["" "buyer-1" 5.0]}
+    {"name": "coin.TRANSFER","params": ["" "buyer-2" 5.0]}
+    {"name": "coin.TRANSFER","params": ["" "buyer-3" 5.0]}
+    {"name": "coin.TRANSFER","params": ["" "buyer-4" 5.0]}]
+  (map (remove 'module-hash )(env-events true))
 )
 
 (expect "create operator account"
@@ -99,6 +106,18 @@
    (map (reserve-whitelist "collection-0") buyers)
   ))
 
+(expect "RESERVE_SALE events"
+  [ {"name": "coin.TRANSFER","params": ["buyer-0" "operator" 5.0]}
+    {"name": "marmalade.simple-1-off-whitelist-collection-policy.RESERVE_SALE","params": ["collection-0" "buyer-0" 0]}
+    {"name": "coin.TRANSFER","params": ["buyer-1" "operator" 5.0]}
+    {"name": "marmalade.simple-1-off-whitelist-collection-policy.RESERVE_SALE","params": ["collection-0" "buyer-1" 1]}
+    {"name": "coin.TRANSFER","params": ["buyer-2" "operator" 5.0]}
+    {"name": "marmalade.simple-1-off-whitelist-collection-policy.RESERVE_SALE","params": ["collection-0" "buyer-2" 2]}
+    {"name": "coin.TRANSFER","params": ["buyer-3" "operator" 5.0]}
+    {"name": "marmalade.simple-1-off-whitelist-collection-policy.RESERVE_SALE","params": ["collection-0" "buyer-3" 3]}]
+  (map (remove 'module-hash )(env-events true))
+)
+
 (expect-failure "Clear the bid fails - whitelist is not fully sold"
   "bid is in the process"
   (let*
@@ -120,6 +139,12 @@
   true
   (reserve-whitelist "collection-0" "buyer-4"))
 
+(expect "RESERVE_SALE events"
+  [ {"name": "coin.TRANSFER","params": ["buyer-4" "operator" 5.0]}
+    {"name": "marmalade.simple-1-off-whitelist-collection-policy.RESERVE_SALE","params": ["collection-0" "buyer-4" 4]} ]
+  (map (remove 'module-hash )(env-events true))
+)
+
 (expect "Clear the bid succeeds"
   true
   (let*
@@ -131,28 +156,11 @@
       (hashes:list (map (at 'hash ) manifests))
       (tokens:list (map (token-id) hashes)) )
       (reveal-whitelist "collection-0" tokens)
-      ))
+))
 
+(expect "REVEAL_TOKEN events"
+  [{"name": "marmalade.simple-1-off-whitelist-collection-policy.REVEAL_TOKENS"
+   ,"params": ["collection-0" ["t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678" "t:A431JP6Z0MZ3b6-bYuD3PgNDjCLa_BwhUW1jvHu9tkQ" "t:fgnk8jnlTvB8iToPf2ACNpy8BInAj5OTXvzELgAKvRc" "t:fqfxqkkMwG4FuyttGzosh_JpLOD-LUzt_D8K_5UhFg8" "t:kTKLjmYoR9AOyv8KXcgNGOy8PGeF3cRwmYAofLdMa4w"]]}]
+  (map (remove 'module-hash )(env-events true))
+)
 (rollback-tx)
-
-
-; trustless fair nft auction
-;
-;
-; operator conducts the sale
-;
-;
-; 1. bid for slot = nft - collect money
-; 2. collect bid and buy
-
-; token id t: hash
-; slots, price
-
-; beginning:  30 slots
-; 5 kda a slot
-; until 30 slots are reserved, bidding is open
-; only one account per slot
-;
-; 1. bidding
-; 2. clearing  - upload t: list where the order matches the slot
-; 3. upload metadata

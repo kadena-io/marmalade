@@ -14,11 +14,12 @@
 
   (defschema collection
     id:string
-    current-whitelist-index:integer
-    token-count:integer
+    num-created:integer
+    collection-size:integer
     tokens:list
-    whitelist-price:decimal
-    whitelist-fungible:module{fungible-v2}
+    slots:list
+    reservation-price:decimal
+    reservation-fungible:module{fungible-v2}
     operator-account:string
   )
 
@@ -34,16 +35,9 @@
     tokens:list
   )
 
-  (defschema whitelist
-    collection-id:string
-    index:integer
-    account:string
-  )
-
   (deftable collections:{collection})
   (deftable tokens:{token})
   (deftable accounts:{account})
-  (deftable whitelists:{whitelist})
 
   (defcap INTERNAL () true)
 
@@ -83,43 +77,35 @@
   )
 
   ;;BIDDING
-  (defun init-bid:bool (collection-id:string token-count:integer fungible:module{fungible-v2} operator-account:string price:decimal)
+  (defun init-bid:bool (collection-id:string collection-size:integer fungible:module{fungible-v2} operator-account:string price:decimal)
     (with-capability (OPERATOR)
       (insert collections collection-id {
         "id": collection-id
-       ,"token-count": token-count
-       ,"current-whitelist-index": 0
+       ,"collection-size": collection-size
+       ,"num-created": 0
        ,"tokens": []
-       ,"whitelist-price": price
-       ,"whitelist-fungible": fungible
+       ,"slots": []
+       ,"reservation-price": price
+       ,"reservation-fungible": fungible
        ,"operator-account": operator-account
       })
     )
     true
   )
 
-  ;; when buyer pays for the whitelist, issuer registers the whitelist
   (defun reserve-whitelist:bool (collection-id:string buyer:string)
-      (with-read collections collection-id {
-        "current-whitelist-index":= curr-index:integer
-       ,"token-count":= max-index:integer
-       ,"whitelist-price":=amount:decimal
-       ,"whitelist-fungible":=fungible:module{fungible-v2}
+    (with-read collections collection-id {
+       "collection-size":= collection-size:integer
+       ,"reservation-price":=amount:decimal
+       ,"reservation-fungible":=fungible:module{fungible-v2}
        ,"operator-account":=operator:string
-        }
-      (enforce (>= max-index curr-index) "bid has ended")
-        (fungible::transfer buyer operator amount)
-        (insert whitelists (whitelist-key collection-id curr-index) {
-          'collection-id:collection-id
-         ,'index: curr-index
-         ,'account: buyer
+       ,"slots":= slots
+      }
+      (enforce (>= collection-size (length slots)) "bid has ended")
+      (fungible::transfer buyer operator amount)
+      (update collections collection-id {
+        "slots": (+ [buyer] slots)
         })
-        (if (= max-index curr-index)
-          true
-          (update collections collection-id {
-            "current-whitelist-index": (+ 1 curr-index)
-            })
-        )
       true))
 
   (defun whitelist-key (collection-id:string index:integer)
@@ -128,11 +114,11 @@
 
   (defun reveal-whitelist:list (collection-id:string token-ids:list)
     (with-read collections collection-id {
-      "current-whitelist-index":= curr-index,
-      "token-count":= max-index
+      "slots":= slots
+     ,"collection-size":= collection-size
       }
-      (enforce (= max-index curr-index) "bid is in the process")
-      (enforce (= (length token-ids) max-index) "token list is invalid")
+      (enforce (= collection-size (length slots)) "bid is in the process")
+      (enforce (= (length token-ids) collection-size) "token list is invalid")
       (update collections collection-id {
         'tokens: (sort token-ids)
         }))
@@ -141,7 +127,6 @@
   (defun token-id:string (token-manifest-hash:string)
     (format "t:{}" [token-manifest-hash])
   )
-
 
   (defun enforce-init:bool
     ( token:object{token-info}
@@ -167,14 +152,6 @@
           true))
       ))
 
-  (defun enforce-whitelist:bool (whitelist-id:string account:string)
-    (with-read whitelists whitelist-id {
-      "account":= whitelisted-account
-      }
-      (enforce (!= whitelisted-account "") "Whitelist account is empty")
-      (enforce (= account whitelisted-account) "Account is not whitelisted"))
-  )
-
   (defun enforce-mint:bool
     ( token:object{token-info}
       account:string
@@ -188,7 +165,7 @@
       'supply:= supply
       }
       (enforce (= supply 0.0) "token has been minted")
-      (enforce-whitelist whitelist-id account)
+
       (with-capability (MINT token-id)
         (add-token-in-account token-id account guard)
       )
@@ -294,5 +271,4 @@
   ["upgrade complete"]
   [ (create-table accounts)
     (create-table tokens)
-    (create-table collections)
-    (create-table whitelists) ])
+    (create-table collections) ])

@@ -16,8 +16,8 @@
     id:string
     num-created:integer
     collection-size:integer
-    tokens:list
-    slots:list
+    tokens:[string]
+    slots:[string]
     reservation-price:decimal
     reservation-fungible:module{fungible-v2}
     operator-account:string

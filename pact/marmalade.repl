@@ -33,7 +33,7 @@
 (load "ns-marmalade.pact")
 (load "ledger.pact")
 (load "policy.pact")
-(load "collection-policy.pact")
+(load "simple-one-off-collection-policy.pact")
 (typecheck "marmalade.ledger" true)
 (commit-tx)
 
@@ -2002,11 +2002,12 @@
   }])
 
 (use kip.token-manifest)
+(use marmalade.simple-1-off-whitelist-collection-policy)
 
 (env-data {"collection-id": "collection-0"})
 (env-sigs [
   { 'key: 'marmalade-admin
-   ,'caps: [(marmalade.one-off-collection-policy.CREATE_TOKEN "collection-0" "project-0")]
+   ,'caps: [(ISSUER)]
    }])
 
 (expect-failure
@@ -2015,19 +2016,32 @@
     "project-0"
     12
     (create-manifest (uri "text" "project-0-uri") [])
-    marmalade.one-off-collection-policy)
+    marmalade.simple-1-off-whitelist-collection-policy)
   )
 
 (env-sigs [
   { 'key: 'marmalade-admin
-   ,'caps: [(marmalade.one-off-collection-policy.CREATE_COLLECTION "collection-0" )]
+   ,'caps: [(ISSUER)]
    }])
 
-(expect "initiates collection-0"
-  "Write succeeded"
-  (marmalade.one-off-collection-policy.init-collection
-    "collection-0")
-)
+(expect  "initiates collection-0"
+  true
+  (let
+   ( (whitelists:list
+     (map (at 'hash )
+       [ (create-manifest (uri "text" "token-0") [])
+         (create-manifest (uri "text" "token-1") [])
+         (create-manifest (uri "text" "token-2") [])
+         (create-manifest (uri "text" "token-3") [])
+         (create-manifest (uri "text" "token-4") [])
+       ]) ))
+   (init-collection "collection-0" whitelists)
+   )
+ )
+
+(expect  "buyer1 buys whitelist from collection-0"
+  true
+  (register-whitelist-buyer (at 'hash (create-manifest (uri "text" "token-0") [])) "k:buyer1"))
 
 
 (rollback-tx)

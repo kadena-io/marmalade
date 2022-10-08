@@ -14,7 +14,7 @@
 
   (defschema collection
     id:string
-    num-created:integer
+    total-unique-tokens:integer
     collection-size:integer
     tokens:[string]
     slots:[string]
@@ -50,11 +50,10 @@
   )
 
   (defcap MINT (token-id:string)
-    @event
     (enforce-ledger)
   )
 
-  (defcap ADD_TO_COLLECTION:bool (collection-id:string token-id:string total-unique-tokens:integer)
+  (defcap ADD_TO_COLLECTION:bool (collection-id:string total-unique-tokens:integer)
     @event
     true)
 
@@ -90,7 +89,7 @@
       (insert collections collection-id {
         "id": collection-id
        ,"collection-size": collection-size
-       ,"num-created": 0
+       ,"total-unique-tokens": 0
        ,"tokens": []
        ,"slots": []
        ,"reservation-price": price
@@ -146,9 +145,12 @@
             (manifest-hash:string (at 'hash (at 'manifest token)))
             (precision:integer (at 'precision token)))
     ;;one-off
-    (enforce (=  (at 'precision token) 0) "Invalid precision")
+    (enforce (= (at 'precision token) 0) "Invalid precision")
+    ;; enforce token-id matches manifest hash
+
+    (enforce (= (format "t:{}" [manifest-hash]) token-id) "Invalid token-id" )
     ;;issuer creates token
-    (with-capability (OPERATOR)
+    (with-capability (OPERATOR collection-id)
       (with-read collections collection-id {
         'tokens:= collection-list,
         'total-unique-tokens:= total-unique-tokens
@@ -158,7 +160,7 @@
            ,"collection-id" : collection-id
            ,"supply": 0.0
           })
-          (add-to-collection collection-id (+ token-id collection-list) (+ 1 total-unique-tokens))
+          (add-to-collection collection-id (+ 1 total-unique-tokens))
           true))
       ))
 
@@ -171,38 +173,47 @@
     (let* ( (token-id:string  (at 'id token))
             (whitelist-id:string (at 'hash (at 'manifest token)))
             (collection-id:string (at 'collection-id (get-token token-id))))
-    (with-read tokens token-id {
-      'supply:= supply
-      }
-      (enforce (= supply 0.0) "token has been minted")
+      (with-capability (OPERATOR collection-id)
+        (with-read tokens token-id {
+          'supply:= supply
+          }
+          (enforce (= supply 0.0) "token has been minted")
+          (with-read collections collection-id
+            {
+              'slots:= slots
+            }
+           (enforce (contains account slots) "Account is not whitelisted")
+            (with-capability (MINT token-id)
+              (update-account token-id account guard)
+            )
+          ))
+      )))
 
-      (with-capability (MINT token-id)
-        (add-token-in-account token-id account guard)
-      )
-  )))
-
-  (defun add-to-collection (collection-id:string token-list:list total-unique-tokens:integer)
+  (defun add-to-collection (collection-id:string total-unique-tokens:integer)
     (with-capability (INTERNAL)
     (update collections collection-id {
-      'tokens:token-list
-     ,'total-unique-tokens:total-unique-tokens
+      'total-unique-tokens:  total-unique-tokens
       })
      )
-   (emit-event (ADD_TO_COLLECTION collection-id token-list total-unique-tokens))
+   (emit-event (ADD_TO_COLLECTION collection-id total-unique-tokens))
   )
 
- (defun add-token-in-account (token-id:string account:string guard:guard)
-   (with-capability (INTERNAL)
-     (with-default-read accounts account {
-        'tokens: []
-      } {
-        'tokens:=tokens
-      }
-      (update accounts account {
-         'tokens: (+ token-id tokens)
-       })
+ (defun update-account (token-id:string account:string guard:guard)
+  (require-capability (MINT token-id))
+   (with-default-read accounts account {
+      'tokens: [],
+      'guard: guard
+    } {
+      'tokens:= tokens,
+      'guard:= old-guard
+    }
+    (enforce (= guard old-guard) "account guards do not match")
+    (write accounts account {
+      'account:account,
+      'guard: guard,
+      'tokens: (+ [token-id] tokens)
+     })
       )
-    )
   )
 
   (defun delete-token-in-account (token-id:string account:string guard:guard)

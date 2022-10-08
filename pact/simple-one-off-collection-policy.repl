@@ -1,4 +1,5 @@
 (begin-tx)
+(env-exec-config ['DisablePact44] )
 (env-data
   { 'ns-admin-keyset: []
   , 'ns-genesis-keyset:[]
@@ -7,7 +8,6 @@
 (load "root/gas-payer-v1.pact")
 (load "root/coin.pact")
 (load "root/ns.pact")
-
 (define-namespace 'kip (sig-keyset) (sig-keyset))
 
 (load "kip/account-protocols-v1.pact")
@@ -30,15 +30,20 @@
    { 'key: 'marmalade-admin
     ,'caps: []
     }])
+
 (load "ns-marmalade.pact")
+
+(commit-tx)
+
+(begin-tx)
+(env-exec-config [] )
 (load "ledger.pact")
 (load "simple-one-off-collection-policy.pact")
 (typecheck "marmalade.ledger" true)
 (commit-tx)
 
 
-(begin-tx "collection policy")
-
+(begin-tx "init collection")
 
 (use marmalade.ledger)
 
@@ -166,4 +171,82 @@
    ,"params": ["collection-0" ["t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678" "t:A431JP6Z0MZ3b6-bYuD3PgNDjCLa_BwhUW1jvHu9tkQ" "t:fgnk8jnlTvB8iToPf2ACNpy8BInAj5OTXvzELgAKvRc" "t:fqfxqkkMwG4FuyttGzosh_JpLOD-LUzt_D8K_5UhFg8" "t:kTKLjmYoR9AOyv8KXcgNGOy8PGeF3cRwmYAofLdMa4w"]]}]
   (map (remove 'module-hash )(env-events true))
 )
+
+(commit-tx)
+
+(begin-tx "create-token")
+(use kip.token-manifest)
+(use marmalade.ledger)
+(use marmalade.simple-1-off-whitelist-collection-policy)
+
+(env-data {
+ 'collection-id: "collection-0"
+  })
+
+(env-sigs [
+  { 'key: 'operator
+   ,'caps: [(OPERATOR "collection-0")]
+  }])
+
+(expect "create t:fgnk8jnlTvB8iToPf2ACNpy8BInAj5OTXvzELgAKvRc"
+  true
+  (marmalade.ledger.create-token
+    (token-id (at 'hash (create-manifest (uri "text" "0") [])))
+    0
+    (create-manifest (uri "text" "0") [])
+    marmalade.simple-1-off-whitelist-collection-policy)
+)
+
+(expect "create t:A431JP6Z0MZ3b6-bYuD3PgNDjCLa_BwhUW1jvHu9tkQ"
+  true
+  (marmalade.ledger.create-token
+    (token-id (at 'hash (create-manifest (uri "text" "1") [])))
+    0
+    (create-manifest (uri "text" "1") [])
+    marmalade.simple-1-off-whitelist-collection-policy)
+)
+
+(expect-failure "create token with invalid manifest hash fails"
+  "Invalid token-id"
+  (marmalade.ledger.create-token
+    "t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678"
+    0
+    (create-manifest (uri "text" "3") [])
+    marmalade.simple-1-off-whitelist-collection-policy)
+)
+
+(commit-tx)
+
+(begin-tx "mint-token")
+(use kip.token-manifest)
+(use marmalade.ledger)
+(use marmalade.simple-1-off-whitelist-collection-policy)
+
+(env-data {
+    'buyer-0: ['buyer-0 ]
+   ,'buyer-6: ['buyer-6 ]
+})
+
+(env-sigs [
+  { 'key: 'operator
+   ,'caps: [(marmalade.ledger.MINT "t:fgnk8jnlTvB8iToPf2ACNpy8BInAj5OTXvzELgAKvRc" "buyer-0" 1.0), (marmalade.ledger.MINT "t:A431JP6Z0MZ3b6-bYuD3PgNDjCLa_BwhUW1jvHu9tkQ" "buyer-6" 1.0)]
+    }])
+
+(marmalade.ledger.mint
+  "t:fgnk8jnlTvB8iToPf2ACNpy8BInAj5OTXvzELgAKvRc"
+  'buyer-0
+  (read-keyset 'buyer-0)
+  1.0)
+
+
+(expect-failure "mint token with non-whitelisted account"
+  "Account is not whitelisted"
+  (marmalade.ledger.mint
+    "t:A431JP6Z0MZ3b6-bYuD3PgNDjCLa_BwhUW1jvHu9tkQ"
+    'buyer-6
+    (read-keyset 'buyer-6)
+    1.0)
+)
+
+
 (rollback-tx)

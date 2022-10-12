@@ -77,7 +77,6 @@
      (enforce-guard (marmalade.ledger.ledger-guard))
   )
 
-
   ;;BIDDING
   (defun init-collection:bool
     (collection-id:string
@@ -130,6 +129,15 @@
       (enforce (= (length token-ids) collection-size) "token list is invalid")
       (update collections collection-id {
         'tokens: (sort token-ids)
+        ;;pre-project ordering
+        ;;1. operator creates list of token ordering
+        ;;2. oprator hashes the ordering
+        ;;3. operator uploads hash at init-collection(upload policy module)
+        ;;4. buyers buy their slots (index) - reserve-whitelist
+        ;;5. shuffle the slots (operator cannot influence this) -  use the last block height % collection size, etc, to shuffle (last whitelist sale blockheight)
+        ;;6. At reveal, token ordering is revealed, and buyers get the token at their index reveal-whitelist
+
+
         }))
       (emit-event (REVEAL_TOKENS collection-id (sort token-ids)))))
 
@@ -229,7 +237,6 @@
      )
    )
  )
-
 
   (defun get-collection:object{collection} (collection-id:string )
     (read collection collection-id)

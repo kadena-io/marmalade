@@ -250,3 +250,9 @@
 
 
 (rollback-tx)
+
+
+
+;; Principal
+
+;; revealing token-id (before create-token) can allow people to reserve that token id using a different policy. 

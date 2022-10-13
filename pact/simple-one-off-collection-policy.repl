@@ -260,21 +260,21 @@
 
 
 (env-data {
-    'buyer-4: ['buyer-4 ]
-   ,'buyer-index : 0
+    'buyer-2: ['buyer-2 ]
+   ,'buyer-index : 2
 })
 
 (env-sigs [
   { 'key: 'operator
-   ,'caps: [(marmalade.ledger.MINT "t:A431JP6Z0MZ3b6-bYuD3PgNDjCLa_BwhUW1jvHu9tkQ" "buyer-4" 1.0)]
+   ,'caps: [(marmalade.ledger.MINT "t:A431JP6Z0MZ3b6-bYuD3PgNDjCLa_BwhUW1jvHu9tkQ" "buyer-2" 1.0)]
     }])
 
 (expect-failure "mint token with non-whitelisted account"
   "Account is not whitelisted for the token"
   (marmalade.ledger.mint
     "t:A431JP6Z0MZ3b6-bYuD3PgNDjCLa_BwhUW1jvHu9tkQ"
-    'buyer-4
-    (read-keyset 'buyer-4)
+    'buyer-2
+    (read-keyset 'buyer-2)
     1.0)
 )
 

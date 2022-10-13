@@ -207,7 +207,7 @@
             (whitelist-id:string (at 'hash (at 'manifest token)))
             (collection-id:string (at 'collection-id (get-token token-id)))
             (buyer-index:integer  (read-integer 'buyer-index )))
-      (with-capability (OPERATOR collection-id)
+      (with-capability (OPERATOR collection-id) ;; enforce BUYER guard instead.
         (with-read tokens token-id {
           'supply:= supply
           }
@@ -219,6 +219,7 @@
              ,'collection-size:= collection-size
              ,'tokens:= tokens
            }
+          ;; enforce that accounts match the buyer and the token matches the shifted buyer index
           (enforce
             (and (= (at (mod (+ shift-index buyer-index) collection-size) tokens) token-id)
                  (= (at (mod (+ shift-index buyer-index) collection-size) slots) account))

@@ -16,12 +16,14 @@
     id:string
     total-unique-tokens:integer
     collection-size:integer
+    collection-hash:string
     tokens:[string]
     slots:[string]
     reservation-price:decimal
     reservation-fungible:module{fungible-v2}
     operator-account:string
     operator-guard:guard
+    shift-index:integer
   )
 
   (defschema token
@@ -81,13 +83,16 @@
   (defun init-collection:bool
     (collection-id:string
      collection-size:integer
+     collection-hash:string
      fungible:module{fungible-v2}
      price:decimal
      operator:string
      operator-guard:guard )
+
       (insert collections collection-id {
         "id": collection-id
        ,"collection-size": collection-size
+       ,"collection-hash":collection-hash
        ,"total-unique-tokens": 0
        ,"tokens": []
        ,"slots": []
@@ -95,6 +100,7 @@
        ,"reservation-fungible": fungible
        ,"operator-account": operator
        ,"operator-guard": operator-guard
+       ,"shift-index": 0
       })
      (emit-event (INIT_COLLECTION collection-id collection-size fungible price operator))
   )
@@ -110,36 +116,55 @@
       (enforce (>= collection-size (length slots)) "bid has ended")
       (fungible::transfer buyer operator amount)
       (update collections collection-id {
-        "slots": (+ [buyer] slots)
+        "slots": (+ slots [buyer])
         })
-      (emit-event (RESERVE_SALE collection-id buyer (length slots)))))
+      ;;Buyers know their index from the emitted event. Index is needed in mint.
+      (emit-event (RESERVE_SALE collection-id buyer (length slots)))
+      ;; Shift the buyers at the last whitelist sale
+      (if (= collection-size (+ (length slots) 1))
+        (update collections collection-id {
+           "slots": (shift-slots (+ slots [buyer]))
+          ,"shift-index": (random collection-size)
+          })
+          true
+      ))
+      true
+    )
 
-
-  (defun whitelist-key (collection-id:string index:integer)
-    (format "{}:{}"[collection-id index])
+  (defun random:integer (collection-size:integer)
+    (mod (at 'block-height (chain-data)) collection-size)
   )
 
-  (defun reveal-whitelist:list (collection-id:string token-ids:list)
+  (defun shift-index-list:list (collection-size:integer random:integer)
+    (enforce (> collection-size 1) "Invalid collection size")
+    (enforce (> collection-size random) "Invalid shift")
+    (if (= random 0)
+      (enumerate 0 (- collection-size 1))
+      (+ (enumerate (- collection-size random) (- collection-size 1)) (enumerate 0 (- (- collection-size random) 1) )))
+  )
+
+  (defun shift-slots:list (slots:[string])
+    (let*
+      ( (collection-size:integer (length slots))
+        (shifted-index:[integer] (shift-index-list collection-size (random collection-size)))
+        (buyer-at-index (lambda (index:integer) (at index slots)))
+      )
+      (map (buyer-at-index) shifted-index)))
+
+  (defun reveal-tokens:list (collection-id:string token-ids:list)
     (with-read collections collection-id {
-      "slots":= slots
-     ,"collection-size":= collection-size
+        "slots":= slots
+       ,"collection-size":= collection-size
+       ,"collection-hash":=collection-hash
       }
+      (enforce (= collection-hash (hash token-ids)) "Token manifests don't match")
       (with-capability (OPERATOR collection-id)
       (enforce (= collection-size (length slots)) "bid is in the process")
       (enforce (= (length token-ids) collection-size) "token list is invalid")
       (update collections collection-id {
-        'tokens: (sort token-ids)
-        ;;pre-project ordering
-        ;;1. operator creates list of token ordering
-        ;;2. oprator hashes the ordering
-        ;;3. operator uploads hash at init-collection(upload policy module)
-        ;;4. buyers buy their slots (index) - reserve-whitelist
-        ;;5. shuffle the slots (operator cannot influence this) -  use the last block height % collection size, etc, to shuffle (last whitelist sale blockheight)
-        ;;6. At reveal, token ordering is revealed, and buyers get the token at their index reveal-whitelist
-
-
+        'tokens: token-ids
         }))
-      (emit-event (REVEAL_TOKENS collection-id (sort token-ids)))))
+      (emit-event (REVEAL_TOKENS collection-id token-ids))))
 
   (defun token-id:string (token-manifest-hash:string)
     (format "t:{}" [token-manifest-hash])
@@ -180,7 +205,8 @@
     )
     (let* ( (token-id:string  (at 'id token))
             (whitelist-id:string (at 'hash (at 'manifest token)))
-            (collection-id:string (at 'collection-id (get-token token-id))))
+            (collection-id:string (at 'collection-id (get-token token-id)))
+            (buyer-index:integer  (read-integer 'buyer-index )))
       (with-capability (OPERATOR collection-id)
         (with-read tokens token-id {
           'supply:= supply
@@ -189,8 +215,14 @@
           (with-read collections collection-id
             {
               'slots:= slots
-            }
-           (enforce (contains account slots) "Account is not whitelisted")
+             ,'shift-index:= shift-index
+             ,'collection-size:= collection-size
+             ,'tokens:= tokens
+           }
+          (enforce
+            (and (= (at (mod (+ shift-index buyer-index) collection-size) tokens) token-id)
+                 (= (at (mod (+ shift-index buyer-index) collection-size) slots) account))
+              "Account is not whitelisted for the token")
             (with-capability (MINT token-id)
               (update-account token-id account guard)
             )

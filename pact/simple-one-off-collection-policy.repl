@@ -56,7 +56,17 @@
 
 (expect  "initiates collection-0 bid"
   true
-  (init-collection "collection-0" 5 coin 5.0 "operator" (read-keyset 'operator))
+  (let*
+    ( (stringify-index (lambda (index:integer) (format "{}" [index])))
+      (get-manifest (lambda (index:integer)
+        (create-manifest (uri "text" (stringify-index index)) [])
+        ))
+      (manifests:list (map get-manifest (enumerate 0 4)))
+      (hashes:list (map (at 'hash ) manifests))
+      (tokens:list (map (token-id) hashes))
+      (tokens-hash:string (hash tokens)))
+      (init-collection "collection-0" 5 tokens-hash coin 5.0 "operator" (read-keyset 'operator))
+      )
   )
 
 (expect "INIT_COLLECTION events"
@@ -98,7 +108,7 @@
 ])
 
 (expect  "4 buyers buy whitelist from collection-0"
-  [true true true true ]
+  [true true true true]
   (let*
     ((buyer (lambda (index:integer) (format "buyer-{}" [index])))
      (buyers (map buyer (enumerate 0 3))))
@@ -129,15 +139,18 @@
       (get-manifest (lambda (index:integer)
         (create-manifest (uri "text" (stringify-index index)) [])
         ))
-      (manifests:list (map get-manifest (enumerate 0 29)))
+      (manifests:list (map get-manifest (enumerate 0 4)))
       (hashes:list (map (at 'hash ) manifests))
       (tokens:list (map (token-id) hashes)) )
-      (reveal-whitelist "collection-0" tokens)
+      (reveal-tokens "collection-0" tokens)
       ))
 
 (env-sigs
    [{ 'key: "buyer-4" ,'caps: [(coin.TRANSFER "buyer-4" "operator" 5.0)] }
 ])
+
+(env-chain-data
+  {'block-height: 20987})
 
 (expect "last whitelist slot is sold"
   true
@@ -163,12 +176,17 @@
       (manifests:list (map get-manifest (enumerate 0 4)))
       (hashes:list (map (at 'hash ) manifests))
       (tokens:list (map (token-id) hashes)) )
-      (reveal-whitelist "collection-0" tokens)
+      (reveal-tokens "collection-0" tokens)
 ))
 
 (expect "REVEAL_TOKEN events"
-  [{"name": "marmalade.simple-1-off-whitelist-collection-policy.REVEAL_TOKENS"
-   ,"params": ["collection-0" ["t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678" "t:A431JP6Z0MZ3b6-bYuD3PgNDjCLa_BwhUW1jvHu9tkQ" "t:fgnk8jnlTvB8iToPf2ACNpy8BInAj5OTXvzELgAKvRc" "t:fqfxqkkMwG4FuyttGzosh_JpLOD-LUzt_D8K_5UhFg8" "t:kTKLjmYoR9AOyv8KXcgNGOy8PGeF3cRwmYAofLdMa4w"]]}]
+  [{"name": "marmalade.simple-1-off-whitelist-collection-policy.REVEAL_TOKENS",
+    "params": ["collection-0"
+                ["t:fgnk8jnlTvB8iToPf2ACNpy8BInAj5OTXvzELgAKvRc"
+                 "t:A431JP6Z0MZ3b6-bYuD3PgNDjCLa_BwhUW1jvHu9tkQ"
+                 "t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678"
+                 "t:fqfxqkkMwG4FuyttGzosh_JpLOD-LUzt_D8K_5UhFg8"
+                 "t:kTKLjmYoR9AOyv8KXcgNGOy8PGeF3cRwmYAofLdMa4w"]]}]
   (map (remove 'module-hash )(env-events true))
 )
 
@@ -188,12 +206,12 @@
    ,'caps: [(OPERATOR "collection-0")]
   }])
 
-(expect "create t:fgnk8jnlTvB8iToPf2ACNpy8BInAj5OTXvzELgAKvRc"
+(expect "create t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678"
   true
   (marmalade.ledger.create-token
-    (token-id (at 'hash (create-manifest (uri "text" "0") [])))
+    (token-id (at 'hash (create-manifest (uri "text" "2") [])))
     0
-    (create-manifest (uri "text" "0") [])
+    (create-manifest (uri "text" "2") [])
     marmalade.simple-1-off-whitelist-collection-policy)
 )
 
@@ -224,27 +242,39 @@
 
 (env-data {
     'buyer-0: ['buyer-0 ]
-   ,'buyer-6: ['buyer-6 ]
+   ,'buyer-index : 0
 })
 
 (env-sigs [
   { 'key: 'operator
-   ,'caps: [(marmalade.ledger.MINT "t:fgnk8jnlTvB8iToPf2ACNpy8BInAj5OTXvzELgAKvRc" "buyer-0" 1.0), (marmalade.ledger.MINT "t:A431JP6Z0MZ3b6-bYuD3PgNDjCLa_BwhUW1jvHu9tkQ" "buyer-6" 1.0)]
+   ,'caps: [(marmalade.ledger.MINT "t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678" "buyer-0" 1.0)]
     }])
+(env-chain-data
+  {'block-height: 20987})
 
 (marmalade.ledger.mint
-  "t:fgnk8jnlTvB8iToPf2ACNpy8BInAj5OTXvzELgAKvRc"
+  "t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678"
   'buyer-0
   (read-keyset 'buyer-0)
   1.0)
 
 
+(env-data {
+    'buyer-4: ['buyer-4 ]
+   ,'buyer-index : 0
+})
+
+(env-sigs [
+  { 'key: 'operator
+   ,'caps: [(marmalade.ledger.MINT "t:A431JP6Z0MZ3b6-bYuD3PgNDjCLa_BwhUW1jvHu9tkQ" "buyer-4" 1.0)]
+    }])
+
 (expect-failure "mint token with non-whitelisted account"
-  "Account is not whitelisted"
+  "Account is not whitelisted for the token"
   (marmalade.ledger.mint
     "t:A431JP6Z0MZ3b6-bYuD3PgNDjCLa_BwhUW1jvHu9tkQ"
-    'buyer-6
-    (read-keyset 'buyer-6)
+    'buyer-4
+    (read-keyset 'buyer-4)
     1.0)
 )
 
@@ -255,4 +285,4 @@
 
 ;; Principal
 
-;; revealing token-id (before create-token) can allow people to reserve that token id using a different policy. 
+;; revealing token-id (before create-token) can allow people to reserve that token id using a different policy.

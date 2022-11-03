@@ -51,7 +51,12 @@
 (use marmalade.simple-1-off-whitelist-collection-policy)
 
 (env-data {
-  'buyer-0: ["buyer-0"], 'buyer-1: ["buyer-1"], 'buyer-2: ["buyer-2"], 'buyer-3: ["buyer-3"], 'buyer-4: ["buyer-4"], 'operator: ['operator]
+    "k:cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd": ["cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd"]
+  , "k:3ac1d889c1ff1a060aa1d69fd85e87f739ceae986fa1dd75fdd3246f349ebb6c": ["3ac1d889c1ff1a060aa1d69fd85e87f739ceae986fa1dd75fdd3246f349ebb6c"]
+  , "k:d92c13eeb853c2e42918c077f006070934c27d9c03d4ec26bfbf1b4cb6261ef4": ["d92c13eeb853c2e42918c077f006070934c27d9c03d4ec26bfbf1b4cb6261ef4"]
+  , "k:bea201d32e765e17195b9f48283c9844d887b5da9698310efc379309efac3380": ["bea201d32e765e17195b9f48283c9844d887b5da9698310efc379309efac3380"]
+  , "k:ff523bb064601c0c52b7ebdfd1ed8a4772e44fd926c3425702cb4d12811bb8f9": ["ff523bb064601c0c52b7ebdfd1ed8a4772e44fd926c3425702cb4d12811bb8f9"]
+  , 'operator: ['operator]
   })
 
 (expect  "initiates collection-0 bid"
@@ -79,19 +84,24 @@
 (expect "fund buyers"
    ["Write succeeded" "Write succeeded" "Write succeeded" "Write succeeded" "Write succeeded"]
   (let*
-    ((buyer (lambda (index:integer) (format "buyer-{}" [index])))
-     (buyers (map buyer (enumerate 0 4)))
+    (
+     (buyers  [
+        "k:cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd"
+        "k:3ac1d889c1ff1a060aa1d69fd85e87f739ceae986fa1dd75fdd3246f349ebb6c"
+        "k:d92c13eeb853c2e42918c077f006070934c27d9c03d4ec26bfbf1b4cb6261ef4"
+        "k:bea201d32e765e17195b9f48283c9844d887b5da9698310efc379309efac3380"
+        "k:ff523bb064601c0c52b7ebdfd1ed8a4772e44fd926c3425702cb4d12811bb8f9"])
      (fund (lambda (account:string) (coin.coinbase account (read-keyset account ) 5.0) ))
      )
      (map fund buyers))
 )
 
 (expect "COINBASE events"
-  [ {"name": "coin.TRANSFER","params": ["" "buyer-0" 5.0]}
-    {"name": "coin.TRANSFER","params": ["" "buyer-1" 5.0]}
-    {"name": "coin.TRANSFER","params": ["" "buyer-2" 5.0]}
-    {"name": "coin.TRANSFER","params": ["" "buyer-3" 5.0]}
-    {"name": "coin.TRANSFER","params": ["" "buyer-4" 5.0]}]
+  [ {"name": "coin.TRANSFER","params": ["" "k:cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd" 5.0]}
+    {"name": "coin.TRANSFER","params": ["" "k:3ac1d889c1ff1a060aa1d69fd85e87f739ceae986fa1dd75fdd3246f349ebb6c" 5.0]}
+    {"name": "coin.TRANSFER","params": ["" "k:d92c13eeb853c2e42918c077f006070934c27d9c03d4ec26bfbf1b4cb6261ef4" 5.0]}
+    {"name": "coin.TRANSFER","params": ["" "k:bea201d32e765e17195b9f48283c9844d887b5da9698310efc379309efac3380" 5.0]}
+    {"name": "coin.TRANSFER","params": ["" "k:ff523bb064601c0c52b7ebdfd1ed8a4772e44fd926c3425702cb4d12811bb8f9" 5.0]}]
   (map (remove 'module-hash )(env-events true))
 )
 
@@ -101,30 +111,33 @@
 )
 
 (env-sigs
-   [{ 'key: "buyer-0" ,'caps: [(coin.TRANSFER "buyer-0" "operator" 5.0)] }
-    { 'key: "buyer-1" ,'caps: [(coin.TRANSFER "buyer-1" "operator" 5.0)] }
-    { 'key: "buyer-2" ,'caps: [(coin.TRANSFER "buyer-2" "operator" 5.0)] }
-    { 'key: "buyer-3" ,'caps: [(coin.TRANSFER "buyer-3" "operator" 5.0)] }
+   [{ 'key: "cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd" ,'caps: [(coin.TRANSFER "k:cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd" "operator" 5.0)] }
+    { 'key: "3ac1d889c1ff1a060aa1d69fd85e87f739ceae986fa1dd75fdd3246f349ebb6c" ,'caps: [(coin.TRANSFER "k:3ac1d889c1ff1a060aa1d69fd85e87f739ceae986fa1dd75fdd3246f349ebb6c" "operator" 5.0)] }
+    { 'key: "d92c13eeb853c2e42918c077f006070934c27d9c03d4ec26bfbf1b4cb6261ef4" ,'caps: [(coin.TRANSFER "k:d92c13eeb853c2e42918c077f006070934c27d9c03d4ec26bfbf1b4cb6261ef4" "operator" 5.0)] }
+    { 'key: "bea201d32e765e17195b9f48283c9844d887b5da9698310efc379309efac3380" ,'caps: [(coin.TRANSFER "k:bea201d32e765e17195b9f48283c9844d887b5da9698310efc379309efac3380" "operator" 5.0)] }
 ])
 
 (expect  "4 buyers buy whitelist from collection-0"
   [true true true true]
   (let*
-    ((buyer (lambda (index:integer) (format "buyer-{}" [index])))
-     (buyers (map buyer (enumerate 0 3))))
-    buyers
+    ((buyers  [
+       "k:cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd"
+       "k:3ac1d889c1ff1a060aa1d69fd85e87f739ceae986fa1dd75fdd3246f349ebb6c"
+       "k:d92c13eeb853c2e42918c077f006070934c27d9c03d4ec26bfbf1b4cb6261ef4"
+       "k:bea201d32e765e17195b9f48283c9844d887b5da9698310efc379309efac3380"]))
    (map (reserve-whitelist "collection-0") buyers)
-  ))
+  )
+  )
 
 (expect "RESERVE_SALE events"
-  [ {"name": "coin.TRANSFER","params": ["buyer-0" "operator" 5.0]}
-    {"name": "marmalade.simple-1-off-whitelist-collection-policy.RESERVE_SALE","params": ["collection-0" "buyer-0" 0]}
-    {"name": "coin.TRANSFER","params": ["buyer-1" "operator" 5.0]}
-    {"name": "marmalade.simple-1-off-whitelist-collection-policy.RESERVE_SALE","params": ["collection-0" "buyer-1" 1]}
-    {"name": "coin.TRANSFER","params": ["buyer-2" "operator" 5.0]}
-    {"name": "marmalade.simple-1-off-whitelist-collection-policy.RESERVE_SALE","params": ["collection-0" "buyer-2" 2]}
-    {"name": "coin.TRANSFER","params": ["buyer-3" "operator" 5.0]}
-    {"name": "marmalade.simple-1-off-whitelist-collection-policy.RESERVE_SALE","params": ["collection-0" "buyer-3" 3]}]
+  [ {"name": "coin.TRANSFER","params": ["k:cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd" "operator" 5.0]}
+    {"name": "marmalade.simple-1-off-whitelist-collection-policy.RESERVE_SALE","params": ["collection-0" "k:cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd" 0]}
+    {"name": "coin.TRANSFER","params": ["k:3ac1d889c1ff1a060aa1d69fd85e87f739ceae986fa1dd75fdd3246f349ebb6c" "operator" 5.0]}
+    {"name": "marmalade.simple-1-off-whitelist-collection-policy.RESERVE_SALE","params": ["collection-0" "k:3ac1d889c1ff1a060aa1d69fd85e87f739ceae986fa1dd75fdd3246f349ebb6c" 1]}
+    {"name": "coin.TRANSFER","params": ["k:d92c13eeb853c2e42918c077f006070934c27d9c03d4ec26bfbf1b4cb6261ef4" "operator" 5.0]}
+    {"name": "marmalade.simple-1-off-whitelist-collection-policy.RESERVE_SALE","params": ["collection-0" "k:d92c13eeb853c2e42918c077f006070934c27d9c03d4ec26bfbf1b4cb6261ef4" 2]}
+    {"name": "coin.TRANSFER","params": ["k:bea201d32e765e17195b9f48283c9844d887b5da9698310efc379309efac3380" "operator" 5.0]}
+    {"name": "marmalade.simple-1-off-whitelist-collection-policy.RESERVE_SALE","params": ["collection-0" "k:bea201d32e765e17195b9f48283c9844d887b5da9698310efc379309efac3380" 3]}]
   (map (remove 'module-hash )(env-events true))
 )
 
@@ -146,7 +159,7 @@
       ))
 
 (env-sigs
-   [{ 'key: "buyer-4" ,'caps: [(coin.TRANSFER "buyer-4" "operator" 5.0)] }
+   [{ 'key: "ff523bb064601c0c52b7ebdfd1ed8a4772e44fd926c3425702cb4d12811bb8f9" ,'caps: [(coin.TRANSFER "k:ff523bb064601c0c52b7ebdfd1ed8a4772e44fd926c3425702cb4d12811bb8f9" "operator" 5.0)] }
 ])
 
 (env-chain-data
@@ -154,11 +167,11 @@
 
 (expect "last whitelist slot is sold"
   true
-  (reserve-whitelist "collection-0" "buyer-4"))
+  (reserve-whitelist "collection-0" "k:ff523bb064601c0c52b7ebdfd1ed8a4772e44fd926c3425702cb4d12811bb8f9"))
 
 (expect "RESERVE_SALE events"
-  [ {"name": "coin.TRANSFER","params": ["buyer-4" "operator" 5.0]}
-    {"name": "marmalade.simple-1-off-whitelist-collection-policy.RESERVE_SALE","params": ["collection-0" "buyer-4" 4]} ]
+  [ {"name": "coin.TRANSFER","params": ["k:ff523bb064601c0c52b7ebdfd1ed8a4772e44fd926c3425702cb4d12811bb8f9" "operator" 5.0]}
+    {"name": "marmalade.simple-1-off-whitelist-collection-policy.RESERVE_SALE","params": ["collection-0" "k:ff523bb064601c0c52b7ebdfd1ed8a4772e44fd926c3425702cb4d12811bb8f9" 4]} ]
   (map (remove 'module-hash )(env-events true))
 )
 
@@ -241,40 +254,54 @@
 (use marmalade.simple-1-off-whitelist-collection-policy)
 
 (env-data {
-    'buyer-0: ['buyer-0 ]
-   ,'buyer-index : 0
-})
-
-(env-sigs [
-  { 'key: 'operator
-   ,'caps: [(marmalade.ledger.MINT "t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678" "buyer-0" 1.0)]
-    }])
-(env-chain-data
-  {'block-height: 20987})
-
-(marmalade.ledger.mint
-  "t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678"
-  'buyer-0
-  (read-keyset 'buyer-0)
-  1.0)
-
-
-(env-data {
-    'buyer-2: ['buyer-2 ]
+    "ks": ['cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd ]
    ,'buyer-index : 2
 })
 
 (env-sigs [
   { 'key: 'operator
-   ,'caps: [(marmalade.ledger.MINT "t:A431JP6Z0MZ3b6-bYuD3PgNDjCLa_BwhUW1jvHu9tkQ" "buyer-2" 1.0)]
+   ,'caps: [(marmalade.ledger.MINT "t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678" "k:cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd" 1.0)]
+    }])
+(env-chain-data
+  {'block-height: 20987})
+
+(expect-failure "Mint fails for buyer at index 0 to mint with wrong buyer index"
+  "Wrong buyer index"
+  (marmalade.ledger.mint
+    "t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678"
+    "k:cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd"
+    (read-keyset "ks")
+    1.0))
+
+  (env-data {
+      "ks": ['cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd ]
+     ,'buyer-index : 0
+  })
+
+  (expect "Mint succeeds for buyer at index 0 to mint token at index 2"
+  true
+  (marmalade.ledger.mint
+    "t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678"
+    "k:cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd"
+    (read-keyset "ks")
+    1.0))
+
+(env-data {
+    'ks: ['d92c13eeb853c2e42918c077f006070934c27d9c03d4ec26bfbf1b4cb6261ef4 ]
+   ,'buyer-index : 2
+})
+
+(env-sigs [
+  { 'key: 'operator
+   ,'caps: [(marmalade.ledger.MINT "t:A431JP6Z0MZ3b6-bYuD3PgNDjCLa_BwhUW1jvHu9tkQ" "k:d92c13eeb853c2e42918c077f006070934c27d9c03d4ec26bfbf1b4cb6261ef4" 1.0)]
     }])
 
 (expect-failure "mint token with non-whitelisted account"
   "Account is not whitelisted for the token"
   (marmalade.ledger.mint
     "t:A431JP6Z0MZ3b6-bYuD3PgNDjCLa_BwhUW1jvHu9tkQ"
-    'buyer-2
-    (read-keyset 'buyer-2)
+    "k:d92c13eeb853c2e42918c077f006070934c27d9c03d4ec26bfbf1b4cb6261ef4"
+    (read-keyset 'ks)
     1.0)
 )
 

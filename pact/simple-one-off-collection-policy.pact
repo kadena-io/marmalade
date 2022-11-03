@@ -51,6 +51,7 @@
       (enforce-guard operator-guard))
   )
 
+
   (defcap MINT (token-id:string)
     (enforce-ledger)
   )
@@ -105,13 +106,16 @@
      (emit-event (INIT_COLLECTION collection-id collection-size fungible price operator))
   )
 
+
+
   (defun reserve-whitelist:bool (collection-id:string buyer:string)
+    (enforce (is-principal buyer) "not a valid account name")
     (with-read collections collection-id {
        "collection-size":= collection-size:integer
-       ,"reservation-price":=amount:decimal
-       ,"reservation-fungible":=fungible:module{fungible-v2}
-       ,"operator-account":=operator:string
-       ,"slots":= slots
+      ,"reservation-price":=amount:decimal
+      ,"reservation-fungible":=fungible:module{fungible-v2}
+      ,"operator-account":=operator:string
+      ,"slots":= slots
       }
       (enforce (>= collection-size (length slots)) "bid has ended")
       (fungible::transfer buyer operator amount)
@@ -120,11 +124,10 @@
         })
       ;;Buyers know their index from the emitted event. Index is needed in mint.
       (emit-event (RESERVE_SALE collection-id buyer (length slots)))
-      ;; Shift the buyers at the last whitelist sale
+      ;; Add shift index at last reservation
       (if (= collection-size (+ (length slots) 1))
         (update collections collection-id {
-           "slots": (shift-slots (+ slots [buyer]))
-          ,"shift-index": (random collection-size)
+          "shift-index": (random collection-size)
           })
           true
       ))
@@ -134,22 +137,6 @@
   (defun random:integer (collection-size:integer)
     (mod (at 'block-height (chain-data)) collection-size)
   )
-
-  (defun shift-index-list:list (collection-size:integer random:integer)
-    (enforce (> collection-size 1) "Invalid collection size")
-    (enforce (> collection-size random) "Invalid shift")
-    (if (= random 0)
-      (enumerate 0 (- collection-size 1))
-      (+ (enumerate (- collection-size random) (- collection-size 1)) (enumerate 0 (- (- collection-size random) 1) )))
-  )
-
-  (defun shift-slots:list (slots:[string])
-    (let*
-      ( (collection-size:integer (length slots))
-        (shifted-index:[integer] (shift-index-list collection-size (random collection-size)))
-        (buyer-at-index (lambda (index:integer) (at index slots)))
-      )
-      (map (buyer-at-index) shifted-index)))
 
   (defun reveal-tokens:list (collection-id:string token-ids:list)
     (with-read collections collection-id {
@@ -165,6 +152,7 @@
         'tokens: token-ids
         }))
       (emit-event (REVEAL_TOKENS collection-id token-ids))))
+
 
   (defun token-id:string (token-manifest-hash:string)
     (format "t:{}" [token-manifest-hash])
@@ -203,10 +191,11 @@
       guard:guard
       amount:decimal
     )
+    (enforce (validate-principal guard account) "Not a valid account")
     (let* ( (token-id:string  (at 'id token))
             (whitelist-id:string (at 'hash (at 'manifest token)))
             (collection-id:string (at 'collection-id (get-token token-id)))
-            (buyer-index:integer  (read-integer 'buyer-index )))
+            (buyer-index:integer  (read-integer 'buyer-index )) )
       (with-capability (OPERATOR collection-id) ;; enforce BUYER guard instead.
         (with-read tokens token-id {
           'supply:= supply
@@ -219,10 +208,11 @@
              ,'collection-size:= collection-size
              ,'tokens:= tokens
            }
+           (enforce (= (at buyer-index slots) account) "Wrong buyer index")
           ;; enforce that accounts match the buyer and the token matches the shifted buyer index
           (enforce
-            (and (= (at (mod (+ shift-index buyer-index) collection-size) tokens) token-id)
-                 (= (at (mod (+ shift-index buyer-index) collection-size) slots) account))
+            (and (= (at buyer-index slots) account)
+                 (= (at (mod (+ shift-index buyer-index) collection-size) tokens) token-id))
               "Account is not whitelisted for the token")
             (with-capability (MINT token-id)
               (update-account token-id account guard)
@@ -272,7 +262,7 @@
  )
 
   (defun get-collection:object{collection} (collection-id:string )
-    (read collection collection-id)
+    (read collections collection-id)
   )
 
   (defun get-token:object{token} (token-id:string )

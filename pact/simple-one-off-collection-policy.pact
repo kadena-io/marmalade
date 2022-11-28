@@ -14,7 +14,6 @@
 
   (defschema collection
     id:string
-    total-unique-tokens:integer
     collection-size:integer
     collection-hash:string
     tokens:[string]
@@ -98,20 +97,18 @@
     true
   )
 
-  ;;BIDDING
   (defun init-collection:bool
     (collection-id:string
      collection-size:integer
      collection-hash:string
-     fungible:module{fungible-v2}
-     price:decimal
      operator:string
-     operator-guard:guard )
+     operator-guard:guard
+     fungible:module{fungible-v2}
+     price:decimal )
       (insert collections collection-id {
         "id": collection-id
        ,"collection-size": collection-size
        ,"collection-hash":collection-hash
-       ,"total-unique-tokens": 0
        ,"tokens": []
        ,"slots": []
        ,"operator-account": operator

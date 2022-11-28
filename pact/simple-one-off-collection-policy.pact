@@ -6,7 +6,7 @@
   @doc "Collection token policy."
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+    (enforce-guard (keyset-ref-guard 'marmalade-admin)))
 
   (implements kip.token-policy-v1)
 
@@ -19,8 +19,6 @@
     collection-hash:string
     tokens:[string]
     slots:[string]
-    reservation-price:decimal
-    reservation-fungible:module{fungible-v2}
     operator-account:string
     operator-guard:guard
     shift-index:integer
@@ -32,15 +30,15 @@
     supply:decimal
   )
 
-  (defschema account
+  (defschema whitelist-info
+    collection-id:string
+    index:integer
     account:string
     guard:guard
-    tokens:list
   )
 
   (deftable collections:{collection})
   (deftable tokens:{token})
-  (deftable accounts:{account})
 
   (defcap INTERNAL () true)
 
@@ -51,15 +49,6 @@
       (enforce-guard operator-guard))
   )
 
-
-  (defcap MINT (token-id:string)
-    (enforce-ledger)
-  )
-
-  (defcap ADD_TO_COLLECTION:bool (collection-id:string total-unique-tokens:integer)
-    @event
-    true)
-
   (defcap INIT_COLLECTION:bool (collection-id:string collection-size:integer fungible:module{fungible-v2} price:decimal operator:string)
     @event
     true)
@@ -68,16 +57,45 @@
     @event
     true)
 
+  (defcap SHIFT:bool (collection-id:string index:integer)
+    @event
+    true)
+
   (defcap REVEAL_TOKENS:bool (collection-id:string tokens:list)
     @event
     true)
 
-  (defun get-policy:object{token} (token:object{token-info})
-    (read tokens (at 'id token))
+  (defcap RESERVED:bool (token-id:string whitelist-info:object{whitelist-info} )
+    (let* ( (collection-id:string (at 'collection-id whitelist-info))
+            (whitelist-index:integer  (at 'index whitelist-info))
+            (whitelist-account:string  (at 'account whitelist-info)) )
+      (with-read collections collection-id
+        {
+          'slots:= slots
+         ,'shift-index:= shift-index
+         ,'collection-size:= collection-size
+         ,'tokens:= tokens
+        }
+        (enforce (= (at whitelist-index slots) whitelist-account) "Mismatching whitelist index" )
+        (enforce (= (at (mod (+ shift-index whitelist-index) collection-size) tokens) token-id) "Account is not whitelisted for the token")))
+        true
+  )
+
+  (defcap CREATE_TOKEN (token-id:string account:string)
+    (let* ( (mint-guard:guard  (at 'guard (read-msg 'whitelist-info ))) )
+      (enforce (validate-principal mint-guard account) "Not a valid account")
+      (enforce-guard mint-guard))
+  )
+
+  (defcap MINT (token-id:string account:string)
+    (let* ( (mint-guard:guard  (at 'guard (read-msg 'whitelist-info ))) )
+      (enforce (validate-principal mint-guard account) "Not a valid account")
+      (enforce-guard mint-guard))
   )
 
   (defun enforce-ledger:bool ()
-     (enforce-guard (marmalade.ledger.ledger-guard))
+    (enforce-guard (marmalade.ledger.ledger-guard))
+    true
   )
 
   ;;BIDDING
@@ -89,7 +107,6 @@
      price:decimal
      operator:string
      operator-guard:guard )
-
       (insert collections collection-id {
         "id": collection-id
        ,"collection-size": collection-size
@@ -97,8 +114,6 @@
        ,"total-unique-tokens": 0
        ,"tokens": []
        ,"slots": []
-       ,"reservation-price": price
-       ,"reservation-fungible": fungible
        ,"operator-account": operator
        ,"operator-guard": operator-guard
        ,"shift-index": 0
@@ -106,33 +121,33 @@
      (emit-event (INIT_COLLECTION collection-id collection-size fungible price operator))
   )
 
-
-
-  (defun reserve-whitelist:bool (collection-id:string buyer:string)
-    (enforce (is-principal buyer) "not a valid account name")
+  (defun reserve-whitelist:bool (collection-id:string account:string)
+    (enforce (is-principal account) "Invalid account name")
     (with-read collections collection-id {
        "collection-size":= collection-size:integer
-      ,"reservation-price":=amount:decimal
-      ,"reservation-fungible":=fungible:module{fungible-v2}
       ,"operator-account":=operator:string
       ,"slots":= slots
       }
-      (enforce (>= collection-size (length slots)) "bid has ended")
-      (fungible::transfer buyer operator amount)
+      (enforce (>= collection-size (length slots)) "Pre-sale has ended")
       (update collections collection-id {
-        "slots": (+ slots [buyer])
+        "slots": (+ slots [account])
         })
       ;;Buyers know their index from the emitted event. Index is needed in mint.
-      (emit-event (RESERVE_SALE collection-id buyer (length slots)))
-      ;; Add shift index at last reservation
-      (if (= collection-size (+ (length slots) 1))
-        (update collections collection-id {
-          "shift-index": (random collection-size)
-          })
-          true
-      ))
-      true
+      (emit-event (RESERVE_SALE collection-id account (length slots)))
+      ;; If slot is full, then choose a shift index
+      (if (= (- collection-size 1) (length slots))
+        (update-shift-index collection-id collection-size)
+        true )
+    ))
+
+  (defun update-shift-index (collection-id:string collection-size:integer)
+    (with-capability (INTERNAL)
+      (update collections collection-id {
+        "shift-index": (random collection-size)
+        })
     )
+    (emit-event (SHIFT collection-id (random collection-size)))
+  )
 
   (defun random:integer (collection-size:integer)
     (mod (at 'block-height (chain-data)) collection-size)
@@ -146,44 +161,42 @@
       }
       (enforce (= collection-hash (hash token-ids)) "Token manifests don't match")
       (with-capability (OPERATOR collection-id)
-      (enforce (= collection-size (length slots)) "bid is in the process")
-      (enforce (= (length token-ids) collection-size) "token list is invalid")
-      (update collections collection-id {
-        'tokens: token-ids
-        }))
-      (emit-event (REVEAL_TOKENS collection-id token-ids))))
+        (enforce (= collection-size (length slots)) "Pre-sale has not ended")
+        (enforce (= (length token-ids) collection-size) "Token list is invalid")
+        (update collections collection-id {
+          'tokens: token-ids
+          }))
+        (emit-event (REVEAL_TOKENS collection-id token-ids))))
 
 
   (defun token-id:string (token-manifest-hash:string)
     (format "t:{}" [token-manifest-hash])
   )
 
-  (defun enforce-init:bool
-    ( token:object{token-info}
-    )
+  (defun enforce-init:bool (token:object{token-info})
+    (enforce-ledger)
     (let* ( (token-id:string  (at 'id token))
-            (collection-id:string (read-msg 'collection-id ))
             (manifest-hash:string (at 'hash (at 'manifest token)))
-            (precision:integer (at 'precision token)))
-    ;;one-off
-    (enforce (= (at 'precision token) 0) "Invalid precision")
-    ;; enforce token-id matches manifest hash
+            (precision:integer (at 'precision token))
+            (whitelist-info:object{whitelist-info} (read-msg 'whitelist-info ))
+            (collection-id:string (at 'collection-id whitelist-info)) )
+    ;;Enforce whitelist guard
+    (with-capability (CREATE_TOKEN token-id (at 'account whitelist-info))
+      ;;enforce one-off
+      (enforce (= precision 0) "Invalid precision")
 
-    (enforce (= (format "t:{}" [manifest-hash]) token-id) "Invalid token-id" )
-    ;;issuer creates token
-    (with-capability (OPERATOR collection-id)
-      (with-read collections collection-id {
-        'tokens:= collection-list,
-        'total-unique-tokens:= total-unique-tokens
-        }
+      ;;enforce token-id matches manifest hash
+      (enforce (= (format "t:{}" [manifest-hash]) token-id) "Invalid token-id")
+
+      ;;Check whitelist index matches the signer
+      (with-capability (RESERVED token-id whitelist-info)
         (insert tokens token-id
           { "id" : token-id
            ,"collection-id" : collection-id
            ,"supply": 0.0
           })
-          (add-to-collection collection-id (+ 1 total-unique-tokens))
-          true))
-      ))
+          true)))
+  )
 
   (defun enforce-mint:bool
     ( token:object{token-info}
@@ -191,90 +204,51 @@
       guard:guard
       amount:decimal
     )
-    (enforce (validate-principal guard account) "Not a valid account")
+    (enforce-ledger)
+
+    ;;enforce one-off
+    (enforce (= amount 1.0) "Invalid mint amount")
+
     (let* ( (token-id:string  (at 'id token))
-            (whitelist-id:string (at 'hash (at 'manifest token)))
-            (collection-id:string (at 'collection-id (get-token token-id)))
-            (buyer-index:integer  (read-integer 'buyer-index )) )
-      (with-capability (OPERATOR collection-id) ;; enforce BUYER guard instead.
-        (with-read tokens token-id {
-          'supply:= supply
-          }
-          (enforce (= supply 0.0) "token has been minted")
-          (with-read collections collection-id
-            {
-              'slots:= slots
-             ,'shift-index:= shift-index
-             ,'collection-size:= collection-size
-             ,'tokens:= tokens
-           }
-           (enforce (= (at buyer-index slots) account) "Wrong buyer index")
-          ;; enforce that accounts match the buyer and the token matches the shifted buyer index
-          (enforce
-            (and (= (at buyer-index slots) account)
-                 (= (at (mod (+ shift-index buyer-index) collection-size) tokens) token-id))
-              "Account is not whitelisted for the token")
-            (with-capability (MINT token-id)
-              (update-account token-id account guard)
-            )
-          ))
-      )))
+            (whitelist-info:object{whitelist-info} (read-msg 'whitelist-info ))
+            (collection-id:string (at 'collection-id whitelist-info)) )
+        (enforce (= account (at 'account whitelist-info)) "Mismatching mint account")
+        (enforce (= guard (at 'guard whitelist-info)) "Mismatching mint guard")
+        ;;Enforce whitelist guard
+        (with-capability (MINT token-id account)
+          (with-read tokens token-id {
+            'supply:= supply
+            }
+            (enforce (= supply 0.0) "token has been minted")
+            ;;Check whitelist index matches the account
+            (with-capability (RESERVED token-id whitelist-info)
+              (update tokens token-id
+                { "supply": 1.0
+                })
+                true)))))
 
-  (defun add-to-collection (collection-id:string total-unique-tokens:integer)
-    (with-capability (INTERNAL)
-    (update collections collection-id {
-      'total-unique-tokens:  total-unique-tokens
-      })
-     )
-   (emit-event (ADD_TO_COLLECTION collection-id total-unique-tokens))
+  ;;GET FUNCTIONS
+
+  (defun get-policy:object{token} (token:object{token-info})
+    (read tokens (at 'id token))
   )
-
- (defun update-account (token-id:string account:string guard:guard)
-  (require-capability (MINT token-id))
-   (with-default-read accounts account {
-      'tokens: [],
-      'guard: guard
-    } {
-      'tokens:= tokens,
-      'guard:= old-guard
-    }
-    (enforce (= guard old-guard) "account guards do not match")
-    (write accounts account {
-      'account:account,
-      'guard: guard,
-      'tokens: (+ [token-id] tokens)
-     })
-      )
-  )
-
-  (defun delete-token-in-account (token-id:string account:string guard:guard)
-    (with-capability (INTERNAL)
-      (with-default-read accounts account {
-         'tokens: []
-       } {
-         'tokens:=tokens
-       }
-       (update accounts account {
-          'tokens: (filter (!= token-id) tokens)
-        })
-     )
-   )
- )
 
   (defun get-collection:object{collection} (collection-id:string )
     (read collections collection-id)
   )
 
-  (defun get-token:object{token} (token-id:string )
+  (defun get-token:object{token} (token-id:string)
     (read tokens token-id)
   )
+
+  ;;TODO FUNCTIONS
 
   (defun enforce-burn:bool
     ( token:object{token-info}
       account:string
       amount:decimal
     )
-    (enforce false "Burn prohibited")
+    (enforce false "BURN prohibited")
   )
 
   (defun enforce-offer:bool
@@ -283,8 +257,7 @@
       amount:decimal
       sale-id:string
     )
-    ;;todo
-    true
+    (enforce false "SALE prohibited")
   )
 
   (defun enforce-buy:bool
@@ -294,9 +267,8 @@
       buyer-guard:guard
       amount:decimal
       sale-id:string )
-      ;;todo
-    true
-    )
+      (enforce false "SALE prohibited")
+  )
 
   (defun enforce-transfer:bool
     ( token:object{token-info}
@@ -316,10 +288,10 @@
       amount:decimal )
     (enforce false "Transfer prohibited")
   )
+
 )
 
 (if (read-msg 'upgrade )
   ["upgrade complete"]
-  [ (create-table accounts)
-    (create-table tokens)
+  [ (create-table tokens)
     (create-table collections) ])

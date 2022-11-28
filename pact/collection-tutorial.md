@@ -285,3 +285,10 @@ The minter need to sign the capability, `(marmalade.ledger.CREATE_TOKEN "t:9mCeD
 The minter need to sign the capability, `(marmalade.ledger.MINT "t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678" "k:27fff7d20390142caf727cd4713d2c810839486fa2350af7e2ce980090185ce4" 1.0)`
 
 The steps 4 and 5 can be run at the same transaction, but the user must sign the both capabilities.
+
+## Conclusion
+
+We have now looked at initiating collection to minting each tokens in the collection. The account designated at the `mint` step now owns the token in the main `marmalade` ledger.
+
+TODO: transfer of the ownership using `transfer` or `sale`
+TODO: customize fungible payment at `mint` or `whitelist`

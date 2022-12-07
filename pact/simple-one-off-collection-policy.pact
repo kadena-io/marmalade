@@ -18,6 +18,8 @@
     collection-hash:string
     tokens:[string]
     slots:[string]
+    fungible:module{fungible-v2}
+    price:decimal
     operator-account:string
     operator-guard:guard
     shift-index:integer
@@ -50,9 +52,12 @@
 
   (defcap INIT_COLLECTION:bool (collection-id:string collection-size:integer fungible:module{fungible-v2} price:decimal operator:string)
     @event
-    true)
+    (let ((g (at 'guard (fungible::details operator))))
+      (enforce-guard g)
+      true
+    ))
 
-  (defcap RESERVE_SALE:bool (collection-id:string account:string index:integer)
+  (defcap RESERVE_WHITELIST:bool (collection-id:string account:string index:integer)
     @event
     true)
 
@@ -60,7 +65,7 @@
     @event
     true)
 
-  (defcap REVEAL_TOKENS:bool (collection-id:string tokens:list)
+  (defcap REVEAL_TOKENS:bool (collection-id:string tokens:[string])
     @event
     true)
 
@@ -105,17 +110,30 @@
      operator-guard:guard
      fungible:module{fungible-v2}
      price:decimal )
-      (insert collections collection-id {
-        "id": collection-id
-       ,"collection-size": collection-size
-       ,"collection-hash":collection-hash
-       ,"tokens": []
-       ,"slots": []
-       ,"operator-account": operator
-       ,"operator-guard": operator-guard
-       ,"shift-index": 0
-      })
-     (emit-event (INIT_COLLECTION collection-id collection-size fungible price operator))
+     (with-capability (INIT_COLLECTION collection-id collection-size fungible price operator)
+       (insert collections collection-id {
+         "id": collection-id
+        ,"collection-size": collection-size
+        ,"collection-hash": collection-hash
+        ,"tokens": []
+        ,"slots": []
+        ,"operator-account": operator
+        ,"operator-guard": operator-guard
+        ,"price": price
+        ,"fungible": fungible
+        ,"shift-index": 0
+       }
+       )
+     )
+     true
+  )
+
+  (defun operator:string (collection-id:string)
+    (with-read collections collection-id {
+      "operator-account":= operator
+    }
+    operator
+  )
   )
 
   (defun reserve-whitelist:bool (collection-id:string account:string)
@@ -123,14 +141,17 @@
     (with-read collections collection-id {
        "collection-size":= collection-size:integer
       ,"operator-account":=operator:string
+      ,"fungible":=fungible:module{fungible-v2}
+      ,"price":=price
       ,"slots":= slots
       }
       (enforce (>= collection-size (length slots)) "Pre-sale has ended")
+      (fungible::transfer account operator price)
       (update collections collection-id {
         "slots": (+ slots [account])
         })
       ;;Buyers know their index from the emitted event. Index is needed in mint.
-      (emit-event (RESERVE_SALE collection-id account (length slots)))
+      (emit-event (RESERVE_WHITELIST collection-id account (length slots)))
       ;; If slot is full, then choose a shift index
       (if (= (- collection-size 1) (length slots))
         (update-shift-index collection-id collection-size)
@@ -150,7 +171,7 @@
     (mod (at 'block-height (chain-data)) collection-size)
   )
 
-  (defun reveal-tokens:list (collection-id:string token-ids:list)
+  (defun reveal-tokens:[string] (collection-id:string token-ids:[string])
     (with-read collections collection-id {
         "slots":= slots
        ,"collection-size":= collection-size
@@ -165,11 +186,6 @@
           }))
         (emit-event (REVEAL_TOKENS collection-id token-ids))))
 
-
-  (defun token-id:string (token-manifest-hash:string)
-    (format "t:{}" [token-manifest-hash])
-  )
-
   (defun enforce-init:bool (token:object{token-info})
     (enforce-ledger)
     (let* ( (token-id:string  (at 'id token))
@@ -181,9 +197,6 @@
     (with-capability (CREATE_TOKEN token-id (at 'account whitelist-info))
       ;;enforce one-off
       (enforce (= precision 0) "Invalid precision")
-
-      ;;enforce token-id matches manifest hash
-      (enforce (= (format "t:{}" [manifest-hash]) token-id) "Invalid token-id")
 
       ;;Check whitelist index matches the signer
       (with-capability (RESERVED token-id whitelist-info)
@@ -273,7 +286,7 @@
       guard:guard
       receiver:string
       amount:decimal )
-    (enforce false "Transfer prohibited")
+      true
   )
 
   (defun enforce-crosschain:bool

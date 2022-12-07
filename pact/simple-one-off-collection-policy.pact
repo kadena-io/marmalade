@@ -52,10 +52,7 @@
 
   (defcap INIT_COLLECTION:bool (collection-id:string collection-size:integer fungible:module{fungible-v2} price:decimal operator:string)
     @event
-    (let ((g (at 'guard (fungible::details operator))))
-      (enforce-guard g)
-      true
-    ))
+    (fungible::details operator))
 
   (defcap RESERVE_WHITELIST:bool (collection-id:string account:string index:integer)
     @event
@@ -250,8 +247,6 @@
   (defun get-token:object{token} (token-id:string)
     (read tokens token-id)
   )
-
-  ;;TODO FUNCTIONS
 
   (defun enforce-burn:bool
     ( token:object{token-info}

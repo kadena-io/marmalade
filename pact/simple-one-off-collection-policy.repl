@@ -78,11 +78,6 @@
     ]
     (map (remove 'module-hash ) (env-events true)))
 
-(env-sigs [
-  { "key": "e9ccbfa542ca3b5aa84febf491cc572e56f29dfdb351272a3ab290e3142afcbf",
-    "caps": [(marmalade.simple-1-off-whitelist-collection-policy.INIT_COLLECTION "collection-0" 5 coin 5.0 "k:e9ccbfa542ca3b5aa84febf491cc572e56f29dfdb351272a3ab290e3142afcbf") ]
-   }])
-
 (expect  "initiates collection-0 bid"
   true
   (let*

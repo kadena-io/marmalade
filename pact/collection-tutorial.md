@@ -17,15 +17,15 @@ In order to start a collection, the operator must run `marmalade.simple-1-off-wh
 - `collection-id`: id of collection
 - `collection-size`: Total number of tokens in the collection.
 - `collection-hash`: Hash of the list of token IDs in the collection.
-- `operator-guard`: Guard that is used to reveal the tokens. (todo - discuss, if `reveal-token` should require guard check)
-- `operator`: to receive funds at `mint`
-- `fungible` the fungible to be transferred at whitelist
-- `price` the price in fungible to be transferred from buyer to operator
+- `operator-guard`: Guard that is used to reveal the tokens.
+- `operator`: existing fungible account to receive funds at `mint`
+- `fungible` the fungible to be paid at reserve_whitelist
+- `price` the fungible price of the whitelist to be transferred from buyer to operator
 
 The most important field to understand in this step is the `collection-hash`. In order to lock in the tokens without revealing its properties, the list of tokens will be hashed, with each token-id being the hash of the its manifests.
 The tokens will be revealed at a later step, and the token manifests will have to match the given collection-hash in order to be created/minted.
 
-When `init-collection` succeeds, an event `(INIT_COLLECTION collection-id collection-size fungible price operator)` will be emitted.
+When `init-collection` succeeds, an event `(INIT_COLLECTION collection-id collection-size collection-hash fungible price operator)` will be emitted.
 
 ### Initiate `muppets-v1`
 
@@ -116,19 +116,24 @@ Finally, we can hash the list and get the `collection-hash`, by using `hash` fun
 
 4. Run `init-collection`
 
-Finally, we have got our required fields to initiate our collection. The following code creates `muppet-v1` collection with 9 tokens that we generated above. This code should now be sent to the chain and make it into a block.
+Finally, we have got our required fields to initiate our collection. The following code creates `muppet-v1` collection with 9 tokens that we generated above, with `k:aa5f18ed095607fbef309abd5511baaa0844e067a61ed4cf51d5333e770ed030` being the operator account in fungible, `coin`, with whitelist price of 5.0. This code should now be sent to the chain and make it into a block.
 
 ```
 (init-collection
   "muppet-v1" 9 "eLbTngl8lNBPshPMohX0ILM8l7R4RV8eNm9p0Pq1W6E"
-  "k:{operator-key}" (read-keyset 'operator-guard) coin 0.0)
+  "k:aa5f18ed095607fbef309abd5511baaa0844e067a61ed4cf51d5333e770ed030" (read-keyset 'operator-guard) coin 5.0)
 ```
+
+We will see an event `(INIT_COLLECTION "muppet-v1" 9 "eLbTngl8lNBPshPMohX0ILM8l7R4RV8eNm9p0Pq1W6E" "k:aa5f18ed095607fbef309abd5511baaa0844e067a61ed4cf51d5333e770ed030" coin 5.0)` emitted once the transaction succeeds.
 
 ## Reserve Whitelist
 
 Whitelists in this collection policy is on a first-come, first-served basis. This step is to be run by the `minters`.
 
-To reserve the whitelists, minters must generate a principal-ed account. This can simply be a `k:{public-key}`, but there is a pact function to generate it in code. For example, running the following code.
+1. To reserve the whitelists, minters must have a `fungible` account with balance bigger than price.
+
+In our example, `muppets-v1` collection uses fungible, `coin`, so mint account must be a coin account with balance bigger than 5.0.
+Minters must use a principal-ed account. This can simply be a `k:{public-key}`, but there is a pact function to generate it in code. For example, running the following code.
 
 ```
 (create-principal (read-keyset 'keyset))
@@ -145,7 +150,11 @@ with a keyset of
 
 will generate a `k:27fff7d20390142caf727cd4713d2c810839486fa2350af7e2ce980090185ce4`.
 
-With the account name prepared, minters can now run `reserve-whitelist` and get their slots locked in.
+Because this transaction will transfer `coin` to operator, the minters must sign the capability,
+`(coin.TRANSFER "k:27fff7d20390142caf727cd4713d2c810839486fa2350af7e2ce980090185ce4" "k:aa5f18ed095607fbef309abd5511baaa0844e067a61ed4cf51d5333e770ed030" 5.0)`
+to send from mint account to the operator account.
+
+With prepared account, minters can now run `reserve-whitelist` and get their slots locked in.
 
 Successful whitelist will emit an event, `(RESERVE_WHITELIST collection-id account whitelist-index)`. This info should be saved for the token creations and mint index.
 

@@ -8,7 +8,7 @@ Releasing Collection follows the following steps:
 2. Reserve Whitelist (Minter)
 3. Reveal Tokens in collection (Operator)
 4. Create / Mint Token (Minter)
-5. TODO - Transfer / Sale - TODO
+5. Transfer
 
 ## 1. Initiate Collection
 
@@ -18,9 +18,9 @@ In order to start a collection, the operator must run `marmalade.simple-1-off-wh
 - `collection-size`: Total number of tokens in the collection.
 - `collection-hash`: Hash of the list of token IDs in the collection.
 - `operator-guard`: Guard that is used to reveal the tokens. (todo - discuss, if `reveal-token` should require guard check)
-- `operator`: (todo - to receive funds at `mint`)
-- `fungible` (todo - the fungible to be transferred as funds)
-- `price` (todo - the price of the fungible to be transferred from accounts at `mint`)
+- `operator`: to receive funds at `mint`
+- `fungible` the fungible to be transferred at whitelist
+- `price` the price in fungible to be transferred from buyer to operator
 
 The most important field to understand in this step is the `collection-hash`. In order to lock in the tokens without revealing its properties, the list of tokens will be hashed, with each token-id being the hash of the its manifests.
 The tokens will be revealed at a later step, and the token manifests will have to match the given collection-hash in order to be created/minted.
@@ -128,7 +128,7 @@ Finally, we have got our required fields to initiate our collection. The followi
 
 Whitelists in this collection policy is on a first-come, first-served basis. This step is to be run by the `minters`.
 
-To reserve the whitelists, minters must generate a principaled account. This can simply be a `k:{public-key}`, but there is a pact function to generate it in code. For example, running the following code.
+To reserve the whitelists, minters must generate a principal-ed account. This can simply be a `k:{public-key}`, but there is a pact function to generate it in code. For example, running the following code.
 
 ```
 (create-principal (read-keyset 'keyset))
@@ -196,6 +196,8 @@ Operator of the `muppets-v1` will prepare the token-ids, and run the function.
        "t:sQ19jh3-w3HOchpBefpKTBGj2_ARjC4xLiV0SVlokf4"])
 ```
 
+compare (enforce = "eLbTngl8lNBPshPMohX0ILM8l7R4RV8eNm9p0Pq1W6E" (hash [...]) )
+
 Note that the hash of the list should match the `collection-hash` that was used in the `init-collection` step.
 In order for minters to be able to create and mint their tokens, the operator must publish the token manifests to the whitelisters.
 
@@ -254,7 +256,10 @@ Note that above is the result of the code,
 (create-manifest (uri "text" "Rizzo the Rat") [])
 ```
 
-4. Run `create-token` with the `whitelist-info` in env-data.
+4. Run `create-token` and `mint` with the `whitelist-info` in env-data.
+
+`create-token` takes in `token-id`, `precision`, `token-manifest`, and `policy`. The `precision` is 0, because this is a one-off collection policy.
+`mint` takes in `token-id`, `account`, `guard`, and `amount`. `amount` is always 1.0, because this is an one-off collection policy.
 
 ```
 (marmalade.ledger.create-token
@@ -264,15 +269,6 @@ Note that above is the result of the code,
     {"scheme": "text","data": "Rizzo the Rat"},
      "hash": "sQ19jh3-w3HOchpBefpKTBGj2_ARjC4xLiV0SVlokf4","data": []}
   marmalade.simple-1-off-whitelist-collection-policy)
-```
-
-`create-token` takes in `token-id`, `precision`, `token-manifest`, and `policy`. The `precision` is 0, because this is a one-off collection policy.
-
-The minter need to sign the capability, `(marmalade.ledger.CREATE_TOKEN "t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678" "k:27fff7d20390142caf727cd4713d2c810839486fa2350af7e2ce980090185ce4")`
-
-5. Run `mint` with the `whitelist-info` in env-data.
-
-```
 (marmalade.ledger.mint
   "t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678"
   "k:27fff7d20390142caf727cd4713d2c810839486fa2350af7e2ce980090185ce4"
@@ -280,15 +276,26 @@ The minter need to sign the capability, `(marmalade.ledger.CREATE_TOKEN "t:9mCeD
   1.0))
 ```
 
-`mint` takes in `token-id`, `account`, `guard`, and `amount`. `amount` is always 1.0, because this is an one-off collection policy.
+The minter need to sign the capabilities, `(marmalade.ledger.CREATE_TOKEN "t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678" "k:27fff7d20390142caf727cd4713d2c810839486fa2350af7e2ce980090185ce4")`, `(marmalade.ledger.MINT "t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678" "k:27fff7d20390142caf727cd4713d2c810839486fa2350af7e2ce980090185ce4" 1.0)`
 
-The minter need to sign the capability, `(marmalade.ledger.MINT "t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678" "k:27fff7d20390142caf727cd4713d2c810839486fa2350af7e2ce980090185ce4" 1.0)`
+`create-token` and `mint` can be run separately, or together in the same transaction.
 
-The steps 4 and 5 can be run at the same transaction, but the user must sign the both capabilities.
+5. Transfer
 
-## Conclusion
+This collection policy uses plain `transfer` from the `marmalade.ledger`, where the sender needs to sign the transfer, and the receiver account receives.
+
+```
+marmalade.ledger
+```
+
+## Things to consider
 
 We have now looked at initiating collection to minting each tokens in the collection. The account designated at the `mint` step now owns the token in the main `marmalade` ledger.
 
-TODO: transfer of the ownership using `transfer` or `sale`
-TODO: customize fungible payment at `mint` or `whitelist`
+There are more questions to be asked, however, including scalability of bigger collections.
+
+- How should we prevent the operator from scamming the whitelisters? The contract collects the funds of the buyers at `reserve-whitelist` phase, which means that without operator from providing token-mainifests, the buyers cannot mint the token.
+
+- Should the operator run `reveal-tokens`? If token list is available off-chain, then the operator is not necessarily required to `reveal-tokens`. If not, who should run it?
+
+- If the collection holds bigger tokens, then adding the slots and token-list as a list inside a table can become a costly transaction. Alternative can be adding each whitelists and token-ids as rows in the table.

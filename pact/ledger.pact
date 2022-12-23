@@ -190,6 +190,11 @@
       s)
   )
 
+  (defun create-token-id:string (manifest:object{manifest})
+    (enforce-verify-manifest manifest)
+    (format "t:{}" [(at 'hash manifest)])
+  )
+
   (defun create-token:bool
     ( id:string
       precision:integer
@@ -197,6 +202,7 @@
       policy:module{kip.token-policy-v1}
     )
     (enforce-verify-manifest manifest)
+    (enforce-token-reserved id manifest)
     (policy::enforce-init
       { 'id: id, 'supply: 0.0, 'precision: precision, 'manifest: manifest })
     (insert tokens id {
@@ -208,6 +214,18 @@
       })
       (emit-event (TOKEN id precision 0.0 policy))
   )
+
+  (defun enforce-token-reserved:bool (token-id:string manifest:object{manifest})
+    @doc "Enforce reserved token-id name protocols."
+    (let ((r (check-reserved token-id)))
+      (if (= "" r) true
+        (if (= "t" r)
+          (enforce
+            (= token-id
+               (create-token-id manifest))
+            "Token manifest protocol violation")
+          (enforce false
+            (format "Unrecognized reserved protocol: {}" [r]) )))))
 
   (defun truncate:decimal (id:string amount:decimal)
     (floor amount (precision id))

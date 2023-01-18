@@ -1,8 +1,11 @@
 # Collection Policy Tutorial
 
-Collection Policy is a marmalade policy that allows pre-sale of collection tokens. This tutorial will go step-by-step with an example of collection, `muppets-v1`.
+Marmalade _token policies_ allow for fine-grained customization of how NFTs are minted and sold.
+This tutorial demonstrates how an NFT collection supporting presale could be implemented, using an
+example policy 'simple-one-off-collection-policy`.
+This tutorial will demonstrate the policy step-by-step with an example collection called `muppets-v1`.
 
-Releasing Collection follows the following steps:
+Releasing the collection is accomplished in the following steps:
 
 1. Initiate Collection (Operator)
 2. Reserve Whitelist (Minter)
@@ -12,7 +15,7 @@ Releasing Collection follows the following steps:
 
 ## 1. Initiate Collection
 
-In order to start a collection, the operator must run `marmalade.simple-1-off-whitelist-collection-policy.init-collection` with required fields. Note, that this step is called directly from the `marmalade.simple-1-off-whitelist-collection-policy.init-collection`.
+In order to start a collection, the operator must run `marmalade.simple-one-off-collection-policy.init-collection` with required fields. Note, that this step is called directly from the `marmalade.simple-one-off-collection-policy.init-collection`.
 
 - `collection-id`: id of collection
 - `collection-size`: Total number of tokens in the collection.
@@ -49,7 +52,7 @@ For simplicity, each muppet token manifests will contain text of its names.
 (at 'hash (kip.token-manifest.create-manifest (uri "text" "Kermit the Frog") [])))
 ```
 
-3. Use `marmalade.simple-1-off-whitelist-collection-policy.token-id` to get generate token-id
+3. Use `marmalade.simple-one-off-collection-policy.token-id` to get generate token-id
 
 ```
 (token-id (at 'hash (kip.token-manifest.create-manifest (uri "text" "Kermit the Frog") []))))
@@ -128,7 +131,7 @@ We will see an event `(INIT_COLLECTION "muppet-v1" 9 "eLbTngl8lNBPshPMohX0ILM8l7
 
 ## Reserve Whitelist
 
-Whitelists in this collection policy is on a first-come, first-served basis. This step is to be run by the `minters`.
+Whitelists in this collection policy are on a first-come, first-served basis. This step is to be run by the minters.
 
 1. To reserve the whitelists, minters must have a `fungible` account with balance bigger than price.
 
@@ -172,21 +175,21 @@ marmalade prevents the operator to reserve certain nfts that may be more valuabl
 2. Save the emitted event.
 
 ```
-(marmalade.simple-1-off-whitelist-collection-policy.RESERVE_WHITELIST "muppets-v1" "k:27fff7d20390142caf727cd4713d2c810839486fa2350af7e2ce980090185ce4" 0)
+(marmalade.simple-one-off-collection-policy.RESERVE_WHITELIST "muppets-v1" "k:27fff7d20390142caf727cd4713d2c810839486fa2350af7e2ce980090185ce4" 0)
 ```
 
 3. Whitelist of the last token generates a shift-index.
 
-Let's assume that the last `reserve-whitelist` made into the block 20987. The shift-index generated will be 8, and the transaction will emit 2 events.
+Let's assume that the last `reserve-whitelist` made it into block 20987. The shift-index generated will be 8, and the transaction will emit 2 events.
 
 ```
-(marmalade.simple-1-off-whitelist-collection-policy.RESERVE_WHITELIST "muppets-v1" "k:27fff7d20390142caf727cd4713d2c810839486fa2350af7e2ce980090185ce4" 8)
-(marmalade.simple-1-off-whitelist-collection-policy.SHIFT collection-0" 8)
+(marmalade.simple-one-off-collection-policy.RESERVE_WHITELIST "muppets-v1" "k:27fff7d20390142caf727cd4713d2c810839486fa2350af7e2ce980090185ce4" 8)
+(marmalade.simple-one-off-collection-policy.SHIFT collection-0" 8)
 ```
 
 ## Reveal Tokens
 
-Once `reserve-whitelist` is complete, operator can now reveal the token manifests. This step will reveal which whitelist index is dedicated to each token id.
+Once `reserve-whitelist` is complete, the operator can now reveal the token manifests, showing which whitelist index is dedicated to each token id.
 
 ### Reveal `muppets-v1`
 
@@ -205,14 +208,17 @@ Operator of the `muppets-v1` will prepare the token-ids, and run the function.
        "t:sQ19jh3-w3HOchpBefpKTBGj2_ARjC4xLiV0SVlokf4"])
 ```
 
-compare (enforce = "eLbTngl8lNBPshPMohX0ILM8l7R4RV8eNm9p0Pq1W6E" (hash [...]) )
+Note that the function `reveal-tokens` enforces the hash of the list of the token-ids to match the `collection-hash` that was used in the `init-collection` step as shown below.
 
-Note that the hash of the list should match the `collection-hash` that was used in the `init-collection` step.
+```      
+(enforce (= collection-hash (hash token-ids)) "Token manifests don't match")
+```
+
 In order for minters to be able to create and mint their tokens, the operator must publish the token manifests to the whitelisters.
 
 ## Create Token / Mint Token
 
-`create-token` is unique step required for all marmalade tokens. The purpose of the transaction is to add token information to marmalade ledger. Users must use the published manifest and add it in their transactions to `create-token`.
+`create-token` is an operations required for each marmalade token in the collection to add it to the marmalade ledger. Minters must use the published manifest to call `create-token`.
 
 This step is ideally run together with `mint` transaction. `mint` is the final step that is required to own the token.
 Similar to `create-token`, `mint` is a general marmalade operation.
@@ -226,7 +232,7 @@ Collection policy enforces that the `create-token` and `mint` is done by the whi
    In the previous step, we had reserved whitelist for the account, and saw the emitted event of below.
 
 ```
-(marmalade.simple-1-off-whitelist-collection-policy.RESERVE_WHITELIST "muppets-v1" "k:27fff7d20390142caf727cd4713d2c810839486fa2350af7e2ce980090185ce4" 0)
+(marmalade.simple-one-off-collection-policy.RESERVE_WHITELIST "muppets-v1" "k:27fff7d20390142caf727cd4713d2c810839486fa2350af7e2ce980090185ce4" 0)
 ```
 
 We need 4 fields for whitelist info: `collection-id`, `account`, `guard`, `index`. What's not in this event is the guard. Guard can simply be the `keyset` info we've provided at `(create-principal (read-keyset 'keyset))`.
@@ -277,7 +283,7 @@ Note that above is the result of the code,
   {"uri":
     {"scheme": "text","data": "Rizzo the Rat"},
      "hash": "sQ19jh3-w3HOchpBefpKTBGj2_ARjC4xLiV0SVlokf4","data": []}
-  marmalade.simple-1-off-whitelist-collection-policy)
+  marmalade.simple-one-off-collection-policy)
 (marmalade.ledger.mint
   "t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678"
   "k:27fff7d20390142caf727cd4713d2c810839486fa2350af7e2ce980090185ce4"
@@ -289,7 +295,7 @@ The minter need to sign the capabilities, `(marmalade.ledger.CREATE_TOKEN "t:9mC
 
 `create-token` and `mint` can be run separately, or together in the same transaction.
 
-5. Transfer
+## Transfer
 
 This collection policy uses plain `transfer` from the `marmalade.ledger`, where the sender needs to sign the transfer, and the receiver account receives.
 

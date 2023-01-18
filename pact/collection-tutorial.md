@@ -16,7 +16,7 @@ Releasing the collection is accomplished in the following steps:
 
 ## Initiate Collection
 
-In order to start a collection, the operator must run `marmalade.simple-one-off-collection-policy.init-collection` with required fields. Note, that this step is called directly from the `marmalade.simple-one-off-collection-policy.init-collection`.
+In order to create a collection, the operator executes a function directly on the policy, `marmalade.simple-1-off-whitelist-collection-policy.init-collection`, with required fields.
 
 - `collection-id`: id of collection.
 - `collection-size`: Total number of tokens in the collection.
@@ -112,7 +112,7 @@ Finally, we can hash the list and get the `collection-hash`, by using `hash` fun
 
 4. Run `init-collection`
 
-Finally, we have got our required fields to initiate our collection. The following code creates `muppet-v1` collection with 9 tokens that we generated above, with `k:aa5f18ed095607fbef309abd5511baaa0844e067a61ed4cf51d5333e770ed030` being the operator account in fungible, `coin`, with whitelist price of 5.0. This code should now be sent to the chain and make it into a block.
+Finally, we have got our required fields to initiate our collection. The following code creates `muppet-v1` collection with 9 tokens that we generated above, with `k:aa5f18ed095607fbef309abd5511baaa0844e067a61ed4cf51d5333e770ed030` being the operator account in fungible, `coin`, with whitelist price of 5.0. This code should now be sent to the chain.
 
 ```
 (init-collection

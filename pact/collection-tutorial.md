@@ -18,13 +18,13 @@ Releasing the collection is accomplished in the following steps:
 
 In order to start a collection, the operator must run `marmalade.simple-one-off-collection-policy.init-collection` with required fields. Note, that this step is called directly from the `marmalade.simple-one-off-collection-policy.init-collection`.
 
-- `collection-id`: id of collection
+- `collection-id`: id of collection.
 - `collection-size`: Total number of tokens in the collection.
 - `collection-hash`: Hash of the list of token IDs in the collection.
 - `operator-guard`: Guard that is used to reveal the tokens.
-- `operator`: existing fungible account to receive funds at `mint`
-- `fungible`: the fungible to be paid at reserve_whitelist
-- `price`: the fungible price of the whitelist to be transferred from buyer to operator
+- `operator`: existing fungible account to receive funds at `mint`.
+- `fungible`: the fungible to be paid at `reserve_whitelist`.
+- `price`: the fungible price of the whitelist to be transferred from buyer to operator.
 
 The most important field to understand in this step is the `collection-hash`. In order to lock in the tokens without revealing its properties, the list of tokens will be hashed, with each token-id being the hash of the its manifests.
 The tokens will be revealed at a later step, and the token manifests will have to match the given collection-hash in order to be created/minted.

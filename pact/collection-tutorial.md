@@ -53,10 +53,10 @@ For simplicity, each muppet token manifests will contain text of its names.
 (at 'hash (kip.token-manifest.create-manifest (uri "text" "Kermit the Frog") [])))
 ```
 
-3. Use `marmalade.simple-one-off-collection-policy.token-id` to get generate token-id
+3. Use `marmalade.ledger.create-token-id` to get generate token-id
 
 ```
-(token-id (at 'hash (kip.token-manifest.create-manifest (uri "text" "Kermit the Frog") []))))
+(marmalade.ledger.create-token-id (kip.token-manifest.create-manifest (uri "text" "Kermit the Frog") [])))
 ```
 
 The function simply formats the manifest with `t:{manifest-hash}`. The token-id for `Kermit the Frog` muppet token will therefore be `t:33vh4wJvxEkXW72Bgvd88S6HKcyxLj2WJZEydAP4CCU`.
@@ -77,9 +77,7 @@ We will do the same for the 7 more tokens, and get the list of token-ids.
                                         "Animal"
                                         "Pepe the King Prawn"
                                         "Rizzo the Rat"]))
-
-    (hashes:list (map (at 'hash ) manifests))
-    (tokens:list (map (token-id) hashes)
+    (tokens:list (map (create-token-id) manifests)
     ))
    tokens
 )

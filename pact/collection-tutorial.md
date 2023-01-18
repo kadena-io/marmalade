@@ -47,13 +47,7 @@ All marmalade tokens must use `kip.token-manifest.create-manifest` function, whi
 
 For simplicity, each muppet token manifests will contain text of its names.
 
-2. Get `hash` from the manifest. We can take the hash from its manifest. The below code returns `33vh4wJvxEkXW72Bgvd88S6HKcyxLj2WJZEydAP4CCU` as the hash of token manifest
-
-```
-(at 'hash (kip.token-manifest.create-manifest (uri "text" "Kermit the Frog") [])))
-```
-
-3. Use `marmalade.ledger.create-token-id` to get generate token-id
+2. Use `marmalade.ledger.create-token-id` to get generate token-ids.
 
 ```
 (marmalade.ledger.create-token-id (kip.token-manifest.create-manifest (uri "text" "Kermit the Frog") [])))
@@ -97,7 +91,7 @@ returns
    "t:sQ19jh3-w3HOchpBefpKTBGj2_ARjC4xLiV0SVlokf4"]
 ```
 
-4. Hash the token list.
+3. Hash the token list.
 
 Finally, we can hash the list and get the `collection-hash`, by using `hash` function.
 

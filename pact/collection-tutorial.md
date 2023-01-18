@@ -14,7 +14,7 @@ Releasing the collection is accomplished in the following steps:
 4. Create / Mint Token (Minter)
 5. Transfer
 
-## 1. Initiate Collection
+## Initiate Collection
 
 In order to start a collection, the operator must run `marmalade.simple-one-off-collection-policy.init-collection` with required fields. Note, that this step is called directly from the `marmalade.simple-one-off-collection-policy.init-collection`.
 
@@ -99,7 +99,7 @@ returns
    "t:sQ19jh3-w3HOchpBefpKTBGj2_ARjC4xLiV0SVlokf4"]
 ```
 
-3. Hash the token list.
+4. Hash the token list.
 
 Finally, we can hash the list and get the `collection-hash`, by using `hash` function.
 
@@ -171,7 +171,7 @@ marmalade prevents the operator to reserve certain nfts that may be more valuabl
 1. Run `reserve-whitelist` with a keyset.
 
 ```
-(reserve-whitelist "muppet-v1" (create-principal (read-keyset 'keyset)))
+(marmalade.simple-one-off-collection-policy.reserve-whitelist "muppet-v1" (create-principal (read-keyset 'keyset)))
 ```
 
 2. Save the emitted event.
@@ -198,7 +198,7 @@ Once `reserve-whitelist` is complete, the operator can now reveal the token mani
 Operator of the `muppets-v1` will prepare the token-ids, and run the function.
 
 ```
-  (reveal-tokens "muppets-v1"
+  (marmalade.simple-one-off-collection-policy.reveal-tokens "muppets-v1"
     [  "t:33vh4wJvxEkXW72Bgvd88S6HKcyxLj2WJZEydAP4CCU"
        "t:UohIzpKOlpp5l7UZ-KNni2xaLu5pO67QlHLmxj65g5U"
        "t:u7u36BxiPTKp5Wuq_mXOLS7r2LFRaLeEKg2FY6ylNX0"
@@ -270,7 +270,7 @@ The operator will release the token-manifest somewhere for the users to mint the
 Note that above is the result of the code,
 
 ```
-(create-manifest (uri "text" "Rizzo the Rat") [])
+(kip.token-manifest.create-manifest (uri "text" "Rizzo the Rat") [])
 ```
 
 4. Run `create-token` and `mint` with the `whitelist-info` in env-data.
@@ -299,7 +299,7 @@ The minter need to sign the capabilities, `(marmalade.ledger.CREATE_TOKEN "t:9mC
 
 ## Transfer
 
-This collection policy uses plain `transfer` and `transfer-create` from the `marmalade.ledger` contract. `transfer` requires sender and receiver account names and the amount, and works with existent receiver accounts. `transfer-create` requires sender and receiver account names, receiver guard, and the amount, and works with existent and non-existent receivers. Sender's signature is required for both `transfer` and `transfer-create`. 
+This collection policy uses plain `transfer` and `transfer-create` from the `marmalade.ledger` contract. `transfer` requires sender and receiver account names and the amount, and works with existent receiver accounts. `transfer-create` requires sender and receiver account names, receiver guard, and the amount, and works with existent and non-existent receivers. Sender's signature is required for both `transfer` and `transfer-create`.
 
 ## Things to consider
 

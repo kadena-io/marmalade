@@ -47,7 +47,7 @@ All marmalade tokens must use `kip.token-manifest.create-manifest` function, whi
 
 For simplicity, each muppet token manifests will contain text of its names.
 
-2. Use `marmalade.ledger.create-token-id` to get generate token-ids.
+2. Use `marmalade.ledger.create-token-id` to generate token-ids.
 
 ```
 (marmalade.ledger.create-token-id (kip.token-manifest.create-manifest (uri "text" "Kermit the Frog") [])))

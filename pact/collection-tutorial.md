@@ -1,4 +1,4 @@
-# Collection Policy Tutorial
+# simple-one-off-collection-policy tutorial
 
 Marmalade _token policies_ allow for fine-grained customization of how NFTs are minted and sold.
 This tutorial demonstrates how an NFT collection supporting presale could be implemented, using an
@@ -29,7 +29,7 @@ In order to start a collection, the operator must run `marmalade.simple-one-off-
 The most important field to understand in this step is the `collection-hash`. In order to lock in the tokens without revealing its properties, the list of tokens will be hashed, with each token-id being the hash of the its manifests.
 The tokens will be revealed at a later step, and the token manifests will have to match the given collection-hash in order to be created/minted.
 
-When `init-collection` succeeds, an event `(INIT_COLLECTION collection-id collection-size collection-hash fungible price operator)` will be emitted.
+When `init-collection` succeeds, an event `(marmalade.simple-one-off-collection-policy.INIT_COLLECTION collection-id collection-size collection-hash fungible price operator)` will be emitted.
 
 ### Initiate `muppets-v1`
 
@@ -128,7 +128,8 @@ Finally, we have got our required fields to initiate our collection. The followi
   "k:aa5f18ed095607fbef309abd5511baaa0844e067a61ed4cf51d5333e770ed030" (read-keyset 'operator-guard) coin 5.0)
 ```
 
-We will see an event `(INIT_COLLECTION "muppet-v1" 9 "eLbTngl8lNBPshPMohX0ILM8l7R4RV8eNm9p0Pq1W6E" "k:aa5f18ed095607fbef309abd5511baaa0844e067a61ed4cf51d5333e770ed030" coin 5.0)` emitted once the transaction succeeds.
+We will see the following event emitted once the transaction succeeds.
+`(marmalade.simple-one-off-collection-policy.INIT_COLLECTION "muppet-v1" 9 "eLbTngl8lNBPshPMohX0ILM8l7R4RV8eNm9p0Pq1W6E" "k:aa5f18ed095607fbef309abd5511baaa0844e067a61ed4cf51d5333e770ed030" coin 5.0)`
 
 ## Reserve Whitelist
 
@@ -298,11 +299,7 @@ The minter need to sign the capabilities, `(marmalade.ledger.CREATE_TOKEN "t:9mC
 
 ## Transfer
 
-This collection policy uses plain `transfer` from the `marmalade.ledger`, where the sender needs to sign the transfer, and the receiver account receives.
-
-```
-marmalade.ledger
-```
+This collection policy uses plain `transfer` and `transfer-create` from the `marmalade.ledger` contract. `transfer` requires sender and receiver account names and the amount, and works with existent receiver accounts. `transfer-create` requires sender and receiver account names, receiver guard, and the amount, and works with existent and non-existent receivers. Sender's signature is required for both `transfer` and `transfer-create`. 
 
 ## Things to consider
 

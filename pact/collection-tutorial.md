@@ -3,6 +3,7 @@
 Marmalade _token policies_ allow for fine-grained customization of how NFTs are minted and sold.
 This tutorial demonstrates how an NFT collection supporting presale could be implemented, using an
 example policy 'simple-one-off-collection-policy`.
+
 This tutorial will demonstrate the policy step-by-step with an example collection called `muppets-v1`.
 
 Releasing the collection is accomplished in the following steps:

@@ -159,7 +159,7 @@ Because this transaction will transfer `coin` to operator, the minters must sign
 `(coin.TRANSFER "k:27fff7d20390142caf727cd4713d2c810839486fa2350af7e2ce980090185ce4" "k:aa5f18ed095607fbef309abd5511baaa0844e067a61ed4cf51d5333e770ed030" 5.0)`
 to send from mint account to the operator account.
 
-With prepared account, minters can now run `reserve-whitelist` and get their slots locked in.
+2. With prepared account, minters can now run `reserve-whitelist` and get their slots locked in.
 
 Successful whitelist will emit an event, `(RESERVE_WHITELIST collection-id account whitelist-index)`. This info should be saved for the token creations and mint index.
 

@@ -6,8 +6,8 @@
 (load "root/fungible-v2.pact")
 (load "root/gas-payer-v1.pact")
 (load "root/coin.pact")
+(env-exec-config ["DisablePact44"])
 (load "root/ns.pact")
-
 (define-namespace 'kip (sig-keyset) (sig-keyset))
 
 (load "kip/account-protocols-v1.pact")
@@ -33,8 +33,14 @@
 (load "ns-marmalade.pact")
 (load "ledger.pact")
 (load "policy.pact")
+<<<<<<< HEAD
 (load "simple-one-off-collection-policy.pact")
 (typecheck "marmalade.ledger" true)
+||||||| fe6b786
+(typecheck "marmalade.ledger" true)
+=======
+(typecheck "marmalade.ledger")
+>>>>>>> main
 (commit-tx)
 
 ;; fungible test
@@ -42,17 +48,71 @@
 (env-sigs [])
 (load "test/ledger-test-fungible.pact")
 (load "test/fungible.repl")
+(env-exec-config [])
 (use kip.token-manifest)
+
 (env-data {'mint-guard: []
 , 'burn-guard: []
 , 'sale-guard: []
 , 'transfer-guard: [] })
-(marmalade.ledger.create-token
-  TOKEN
-  12
-  (create-manifest (uri "text" "token") [])
-  marmalade.guard-token-policy)
+
+(expect-failure
+  "Token protocol blocks token creation with unknown protocols that have colon at index 1"
+  "Unrecognized reserved protocol: b"
+  (marmalade.ledger.create-token
+    (format "{}:{}" ["b" TOKEN])
+    12
+    (create-manifest (uri "text" "token") [])
+    marmalade.guard-token-policy))
+
+(expect-failure
+  "t: protocol blocks token creation with mismatching manifest hash"
+  "Token manifest protocol violation"
+  (marmalade.ledger.create-token
+    (format "t:{}" [TOKEN]) ;; t:token
+    12
+    (create-manifest (uri "text" "token") [])
+    marmalade.guard-token-policy))
+
+(expect
+  "t: token creation succeeds with matching token manifest"
+  true
+  (let*
+     ( (token-manifest (create-manifest (uri "text" "test t:") []))
+       (token-id (marmalade.ledger.create-token-id token-manifest)))
+    (marmalade.ledger.create-token
+      token-id
+      12
+      token-manifest
+      marmalade.guard-token-policy)))
+
+(expect-failure
+  "create-token-id fails with invalid manifest"
+  "Manifest is not valid"
+  (let*
+     ( (token-manifest
+        {"uri": {"scheme": "text","data": "test t:"},"hash": "Ce0UqVpsXHUe5YUYphIquMWQgTqZo67T4tXbJsyHLsA","data": []}))
+        (marmalade.ledger.create-token-id token-manifest)))
+
+(expect
+  "create-token-id succeeds with valid manifest"
+  "t:oLy3IyZwkPOZw4CjwgUvuRIAJXbHOVh7hHrShA17zHc"
+  (let*
+     ( (token-manifest
+        {"uri": {"scheme": "text","data": "test t:"},"hash": "oLy3IyZwkPOZw4CjwgUvuRIAJXbHOVh7hHrShA17zHc","data": []}))
+        (marmalade.ledger.create-token-id token-manifest)))
+
+(expect
+  "token creation succeeds without use of token protocol"
+  true
+  (marmalade.ledger.create-token
+    TOKEN ;; token
+    12
+    (create-manifest (uri "text" "token") [])
+    marmalade.guard-token-policy))
+
 (test-capability (marmalade.ledger.CREDIT TOKEN FUNDER_ACCT))
+
 (expect "fund success" true
   (test-fund FUNDER_ACCT FUNDER_GUARD FUNDER_BALANCE))
 (commit-tx)

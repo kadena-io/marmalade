@@ -57,7 +57,7 @@
           (if (= r "k")
             (enforce false "Single-key account protocol violation")
             (enforce false
-              (format "Reserved protocol guard violation: {}" [r]))
+              (format "Unrecognized reserved protocol: {}" [r]))
             )))))
 
 )

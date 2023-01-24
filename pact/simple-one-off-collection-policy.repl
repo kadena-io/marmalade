@@ -86,8 +86,7 @@
         (create-manifest (uri "text" (stringify-index index)) [])
         ))
       (manifests:list (map get-manifest (enumerate 0 4)))
-      (hashes:list (map (at 'hash ) manifests))
-      (tokens:list (map (create-token-id) hashes))
+      (tokens:list (map (create-token-id) manifests))
       (tokens-hash:string (hash tokens)))
       (init-collection "collection-0" 5 tokens-hash "k:e9ccbfa542ca3b5aa84febf491cc572e56f29dfdb351272a3ab290e3142afcbf" (read-keyset "k:e9ccbfa542ca3b5aa84febf491cc572e56f29dfdb351272a3ab290e3142afcbf") coin 5.0)
       )
@@ -150,8 +149,7 @@
         (create-manifest (uri "text" (stringify-index index)) [])
         ))
       (manifests:list (map get-manifest (enumerate 0 4)))
-      (hashes:list (map (at 'hash ) manifests))
-      (tokens:list (map (create-token-id) hashes)) )
+      (tokens:list (map (create-token-id) manifests)) )
       (reveal-tokens "collection-0" tokens)
       ))
 
@@ -187,8 +185,7 @@
         (create-manifest (uri "text" (stringify-index index)) [])
         ))
       (manifests:list (map get-manifest (enumerate 0 4)))
-      (hashes:list (map (at 'hash ) manifests))
-      (tokens:list (map (create-token-id) hashes)) )
+      (tokens:list (map (create-token-id) manifests)) )
       (reveal-tokens "collection-0" tokens)
 ))
 
@@ -223,12 +220,12 @@
   { 'key: "cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd"
    ,'caps: [(CREATE_TOKEN "t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678" "k:cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd")]
   }])
-  (create-token-id (at 'hash (create-manifest (uri "text" "2") [])))
+  (create-token-id (create-manifest (uri "text" "2") []))
 
 (expect "create t:9mCeDcVIuQET1awDEWbYXF-HlRzhLv5VW3hXiW9m678"
   true
   (marmalade.ledger.create-token
-    (create-token-id (at 'hash (create-manifest (uri "text" "2") [])))
+    (create-token-id (create-manifest (uri "text" "2") []))
     0
     (create-manifest (uri "text" "2") [])
     marmalade.simple-1-off-whitelist-collection-policy)
@@ -251,7 +248,7 @@
 (expect "create t:fqfxqkkMwG4FuyttGzosh_JpLOD-LUzt_D8K_5UhFg8"
   true
   (marmalade.ledger.create-token
-    (create-token-id (at 'hash (create-manifest (uri "text" "3") [])))
+    (create-token-id (create-manifest (uri "text" "3") []))
     0
     (create-manifest (uri "text" "3") [])
     marmalade.simple-1-off-whitelist-collection-policy)

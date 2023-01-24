@@ -34,7 +34,7 @@
 (load "ledger.pact")
 (load "policy.pact")
 (load "simple-one-off-collection-policy.pact")
-(typecheck "marmalade.ledger" true)
+(typecheck "marmalade.ledger")
 (commit-tx)
 
 ;; fungible test

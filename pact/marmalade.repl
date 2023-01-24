@@ -33,14 +33,8 @@
 (load "ns-marmalade.pact")
 (load "ledger.pact")
 (load "policy.pact")
-<<<<<<< HEAD
 (load "simple-one-off-collection-policy.pact")
 (typecheck "marmalade.ledger" true)
-||||||| fe6b786
-(typecheck "marmalade.ledger" true)
-=======
-(typecheck "marmalade.ledger")
->>>>>>> main
 (commit-tx)
 
 ;; fungible test

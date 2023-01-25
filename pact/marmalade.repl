@@ -33,6 +33,7 @@
 (load "ns-marmalade.pact")
 (load "ledger.pact")
 (load "policy.pact")
+(load "simple-one-off-collection-policy.pact")
 (typecheck "marmalade.ledger")
 (commit-tx)
 
@@ -2038,23 +2039,4 @@
       {"account": "coin-buyer","current": 0.2,"previous": 0.0}]}]
   (map (remove 'module-hash) (env-events true)))
 
-(rollback-tx)
-
-;; Upgrade tests
-(begin-tx "Upgrade contracts")
-(env-sigs [
-  { 'key: 'marmalade-admin
-   ,'caps: []
-   }])
-(env-data {
-  'ns: "marmalade"
- ,'upgrade: true
-  })
-(load "ledger.pact")
-(load "fixed-quote-policy.pact")
-(typecheck "marmalade.fixed-quote-policy")
-(load "fixed-quote-royalty-policy.pact")
-(typecheck "marmalade.fixed-quote-royalty-policy")
-(load "policy.pact")
-(typecheck "marmalade.guard-token-policy")
 (rollback-tx)

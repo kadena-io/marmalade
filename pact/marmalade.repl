@@ -34,6 +34,7 @@
 (load "ledger.pact")
 (load "policy.pact")
 (load "simple-one-off-collection-policy.pact")
+(load "multi-policy.pact")
 (typecheck "marmalade.ledger")
 (commit-tx)
 
@@ -2040,3 +2041,81 @@
   (map (remove 'module-hash) (env-events true)))
 
 (rollback-tx)
+(begin-tx)
+(use marmalade.ledger)
+(use kip.token-manifest)
+
+(env-data {
+  "policy-list":[marmalade.guard-token-policy]
+  , 'mint-guard: []
+  , 'burn-guard: []
+  , 'sale-guard: []
+  , 'transfer-guard: []
+  , 'bob-guard: [ 'bob ]
+})
+
+(env-sigs [
+  { 'key: "bob"
+  , 'caps:
+    [
+     (MINT "t:IcU1Tg2OX9wYHP1WxJR1XoLkyw50imoiXrkg1O-0gz4" "bob" 5.0)
+    ]
+  }])
+
+(create-token
+  (marmalade.ledger.create-token-id (create-manifest (uri "text" "multi-policy-token") []))
+  12
+  (create-manifest (uri "text" "multi-policy-token") [])
+  marmalade.multi-policy)
+
+(mint
+  (marmalade.ledger.create-token-id (create-manifest (uri "text" "multi-policy-token") []))
+  "bob"
+  (read-keyset 'bob-guard ) 5.0)
+
+(commit-tx)
+(begin-tx)
+(use marmalade.ledger)
+(use kip.token-manifest)
+(use marmalade.simple-1-off-whitelist-collection-policy)
+
+  (env-data {
+    "policy-list":[
+      marmalade.guard-token-policy
+      marmalade.simple-1-off-whitelist-collection-policy]
+    , 'mint-guard: []
+    , 'burn-guard: []
+    , 'sale-guard: []
+    , 'transfer-guard: []
+    , 'bob-guard: [ 'bob ]
+    , "k:e9ccbfa542ca3b5aa84febf491cc572e56f29dfdb351272a3ab290e3142afcbf": ["e9ccbfa542ca3b5aa84febf491cc572e56f29dfdb351272a3ab290e3142afcbf"]
+    , 'whitelist-info : {
+         'collection-id: "collection-0"
+        ,"index": 0
+        ,"account": "k:cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd"
+        ,"guard": {"keys": ["cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd"], "pred": "keys-all"}}
+  })
+
+  (env-sigs [
+    { 'key: "cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd"
+     ,'caps: [(CREATE_TOKEN (create-token-id (create-manifest (uri "text" "multi-policy-token-1") [])) "k:cf8b92528f94af3e61ccf0dc403e1d4a1a86d7f5320d84c9b54f0c34d959b2bd")]
+    }])
+
+(coin.create-account "k:e9ccbfa542ca3b5aa84febf491cc572e56f29dfdb351272a3ab290e3142afcbf" (read-keyset "k:e9ccbfa542ca3b5aa84febf491cc572e56f29dfdb351272a3ab290e3142afcbf"))
+(let*
+  ( (stringify-index (lambda (index:integer) (format "{}" [index])))
+    (get-manifest (lambda (index:integer)
+      (create-manifest (uri "text" (stringify-index index)) [])
+      ))
+    (manifests:list (map get-manifest (enumerate 0 4)))
+    (tokens:list (map (create-token-id) manifests))
+    (tokens-hash:string (hash tokens)))
+    (init-collection "collection-0" 5 tokens-hash "k:e9ccbfa542ca3b5aa84febf491cc572e56f29dfdb351272a3ab290e3142afcbf" (read-keyset "k:e9ccbfa542ca3b5aa84febf491cc572e56f29dfdb351272a3ab290e3142afcbf") coin 5.0)
+  )
+
+
+  (create-token
+    (create-token-id (create-manifest (uri "text" "multi-policy-token-1") []))
+    0
+    (create-manifest (uri "text" "multi-policy-token-1") [])
+    marmalade.multi-policy)

@@ -11,7 +11,7 @@
   (defschema policies
     policy: {
       "immutable-policy": [module{kip.token-policy-v1}],
-      "utility-policy": [module{kip.token-policy-v1}]
+      "adjustable-policy": [module{kip.token-policy-v1}]
     }
   )
 
@@ -37,17 +37,16 @@
       (with-read policy-table token-id {
         "policy": old-policy
         }
+        (let* ( (imm-p:[module{kip.token-policy-v1}] (at 'immutable-policy old-policy))
+                (adj-p:[module{kip.token-policy-v1}] (at 'adjustable-policy old-policy))
+                (new-policy:object{policies} {
+                  "immutable-policy": imm-p
+                , "adjustable-policy": (+ (at 'adjustable-policy old-policy) policies)}) )
         (update policy-table token-id {
-          "policy": {
-            "immutable-policy": (at 'immutable-policy old-policy)
-           ,"utility-policy": (+ (at 'utility-policy old-policy) policies)
-          }
+          "policy": new-policy
         })
-    ))
-    (emit-event (ROTATE_POLICY token-id {
-      "immutable-policy": (at 'immutable-policy old-policy)
-     ,"utility-policy": (+ (at 'utility-policy old-policy) policies)
-    }))
+    )))
+    (emit-event (ROTATE_POLICY token-id new-policy))
   )
 
   (defun remove-policy
@@ -57,19 +56,17 @@
       (with-read policy-table token-id {
         "policy": old-policy
         }
+        (let* ( (imm-p:[module{kip.token-policy-v1}] (at 'immutable-policy old-policy))
+                (adj-p:[module{kip.token-policy-v1}] (at 'adjustable-policy old-policy))
+                (new-policy:object{policies} {
+                    "immutable-policy": imm-p
+                  , "adjustable-policy":
+                      (+ (take policy-idx adj-p)
+                         (take (- policy-idx  (length  adj-p)) adj-p)) }) ) 
         (update policy-table token-id {
-          "policy": {
-            "immutable-policy": (at 'immutable-policy old-policy)
-           ,"utility-policy":
-             (+ (take policy-idx (at 'utility-policy old-policy))
-                (take (- policy-idx  (length  (at 'utility-policy old-policy)))))
-          }
+          "policy": new-policy
         })
-    ))
-    (emit-event (ROTATE_POLICY token-id {
-      "immutable-policy": (at 'immutable-policy old-policy)
-     ,"utility-policy": (+ (at 'utility-policy old-policy) policies)
-    }))
+    (emit-event (ROTATE_POLICY token-id new-policy)))))
   )
 
   (defun get-policies:[module{kip.token-policy-v1}] (token:object{token-info})
@@ -100,7 +97,7 @@
                 (token account guard amount policy-list:[module{kip.token-policy-v1}])
                   (map (multi token account guard amount) policy-list))))
                   (multi-list token account guard amount
-                    (+ (at 'immutable-policy curr-policy) (at 'utility-policy curr-policy)))))))
+                    (+ (at 'immutable-policy curr-policy) (at 'adjustable-policy curr-policy)))))))
 
   (defun enforce-init:bool
     (token:object{token-info})
@@ -116,7 +113,7 @@
                   (map (multi token) policyL))))
                   (multi-list token (+
                     (at 'immutable-policy (read-msg 'policy-list ))
-                    (at 'utility-policy (read-msg 'policy-list )))))))
+                    (at 'adjustable-policy (read-msg 'policy-list )))))))
 
   (defun enforce-burn:bool
     ( token:object{token-info}
@@ -136,7 +133,7 @@
                 (token account amount policy-list:[module{kip.token-policy-v1}])
                   (map (multi token account amount) policy-list))))
                   (multi-list token account amount
-                    (+ (at 'immutable-policy curr-policy) (at 'utility-policy curr-policy)))))))
+                    (+ (at 'immutable-policy curr-policy) (at 'adjustable-policy curr-policy)))))))
 
 
   (defun enforce-offer:bool
@@ -157,7 +154,7 @@
                 (token seller amount sale-id policy-list:[module{kip.token-policy-v1}])
                   (map (multi token seller amount sale-id) policy-list))))
                   (multi-list token seller amount sale-id
-                     (+ (at 'immutable-policy curr-policy) (at 'utility-policy curr-policy)))))))
+                     (+ (at 'immutable-policy curr-policy) (at 'adjustable-policy curr-policy)))))))
 
   (defun enforce-buy:bool
     ( token:object{token-info}
@@ -180,7 +177,7 @@
                   (map (multi token seller buyer buyer-guard amount sale-id) policy-list))))
                   (multi-list token seller buyer buyer-guard amount sale-id
                     (+
-                      (+ (at 'immutable-policy curr-policy) (at 'utility-policy curr-policy)))
+                      (+ (at 'immutable-policy curr-policy) (at 'adjustable-policy curr-policy)))
                       (read-msg 'marketplace-policy )
                       )
                   ))))
@@ -204,7 +201,7 @@
                 (token sender guard receiver amount policy-list:[module{kip.token-policy-v1}])
                   (map (multi token sender guard receiver amount) policy-list))))
                   (multi-list token sender guard receiver amount
-                    (+ (at 'immutable-policy curr-policy) (at 'utility-policy curr-policy)))
+                    (+ (at 'immutable-policy curr-policy) (at 'adjustable-policy curr-policy)))
                   ))))
 
   (defun enforce-crosschain:bool

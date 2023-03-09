@@ -7,18 +7,21 @@
 
   (implements kip.token-policy-v1)
   (use kip.token-policy-v1 [token-info])
+  (use marmalade.ledger)
+
+  (defschema policy-list
+    immutable-policy: [module{kip.token-policy-v1}]
+    adjustable-policy: [module{kip.token-policy-v1}])
 
   (defschema policies
-    policy: {
-      "immutable-policy": [module{kip.token-policy-v1}],
-      "adjustable-policy": [module{kip.token-policy-v1}]
-    }
+    policy: object{policy-list}
   )
 
   (deftable policy-table:{policies})
 
   (defcap ADJUST_POLICY (token-id:string account:string)
-    (enforce-guard (marmalade.ledger.account-guard token-id account)))
+    (enforce (= (get-balance token-id account) (total-supply token-id)) "Account doesn't own token")
+    (enforce-guard (account-guard token-id account)))
 
   (defun create-multi-policy
     ( token:object{token-info}
@@ -30,16 +33,17 @@
   )
 
   (defun add-policy
-    ( token:object{token-info}
+    ( token-id:string
+      account:string
       policies:[module{kip.token-policy-v1}] )
-    (with-capability (ADJUST_POLICY token-id) ;; needs sigs from token owner
+    (with-capability (ADJUST_POLICY token-id account) ;; needs sigs from token owner
       (with-read policy-table token-id {
         "policy": old-policy
         }
         (let* ( (imm-p:[module{kip.token-policy-v1}] (at 'immutable-policy old-policy))
                 (adj-p:[module{kip.token-policy-v1}] (at 'adjustable-policy old-policy))
                 (new-policy:object{policies} {
-                  "immutable-policy": imm-p
+                  "immutable-policy": (+ [one-off-policy] imm-p)
                 , "adjustable-policy": (+ (at 'adjustable-policy old-policy) policies)}) )
         (update policy-table token-id {
           "policy": new-policy
@@ -49,9 +53,10 @@
   )
 
   (defun remove-policy
-    ( token:object{token-info}
+    ( token:string
+      account:string
       policy-idx:integer )
-    (with-capability (ADJUST_POLICY token-id) ;; needs sigs from token owner
+    (with-capability (ADJUST_POLICY token-id account)
       (with-read policy-table token-id {
         "policy": old-policy
         }
@@ -79,9 +84,13 @@
   (defun enforce-init:bool
     (token:object{token-info})
     (enforce-ledger)
-    (create-multi-policy token (read-msg 'policy-list ))
-    (map-init token (+ (at 'immutable-policy (read-msg 'policy-list ))
-                       (at 'adjustable-policy (read-msg 'policy-list )))))
+    (let* ( (policy:object{policy-list} (read-msg 'policy-list ))
+            (imm-p:[module{kip.token-policy-v1}] (at 'immutable-policy policy))
+            (adj-p:[module{kip.token-policy-v1}] (at 'adjustable-policy policy)) )
+      (enforce (contains one-off-policy imm-p) "one-off policy is required")
+      (create-multi-policy token policy)
+      (map-init token (+ imm-p adj-p)))
+  )
 
   (defun enforce-mint:bool
     ( token:object{token-info}
@@ -96,7 +105,8 @@
       ;;order issue?
       (map-offer token account guard amount
          (+ (at 'immutable-policy curr-policy)
-            (at 'adjustable-policy curr-policy)))))
+            (at 'adjustable-policy curr-policy)
+             ))))
 
 
   (defun enforce-burn:bool
@@ -140,8 +150,7 @@
         (+
           (+ (at 'immutable-policy curr-policy)
               (at 'adjustable-policy curr-policy))
-          (read-msg 'marketplace-policy )))))
-
+          ))))
 
   (defun enforce-transfer:bool
     ( token:object{token-info}
@@ -172,7 +181,7 @@
         (+ (at 'immutable-policy curr-policy)
            (at 'adjustable-policy curr-policy)))))
 
- ;;utility functions to map policy list
+   ;;utility functions to map policy list
    (defun token-init (token:object{token-info} policy:module{kip.token-policy-v1})
      (policy::enforce-init token))
 
@@ -206,9 +215,9 @@
    (defun token-crosschain (token:object{token-info} sender:string guard:guard receiver:string target-chain:string amount:decimal policy:module{kip.token-policy-v1})
      (policy::enforce-crosschain  token sender guard receiver target-chain amount))
 
-   (defun map-crosschain (token:object{token-info} sender:string guard:guard receiver:string target-chain:string amount:decimal policy-list:[module{kip.token-policy-v1}])
+   (defun map-crosschain (token:object{token-info} params:object sender:string guard:guard receiver:string target-chain:string amount:decimal policy-list:[module{kip.token-policy-v1}])
      (map (token-crosschain  token sender guard receiver target-chain amount) policy-list))
-
+)
 
 (if (read-msg 'upgrade )
   ["upgrade complete"]

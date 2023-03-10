@@ -66,11 +66,13 @@ Token amount is transferred from sender to receiver at `transfer`. Arguments inc
 #### offer
 
 Step 0 of `sale` executes `offer`. `offer` transfers the token from the seller to the escrow account.
+
 `policy::enforce-offer` function of the policy contract is executed at step 0 of `sale`
 
 #### withdraw (cont)
 
 Step 0-rollback executes `withdraw`. `withdraw` transfers token from the escrow back to the seller. `withdraw` can be executed after timeout, by sending in `cont` command with `rollback: true`, `step: 0`. Formatting `cont` commands can be read in [here](https://pact-language.readthedocs.io/en/latest/pact-reference.html?highlight=continuation#yaml-continuation-command-request)
+
 `policy::enforce-withdraw` function of the policy contract is executed at step 0-rollback of `sale`
 
 #### buy (cont)

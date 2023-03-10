@@ -81,8 +81,9 @@ Step 1 executes `buy`. `buy` transfers token from the escrow to the buyer. `buy`
 
 ## Policies
 
-[Marmalade Policies](./policies/policies.md) allow customized rules for token operations.
-[Simple One Off Collection Policy](./policies/one-off-collection-policy/one-off-collection-policy.pact)
-[Fixed Quote Policy](./policies/fixed-quote-policy/fixed-quote-policy.pact)
-[Fixed Quote Royalty Policy](./policies/fixed-quote-royalty-policy/fixed-quote-royalty-policy.pact)
-[Guard Policy](./policies/guard-policy/guard-policy.pact)
+Marmalade Policies allow customized rules for token operations. Read about policies [here](./policies/policies.md)
+
+- [Simple One Off Collection Policy](./policies/one-off-collection-policy/one-off-collection-policy.pact)
+- [Fixed Quote Policy](./policies/fixed-quote-policy/fixed-quote-policy.pact)
+- [Fixed Quote Royalty Policy](./policies/fixed-quote-royalty-policy/fixed-quote-royalty-policy.pact)
+- [Guard Policy](./policies/guard-policy/guard-policy.pact)

@@ -1,6 +1,6 @@
 # guard-policy tutorial
 
-guard-policy is a polict that defines several functions that enforce rules on various token-related actions such as minting, burning, transferring, and buying/selling tokens. The policy defines a schema for guards which includes keysets for various actions.
+guard-policy is a policy that defines several functions that enforce rules on various token-related actions such as minting, burning, transferring, and buying/selling tokens. The policy defines a schema for guards which includes keysets for various actions.
 
 A table:policy-guards contains the mapped token IDs to guard values for that token. Additionally.
 
@@ -13,4 +13,3 @@ The enforce-offer and enforce-buy functions enforce rules related to buying and 
 The enforce-transfer and enforce-crosschain functions enforce rules related to transferring tokens, including checking the sender, receiver, and amount of the transfer against the specified guards.
 
 Finally, the code includes a conditional block that creates the policy-guards table if it does not already exist, or returns a message indicating that the upgrade is complete if the table does exist.
-

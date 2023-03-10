@@ -1,5 +1,5 @@
 # multi-policy tutorial
-multi-policy is a policy that  defines a multi-policy token implementation. The contract manages a policy-table table and uses the kip.token-policy-v1 module for policy implementation.
+multi-policy is a policy that defines a multi-policy token implementation. The contract manages a policy-table table and uses the kip.token-policy-v1 module for policy implementation.
 
 #The contract defines several functions, including:
 

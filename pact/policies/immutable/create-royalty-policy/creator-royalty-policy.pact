@@ -83,7 +83,6 @@
     @doc "Capture spec for SALE of TOKEN from message"
     (enforce-ledger)
     (enforce-sale-pact sale-id)
-    ;;enforce fq-p.enforce-offer is already run = sale-id on line 92 wouldnt be available of not run
     (bind (get-policy token)
       {
         'fungible := fungible:module{fungible-v2}

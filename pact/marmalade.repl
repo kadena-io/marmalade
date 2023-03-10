@@ -32,8 +32,8 @@
     }])
 (load "ns-marmalade.pact")
 (load "ledger.pact")
-(load "policy.pact")
-(load "simple-one-off-collection-policy.pact")
+(load "./policies/guard-policy/guard-policy.pact")
+(load "./policies/one-off-collection-policy/one-off-collection-policy.pact")
 (typecheck "marmalade.ledger")
 (commit-tx)
 
@@ -763,7 +763,7 @@
    {'key: 'marmalade-admin
    ,'caps:[]}])
 
-(load "fixed-quote-policy.pact")
+(load "policies/fixed-quote-policy/fixed-quote-policy.pact")
 (use kip.token-manifest)
 (use marmalade.ledger)
 
@@ -1268,7 +1268,7 @@
 
 (coin.create-account "creator" (read-keyset 'creator-guard))
 
-(load "fixed-quote-royalty-policy.pact")
+(load "policies/fixed-quote-royalty-policy/fixed-quote-royalty-policy.pact")
 (use kip.token-manifest)
 (use marmalade.ledger)
 

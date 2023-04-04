@@ -9,7 +9,6 @@
     ]
 
   (use util.fungible-util)
-  (use kip.token-manifest)
 
   (implements kip.poly-fungible-v2)
   (use kip.poly-fungible-v2 [account-details sender-balance-change receiver-balance-change])
@@ -22,7 +21,7 @@
 
   (defschema token-schema
     id:string
-    manifest:object{manifest}
+    manifest:string
     precision:integer
     supply:decimal
     policy:module{kip.token-policy-v1}
@@ -190,18 +189,16 @@
       s)
   )
 
-  (defun create-token-id:string (manifest:object{manifest})
-    (enforce-verify-manifest manifest)
+  (defun create-token-id:string (manifest:object{token-info}) 
     (format "t:{}" [(at 'hash manifest)])
   )
 
   (defun create-token:bool
     ( id:string
       precision:integer
-      manifest:object{manifest}
+      manifest:string
       policy:module{kip.token-policy-v1}
     )
-    (enforce-verify-manifest manifest)
     (enforce-token-reserved id manifest)
     (policy::enforce-init
       { 'id: id, 'supply: 0.0, 'precision: precision, 'manifest: manifest })
@@ -215,7 +212,7 @@
       (emit-event (TOKEN id precision 0.0 policy))
   )
 
-  (defun enforce-token-reserved:bool (token-id:string manifest:object{manifest})
+  (defun enforce-token-reserved:bool (token-id:string manifest:object{token-info})
     @doc "Enforce reserved token-id name protocols."
     (let ((r (check-reserved token-id)))
       (if (= "" r) true
@@ -463,7 +460,7 @@
     (format "{}:{}" [id account])
   )
 
-  (defun get-manifest:object{manifest} (id:string)
+  (defun get-manifest:object{token-info} (id:string)
     (at 'manifest (read tokens id)))
 
   ;;

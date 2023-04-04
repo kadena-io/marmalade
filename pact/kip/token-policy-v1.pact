@@ -6,7 +6,7 @@
     id:string
     supply:decimal
     precision:integer
-    manifest:object{kip.token-manifest.manifest})
+    manifest:string)
 
   (defun enforce-mint:bool
     ( token:object{token-info}

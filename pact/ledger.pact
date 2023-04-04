@@ -22,9 +22,21 @@
 
   (defschema token-schema
     id:string
+<<<<<<< HEAD
     manifest:object{manifest}
+||||||| parent of 65ba55f... renamed metadata to uri
+    manifest:string
+=======
+    uri:string
+>>>>>>> 65ba55f... renamed metadata to uri
     precision:integer
     supply:decimal
+    policy:module{kip.token-policy-v1}
+  )
+
+  (defschema token-details
+    uri:string
+    precision:integer
     policy:module{kip.token-policy-v1}
   )
 
@@ -156,14 +168,14 @@
       { 'policy := policy:module{kip.token-policy-v1}
       , 'supply := supply
       , 'precision := precision
-      , 'manifest := manifest
+      , 'uri := uri
       }
       { 'policy: policy
       , 'token:
         { 'id: id
         , 'supply: supply
         , 'precision: precision
-        , 'manifest: manifest
+        , 'uri: uri
         } } )
   )
 
@@ -190,15 +202,29 @@
       s)
   )
 
+<<<<<<< HEAD
   (defun create-token-id:string (manifest:object{manifest})
     (enforce-verify-manifest manifest)
     (format "t:{}" [(at 'hash manifest)])
+||||||| parent of 65ba55f... renamed metadata to uri
+  (defun create-token-id:string (manifest:object{token-info}) 
+    (format "t:{}" [(at 'hash manifest)])
+=======
+  (defun create-token-id:string (token-details:object{token-details}) 
+    (format "t:{}" [(hash token-details)])
+>>>>>>> 65ba55f... renamed metadata to uri
   )
 
   (defun create-token:bool
     ( id:string
       precision:integer
+<<<<<<< HEAD
       manifest:object{manifest}
+||||||| parent of 65ba55f... renamed metadata to uri
+      manifest:string
+=======
+      uri:string
+>>>>>>> 65ba55f... renamed metadata to uri
       policy:module{kip.token-policy-v1}
     )
     (enforce-verify-manifest manifest)

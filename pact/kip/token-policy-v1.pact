@@ -6,7 +6,7 @@
     id:string
     supply:decimal
     precision:integer
-    manifest:string)
+    uri:string)
 
   (defun enforce-mint:bool
     ( token:object{token-info}

@@ -85,7 +85,7 @@
     @event true
   )
 
-  (defcap TOKEN:bool (id:string precision:integer supply:decimal policy:module{kip.token-policy-v1})
+  (defcap TOKEN:bool (id:string precision:integer supply:decimal policy:module{kip.token-policy-v1} uri:string)
     @event
     true
   )
@@ -205,28 +205,32 @@
       uri:string
       policy:module{kip.token-policy-v1}
     )
-    (enforce-token-reserved id manifest)
+
+    (let ((token-details { 'uri: uri, 'precision: precision, 'policy: policy }))
+     (enforce-token-reserved id token-details)
+    )
+    
     (policy::enforce-init
-      { 'id: id, 'supply: 0.0, 'precision: precision, 'manifest: manifest })
+      { 'id: id, 'supply: 0.0, 'precision: precision, 'url: uri })
     (insert tokens id {
       "id": id,
       "precision": precision,
-      "manifest": manifest,
+      "uri": uri,
       "supply": 0.0,
       "policy": policy
       })
-      (emit-event (TOKEN id precision 0.0 policy))
+      (emit-event (TOKEN id precision 0.0 policy uri))
   )
 
-  (defun enforce-token-reserved:bool (token-id:string manifest:object{token-info})
+  (defun enforce-token-reserved:bool (token-id:string token-details:object{token-details})
     @doc "Enforce reserved token-id name protocols."
     (let ((r (check-reserved token-id)))
       (if (= "" r) true
         (if (= "t" r)
           (enforce
             (= token-id
-               (create-token-id manifest))
-            "Token manifest protocol violation")
+               (create-token-id token-details))
+            "Token protocol violation")
           (enforce false
             (format "Unrecognized reserved protocol: {}" [r]) )))))
 
@@ -466,8 +470,8 @@
     (format "{}:{}" [id account])
   )
 
-  (defun get-manifest:object{token-info} (id:string)
-    (at 'manifest (read tokens id)))
+  (defun get-uri:string (id:string)
+    (at 'uri (read tokens id)))
 
   ;;
   ;; sale

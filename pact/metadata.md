@@ -1,5 +1,5 @@
 
-# Marmalade v2 Metadata Standard
+# Marmalade v2 metadata standard
 ## Overview
 With marmalade V2, the **on-chain** metadata schema for non-fungible tokens (NFTs) has been deprecated. This means that the manifest schema, which was previously used to store the metadata for NFTs on-chain, is no longer being used. Instead, a new schema has been introduced, which is off-chain and conforms to the widely accepted standard for NFT metadata.
 

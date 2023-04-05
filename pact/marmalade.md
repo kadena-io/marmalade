@@ -15,9 +15,9 @@ The main contract in Marmalade is `marmalade.ledger`. This contract stores the t
 
 Token is created in marmalade via running `create-token`. Arguments include:
 
-- `id`: token-id, formatted in `t:{token-manifest-hash}`. Should be created using `create-token-id`
+- `id`: token-id, formatted in `t:{token-detail-hash}`. Should be created using `create-token-id`
 - `precision`: Number of decimals allowed for for the token amount. For one-off token, precision must be 0, and should be enforced in the policy's `enforce-init`.
-- `manifest`: token data URI. Use `kip.manifest.create-manifest`
+- `uri`: url to external JSON containing metadata
 - `policy`: policy contract with custom functions to execute at marmalade functions
 
 `policy::enforce-init` function of the policy contract is executed in `create-token`.

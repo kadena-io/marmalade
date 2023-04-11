@@ -1,0 +1,13 @@
+(begin-tx)
+
+(load "../marmalade.repl")
+
+(env-data {
+  "ns": "marmalade"
+ ,"upgrade": false
+  })
+(env-keys ['marmalade-admin ])
+
+(load "multi-policy.pact")
+
+(commit-tx)

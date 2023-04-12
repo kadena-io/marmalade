@@ -69,7 +69,7 @@
     @event
   )
 
-  (defcap TOKEN:bool (id:string precision:integer supply:decimal policy:module{kip.token-policy-v2})
+  (defcap TOKEN:bool (id:string precision:integer supply:decimal policy:module{kip.token-policy-v2} uri:string)
     @doc " Emitted when token ID is created."
     @event
   )
@@ -296,11 +296,11 @@
     @doc
       " Give total available quantity of ID. If not supported, return 0."
   )
-
-  (defun get-manifest:object{kip.token-manifest.manifest} (id:string)
-    @doc
-      " Give manifest for ID."
-  )
+  ;
+  ; (defun get-manifest:object{kip.token-manifest.manifest} (id:string)
+  ;   @doc
+  ;     " Give manifest for ID."
+  ; )
 
   ;;
   ;; Sale API

@@ -11,7 +11,7 @@
 (define-namespace 'kip (sig-keyset) (sig-keyset))
 
 (load "kip/account-protocols-v1.pact")
-(load "kip/manifest.pact")
+
 (load "kip/token-policy-v2.pact")
 (load "kip/poly-fungible-v3.pact")
 

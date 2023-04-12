@@ -27,7 +27,7 @@ Token schema now has the following structure:
 		uri:string
 		precision:integer
 		supply:decimal
-		policy:module{kip.token-policy-v1}
+		policy:module{kip.token-policy-v2}
 	)
 
 - uri: A string representing the URI that points to an external JSON-Schema for the NFT.
@@ -182,7 +182,7 @@ The previous schema used by Marmalade V1 was called 'manifest', and it consisted
     (defschema token-details
     	uri:string
     	precision:integer
-    	policy:module{kip.token-policy-v1}
+    	policy:module{kip.token-policy-v2}
     )
 
 Since **onchain** manifest is deprecated, token-details schema is hashed.

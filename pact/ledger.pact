@@ -10,8 +10,8 @@
 
   (use util.fungible-util)
 
-  (implements kip.poly-fungible-v2)
-  (use kip.poly-fungible-v2 [account-details sender-balance-change receiver-balance-change])
+  (implements kip.poly-fungible-v3)
+  (use kip.poly-fungible-v3 [account-details sender-balance-change receiver-balance-change])
 
   ;;
   ;; Tables/Schemas
@@ -24,13 +24,13 @@
     uri:string
     precision:integer
     supply:decimal
-    policy:module{kip.token-policy-v1}
+    policy:module{kip.token-policy-v2}
   )
 
   (defschema token-details
     uri:string
     precision:integer
-    policy:module{kip.token-policy-v1}
+    policy:module{kip.token-policy-v2}
   )
 
   (deftable tokens:{token-schema})
@@ -43,7 +43,7 @@
     (enforce-guard (keyset-ref-guard 'marmalade-admin)))
 
   ;;
-  ;; poly-fungible-v2 caps
+  ;; poly-fungible-v3 caps
   ;;
 
   (defcap TRANSFER:bool
@@ -85,7 +85,7 @@
     @event true
   )
 
-  (defcap TOKEN:bool (id:string precision:integer supply:decimal policy:module{kip.token-policy-v1} uri:string)
+  (defcap TOKEN:bool (id:string precision:integer supply:decimal policy:module{kip.token-policy-v2} uri:string)
     @event
     true
   )
@@ -152,13 +152,13 @@
   )
 
   (defschema policy-info
-    policy:module{kip.token-policy-v1}
-    token:object{kip.token-policy-v1.token-info}
+    policy:module{kip.token-policy-v2}
+    token:object{kip.token-policy-v2.token-info}
   )
 
   (defun get-policy-info:object{policy-info} (id:string)
     (with-read tokens id
-      { 'policy := policy:module{kip.token-policy-v1}
+      { 'policy := policy:module{kip.token-policy-v2}
       , 'supply := supply
       , 'precision := precision
       , 'uri := uri
@@ -203,7 +203,7 @@
     ( id:string
       precision:integer
       uri:string
-      policy:module{kip.token-policy-v1}
+      policy:module{kip.token-policy-v2}
     )
 
     (let ((token-details { 'uri: uri, 'precision: precision, 'policy: policy }))
@@ -288,7 +288,7 @@
       amount:decimal
     )
     (bind (get-policy-info id)
-      { 'policy := policy:module{kip.token-policy-v1}
+      { 'policy := policy:module{kip.token-policy-v2}
       , 'token := token }
       (policy::enforce-transfer token sender (account-guard id sender) receiver amount))
   )
@@ -323,7 +323,7 @@
     )
     (with-capability (MINT id account amount)
       (bind (get-policy-info id)
-        { 'policy := policy:module{kip.token-policy-v1}
+        { 'policy := policy:module{kip.token-policy-v2}
         , 'token := token }
         (policy::enforce-mint token account guard amount))
       (let
@@ -344,7 +344,7 @@
     )
     (with-capability (BURN id account amount)
       (bind (get-policy-info id)
-        { 'policy := policy:module{kip.token-policy-v1}
+        { 'policy := policy:module{kip.token-policy-v2}
         , 'token := token }
         (policy::enforce-burn token account amount))
       (let
@@ -544,7 +544,7 @@
     @doc "Initiate sale with by SELLER by escrowing AMOUNT of TOKEN until TIMEOUT."
     (require-capability (SALE_PRIVATE (pact-id)))
     (bind (get-policy-info id)
-      { 'policy := policy:module{kip.token-policy-v1}
+      { 'policy := policy:module{kip.token-policy-v2}
       , 'token := token }
       (policy::enforce-offer token seller amount (pact-id)))
     (let
@@ -561,8 +561,12 @@
       seller:string
       amount:decimal
     )
-    @doc "Withdraw offer by SELLER of AMOUNT of TOKEN before TIMEOUT"
+    @doc "Withdraw offer by SELLER of AMOUNT of TOKEN"
     (require-capability (SALE_PRIVATE (pact-id)))
+    (bind (get-policy-info id)
+      { 'policy := policy:module{kip.token-policy-v2}
+      , 'token := token }
+      (policy::enforce-withdraw token seller amount (pact-id)))
     (let
       (
         (sender (debit id (sale-account) amount))
@@ -584,7 +588,7 @@
     @doc "Complete sale with transfer."
     (require-capability (SALE_PRIVATE (pact-id)))
     (bind (get-policy-info id)
-      { 'policy := policy:module{kip.token-policy-v1}
+      { 'policy := policy:module{kip.token-policy-v2}
       , 'token := token }
       (policy::enforce-buy token seller buyer buyer-guard amount sale-id))
     (let

@@ -1,16 +1,16 @@
 # Policies
 
-Policies following [kip/token-policy-v1.pact] interface.
+Policies following [kip/token-policy-v2.pact] interface.
 Enable creators to tightly controll all aspects of a token through enforceable token policies for minting, burning, offering, buying, transfer and sale, and cross-chain transfers
 
 # Introduction
-The token-policy-v1 interface is used to define policies for the minting, burning, transfer, and sale of tokens. This interface is built using the Pact smart contract language and provides a set of functions that you can use to enforce policies for your token.
+The token-policy-v2 interface is used to define policies for the minting, burning, transfer, and sale of tokens. This interface is built using the Pact smart contract language and provides a set of functions that you can use to enforce policies for your token.
 
 # Getting Started
 To use this interface, you first need to import it into your Pact code using the following command:
 
 `(namespace 'my-namespace)`
-`(import 'marmalade.token-policy-v1)`
+`(import 'marmalade.token-policy-v2)`
 
 To get started, you will need to define the schema for your token using the token-info data type. The token-info data type should include the id, supply, precision, and manifest fields.
 
@@ -45,4 +45,4 @@ This function enforces the policy related to cross-chain transfers of tokens. It
 
 To define your own policies, simply create a new function with the name of the policy you want to implement and add your custom checks. Make sure the function returns a boolean value indicating whether or not the policy is enforced.
 
-Overall, the token-policy-v1 interface provides a powerful tool for defining policies that govern the behavior of tokens written in Pact on the kadena blockchain. By creating custom functions to enforce policies related to minting, burning, offering, buying, transferring, and cross-chain transfers of tokens, you can ensure that your marmalade token operates in a secure and reliable manner.
+Overall, the token-policy-v2 interface provides a powerful tool for defining policies that govern the behavior of tokens written in Pact on the kadena blockchain. By creating custom functions to enforce policies related to minting, burning, offering, buying, transferring, and cross-chain transfers of tokens, you can ensure that your marmalade token operates in a secure and reliable manner.

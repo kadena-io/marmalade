@@ -2,7 +2,7 @@
 
 (namespace 'kip)
 
-(interface poly-fungible-v2
+(interface poly-fungible-v3
 
   (defschema account-details
     @doc
@@ -69,7 +69,7 @@
     @event
   )
 
-  (defcap TOKEN:bool (id:string precision:integer supply:decimal policy:module{kip.token-policy-v1})
+  (defcap TOKEN:bool (id:string precision:integer supply:decimal policy:module{kip.token-policy-v2})
     @doc " Emitted when token ID is created."
     @event
   )
@@ -102,6 +102,92 @@
     )
     @doc
       " Enforce that AMOUNT meets minimum precision allowed for ID."
+  )
+
+  (defun mint:bool
+    ( id:string
+      account:string
+      guard:guard
+      amount:decimal
+    )
+    @doc
+      " Mint AMOUNT of ID to ACCOUNT with GUARD."
+    @model
+      [ (property (!= id ""))
+        (property (!= account ""))
+        (property (>= amount 0.0))
+      ]
+  )
+
+  (defun burn:bool
+    ( id:string
+      account:string
+      amount:decimal
+    )
+    @doc
+      " Burn AMOUNT of ID from ACCOUNT."
+    @model
+      [ (property (!= id ""))
+        (property (!= account ""))
+        (property (>= amount 0.0))
+      ]
+  )
+
+  (defun offer:bool
+    ( id:string
+      seller:string
+      amount:decimal
+    )
+    @doc "Initiate sale with by SELLER by escrowing AMOUNT of TOKEN until TIMEOUT."
+    @model
+      [ (property (!= id ""))
+        (property (!= seller ""))
+        (property (>= amount 0.0))
+      ]
+  )
+
+  (defun withdraw:bool
+    ( id:string
+      seller:string
+      amount:decimal
+    )
+    @doc "Withdraw offer by SELLER of AMOUNT of TOKEN"
+    @model
+      [ (property (!= id ""))
+        (property (!= seller ""))
+        (property (>= amount 0.0))
+      ]
+  )
+
+  (defun buy:bool
+    ( id:string
+      seller:string
+      buyer:string
+      buyer-guard:guard
+      amount:decimal
+      sale-id:string
+    )
+    @doc "Complete sale with transfer."
+    @model
+      [ (property (!= id ""))
+        (property (!= seller ""))
+        (property (!= buyer ""))
+        (property (>= amount 0.0))
+      ]
+  )
+
+  (defun create-token:bool
+    ( id:string
+      precision:integer
+      uri:string
+      policy:module{kip.token-policy-v2}
+    )
+    @doc "Create a new token with ID, PRECISION, URI, and POLICY."
+    @model
+      [ (property (!= id ""))
+        (property (>= precision 0))
+        (property (!= uri ""))
+      ]
   )
 
   (defun create-account:bool

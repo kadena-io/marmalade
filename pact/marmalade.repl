@@ -12,8 +12,8 @@
 
 (load "kip/account-protocols-v1.pact")
 (load "kip/manifest.pact")
-(load "kip/token-policy-v1.pact")
-(load "kip/poly-fungible-v2.pact")
+(load "kip/token-policy-v2.pact")
+(load "kip/poly-fungible-v3.pact")
 
 (define-namespace 'util (sig-keyset) (sig-keyset))
 (load "util/fungible-util.pact")
@@ -125,13 +125,13 @@
 (module test-ledger G
   (defcap G () true)
   (use kip.token-manifest)
-  (use kip.token-policy-v1 [token-info])
+  (use kip.token-policy-v2 [token-info])
 
   (defun create-token
     ( id:string
       precision:integer
       manifest:object{manifest}
-      policy:module{kip.token-policy-v1}
+      policy:module{kip.token-policy-v2}
     )
     (policy::enforce-init
       { 'id: id, 'supply: 0.0, 'precision: precision, 'manifest: manifest })
@@ -142,7 +142,7 @@
       account:string
       guard:guard
       amount:decimal
-      policy:module{kip.token-policy-v1}
+      policy:module{kip.token-policy-v2}
     )
     (policy::enforce-mint token account guard amount)
   )
@@ -151,7 +151,7 @@
     ( token:object{token-info}
       account:string
       amount:decimal
-      policy:module{kip.token-policy-v1}
+      policy:module{kip.token-policy-v2}
     )
     (policy::enforce-burn token account amount)
   )
@@ -160,7 +160,7 @@
     ( token:object{token-info}
       seller:string
       amount:decimal
-      policy:module{kip.token-policy-v1}
+      policy:module{kip.token-policy-v2}
     )
     (policy::enforce-offer token seller amount "sale")
   )
@@ -172,7 +172,7 @@
       buyer-guard:guard
       amount:decimal
       sale-id:string
-      policy:module{kip.token-policy-v1}
+      policy:module{kip.token-policy-v2}
     )
     (policy::enforce-buy token seller buyer buyer-guard amount sale-id)
   )
@@ -183,7 +183,7 @@
       guard:guard
       receiver:string
       amount:decimal
-      policy:module{kip.token-policy-v1}
+      policy:module{kip.token-policy-v2}
     )
     (policy::enforce-transfer token sender guard receiver amount)
   )
@@ -194,7 +194,7 @@
       guard:guard
       receiver:string
       amount:decimal
-      policy:module{kip.token-policy-v1}
+      policy:module{kip.token-policy-v2}
     )
     (policy::enforce-transfer token sender guard receiver amount)
   )

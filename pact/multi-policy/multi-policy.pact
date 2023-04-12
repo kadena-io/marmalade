@@ -13,20 +13,29 @@
   (use marmalade.ledger)
 
   (defschema concrete-policy-list
+    policy-field:string
     policy:module{kip.token-policy-v1}
-    dependency:[module{kip.token-policy-v1}]
   )
 
   (deftable concrete-policy-table:{concrete-policy-list})
+
+  (defschema concrete-policy-v1
+    quote-policy:bool
+    royalty-policy:bool
+    collection-policy:bool
+  )
+
+  (defschema policy-list-read
+    concrete-policies:object{concrete-policy-v1}
+    immutable-policies:[module{kip.token-policy-v1}]
+    adjustable-policies:[module{kip.token-policy-v1}]
+  )
 
   (defschema policy-list
     concrete-policies:[module{kip.token-policy-v1}]
     immutable-policies:[module{kip.token-policy-v1}]
     adjustable-policies:[module{kip.token-policy-v1}]
   )
-
-  ;
-  ; [marmalade.fixed-quote-policy]
 
   (defschema policies
     policy: object{policy-list}
@@ -61,23 +70,11 @@
 
   (defun add-concrete-policy (policy-field:string policy:module{kip.token-policy-v1} )
     (with-capability (CONCRETE_POLICY_ADMIN)
-      (enforce (contains policy-field CONCRETE_POLICY_LIST) "policy is not registered"
       (insert policy-field {
-        'policy: policy
+        'policy-field: policy-field
+       ,'policy: policy
       })
     )
-  ))
-
-  (defconst CONCRETE_POLICY_LIST [])
-
-  (defun create-multi-policy
-    ( token:object{token-info}
-      policy:object{policies} )
-    (require-capability (INIT_TOKEN token))
-    (enforce-ledger)
-    (insert policy-table (at 'id token) {
-      "policy": policy
-      })
   )
 
   (defun add-policy
@@ -134,22 +131,47 @@
     (token:object{token-info})
     (enforce-ledger)
     (with-capability (INIT_TOKEN token)
-      (let* ( (policy:object{policy-list} (read-msg 'policy-list ))
-              (concrete-p:[module{kip.token-policy-v1}] (at 'concrete-policy policy))
-              (imm-p:[module{kip.token-policy-v1}] (at 'immutable-policy policy))
-              (adj-p:[module{kip.token-policy-v1}] (at 'adjustable-policy policy)) )
-        ; (enforce (contains one-off-policy imm-p) "one-off policy is required") ;; add once one-off-policy is deployed
-        (create-multi-policy token policy)
-        (map-init token (+ imm-p adj-p)))
+      (insert policies (at 'id token)
+        (get-policy-list (read-msg 'policy-list ))
+      )
+      (create-multi-policy token policy)
+      (map-init token (+ imm-p adj-p))
     )
   )
-  ;
-  ; (defun find-concrete-policy:module{kip.token-policy-v1} (policy:string)
-  ;   (with-read concrete-policies policy {
-  ;     'policy:= policy-ref
-  ;     }
-  ;     policy-ref)
-  ; )
+
+  (defun merge-policies:[module{kip.token-policy-v1}] (policies:object{policy-list-read})
+    (let* ( (policies:object{policy-list-read})
+            (concrete-p-read:object{concrete-policy-v1} (at 'concrete-policy policy))
+            (concrete-p:[module{kip.token-policy-v1}] (create-concrete-policy-list concrete-p-read))
+            (imm-p:[module{kip.token-policy-v1}] (at 'immutable-policy policy))
+            (adj-p:[module{kip.token-policy-v1}] (at 'adjustable-policy policy)) )
+      (fold (+) [concrete-p imm-p adj-p] [])
+  )
+
+  (defun create-concrete-policy-list (policies:object{concrete-policy-v1})
+    []
+  )
+
+  (defun read-policy-list:object{policies} (policy-list:)
+    (let* ( (policy:object{policy-list} )
+            (concrete-p:[module{kip.token-policy-v1}] (at 'concrete-policy policy))
+            (imm-p:[module{kip.token-policy-v1}] (at 'immutable-policy policy))
+            (adj-p:[module{kip.token-policy-v1}] (at 'adjustable-policy policy)) )
+      { "concrete-policies": concrete-p
+      , "immutable-policies": imm-p
+      , "adjustable-policies": adj-p
+      })
+  )
+
+  (defun create-multi-policy
+    ( token:object{token-info}
+      policy:object{policies} )
+    (require-capability (INIT_TOKEN token))
+    (enforce-ledger)
+    (insert policy-table (at 'id token) {
+      "policy": policy
+    })
+  )
 
   (defun enforce-mint:bool
     ( token:object{token-info}
@@ -163,10 +185,7 @@
       }
       ;;order issue?
       (map-offer token account guard amount
-         (+ (at 'immutable-policy curr-policy)
-            (at 'immutable-policy curr-policy)
-            (at 'adjustable-policy curr-policy)
-             ))))
+         (merge-policies curr-policy))))
 
 
   (defun enforce-burn:bool
@@ -179,8 +198,7 @@
       "policy":= curr-policy
       }
       (map-burn token account amount
-         (+ (at 'immutable-policy curr-policy)
-            (at 'adjustable-policy curr-policy)))))
+         (merge-policies curr-policy))))
 
   (defun enforce-offer:bool
     ( token:object{token-info}
@@ -192,8 +210,7 @@
       "policy":= curr-policy
       }
       (map-offer token seller amount sale-id
-         (+ (at 'immutable-policy curr-policy)
-            (at 'adjustable-policy curr-policy)))))
+         (merge-policies curr-policy))))
 
   (defun enforce-buy:bool
     ( token:object{token-info}
@@ -211,10 +228,7 @@
       "policy":= curr-policy
       }
       (map-buy token seller buyer buyer-guard amount sale-id
-        (+
-          (+ (at 'immutable-policy curr-policy)
-              (at 'adjustable-policy curr-policy))
-          ))))
+        (merge-policies curr-policy))))
 
   (defun enforce-transfer:bool
     ( token:object{token-info}
@@ -227,8 +241,7 @@
       "policy":= curr-policy
       }
       (map-transfer token sender guard receiver amount
-        (+ (at 'immutable-policy curr-policy)
-           (at 'adjustable-policy curr-policy)))))
+        (merge-policies curr-policy))))
 
   (defun enforce-crosschain:bool
     ( token:object{token-info}
@@ -242,8 +255,7 @@
       "policy":= curr-policy
       }
       (map-crosschain token sender guard receiver target-chain amount
-        (+ (at 'immutable-policy curr-policy)
-           (at 'adjustable-policy curr-policy)))))
+        (merge-policies curr-policy))))
 
    ;;utility functions to map policy list
    (defun token-init (token:object{token-info} policy:module{kip.token-policy-v1})

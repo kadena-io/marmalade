@@ -2,13 +2,11 @@
 
 (module fixed-issuance-policy-v1 GOVERNANCE
 
-  @doc "Policy for fixed issuance "
+  @doc "Policy for minting with a fixed issuance"
 
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
-  ; TODO: we might need a new concrecte-policy interface
-  ; kip.concrete-policy-v1
   (implements kip.token-policy-v1)
   (use kip.token-policy-v1 [token-info])
 

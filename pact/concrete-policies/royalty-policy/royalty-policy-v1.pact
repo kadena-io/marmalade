@@ -1,6 +1,6 @@
 (namespace (read-msg 'ns))
 
-(module royalty-policy GOVERNANCE
+(module royalty-policy-v1 GOVERNANCE
 
   @doc "Concrete policy to support royalty payouts in a specified fungible during sale."
 
@@ -50,24 +50,6 @@
     (marmelade.multi-policy.get-quote-policy)
   )
 
-  (defun enforce-mint:bool
-    ( token:object{token-info}
-      account:string
-      guard:guard
-      amount:decimal
-    )
-    (enforce-ledger)
-  )
-
-  (defun enforce-burn:bool
-    ( token:object{token-info}
-      account:string
-      amount:decimal
-    )
-    (enforce-ledger)
-    (enforce false "Burn prohibited")
-  )
-
   (defun enforce-init:bool
     ( token:object{token-info}
     )
@@ -92,6 +74,24 @@
         , 'royalty-rate: royalty-rate
         }))
     true
+  )
+
+  (defun enforce-mint:bool
+    ( token:object{token-info}
+      account:string
+      guard:guard
+      amount:decimal
+    )
+    (enforce-ledger)
+  )
+
+  (defun enforce-burn:bool
+    ( token:object{token-info}
+      account:string
+      amount:decimal
+    )
+    (enforce-ledger)
+    (enforce false "Burn prohibited")
   )
 
   (defun enforce-offer:bool

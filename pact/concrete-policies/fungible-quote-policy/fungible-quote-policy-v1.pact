@@ -1,6 +1,6 @@
 (namespace (read-msg 'ns))
 
-(module fungible-quote-policy GOVERNANCE
+(module fungible-quote-policy-v1 GOVERNANCE
 
   @doc "Concrete policy for a simple quoted sale"
 
@@ -53,7 +53,13 @@
 
   (defun enforce-ledger:bool ()
      (enforce-guard (marmalade.ledger.ledger-guard))
-   )
+  )
+
+  (defun enforce-init:bool
+    ( token:object{token-info}
+    )
+    (enforce-ledger)
+  )
 
   (defun enforce-mint:bool
     ( token:object{token-info}
@@ -68,12 +74,6 @@
     ( token:object{token-info}
       account:string
       amount:decimal
-    )
-    (enforce-ledger)
-  )
-
-  (defun enforce-init:bool
-    ( token:object{token-info}
     )
     (enforce-ledger)
   )

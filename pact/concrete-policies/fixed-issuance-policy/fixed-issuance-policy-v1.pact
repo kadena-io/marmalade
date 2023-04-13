@@ -1,6 +1,6 @@
 (namespace (read-msg 'ns))
 
-(module fixed-quote-policy GOVERNANCE
+(module fixed-issuance-policy-v1 GOVERNANCE
 
   @doc "Policy for fixed issuance "
 
@@ -26,7 +26,24 @@
 
   (defun enforce-ledger:bool ()
      (enforce-guard (marmalade.ledger.ledger-guard))
-   )
+  )
+
+  (defun enforce-init:bool
+    ( token:object{token-info}
+    )
+    (enforce-ledger)
+    (let* ( (mint-guard:guard (read-keyset 'mint-guard ))
+            (max-supply:decimal (read-decimal 'max-supply ))
+            (min-amount:decimal (read-decimal 'min-amount ))
+            )
+    (enforce (>= min-amount 0.0) "Invalid min-amount")
+    (enforce (>= max-supply 0.0) "Invalid max-supply")
+    (insert supplies (at 'id token)
+      { 'mint-guard: mint-guard
+      , 'max-supply: max-supply
+      , 'min-amount: min-amount })
+    true)
+  )
 
   (defun enforce-mint:bool
     ( token:object{token-info}
@@ -52,23 +69,6 @@
     )
     (enforce-ledger)
     (enforce false "Burn prohibited")
-  )
-
-  (defun enforce-init:bool
-    ( token:object{token-info}
-    )
-    (enforce-ledger)
-    (let* ( (mint-guard:guard (read-keyset 'mint-guard ))
-            (max-supply:decimal (read-decimal 'max-supply ))
-            (min-amount:decimal (read-decimal 'min-amount ))
-            )
-    (enforce (>= min-amount 0.0) "Invalid min-amount")
-    (enforce (>= max-supply 0.0) "Invalid max-supply")
-    (insert supplies (at 'id token)
-      { 'mint-guard: mint-guard
-      , 'max-supply: max-supply
-      , 'min-amount: min-amount })
-    true)
   )
 
   (defun enforce-offer:bool

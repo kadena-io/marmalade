@@ -1,7 +1,7 @@
 
 (namespace (read-msg 'ns))
 
-(module multi-policy GOVERNANCE
+(module policy-manager GOVERNANCE
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
@@ -25,7 +25,14 @@
     collection-policy:bool
   )
 
-  (defschema policy-list-read
+  (defconst FIXED_ISSUANCE_POLICY 'fixed-issuance-policy)
+  (defconst QUOTE_POLICY 'quote-policy)
+  (defconst ROYALTY_POLICY 'royalty-policy)
+  (defconst COLLECTION_POLICY 'royalty-policy)
+
+  (defconst CONCRETE_POLICY_V1_LIST ['quote-policy 'royalty-policy 'collection-policy ] )
+
+  (defschema token-policies
     concrete-policies:object{concrete-policy-v1}
     immutable-policies:[module{kip.token-policy-v1}]
     adjustable-policies:[module{kip.token-policy-v1}]
@@ -61,11 +68,9 @@
     ;; check for admin authority when initiating token
     true)
 
-  ;;adds concrete policies
+  ;;adds concrete policies to concrete-policy table
   (defun init()
     true
-
-    ;;  (add-concrete-policy )
   )
 
   (defun add-concrete-policy (policy-field:string policy:module{kip.token-policy-v1} )
@@ -75,6 +80,10 @@
        ,'policy: policy
       })
     )
+  )
+
+  (defun concrete-policy-used (policies:{token-policies} policy-field:string)
+    (at 'concrete-policies (at policy-field ))
   )
 
   (defun add-policy
@@ -123,6 +132,8 @@
     (read policy-table (at 'id token))
   )
 
+  ;; if policy-manager is dependent on marmalade, then mamalade can't depend on policy-manager
+
   (defun enforce-ledger:bool ()
     (enforce-guard (marmalade.ledger.ledger-guard))
   )
@@ -132,15 +143,15 @@
     (enforce-ledger)
     (with-capability (INIT_TOKEN token)
       (insert policies (at 'id token)
-        (get-policy-list (read-msg 'policy-list ))
+        (read-policy-list (at 'policies token))
       )
       (create-multi-policy token policy)
       (map-init token (+ imm-p adj-p))
     )
   )
 
-  (defun merge-policies:[module{kip.token-policy-v1}] (policies:object{policy-list-read})
-    (let* ( (policies:object{policy-list-read})
+  (defun merge-policies:[module{kip.token-policy-v1}] (policies:object{token-policies})
+    (let* ( (policies:object{token-policies})
             (concrete-p-read:object{concrete-policy-v1} (at 'concrete-policy policy))
             (concrete-p:[module{kip.token-policy-v1}] (create-concrete-policy-list concrete-p-read))
             (imm-p:[module{kip.token-policy-v1}] (at 'immutable-policy policy))
@@ -149,10 +160,21 @@
   )
 
   (defun create-concrete-policy-list (policies:object{concrete-policy-v1})
-    []
+    (map (get-concrete-policy) (filter (is-used policies) CONCRETE_POLICY_V1_LIST))
   )
 
-  (defun read-policy-list:object{policies} (policy-list:)
+  (defun get-concrete-policy:module{kip.token-policy-v1} (policy:string)
+    (with-read concrete-policy-table policy {
+      'policy:=concrete-policy
+    })
+    concrete-policy
+  )
+
+  (defun is-used:bool (policies:object{concrete-policy-v1} policy:string)
+    (at policy policies)
+  )
+
+  (defun read-policy-list:object{policies} (policies:{token-policies})
     (let* ( (policy:object{policy-list} )
             (concrete-p:[module{kip.token-policy-v1}] (at 'concrete-policy policy))
             (imm-p:[module{kip.token-policy-v1}] (at 'immutable-policy policy))
@@ -221,14 +243,14 @@
       sale-id:string )
     (enforce-ledger)
 
-    ;; if we are using fixed-quote-policy
-    ; (contains marmalade.fixed-quote-policy (at 'concrete-policy-list token-polices))
+    (if (concrete-policy-used QUOTE_POLICY)
+      ;; add payment logic
 
     (with-read policy-table (at 'id token ) {
       "policy":= curr-policy
       }
       (map-buy token seller buyer buyer-guard amount sale-id
-        (merge-policies curr-policy))))
+        (merge-policies curr-policy)))))
 
   (defun enforce-transfer:bool
     ( token:object{token-info}

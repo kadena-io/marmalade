@@ -24,16 +24,38 @@
     uri:string
     precision:integer
     supply:decimal
-    policy:module{kip.token-policy-v2}
+    policies:module{kip.token-policy-v2}
   )
 
   (defschema token-details
     uri:string
     precision:integer
-    policy:module{kip.token-policy-v2}
+    policies:module{kip.token-policy-v2}
   )
 
   (deftable tokens:{token-schema})
+
+  (defconst DEFAULT
+    { 'concrete-policies:
+       { 'quote-policy:true
+         'royalty-policy:true
+         'collection-policy:true
+       }
+    ,'immutable-policies: []
+    ,'adjustable-policies: []
+    }
+  )
+
+  (defun create-single-policy (policy:module{token-policy-v1})
+    { 'concrete-policies:
+       { 'quote-policy:false
+         'royalty-policy:false
+         'collection-policy:false
+       }
+    ,'immutable-policies: [policy]
+    ,'adjustable-policies: []
+  })
+
 
   ;;
   ;; Capabilities
@@ -195,7 +217,7 @@
       s)
   )
 
-  (defun create-token-id:string (token-details:object{token-details}) 
+  (defun create-token-id:string (token-details:object{token-details})
     (format "t:{}" [(hash token-details)])
   )
 
@@ -203,23 +225,30 @@
     ( id:string
       precision:integer
       uri:string
-      policy:module{kip.token-policy-v2}
+      token-policies:object{token-policy-v2.token-policies} ;; where to store schemas?
     )
 
     (let ((token-details { 'uri: uri, 'precision: precision, 'policy: policy }))
      (enforce-token-reserved id token-details)
     )
-    
-    (policy::enforce-init
-      { 'id: id, 'supply: 0.0, 'precision: precision, 'url: uri })
+    ;; maps policy list and calls policy::enforce-init
+    (policy-manager.enforce-init
+      { 'id: id, 'supply: 0.0, 'precision: precision, 'url: uri,  'policies: token-policies})
+
     (insert tokens id {
       "id": id,
       "precision": precision,
       "uri": uri,
       "supply": 0.0,
-      "policy": policy
+      "policy": token-policies
       })
-      (emit-event (TOKEN id precision 0.0 policy uri))
+      (emit-event (TOKEN id precision 0.0 token-policies uri))
+  )
+
+  (defun create-and-mint ()
+    (with-capabiltiy (CREATE_AND_MINT)
+    (create-token ..
+    (mint))
   )
 
   (defun enforce-token-reserved:bool (token-id:string token-details:object{token-details})

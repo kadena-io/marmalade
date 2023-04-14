@@ -2,11 +2,19 @@
 
 (interface token-policy-v2
 
+  ;;should this be located here?
+  (defschema token-policies
+    concrete-policies:object{concrete-policy-v1}
+    immutable-policies:[module{kip.token-policy-v1}]
+    adjustable-policies:[module{kip.token-policy-v1}]
+  )
+
   (defschema token-info
     id:string
     supply:decimal
     precision:integer
-    uri:string)
+    uri:string
+    policies:object{token-policies})
 
   (defun enforce-mint:bool
     ( token:object{token-info}

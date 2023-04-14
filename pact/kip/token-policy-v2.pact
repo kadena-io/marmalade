@@ -2,11 +2,19 @@
 
 (interface token-policy-v2
 
-  ;;should this be located here?
+  ;;TODO - this should be moved out
+  (defschema concrete-policy-v1
+    fixed-issuance-policy:bool
+    quote-policy:bool
+    royalty-policy:bool
+    collection-policy:bool
+  )
+
+  ;;TODO - decide where to put this schema
   (defschema token-policies
     concrete-policies:object{concrete-policy-v1}
-    immutable-policies:[module{kip.token-policy-v1}]
-    adjustable-policies:[module{kip.token-policy-v1}]
+    immutable-policies:[module{token-policy-v2}]
+    adjustable-policies:[module{token-policy-v2}]
   )
 
   (defschema token-info

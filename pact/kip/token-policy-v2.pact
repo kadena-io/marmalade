@@ -2,11 +2,27 @@
 
 (interface token-policy-v2
 
+  ;;TODO - this should be moved out
+  (defschema concrete-policy-v1
+    fixed-issuance-policy:bool
+    quote-policy:bool
+    royalty-policy:bool
+    collection-policy:bool
+  )
+
+  ;;TODO - decide where to put this schema
+  (defschema token-policies
+    concrete-policies:object{concrete-policy-v1}
+    immutable-policies:[module{token-policy-v2}]
+    adjustable-policies:[module{token-policy-v2}]
+  )
+
   (defschema token-info
     id:string
     supply:decimal
     precision:integer
-    uri:string)
+    uri:string
+    policies:object{token-policies})
 
   (defun enforce-mint:bool
     ( token:object{token-info}

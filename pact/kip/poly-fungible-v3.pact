@@ -4,6 +4,8 @@
 
 (interface poly-fungible-v3
 
+  (use kip.token-policy-v2 [token-policies])
+
   (defschema account-details
     @doc
       " Account details: token ID, account name, balance, and guard."
@@ -69,7 +71,7 @@
     @event
   )
 
-  (defcap TOKEN:bool (id:string precision:integer supply:decimal policy:module{kip.token-policy-v2} uri:string)
+  (defcap TOKEN:bool (id:string precision:integer supply:decimal policies:object{token-policies} uri:string)
     @doc " Emitted when token ID is created."
     @event
   )
@@ -180,7 +182,7 @@
     ( id:string
       precision:integer
       uri:string
-      policy:module{kip.token-policy-v2}
+      policies:object{token-policies}
     )
     @doc "Create a new token with ID, PRECISION, URI, and POLICY."
     @model

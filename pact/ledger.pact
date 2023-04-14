@@ -9,10 +9,10 @@
     ]
 
   (use util.fungible-util)
-
+  (use marmalade.policy-manager)
   (implements kip.poly-fungible-v3)
   (use kip.poly-fungible-v3 [account-details sender-balance-change receiver-balance-change])
-
+  (use kip.token-policy-v2 [token-policies])
   ;;
   ;; Tables/Schemas
   ;;
@@ -24,13 +24,13 @@
     uri:string
     precision:integer
     supply:decimal
-    policy:module{kip.token-policy-v2}
+    policies:module{kip.token-policy-v2}
   )
 
   (defschema token-details
     uri:string
     precision:integer
-    policy:module{kip.token-policy-v2}
+    policies:module{kip.token-policy-v2}
   )
 
   (deftable tokens:{token-schema})
@@ -85,7 +85,7 @@
     @event true
   )
 
-  (defcap TOKEN:bool (id:string precision:integer supply:decimal policy:module{kip.token-policy-v2} uri:string)
+  (defcap TOKEN:bool (id:string precision:integer supply:decimal policies:object{token-policies} uri:string)
     @event
     true
   )
@@ -195,7 +195,7 @@
       s)
   )
 
-  (defun create-token-id:string (token-details:object{token-details}) 
+  (defun create-token-id:string (token-details:object{token-details})
     (format "t:{}" [(hash token-details)])
   )
 
@@ -203,23 +203,23 @@
     ( id:string
       precision:integer
       uri:string
-      policy:module{kip.token-policy-v2}
+      policies:object{token-policies}
     )
-
-    (let ((token-details { 'uri: uri, 'precision: precision, 'policy: policy }))
+    (let ((token-details { 'uri: uri, 'precision: precision, 'policies: policies }))
      (enforce-token-reserved id token-details)
     )
-    
-    (policy::enforce-init
-      { 'id: id, 'supply: 0.0, 'precision: precision, 'url: uri })
+    ;; maps policy list and calls policy::enforce-init
+    (policy-manager.enforce-init
+      { 'id: id, 'supply: 0.0, 'precision: precision, 'url: uri,  'policies: policies})
+
     (insert tokens id {
       "id": id,
       "precision": precision,
       "uri": uri,
       "supply": 0.0,
-      "policy": policy
+      "policy": token-policies
       })
-      (emit-event (TOKEN id precision 0.0 policy uri))
+      (emit-event (TOKEN id precision 0.0 token-policies uri))
   )
 
   (defun enforce-token-reserved:bool (token-id:string token-details:object{token-details})

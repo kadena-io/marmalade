@@ -1,5 +1,7 @@
 (namespace (read-msg 'ns))
 
+;; DRAFT - discuss whether this should be in concrete policy
+
 (module one-off-policy GOVERNANCE
 
   @doc "Policy for one-off policies "
@@ -15,7 +17,7 @@
     )
     (require-capabiltiy (CREATE_AND_MINT))
     (enforce-ledger)
-    (enforce (= 0 (at 'precision token) "")
+    (enforce (= 0 (at 'precision token) ""))
   )
 
   (defun enforce-mint:bool

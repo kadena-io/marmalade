@@ -1,13 +1,36 @@
 (begin-tx)
+(env-data
+  { 'ns-admin-keyset: []
+  , 'ns-genesis-keyset:[]
+  , 'ns-operate-keyset:[] })
+(load "../root/fungible-v2.pact")
+(load "../root/gas-payer-v1.pact")
+(load "../root/coin.pact")
+(env-exec-config ["DisablePact44"])
+(load "../root/ns.pact")
+(define-namespace 'kip (sig-keyset) (sig-keyset))
 
-(load "../marmalade.repl")
+(load "../kip/account-protocols-v1.pact")
 
-(env-data {
-  "ns": "marmalade"
- ,"upgrade": false
-  })
-(env-keys ['marmalade-admin ])
+(load "../kip/token-policy-v2.pact")
+(load "../kip/poly-fungible-v3.pact")
 
-(load "multi-policy.pact")
+(define-namespace 'util (sig-keyset) (sig-keyset))
+(load "../util/fungible-util.pact")
+(commit-tx)
 
+(begin-tx)
+(env-data
+ { 'marmalade-admin: ["marmalade-admin"]
+ , 'marmalade-ns-user: ["marmalade-admin"]
+ , 'marmalade-ns-admin: ["marmalade-admin"]
+ , 'ns: "marmalade"
+ , 'upgrade: false })
+ (env-sigs [
+   { 'key: 'marmalade-admin
+    ,'caps: []
+    }])
+(load "../ns-marmalade.pact")
+(load "../policy-manager/policy-manager.pact")
+(load "../ledger.pact")
 (commit-tx)

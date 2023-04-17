@@ -11,7 +11,7 @@
 (define-namespace 'kip (sig-keyset) (sig-keyset))
 
 (load "kip/account-protocols-v1.pact")
-
+(load "kip/concrete-policy-v1.pact")
 (load "kip/token-policy-v2.pact")
 (load "kip/poly-fungible-v3.pact")
 
@@ -33,6 +33,7 @@
 (load "ns-marmalade.pact")
 (load "policy-manager/policy-manager.pact")
 (load "ledger.pact")
+(load "concrete-policies/fungible-quote-policy/fungible-quote-policy-v1.pact")
 (marmalade.policy-manager.init (marmalade.ledger.ledger-guard))
 (load "policies/guard-policy/guard-policy.pact")
 (load "policies/one-off-collection-policy/one-off-collection-policy.pact")

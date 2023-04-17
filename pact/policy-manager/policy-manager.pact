@@ -6,7 +6,8 @@
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
   (implements kip.token-policy-v2)
-  (use kip.token-policy-v2 [concrete-policy-v1 token-policies token-info ])
+  (use kip.concrete-policy-v1 [concrete-policy])
+  (use kip.token-policy-v2 [token-policies token-info ])
 
   (defschema concrete-policy-list
     policy-field:string
@@ -20,8 +21,8 @@
 
   (defconst FIXED_ISSUANCE_POLICY 'fixed-issuance-policy )
   (defconst QUOTE_POLICY 'quote-policy )
-  (defconst ROYALTY_POLICY 'royalty-policy )
-  (defconst COLLECTION_POLICY 'royalty-policy )
+  (defconst ROYALTY_POLICY 'royalty-policy ) ;; depend
+  (defconst COLLECTION_POLICY 'collection-policy )
 
   ;; schema to save policy list in table
   (defschema policies-list
@@ -29,6 +30,7 @@
     immutable-policies:[module{kip.token-policy-v2}]
     adjustable-policies:[module{kip.token-policy-v2}]
   )
+
 
   ; (defschema policies
   ;   policy: object{token-policies}
@@ -95,6 +97,13 @@
   ;   (at 'policies token)
   ; )
 
+  (defun get-concrete-policy:module{kip.token-policy-v2} (policy-field:string)
+    (with-read concrete-policy-table policy-field
+      {"policy":=policy }
+      policy
+    )
+  )
+
   (defun get-policies-list:object{policies-list} (policies:object{token-policies})
     (let* ( (concrete-p:[module{kip.token-policy-v2}] (create-concrete-policy-list (at 'concrete-policy policies)))
             (imm-p:[module{kip.token-policy-v2}] (at 'immutable-policy policies))
@@ -121,12 +130,12 @@
     )
   )
 
-  (defun create-concrete-policy-list:[module{kip.token-policy-v2}] (policies:object{concrete-policy-v1} policy:string)
+  (defun create-concrete-policy-list:[module{kip.token-policy-v2}] (policies:object{concrete-policy} policy:string)
     (filter (is-used) CONCRETE_POLICY_V1_LIST [])
   )
 
-  (defun is-used:bool (policies:object{concrete-policy-v1} policy:string)
-    (at policy policies)
+  (defun is-used:bool (policies:object{token-policies} policy:string)
+    (at policy (at 'concrete-policies policies))
   )
 
   ; (defun create-multi-policy ( token:object{token-info} )
@@ -179,6 +188,11 @@
     (let ((policies:object{token-policies}  (at 'policies token)))
       (map-buy token seller buyer buyer-guard amount sale-id
         (merge-policies-list policies))))
+
+    (defun enforce-sale-pact:bool (sale:string)
+      "Enforces that SALE is id for currently executing pact"
+      (enforce (= sale (pact-id)) "Invalid pact/sale id")
+    )
 
   (defun enforce-transfer:bool
     ( token:object{token-info}

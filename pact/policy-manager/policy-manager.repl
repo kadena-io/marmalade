@@ -11,9 +11,10 @@
 (define-namespace 'kip (sig-keyset) (sig-keyset))
 
 (load "../kip/account-protocols-v1.pact")
-
+(load "../kip/concrete-policy-v1.pact")
 (load "../kip/token-policy-v2.pact")
 (load "../kip/poly-fungible-v3.pact")
+
 
 (define-namespace 'util (sig-keyset) (sig-keyset))
 (load "../util/fungible-util.pact")
@@ -33,4 +34,11 @@
 (load "../ns-marmalade.pact")
 (load "../policy-manager/policy-manager.pact")
 (load "../ledger.pact")
+(commit-tx)
+
+
+(begin-tx "load concrete-polices")
+(load "../concrete-policies/fungible-quote-policy/fungible-quote-policy-v1.pact")
+(load "../concrete-policies/royalty-policy/royalty-policy-v1.pact")
+
 (commit-tx)

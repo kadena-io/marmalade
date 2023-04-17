@@ -33,6 +33,7 @@
 (load "ns-marmalade.pact")
 (load "policy-manager/policy-manager.pact")
 (load "ledger.pact")
+(marmalade.policy-manager.init (marmalade.ledger.ledger-guard))
 (load "policies/guard-policy/guard-policy.pact")
 (load "policies/one-off-collection-policy/one-off-collection-policy.pact")
 (typecheck "marmalade.ledger")

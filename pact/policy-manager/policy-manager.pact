@@ -8,8 +8,6 @@
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [concrete-policy-v1 token-policies token-info ])
 
-  ; (use marmalade.ledger)
-
   (defschema concrete-policy-list
     policy-field:string
     policy:module{kip.token-policy-v2}
@@ -38,6 +36,15 @@
 
   (deftable policy-table:{policies})
 
+  (defschema ledger
+    ledger-guard:guard
+  )
+  (deftable ledger-table:{ledger})
+
+  (defun enforce-ledger:bool ()
+    (enforce-guard (at "ledger-guard" (read ledger-table "")))
+  )
+
   ;; dependent on marmalade
   ; (defcap ADJUST_POLICY (token-id:string account:string)
   ;   (enforce (= (get-balance token-id account) (total-supply token-id)) "Account doesn't own token")
@@ -65,8 +72,12 @@
   )
 
 
-  (defun init()
+  (defun init(marmalade-ledger-guard:guard)
     ;;TODO adds 4 concrete policies to concrete-policy table
+
+    (insert ledger-table "" {
+      "ledger-guard": marmalade-ledger-guard
+    })
     true
   )
 
@@ -131,7 +142,7 @@
       guard:guard
       amount:decimal
     )
-    ; (enforce-ledger)
+    (enforce-ledger)
     (with-read policy-table (at 'id token ) {
       "policy":= curr-policy
       }
@@ -144,7 +155,7 @@
       account:string
       amount:decimal
     )
-    ; (enforce-ledger)
+    (enforce-ledger)
     (with-read policy-table (at 'id token ) {
       "policy":= curr-policy
       }
@@ -156,7 +167,7 @@
       seller:string
       amount:decimal
       sale-id:string )
-    ; (enforce-ledger)
+    (enforce-ledger)
     (with-read policy-table (at 'id token) {
       "policy":= curr-policy
       }
@@ -170,7 +181,7 @@
       buyer-guard:guard
       amount:decimal
       sale-id:string )
-    ; (enforce-ledger)
+    (enforce-ledger)
 
     ; (if (concrete-policy-used QUOTE_POLICY)
       ;; add payment logic
@@ -187,7 +198,7 @@
       guard:guard
       receiver:string
       amount:decimal )
-    ; (enforce-ledger)
+    (enforce-ledger)
     (with-read policy-table (at 'id token ) {
       "policy":= curr-policy
       }
@@ -201,7 +212,7 @@
       receiver:string
       target-chain:string
       amount:decimal )
-    ; (enforce-ledger)
+    (enforce-ledger)
     (with-read policy-table (at 'id token ) {
       "policy":= curr-policy
       }
@@ -331,4 +342,5 @@
   ["upgrade complete"]
   [ (create-table concrete-policy-table)
     (create-table policy-table)
-    (init) ])
+    (create-table ledger-table)
+  ])

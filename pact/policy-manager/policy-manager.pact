@@ -30,11 +30,11 @@
     adjustable-policies:[module{kip.token-policy-v2}]
   )
 
-  (defschema policies
-    policy: object{token-policies}
-  )
-
-  (deftable policy-table:{policies})
+  ; (defschema policies
+  ;   policy: object{token-policies}
+  ; )
+  ;
+  ; (deftable policy-table:{policies})
 
   (defschema ledger-guard-schema
     guard:guard
@@ -115,7 +115,7 @@
     (with-capability (LEDGER)
       (with-capability (TOKEN_INIT)
         ;; add policies to table
-        (create-multi-policy token (at 'policies token))
+        ; (create-multi-policy token (at 'policies token))
         ;; runs all policies from the polciy list
         (map-init token (merge-policies-list (at 'policies token))))
     )
@@ -132,7 +132,7 @@
   (defun create-multi-policy ( token:object{token-info} )
     (require-capability (TOKEN_INIT token))
     (insert policy-table (at 'id token) {
-      "policy": (at 'policies token)
+      "policies": (at 'policies token)
     })
   )
 
@@ -143,9 +143,7 @@
       amount:decimal
     )
     (enforce-ledger)
-    (with-read policy-table (at 'id token ) {
-      "policy":= curr-policy
-      }
+    (let ((policies:object{token-policies}  (at 'policies token)))
       ;;order issue?
       (map-offer token account guard amount
          (merge-policies-list curr-policy))))
@@ -156,9 +154,7 @@
       amount:decimal
     )
     (enforce-ledger)
-    (with-read policy-table (at 'id token ) {
-      "policy":= curr-policy
-      }
+    (let ((policies:object{token-policies}  (at 'policies token)))
       (map-burn token account amount
          (merge-policies-list curr-policy))))
 
@@ -168,11 +164,9 @@
       amount:decimal
       sale-id:string )
     (enforce-ledger)
-    (with-read policy-table (at 'id token) {
-      "policy":= curr-policy
-      }
+    (let ((policies:object{token-policies}  (at 'policies token)))
       (map-offer token seller amount sale-id
-         (merge-policies-list curr-policy))))
+         (merge-policies-list policies))))
 
   (defun enforce-buy:bool
     ( token:object{token-info}
@@ -182,15 +176,13 @@
       amount:decimal
       sale-id:string )
     (enforce-ledger)
+    ; (if (is-used (at 'policies token) QUOTE_POLICY)
+    ;;add quote logic
+    ; )
+    (let ((policies:object{token-policies}  (at 'policies token)))
 
-    ; (if (concrete-policy-used QUOTE_POLICY)
-      ;; add payment logic
-
-    (with-read policy-table (at 'id token ) {
-      "policy":= curr-policy
-      }
       (map-buy token seller buyer buyer-guard amount sale-id
-        (merge-policies-list curr-policy))))
+        (merge-policies-list policies))))
 
   (defun enforce-transfer:bool
     ( token:object{token-info}
@@ -199,11 +191,9 @@
       receiver:string
       amount:decimal )
     (enforce-ledger)
-    (with-read policy-table (at 'id token ) {
-      "policy":= curr-policy
-      }
+    (let ((policies:object{token-policies}  (at 'policies token)))
       (map-transfer token sender guard receiver amount
-        (merge-policies-list curr-policy))))
+        (merge-policies-list policies))))
 
   (defun enforce-crosschain:bool
     ( token:object{token-info}
@@ -213,11 +203,9 @@
       target-chain:string
       amount:decimal )
     (enforce-ledger)
-    (with-read policy-table (at 'id token ) {
-      "policy":= curr-policy
-      }
+    (let ((policies:object{token-policies}  (at 'policies token)))
       (map-crosschain token sender guard receiver target-chain amount
-        (merge-policies-list curr-policy))))
+        (merge-policies-list policies))))
 
   (defun enforce-withdraw:bool
     ( token:object{token-info}

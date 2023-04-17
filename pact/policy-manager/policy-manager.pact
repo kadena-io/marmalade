@@ -50,7 +50,7 @@
   ;   (enforce (= (get-balance token-id account) (total-supply token-id)) "Account doesn't own token")
   ;   (enforce-guard (account-guard token-id account)))
 
-  (defcap ROTATE_POLICY (token-id:string policy:object{policies})
+  (defcap ROTATE_POLICY (token-id:string policy:object{token-policies})
     @event
     true
   )
@@ -91,9 +91,9 @@
     )
   )
 
-  (defun get-policies:object{token-policies} (token:object{token-info})
-    (read policy-table (at 'id token))
-  )
+  ; (defun get-policies:object{token-policies} (token:object{token-info})
+  ;   (at 'policies token)
+  ; )
 
   (defun get-policies-list:object{policies-list} (policies:object{token-policies})
     (let* ( (concrete-p:[module{kip.token-policy-v2}] (create-concrete-policy-list (at 'concrete-policy policies)))
@@ -129,12 +129,12 @@
     (at policy policies)
   )
 
-  (defun create-multi-policy ( token:object{token-info} )
-    (require-capability (TOKEN_INIT token))
-    (insert policy-table (at 'id token) {
-      "policies": (at 'policies token)
-    })
-  )
+  ; (defun create-multi-policy ( token:object{token-info} )
+  ;   (require-capability (TOKEN_INIT token))
+  ;   (insert policy-table (at 'id token) {
+  ;     "policies": (at 'policies token)
+  ;   })
+  ; )
 
   (defun enforce-mint:bool
     ( token:object{token-info}
@@ -146,7 +146,7 @@
     (let ((policies:object{token-policies}  (at 'policies token)))
       ;;order issue?
       (map-offer token account guard amount
-         (merge-policies-list curr-policy))))
+         (merge-policies-list policies))))
 
   (defun enforce-burn:bool
     ( token:object{token-info}
@@ -156,7 +156,7 @@
     (enforce-ledger)
     (let ((policies:object{token-policies}  (at 'policies token)))
       (map-burn token account amount
-         (merge-policies-list curr-policy))))
+         (merge-policies-list policies))))
 
   (defun enforce-offer:bool
     ( token:object{token-info}
@@ -176,11 +176,7 @@
       amount:decimal
       sale-id:string )
     (enforce-ledger)
-    ; (if (is-used (at 'policies token) QUOTE_POLICY)
-    ;;add quote logic
-    ; )
     (let ((policies:object{token-policies}  (at 'policies token)))
-
       (map-buy token seller buyer buyer-guard amount sale-id
         (merge-policies-list policies))))
 
@@ -329,6 +325,6 @@
 (if (read-msg 'upgrade )
   ["upgrade complete"]
   [ (create-table concrete-policy-table)
-    (create-table policy-table)
+    ; (create-table policy-table)
     (create-table ledger-guard-table)
   ])

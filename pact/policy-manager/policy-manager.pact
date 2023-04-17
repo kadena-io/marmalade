@@ -36,13 +36,13 @@
 
   (deftable policy-table:{policies})
 
-  (defschema ledger
-    ledger-guard:guard
+  (defschema ledger-guard-schema
+    guard:guard
   )
-  (deftable ledger-table:{ledger})
+  (deftable ledger-guard-table:{ledger-guard-schema})
 
   (defun enforce-ledger:bool ()
-    (enforce-guard (at "ledger-guard" (read ledger-table "")))
+    (enforce-guard (at "guard" (read ledger-guard-table "")))
   )
 
   ;; dependent on marmalade
@@ -75,8 +75,8 @@
   (defun init(marmalade-ledger-guard:guard)
     ;;TODO adds 4 concrete policies to concrete-policy table
 
-    (insert ledger-table "" {
-      "ledger-guard": marmalade-ledger-guard
+    (insert ledger-guard-table "" {
+      "guard": marmalade-ledger-guard
     })
     true
   )
@@ -342,5 +342,5 @@
   ["upgrade complete"]
   [ (create-table concrete-policy-table)
     (create-table policy-table)
-    (create-table ledger-table)
+    (create-table ledger-guard-table)
   ])

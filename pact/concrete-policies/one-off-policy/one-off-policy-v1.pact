@@ -1,10 +1,8 @@
 (namespace (read-msg 'ns))
 
-;; DRAFT - discuss whether this should be in concrete policy
-
 (module one-off-policy GOVERNANCE
 
-  @doc "Policy for one-off policies "
+  @doc "Policy for a one-off nft token"
 
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
@@ -29,7 +27,8 @@
     )
     ; (require-capabiltiy (CREATE_AND_MINT))
     (enforce-ledger)
-    (enforce (<= (+ amount (at 'supply token)) 1) "Exceeds max supply")
+    (enforce (> amount 0) "amount must be positive")
+    (enforce (= (+ amount (at 'supply token)) 1) "Exceeds max supply")
   )
 
   (defun enforce-burn:bool

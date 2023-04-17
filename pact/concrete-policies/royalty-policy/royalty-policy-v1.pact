@@ -8,6 +8,7 @@
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
   (use marmalade.policy-manager)
+  (use marmalade.fungible-quote-policy-v1 [quote-spec quote-schema])
   ; TODO: we might need a new concrecte-policy interface
   ; kip.concrete-policy-v1
   ; multi-policy has a list of allowed concrete policies, policy registry
@@ -116,29 +117,24 @@
       sale-id:string )
     (enforce-ledger)
     (enforce-sale-pact sale-id)
-    (bind (get-policy token)
+    (bind (get-royalty token)
       { 'fungible := fungible:module{fungible-v2}
       , 'creator:= creator:string
       , 'royalty-rate:= royalty-rate:decimal
       }
-
-      (let ((quote-policy (get-quote-policy)))
-
-      (with-read quote-policy.quotes sale-id { 'id:= qtoken, 'spec:= spec:object{quote-policy.quote-spec} }
-        (enforce (= qtoken (at 'id token)) "incorrect sale token")
-        (bind spec
-          { 'price := price:decimal }
-          (let* ((sale-price:decimal (* amount price))
-                 (royalty-payout:decimal
-                    (floor (* sale-price royalty-rate) (fungible::precision))))
-            (if
-              (> royalty-payout 0.0)
-              (fungible::transfer buyer creator royalty-payout)
-              "No royalty")
-            ))
-            true
-        )))
-  )
+      (let* ( (quote:object{quote-schema} (marmalade.fungible-quote-policy-v1.get-quote sale-id))
+              (spec:object{quote-spec} (at 'spec quote))
+              (price:decimal (at 'price spec))
+              (sale-price:decimal (* amount price))
+              (royalty-payout:decimal
+                 (floor (* sale-price royalty-rate) (fungible::precision))))
+        (enforce (= (at 'id quote) (at 'id token)) "incorrect sale token")
+        (if
+          (> royalty-payout 0.0)
+          (fungible::transfer buyer creator royalty-payout)
+          "No royalty")
+        ))
+        true)
 
   (defun enforce-transfer:bool
     ( token:object{token-info}
@@ -159,6 +155,15 @@
       amount:decimal )
     (enforce-ledger)
     (enforce false "Transfer prohibited")
+  )
+  
+  (defun enforce-withdraw:bool
+    ( token:object{token-info}
+      seller:string
+      amount:decimal
+      sale-id:string )
+    ;;TODO
+    true
   )
 )
 

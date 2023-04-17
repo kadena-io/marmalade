@@ -51,6 +51,9 @@
 
   (deftable quotes:{quote-schema})
 
+  (defun get-quote:object{quote-schema} (sale-id:string)
+    (read quotes 'sale-id ))
+
   (defun enforce-ledger:bool ()
      (enforce-guard (marmalade.ledger.ledger-guard))
   )

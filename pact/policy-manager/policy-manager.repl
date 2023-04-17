@@ -36,9 +36,14 @@
 (load "../ledger.pact")
 (commit-tx)
 
-
 (begin-tx "load concrete-polices")
 (load "../concrete-policies/fungible-quote-policy/fungible-quote-policy-v1.pact")
 (load "../concrete-policies/royalty-policy/royalty-policy-v1.pact")
+(load "../concrete-policies/fixed-issuance-policy/one-off-policy.pact")
+
+(marmalade.policy-manager.add-concrete-policy QUOTE_POLICY marmalade.fungible-quote-policy-v1)
+(marmalade.policy-manager.add-concrete-policy ROYALTY_POLICY marmalade.royalty-policy-v1)
+(marmalade.policy-manager.add-concrete-policy FIXED_ISSUANCE_POLICY marmalade.one-off-policy)
+(marmalade.policy-manager.add-concrete-policy COLLECTION_POLICY marmalade.one-off-policy)
 
 (commit-tx)

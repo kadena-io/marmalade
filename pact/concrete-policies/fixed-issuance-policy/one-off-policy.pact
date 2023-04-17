@@ -9,13 +9,14 @@
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
-  (implements kip.token-policy-v1)
-  (use kip.token-policy-v1 [token-info])
+  (implements kip.token-policy-v2)
+  (use kip.token-policy-v2 [token-info])
+  (use marmalade.policy-manager)
 
   (defun enforce-init:bool
     ( token:object{token-info}
     )
-    (require-capabiltiy (CREATE_AND_MINT))
+    ; (require-capabiltiy (CREATE_AND_MINT))
     (enforce-ledger)
     (enforce (= 0 (at 'precision token) ""))
   )
@@ -26,7 +27,7 @@
       guard:guard
       amount:decimal
     )
-    (require-capabiltiy (CREATE_AND_MINT))
+    ; (require-capabiltiy (CREATE_AND_MINT))
     (enforce-ledger)
     (enforce (<= (+ amount (at 'supply token)) 1) "Exceeds max supply")
   )
@@ -79,10 +80,18 @@
     (enforce-ledger)
     (enforce false "Transfer prohibited")
   )
+
+  (defun enforce-withdraw:bool
+    ( token:object{token-info}
+      seller:string
+      amount:decimal
+      sale-id:string )
+    ;;TODO
+    true
+  )
 )
 
 
 (if (read-msg 'upgrade)
   ["upgrade complete"]
-  [ (create-table quotes)
-    (create-table policies) ])
+  [  ])

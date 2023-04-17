@@ -57,7 +57,7 @@
     true
   )
 
-  (defcap CONCRETE_POLICY_ADMIN(policy-field:string)
+  (defcap CONCRETE_POLICY_ADMIN (policy-field:string)
     ;;add admin check
 
     true
@@ -76,7 +76,6 @@
 
   (defun init(marmalade-ledger-guard:guard)
     ;;TODO adds 4 concrete policies to concrete-policy table
-
     (insert ledger-guard-table "" {
       "guard": marmalade-ledger-guard
     })
@@ -85,8 +84,8 @@
 
   (defun add-concrete-policy (policy-field:string policy:module{kip.token-policy-v2} )
     (enforce (contains policy-field CONCRETE_POLICY_V1_LIST) "Not a concrete policy")
-    (with-capability (CONCRETE_POLICY_ADMIN)
-      (insert policy-field {
+    (with-capability (CONCRETE_POLICY_ADMIN policy-field)
+      (insert concrete-policy-table policy-field {
         'policy-field: policy-field
        ,'policy: policy
       })

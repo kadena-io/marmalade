@@ -13,6 +13,7 @@
   (implements kip.poly-fungible-v3)
   (use kip.poly-fungible-v3 [account-details sender-balance-change receiver-balance-change])
   (use kip.token-policy-v2 [token-policies])
+
   ;;
   ;; Tables/Schemas
   ;;
@@ -24,13 +25,13 @@
     uri:string
     precision:integer
     supply:decimal
-    policies:module{kip.token-policy-v2}
+    policies:object{token-policies}
   )
 
   (defschema token-details
     uri:string
     precision:integer
-    policies:module{kip.token-policy-v2}
+    policies:object{token-policies}
   )
 
   (deftable tokens:{token-schema})
@@ -151,25 +152,22 @@
     (create-module-guard "ledger-guard")
   )
 
-  (defschema policy-info
-    policy:module{kip.token-policy-v2}
-    token:object{kip.token-policy-v2.token-info}
-  )
-
-  (defun get-policy-info:object{policy-info} (id:string)
+  ;  TODO: this is basically just reading token-schema and transforming into token-info schema
+  ;  Improve later by using a single schema for both
+  (defun get-token-info:object{kip.token-policy-v2.token-info} (id:string)
     (with-read tokens id
-      { 'policy := policy:module{kip.token-policy-v2}
+      { 'policies := policies:object{token-policies}
       , 'supply := supply
       , 'precision := precision
       , 'uri := uri
       }
-      { 'policy: policy
-      , 'token:
-        { 'id: id
+      {
+        'id: id
         , 'supply: supply
         , 'precision: precision
         , 'uri: uri
-        } } )
+        , 'policies: policies
+      } )
   )
 
   (defun create-account:bool
@@ -287,10 +285,8 @@
       receiver:string
       amount:decimal
     )
-    (bind (get-policy-info id)
-      { 'policy := policy:module{kip.token-policy-v2}
-      , 'token := token }
-      (policy::enforce-transfer token sender (account-guard id sender) receiver amount))
+    (let ((token (get-token-info id)))
+      (marmalade.policy-manager.enforce-transfer token sender (account-guard id sender) receiver amount))
   )
 
   (defun transfer-create:bool
@@ -322,10 +318,8 @@
       amount:decimal
     )
     (with-capability (MINT id account amount)
-      (bind (get-policy-info id)
-        { 'policy := policy:module{kip.token-policy-v2}
-        , 'token := token }
-        (policy::enforce-mint token account guard amount))
+      (let ((token (get-token-info id)))
+        (marmalade.policy-manager.enforce-mint token account guard amount))
       (let
         (
           (receiver (credit id account guard amount))
@@ -343,10 +337,8 @@
       amount:decimal
     )
     (with-capability (BURN id account amount)
-      (bind (get-policy-info id)
-        { 'policy := policy:module{kip.token-policy-v2}
-        , 'token := token }
-        (policy::enforce-burn token account amount))
+      (let ((token (get-token-info id)))
+        (marmalade.policy-manager.enforce-burn token account amount))
       (let
         (
           (sender (debit id account amount))
@@ -543,10 +535,8 @@
     )
     @doc "Initiate sale with by SELLER by escrowing AMOUNT of TOKEN until TIMEOUT."
     (require-capability (SALE_PRIVATE (pact-id)))
-    (bind (get-policy-info id)
-      { 'policy := policy:module{kip.token-policy-v2}
-      , 'token := token }
-      (policy::enforce-offer token seller amount (pact-id)))
+    (let ((token (get-token-info id)))
+      (marmalade.policy-manager.enforce-offer token seller amount (pact-id)))
     (let
       (
         (sender (debit id seller amount))
@@ -563,10 +553,8 @@
     )
     @doc "Withdraw offer by SELLER of AMOUNT of TOKEN"
     (require-capability (SALE_PRIVATE (pact-id)))
-    (bind (get-policy-info id)
-      { 'policy := policy:module{kip.token-policy-v2}
-      , 'token := token }
-      (policy::enforce-withdraw token seller amount (pact-id)))
+    (let ((token (get-token-info id)))
+      (marmalade.policy-manager.enforce-withdraw token seller amount (pact-id)))
     (let
       (
         (sender (debit id (sale-account) amount))
@@ -587,10 +575,8 @@
     )
     @doc "Complete sale with transfer."
     (require-capability (SALE_PRIVATE (pact-id)))
-    (bind (get-policy-info id)
-      { 'policy := policy:module{kip.token-policy-v2}
-      , 'token := token }
-      (policy::enforce-buy token seller buyer buyer-guard amount sale-id))
+    (let ((token (get-token-info id)))
+      (marmalade.policy-manager.enforce-buy token seller buyer buyer-guard amount sale-id))
     (let
       (
         (sender (debit id (sale-account) amount))

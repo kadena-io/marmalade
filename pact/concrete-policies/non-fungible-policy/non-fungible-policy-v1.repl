@@ -1,6 +1,14 @@
 ;;load policy manager, ledger
 (load "../../policy-manager/policy-manager.repl")
 
-(begin-tx)
+(begin-tx "Create a non-fungible token")
+;  (load "non-fungible-policy-v1.pact")
+(commit-tx)
+
+(begin-tx "Burn a non-fungible token")
+;  (load "non-fungible-policy-v1.pact")
+(commit-tx)
+
+(begin-tx "Burn a non-fungible token")
 ;  (load "non-fungible-policy-v1.pact")
 (commit-tx)

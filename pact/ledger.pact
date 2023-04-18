@@ -110,6 +110,32 @@
     true
   )
 
+
+  ;; dependent on marmalade
+  (defcap ROTATE_POLICY (token-id:string account:string)
+    @event
+    (enforce (= (get-balance token-id account) (total-supply token-id)) "Account doesn't own token")
+    (enforce-guard (account-guard token-id account)))
+
+  (defun rotate-adjustable-policy
+    ( token-id:string
+      account:string
+      rotate-policies:[module{kip.token-policy-v2}] )
+    (with-capability (ROTATE_POLICY token-id account) ;; needs sigs from token owner
+      (with-read tokens token-id {
+        "policies":= old-policies
+        }
+        (let* ((new-policies:object{token-policies} (+
+                  {'adjustable-policies: rotate-policies}
+                  old-policies
+              )))
+        (update tokens token-id {
+          "policies": new-policies
+        })
+    ))
+  ))
+
+
   ;;
   ;; Implementation caps
   ;;

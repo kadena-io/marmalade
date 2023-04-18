@@ -3,7 +3,7 @@
 
 (module policy-manager GOVERNANCE
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+    (enforce-guard 'marmalade-admin ))
 
   (implements kip.token-policy-v2)
   (use kip.concrete-policy-v1 [concrete-policy NON_FUNGIBLE_POLICY QUOTE_POLICY ROYALTY_POLICY])
@@ -26,13 +26,6 @@
     adjustable-policies:[module{kip.token-policy-v2}]
   )
 
-
-  ; (defschema policies
-  ;   policy: object{token-policies}
-  ; )
-  ;
-  ; (deftable policy-table:{policies})
-
   (defschema ledger-guard-schema
     guard:guard
   )
@@ -42,11 +35,6 @@
     (enforce-guard (at "guard" (read ledger-guard-table "")))
   )
 
-  ;; dependent on marmalade
-  ; (defcap ADJUST_POLICY (token-id:string account:string)
-  ;   (enforce (= (get-balance token-id account) (total-supply token-id)) "Account doesn't own token")
-  ;   (enforce-guard (account-guard token-id account)))
-
   (defcap ROTATE_POLICY (token-id:string policy:object{token-policies})
     @event
     true
@@ -54,20 +42,8 @@
 
   (defcap CONCRETE_POLICY_ADMIN (policy-field:string)
     ;;add admin check
-
-    true
+    (enforce-guard 'marmalade-admin)
   )
-
-  (defun TOKEN_INIT ()
-    ;; capability used to guard `create-multi-policy` to only be called inside enforce-init
-    true
-  )
-
-  (defun LEDGER ()
-    ;;TODO enforce that the enforce-** functions cannot be called anywhere other than ledger
-    true
-  )
-
 
   (defun init(marmalade-ledger-guard:guard)
     ;;TODO adds 4 concrete policies to concrete-policy table
@@ -129,13 +105,6 @@
   (defun is-used:bool (policies:object{token-policies} policy:string)
     (at policy (at 'concrete-policies policies))
   )
-
-  ; (defun create-multi-policy ( token:object{token-info} )
-  ;   (require-capability (TOKEN_INIT token))
-  ;   (insert policy-table (at 'id token) {
-  ;     "policies": (at 'policies token)
-  ;   })
-  ; )
 
   (defun enforce-mint:bool
     ( token:object{token-info}
@@ -217,56 +186,6 @@
     ;;TODO
     true
   )
-
-    ;;functions to add/remove adjustable policies
-
-    ; (defun add-policy
-    ;   ( token-id:string
-    ;     account:string
-    ;     policies:[module{kip.token-policy-v2}] )
-    ;   (with-capability (ADJUST_POLICY token-id account) ;; needs sigs from token owner
-    ;     (with-read policy-table token-id {
-    ;       "policy":= old-policy
-    ;       }
-    ;       (let* ( (imm-p:[module{kip.token-policy-v2}] (at 'immutable-policy old-policy))
-    ;               (adj-p:[module{kip.token-policy-v2}] (at 'adjustable-policy old-policy))
-    ;               (new-policy:object{policies} {
-    ;                 "immutable-policy": imm-p
-    ;               , "adjustable-policy": (+ adj-p policies)}) )
-    ;       (update policy-table token-id {
-    ;         "policy": new-policy
-    ;       })
-    ;     (emit-event (ROTATE_POLICY token-id new-policy)))
-    ;   ))
-    ; )
-    ;
-    ; (defun remove-policy
-    ;   ( token:string
-    ;     account:string
-    ;     policy-idx:integer )
-    ;   (let ((token-id:string (at 'id token)))
-    ;     (with-capability (ADJUST_POLICY token-id account)
-    ;       (with-read policy-table token-id {
-    ;         "policy":= old-policy
-    ;         }
-    ;         (let* ( (imm-p:[module{kip.token-policy-v2}] (at 'immutable-policy old-policy))
-    ;                 (adj-p:[module{kip.token-policy-v2}] (at 'adjustable-policy old-policy))
-    ;                 (new-policy:object{policies} {
-    ;                     "immutable-policy": imm-p
-    ;                   , "adjustable-policy":
-    ;                       (+ (take policy-idx adj-p)
-    ;                          (take (- policy-idx  (length  adj-p)) adj-p)) }) )
-    ;         (update policy-table token-id {
-    ;           "policy": new-policy
-    ;         })
-    ;     (emit-event (ROTATE_POLICY token-id new-policy)))))
-    ; ))
-
-
-    ;; dependent on marmalade
-    ; (defun enforce-ledger:bool ()
-    ;   (enforce-guard (marmalade.ledger.ledger-guard))
-    ; )
 
    ;;utility functions to map policy list
    (defun token-init (token:object{token-info} policy:module{kip.token-policy-v2})

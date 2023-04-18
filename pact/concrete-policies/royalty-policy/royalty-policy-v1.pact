@@ -13,6 +13,7 @@
   ; kip.concrete-policy-v1
   ; multi-policy has a list of allowed concrete policies, policy registry
   (implements kip.token-policy-v2)
+  (use kip.concrete-policy-v1 [QUOTE_POLICY])
   (use kip.token-policy-v2 [token-info])
 
   (defschema royalty-schema
@@ -55,7 +56,7 @@
   (defun enforce-init:bool
     ( token:object{token-info}
     )
-    (enforce (is-used token QUOTE_POLICY) "quote policy must be turned on")
+    (enforce (is-used (at 'policies token) QUOTE_POLICY) "quote policy must be turned on")
     ;;checks if quote-policy is true ?
     (enforce-ledger)
     (let* ( (spec:object{royalty-schema} (read-msg ROYALTY_SPEC))
@@ -156,7 +157,7 @@
     (enforce-ledger)
     (enforce false "Transfer prohibited")
   )
-  
+
   (defun enforce-withdraw:bool
     ( token:object{token-info}
       seller:string

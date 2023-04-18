@@ -6,8 +6,8 @@
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
   (implements kip.token-policy-v2)
-  (use kip.concrete-policy-v1 [concrete-policy])
-  (use kip.token-policy-v2 [token-policies token-info ])
+  (use kip.concrete-policy-v1 [concrete-policy NON_FUNGIBLE_POLICY QUOTE_POLICY ROYALTY_POLICY])
+  (use kip.token-policy-v2 [token-policies token-info])
 
   (defschema concrete-policy-list
     policy-field:string
@@ -18,11 +18,6 @@
 
   (defconst CONCRETE_POLICY_V1_LIST
     [NON_FUNGIBLE_POLICY QUOTE_POLICY ROYALTY_POLICY] )
-
-  (defconst NON_FUNGIBLE_POLICY 'non-fungible-policy )
-  (defconst QUOTE_POLICY 'quote-policy )
-  (defconst ROYALTY_POLICY 'royalty-policy ) ;; depend
-  ;  (defconst COLLECTION_POLICY 'collection-policy )
 
   ;; schema to save policy list in table
   (defschema policies-list
@@ -104,33 +99,31 @@
   )
 
   (defun get-policies-list:object{policies-list} (policies:object{token-policies})
-    (let* ( (concrete-p:[module{kip.token-policy-v2}] (create-concrete-policy-list (at 'concrete-policy policies)))
-            (imm-p:[module{kip.token-policy-v2}] (at 'immutable-policy policies))
-            (adj-p:[module{kip.token-policy-v2}] (at 'adjustable-policy policies)) )
+    (let* ( (concrete-p:[module{kip.token-policy-v2}] (create-concrete-policy-list policies))
+            (imm-p:[module{kip.token-policy-v2}] (at 'immutable-policies policies))
+            (adj-p:[module{kip.token-policy-v2}] (at 'adjustable-policies policies)) )
       { 'concrete-policy: concrete-p
       , 'immutable-policy: imm-p
       , 'adjustable-policy: adj-p  } )
   )
 
-  (defun merge-policies-list (policies:object{token-policies})
-    (let* ( (concrete-p:[module{kip.token-policy-v2}] (create-concrete-policy-list (at 'concrete-policy policies)))
-            (imm-p:[module{kip.token-policy-v2}] (at 'immutable-policy policies))
-            (adj-p:[module{kip.token-policy-v2}] (at 'adjustable-policy policies)) )
-    (fold (+) [concrete-p imm-p adj-p] []))
-  )
-
-  (defun enforce-init:bool (token:object{token-info})
-    (with-capability (LEDGER)
-      (with-capability (TOKEN_INIT)
-        ;; add policies to table
-        ; (create-multi-policy token (at 'policies token))
-        ;; runs all policies from the polciy list
-        (map-init token (merge-policies-list (at 'policies token))))
+  (defun merge-policies-list:[module{kip.token-policy-v2}] (policies:object{token-policies})
+    (let* ( (concrete-p:[module{kip.token-policy-v2}] (create-concrete-policy-list policies ))
+            (concrete-imm-p:[module{kip.token-policy-v2}] (+ concrete-p (at 'immutable-policies policies)))
+            (concrete-imm-adj-p:[module{kip.token-policy-v2}] (+ concrete-imm-p (at 'adjustable-policies policies))) )
+    concrete-imm-adj-p
     )
   )
 
-  (defun create-concrete-policy-list:[module{kip.token-policy-v2}] (policies:object{concrete-policy} policy:string)
-    (filter (is-used) CONCRETE_POLICY_V1_LIST [])
+  (defun enforce-init:bool (token:object{token-info})
+    (enforce-ledger)
+    (map-init token (merge-policies-list (at 'policies token)))
+  )
+
+  (defun create-concrete-policy-list:[module{kip.token-policy-v2}] (policies:object{token-policies})
+    (let* ((is-used-policies (lambda (policy:string) (is-used policies policy)))
+           (policy-fields:[string] (filter (is-used-policies) CONCRETE_POLICY_V1_LIST)))
+      (map (get-concrete-policy) policy-fields))
   )
 
   (defun is-used:bool (policies:object{token-policies} policy:string)
@@ -312,29 +305,6 @@
    (defun map-crosschain (token:object{token-info} params:object sender:string guard:guard receiver:string target-chain:string amount:decimal policy-list:[module{kip.token-policy-v2}])
      (map (token-crosschain  token sender guard receiver target-chain amount) policy-list))
 )
-
-; examples to be put in utils?
-; (defconst DEFAULT
-;   { 'concrete-policies:
-;      { 'quote-policy:true
-;        'royalty-policy:true
-;        'collection-policy:true
-;      }
-;   ,'immutable-policies: []
-;   ,'adjustable-policies: []
-;   }
-; )
-;
-; (defun create-single-policy (policy:module{token-policy-v1})
-;   { 'concrete-policies:
-;      { 'quote-policy:false
-;        'royalty-policy:false
-;        'collection-policy:false
-;      }
-;   ,'immutable-policies: [policy]
-;   ,'adjustable-policies: []
-; })
-
 
 (if (read-msg 'upgrade )
   ["upgrade complete"]

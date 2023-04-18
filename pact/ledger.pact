@@ -155,19 +155,20 @@
   ;  TODO: this is basically just reading token-schema and transforming into token-info schema
   ;  Improve later by using a single schema for both
   (defun get-token-info:object{kip.token-policy-v2.token-info} (id:string)
-    (with-read tokens id
-      { 'policies := policies:object{token-policies}
-      , 'supply := supply
-      , 'precision := precision
-      , 'uri := uri
-      }
-      {
-        'id: id
-        , 'supply: supply
-        , 'precision: precision
-        , 'uri: uri
-        , 'policies: policies
-      } )
+    (read tokens id)
+    ; (with-read tokens id
+    ;   { 'policies := policies:object{token-policies}
+    ;   , 'supply := supply
+    ;   , 'precision := precision
+    ;   , 'uri := uri
+    ;   }
+    ;   {
+    ;     'id: id
+    ;     , 'supply: supply
+    ;     , 'precision: precision
+    ;     , 'uri: uri
+    ;     , 'policies: policies
+    ;   } )
   )
 
   (defun create-account:bool
@@ -207,17 +208,17 @@
      (enforce-token-reserved id token-details)
     )
     ;; maps policy list and calls policy::enforce-init
-    (policy-manager.enforce-init
-      { 'id: id, 'supply: 0.0, 'precision: precision, 'url: uri,  'policies: policies})
+    (marmalade.policy-manager.enforce-init
+      { 'id: id, 'supply: 0.0, 'precision: precision, 'uri: uri,  'policies: policies})
 
     (insert tokens id {
       "id": id,
-      "precision": precision,
       "uri": uri,
+      "precision": precision,
       "supply": 0.0,
-      "policy": token-policies
-      })
-      (emit-event (TOKEN id precision 0.0 token-policies uri))
+      "policies": policies
+    })
+    (emit-event (TOKEN id precision 0.0 policies uri))
   )
 
   (defun enforce-token-reserved:bool (token-id:string token-details:object{token-details})

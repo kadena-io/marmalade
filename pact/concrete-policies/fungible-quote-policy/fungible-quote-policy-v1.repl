@@ -1,6 +1,2 @@
 ;;load policy manager, ledger, and all concrete policies
 (load "../../policy-manager/policy-manager.repl")
-
-(begin-tx)
-(load "fungible-quote-policy-v1.pact")
-(commit-tx)

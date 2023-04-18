@@ -41,9 +41,42 @@
 (load "../concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact")
 (load "../concrete-policies/royalty-policy/royalty-policy-v1.pact")
 
-
+(use kip.concrete-policy-v1 [QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY])
+(marmalade.policy-manager.init (marmalade.ledger.ledger-guard))
 (marmalade.policy-manager.add-concrete-policy QUOTE_POLICY marmalade.fungible-quote-policy-v1)
 (marmalade.policy-manager.add-concrete-policy NON_FUNGIBLE_POLICY marmalade.non-fungible-policy-v1)
 (marmalade.policy-manager.add-concrete-policy ROYALTY_POLICY marmalade.royalty-policy-v1)
 
 (commit-tx)
+
+(begin-tx)
+
+(use kip.concrete-policy-v1 [QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY])
+(module util GOV
+  (defcap GOV () true)
+
+  (defconst DEFAULT_CONCRETE_POLICY:object{kip.concrete-policy-v1.concrete-policy}
+    { 'quote-policy: true
+     ,'non-fungible-policy: true
+     ,'royalty-policy: false
+    }
+  )
+  (defconst DEFAULT_POLICIES:object{kip.token-policy-v2.token-policies}
+    { 'concrete-policies:DEFAULT_CONCRETE_POLICY
+     ,'immutable-policies: []
+     ,'adjustable-policies:[]
+    })
+)
+
+(use marmalade.ledger)
+(use marmalade.policy-manager)
+
+(env-data {
+  "mint-guard": {"keys": ["mint"], "pred": "keys-all"}
+  })
+
+(expect "create a default token with quote-policy, non-fungible-policy"
+  true
+  (create-token (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: util.DEFAULT_POLICIES } ) 0 "test-uri" util.DEFAULT_POLICIES ))
+
+;;TODO: transform token-schema to token-info

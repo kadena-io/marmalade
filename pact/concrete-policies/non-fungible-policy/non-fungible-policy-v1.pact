@@ -82,6 +82,14 @@
     (enforce-ledger)
   )
 
+  (defun enforce-withdraw:bool
+    ( token:object{token-info}
+      seller:string
+      amount:decimal
+      sale-id:string )
+    (enforce-ledger)
+  )
+
   (defun enforce-crosschain:bool
     ( token:object{token-info}
       sender:string
@@ -91,15 +99,6 @@
       amount:decimal )
     (enforce-ledger)
     (enforce false "Transfer prohibited")
-  )
-
-  (defun enforce-withdraw:bool
-    ( token:object{token-info}
-      seller:string
-      amount:decimal
-      sale-id:string )
-    ;;TODO
-    true
   )
 )
 

@@ -130,7 +130,7 @@
                   old-policies
               )))
         (update tokens token-id {
-          "policy": new-policies
+          "policies": new-policies
         })
     ))
   ))

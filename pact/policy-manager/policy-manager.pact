@@ -17,12 +17,12 @@
   (deftable concrete-policy-table:{concrete-policy-list})
 
   (defconst CONCRETE_POLICY_V1_LIST
-    [FIXED_ISSUANCE_POLICY QUOTE_POLICY ROYALTY_POLICY COLLECTION_POLICY] )
+    [NON_FUNGIBLE_POLICY QUOTE_POLICY ROYALTY_POLICY] )
 
-  (defconst FIXED_ISSUANCE_POLICY 'fixed-issuance-policy )
+  (defconst NON_FUNGIBLE_POLICY 'non-fungible-policy )
   (defconst QUOTE_POLICY 'quote-policy )
   (defconst ROYALTY_POLICY 'royalty-policy ) ;; depend
-  (defconst COLLECTION_POLICY 'collection-policy )
+  ;  (defconst COLLECTION_POLICY 'collection-policy )
 
   ;; schema to save policy list in table
   (defschema policies-list

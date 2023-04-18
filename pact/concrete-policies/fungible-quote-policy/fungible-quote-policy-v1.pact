@@ -7,8 +7,6 @@
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
-   ; TODO: we might need a new concrecte-policy interface
-  ; kip.concrete-policy-v1
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
 

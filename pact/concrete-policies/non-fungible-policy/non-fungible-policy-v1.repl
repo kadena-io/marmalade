@@ -2,5 +2,5 @@
 (load "../../policy-manager/policy-manager.repl")
 
 (begin-tx)
-(load "one-off-policy-v1.pact")
+;  (load "non-fungible-policy-v1.pact")
 (commit-tx)

@@ -7,8 +7,8 @@
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
-  (implements kip.token-policy-v1)
-  (use kip.token-policy-v1 [token-info])
+  (implements kip.token-policy-v2)
+  (use kip.token-policy-v2 [token-info])
 
   (defschema mint-guard-schema
     mint-guard:guard
@@ -92,8 +92,16 @@
     (enforce-ledger)
     (enforce false "Transfer prohibited")
   )
-)
 
+  (defun enforce-withdraw:bool
+    ( token:object{token-info}
+      seller:string
+      amount:decimal
+      sale-id:string )
+    ;;TODO
+    true
+  )
+)
 
 (if (read-msg 'upgrade)
   ["upgrade complete"]

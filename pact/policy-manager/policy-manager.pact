@@ -114,8 +114,7 @@
     )
     (enforce-ledger)
     (let ((policies:object{token-policies}  (at 'policies token)))
-      ;;order issue?
-      (map-offer token account guard amount
+      (map-mint token account guard amount
          (merge-policies-list policies))))
 
   (defun enforce-burn:bool
@@ -194,6 +193,12 @@
    (defun map-init (token:object{token-info} policy-list:[module{kip.token-policy-v2}])
      (map (token-init token) policy-list))
 
+   (defun token-mint (token:object{token-info} account:string guard:guard amount:decimal policy:module{kip.token-policy-v2})
+     (policy::enforce-mint token account guard amount))
+
+   (defun map-mint (token:object{token-info} account:string guard:guard amount:decimal policy-list:[module{kip.token-policy-v2}])
+     (map (token-mint token account guard amount) policy-list))
+
    (defun token-offer (token:object{token-info} account:string guard:guard amount:decimal policy:module{kip.token-policy-v2})
      (policy::enforce-offer token account guard amount))
 
@@ -223,6 +228,8 @@
 
    (defun map-crosschain (token:object{token-info} params:object sender:string guard:guard receiver:string target-chain:string amount:decimal policy-list:[module{kip.token-policy-v2}])
      (map (token-crosschain  token sender guard receiver target-chain amount) policy-list))
+
+
 )
 
 (if (read-msg 'upgrade )

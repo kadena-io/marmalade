@@ -40,8 +40,8 @@
     (enforce-ledger)
     (let ((mint-guard (at 'mint-guard (read mintguards (at 'id token)))))
       (enforce-guard mint-guard)
-      (enforce (= amount 1) "Mint can only be 1")
-      (enforce (= (at 'supply token) 0) "Only one mint allowed")
+      (enforce (= amount 1.0) "Mint can only be 1")
+      (enforce (= (at 'supply token) 0.0) "Only one mint allowed")
   ))
 
   (defun enforce-burn:bool

@@ -124,15 +124,14 @@
         (mk-fee:decimal (at 'fee mk-fee-spec))
         (fungible:module{fungible-v2} (at 'fungible spec) ))
         (fungible::transfer buyer mk-account mk-fee)
-      )
-
+      ;; check if royalty is turned on and pay royalty
       (bind spec
         { 'fungible := fungible:module{fungible-v2}
         , 'price := price:decimal
         , 'recipient := recipient:string
         }
-        (fungible::transfer buyer recipient (* amount price))
-      )
+        (fungible::transfer buyer recipient (- (* amount price) mk-fee))
+      ))
     )
     true
   )

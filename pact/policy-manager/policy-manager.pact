@@ -63,10 +63,6 @@
     )
   )
 
-  ; (defun get-policies:object{token-policies} (token:object{token-info})
-  ;   (at 'policies token)
-  ; )
-
   (defun get-concrete-policy:module{kip.token-policy-v2} (policy-field:string)
     (with-read concrete-policy-table policy-field
       {"policy":=policy }
@@ -199,11 +195,11 @@
    (defun map-mint (token:object{token-info} account:string guard:guard amount:decimal policy-list:[module{kip.token-policy-v2}])
      (map (token-mint token account guard amount) policy-list))
 
-   (defun token-offer (token:object{token-info} account:string guard:guard amount:decimal policy:module{kip.token-policy-v2})
-     (policy::enforce-offer token account guard amount))
+   (defun token-offer (token:object{token-info} account:string amount:decimal sale-id:string policy:module{kip.token-policy-v2})
+     (policy::enforce-offer token account amount sale-id))
 
-   (defun map-offer (token:object{token-info} account:string amount:decimal guard:guard policy-list:[module{kip.token-policy-v2}])
-     (map (token-offer token account guard amount) policy-list))
+   (defun map-offer (token:object{token-info} account:string amount:decimal sale-id:string policy-list:[module{kip.token-policy-v2}])
+     (map (token-offer token account amount sale-id) policy-list))
 
    (defun token-burn (token:object{token-info} account:string amount:decimal policy:module{kip.token-policy-v2})
      (policy::enforce-burn token account amount))

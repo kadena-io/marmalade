@@ -178,23 +178,21 @@
     (create-module-guard "ledger-guard")
   )
 
-  ;  TODO: this is basically just reading token-schema and transforming into token-info schema
-  ;  Improve later by using a single schema for both
+  ;  Transform token-schema object to token-info object
   (defun get-token-info:object{kip.token-policy-v2.token-info} (id:string)
-    (read tokens id)
-    ; (with-read tokens id
-    ;   { 'policies := policies:object{token-policies}
-    ;   , 'supply := supply
-    ;   , 'precision := precision
-    ;   , 'uri := uri
-    ;   }
-    ;   {
-    ;     'id: id
-    ;     , 'supply: supply
-    ;     , 'precision: precision
-    ;     , 'uri: uri
-    ;     , 'policies: policies
-    ;   } )
+    (with-read tokens id
+     { 'policies := policies:object{token-policies}
+     , 'supply := supply
+     , 'precision := precision
+     , 'uri := uri
+     }
+     {
+       'id: id
+       , 'supply: supply
+       , 'precision: precision
+       , 'uri: uri
+       , 'policies: policies
+     } )
   )
 
   (defun create-account:bool

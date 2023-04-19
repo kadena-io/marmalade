@@ -1,3 +1,6 @@
+// royalty patments
+
+
 (namespace (read-msg 'ns))
 
 (module royalty-policy-v1 GOVERNANCE

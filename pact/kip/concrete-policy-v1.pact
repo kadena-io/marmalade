@@ -6,10 +6,12 @@
     non-fungible-policy:bool
     quote-policy:bool
     royalty-policy:bool
+    collection-policy:bool
   )
 
   (defconst NON_FUNGIBLE_POLICY 'non-fungible-policy )
   (defconst QUOTE_POLICY 'quote-policy )
   (defconst ROYALTY_POLICY 'royalty-policy )
+  (defconst COLLECTION_POLICY 'collection-policy )
 
 )

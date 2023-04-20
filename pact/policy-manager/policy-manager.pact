@@ -45,6 +45,10 @@
     (enforce-guard 'marmalade-admin)
   )
 
+  (defcap QUOTE_ESCROW (sale-id:string)
+    true
+  )
+
   (defun init(marmalade-ledger-guard:guard)
     ;;TODO adds 4 concrete policies to concrete-policy table
     (insert ledger-guard-table "" {
@@ -141,9 +145,29 @@
       amount:decimal
       sale-id:string )
     (enforce-ledger)
-    (let ((policies:object{token-policies}  (at 'policies token)))
-      (map-buy token seller buyer buyer-guard amount sale-id
-        (merge-policies-list policies))))
+    (let ((policies:object{token-policies}  (at 'policies token))
+          (quote-policy:module{kip.token-policy-v2, marmalade.fungible-quote-policy-interface-v1} (get-concrete-policy QUOTE_POLICY)))
+      (if (is-used policies QUOTE_POLICY)
+        (let* ((quote:object{marmalade.fungible-quote-policy-interface-v1.quote-schema} (quote-policy::get-quote sale-id))
+               (spec:object{marmalade.fungible-quote-policy-interface-v1.quote-spec} (at 'spec quote))
+               (fungible:module{fungible-v2} (at 'fungible spec))
+               (price:decimal (at 'price spec))
+               (sale-price:decimal (floor (* price amount) (fungible::precision)))
+               (escrow-guard:guard (create-capability-guard (QUOTE_ESCROW sale-id )))
+               (escrow-account:string (create-principal escrow-guard))
+               )
+        (with-capability (QUOTE_ESCROW sale-id)
+          (fungible::transfer-create buyer escrow-account escrow-guard sale-price)
+          (map-buy token seller buyer buyer-guard amount sale-id
+            (filter (!= quote-policy) (merge-policies-list policies)))
+            (quote-policy::enforce-buy token seller buyer buyer-guard amount sale-id)
+          )) true)
+    ))
+
+    (defun get-escrow-account (sale-id:string)
+      { 'account: (create-principal (create-capability-guard (QUOTE_ESCROW sale-id)))
+      , 'guard: (create-capability-guard (QUOTE_ESCROW sale-id))
+      })
 
     (defun enforce-sale-pact:bool (sale:string)
       "Enforces that SALE is id for currently executing pact"

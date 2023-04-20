@@ -1,3 +1,4 @@
+
 (module coin GOVERNANCE
 
   @doc "'coin' represents the Kadena Coin Contract. This contract provides both the \
@@ -17,8 +18,16 @@
     ]
 
   (implements fungible-v2)
+  (implements fungible-xchain-v1)
 
+  ;; coin-v2
   (bless "ut_J_ZNkoyaPUEJhiwVeWnkSQn9JT9sQCWKdjjVVrWo")
+
+  ;; coin v3
+  (bless "1os_sLAUYvBzspn5jjawtRpJWiH1WPfhyNraeVvSIwU")
+
+  ;; coin v4
+  (bless "BjZW0T2ac6qE_I5X8GE4fal6tTqjhLTC7my0ytQSxLU")
 
   ; --------------------------------------------------------------------------
   ; Schemas and Tables
@@ -92,6 +101,38 @@
       newbal)
   )
 
+  (defcap TRANSFER_XCHAIN:bool
+    ( sender:string
+      receiver:string
+      amount:decimal
+      target-chain:string
+    )
+
+    @managed amount TRANSFER_XCHAIN-mgr
+    (enforce-unit amount)
+    (enforce (> amount 0.0) "Cross-chain transfers require a positive amount")
+    (compose-capability (DEBIT sender))
+  )
+
+  (defun TRANSFER_XCHAIN-mgr:decimal
+    ( managed:decimal
+      requested:decimal
+    )
+
+    (enforce (>= managed requested)
+      (format "TRANSFER_XCHAIN exceeded for balance {}" [managed]))
+    0.0
+  )
+
+  (defcap TRANSFER_XCHAIN_RECD:bool
+    ( sender:string
+      receiver:string
+      amount:decimal
+      source-chain:string
+    )
+    @event true
+  )
+
   ; v3 capabilities
   (defcap RELEASE_ALLOCATION
     ( account:string
@@ -115,6 +156,9 @@
 
   (defconst MAXIMUM_ACCOUNT_LENGTH 256
     "Maximum account name length admissible for coin accounts")
+
+  (defconst VALID_CHAIN_IDS (map (int-to-str 10) (enumerate 0 19))
+    "List of all valid Chainweb chain ids")
 
   ; --------------------------------------------------------------------------
   ; Utilities
@@ -464,23 +508,24 @@
 
   (defun enforce-reserved:bool (account:string guard:guard)
     @doc "Enforce reserved account name protocols."
-    (let ((r (check-reserved account)))
-      (if (= "" r) true
-        (if (= "k" r)
-          (enforce
-            (= (format "{}" [guard])
-               (format "KeySet {keys: [{}],pred: keys-all}"
-                       [(drop 2 account)]))
-            "Single-key account protocol violation")
-          (enforce false
-            (format "Unrecognized reserved protocol: {}" [r]))))))
+    (if (validate-principal guard account)
+      true
+      (let ((r (check-reserved account)))
+        (if (= r "")
+          true
+          (if (= r "k")
+            (enforce false "Single-key account protocol violation")
+            (enforce false
+              (format "Reserved protocol guard violation: {}" [r]))
+            )))))
 
 
   (defschema crosschain-schema
     @doc "Schema for yielded value in cross-chain transfers"
     receiver:string
     receiver-guard:guard
-    amount:decimal)
+    amount:decimal
+    source-chain:string)
 
   (defpact transfer-crosschain:string
     ( sender:string
@@ -495,7 +540,8 @@
            ]
 
     (step
-      (with-capability (DEBIT sender)
+      (with-capability
+        (TRANSFER_XCHAIN sender receiver amount target-chain)
 
         (validate-account sender)
         (validate-account receiver)
@@ -509,9 +555,11 @@
 
         (enforce-unit amount)
 
+        (enforce (contains target-chain VALID_CHAIN_IDS)
+          "target chain is not a valid chainweb chain id")
+
         ;; step 1 - debit delete-account on current chain
         (debit sender amount)
-
         (emit-event (TRANSFER sender "" amount))
 
         (let
@@ -519,6 +567,7 @@
             { "receiver" : receiver
             , "receiver-guard" : receiver-guard
             , "amount" : amount
+            , "source-chain" : (at 'chain-id (chain-data))
             }))
           (yield crosschain-details target-chain)
           )))
@@ -528,8 +577,12 @@
         { "receiver" := receiver
         , "receiver-guard" := receiver-guard
         , "amount" := amount
+        , "source-chain" := source-chain
         }
+
         (emit-event (TRANSFER "" receiver amount))
+        (emit-event (TRANSFER_XCHAIN_RECD "" receiver amount source-chain))
+
         ;; step 2 - credit create account on target chain
         (with-capability (CREDIT receiver)
           (credit receiver receiver-guard amount))

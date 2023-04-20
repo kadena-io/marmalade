@@ -8,7 +8,8 @@
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
   (use marmalade.policy-manager)
-  (use marmalade.fungible-quote-policy-v1 [quote-spec quote-schema])
+  (use marmalade.fungible-quote-policy-v1)
+  (use marmalade.fungible-quote-policy-interface-v1 [quote-spec quote-schema])
   ; TODO: we might need a new concrecte-policy interface
   ; kip.concrete-policy-v1
   ; multi-policy has a list of allowed concrete policies, policy registry
@@ -127,12 +128,13 @@
               (spec:object{quote-spec} (at 'spec quote))
               (price:decimal (at 'price spec))
               (sale-price:decimal (* amount price))
+              (escrow-account:string (at 'account (get-escrow-account sale-id)))
               (royalty-payout:decimal
                  (floor (* sale-price royalty-rate) (fungible::precision))))
         (enforce (= (at 'id quote) (at 'id token)) "incorrect sale token")
         (if 
           (> royalty-payout 0.0)
-          [(fungible::transfer buyer creator royalty-payout)]
+          [(fungible::transfer escrow-account creator royalty-payout)]
           [(emit-event (ROYALTY sale-id (at 'id token) royalty-payout creator))]
           "No royalty"
           )))

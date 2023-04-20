@@ -1,15 +1,14 @@
-// Kopen  Quote meegeven
-
 (namespace (read-msg 'ns))
 
 (module fungible-quote-policy-v1 GOVERNANCE
-
   @doc "Concrete policy for a simple quoted sale"
 
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
-  (implements kip.token-policy-v2)
+  (implements kip.token-policy-v2 )
+  (implements marmalade.fungible-quote-policy-interface-v1)
+  (use marmalade.fungible-quote-policy-interface-v1 [quote-spec quote-schema marketplace-fee-spec QUOTE-MSG-KEY MARKETPLACE-FEE-MSG-KEY ])
   (use kip.token-policy-v2 [token-info])
 
   (defcap QUOTE:bool
@@ -25,34 +24,34 @@
     true
   )
 
-  (defconst QUOTE-MSG-KEY "quote"
-    @doc "Payload field for quote spec")
+  ; (defconst QUOTE-MSG-KEY "quote"
+  ;   @doc "Payload field for quote spec")
+  ;
+  ; (defconst MARKETPLACE-FEE-MSG-KEY "marketplace-fee"
+  ;   @doc "Payload field for marketplace fee spec")
 
-  (defconst MARKETPLACE-FEE-MSG-KEY "marketplace-fee"
-    @doc "Payload field for marketplace fee spec")
+  ; (defschema quote-spec
+  ;   @doc "Quote data to include in payload"
+  ;   fungible:module{fungible-v2}
+  ;   price:decimal
+  ;   recipient:string
+  ;   recipient-guard:guard
+  ; )
+  ;
+  ; (defschema marketplace-fee-spec
+  ;   @doc "Marketplace fee data to include in payload"
+  ;   marketplace-account:string
+  ;   fee:decimal
+  ; )
 
-  (defschema quote-spec
-    @doc "Quote data to include in payload"
-    fungible:module{fungible-v2}
-    price:decimal
-    recipient:string
-    recipient-guard:guard
-  )
-
-  (defschema marketplace-fee-spec
-    @doc "Marketplace fee data to include in payload"
-    marketplace-account:string
-    fee:decimal
-  )
-
-  (defschema quote-schema
-    id:string
-    spec:object{quote-spec})
+  ; (defschema quote-schema
+  ;   id:string
+  ;   spec:object{quote-spec})
 
   (deftable quotes:{quote-schema})
 
   (defun get-quote:object{quote-schema} (sale-id:string)
-    (read quotes 'sale-id ))
+    (read quotes sale-id))
 
   (defun enforce-ledger:bool ()
      (enforce-guard (marmalade.ledger.ledger-guard))
@@ -120,23 +119,30 @@
       (enforce (= qtoken (at 'id token)) "incorrect sale token")
 
       ;  TODO: make this optional
-      (let* (
-        (mk-fee-spec:object{marketplace-fee-spec} (read-msg MARKETPLACE-FEE-MSG-KEY))
-        (mk-account:string (at 'marketplace-account mk-fee-spec))
-        (mk-fee:decimal (at 'fee mk-fee-spec))
-        (fungible:module{fungible-v2} (at 'fungible spec) ))
-        (fungible::transfer buyer mk-account mk-fee)
-      ;; check if royalty is turned on and pay royalty
       (bind spec
         { 'fungible := fungible:module{fungible-v2}
         , 'price := price:decimal
         , 'recipient := recipient:string
         }
-        (fungible::transfer buyer recipient (- (* amount price) mk-fee))
-      ))
-    )
+
+      (let* (
+        (mk-fee-spec:object{marketplace-fee-spec} (read-msg MARKETPLACE-FEE-MSG-KEY))
+        (mk-account:string (at 'marketplace-account mk-fee-spec))
+        (mk-fee-percentage:decimal (at 'mk-fee-percentage mk-fee-spec))
+        (mk-fee:decimal (floor (* mk-fee-percentage price) (fungible::precision)))
+        (escrow-account:string (at 'account (policy-manager.get-escrow-account sale-id)))
+      )
+        (install-capability (fungible::TRANSFER escrow-account mk-account mk-fee))
+        (fungible::transfer escrow-account mk-account mk-fee)
+        (let (
+          (balance:decimal (fungible::get-balance escrow-account))
+        )
+        (install-capability (fungible::TRANSFER escrow-account recipient balance))
+        (fungible::transfer escrow-account recipient balance)
+      
+    ))
     true
-  )
+  )))
 
   (defun enforce-sale-pact:bool (sale:string)
     "Enforces that SALE is id for currently executing pact"

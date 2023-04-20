@@ -495,7 +495,7 @@
   ;;
 
   (defcap SALE:bool
-    (id:string seller:string amount:decimal timeout:integer sale-id:string)
+    (id:string seller:string amount:decimal timeout:time sale-id:string)
     @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
     @event
     (enforce (> amount 0.0) "Amount must be positive")
@@ -504,7 +504,7 @@
   )
 
   (defcap OFFER:bool
-    (id:string seller:string amount:decimal timeout:integer)
+    (id:string seller:string amount:decimal timeout:time)
     @doc "Managed cap for SELLER offering AMOUNT of token ID until TIMEOUT."
     @managed
     (enforce (sale-active timeout) "SALE: invalid timeout")
@@ -513,7 +513,7 @@
   )
 
   (defcap WITHDRAW:bool
-    (id:string seller:string amount:decimal timeout:integer sale-id:string)
+    (id:string seller:string amount:decimal timeout:time sale-id:string)
     @doc "Withdraws offer SALE from SELLER of AMOUNT of token ID after timeout."
     @event
     (enforce (not (sale-active timeout)) "WITHDRAW: still active")
@@ -523,7 +523,7 @@
   )
 
   (defcap BUY:bool
-    (id:string seller:string buyer:string amount:decimal timeout:integer sale-id:string)
+    (id:string seller:string buyer:string amount:decimal timeout:time sale-id:string)
     @doc "Completes sale OFFER to BUYER."
     @managed
     (enforce (sale-active timeout) "BUY: expired")
@@ -538,7 +538,7 @@
     ( id:string
       seller:string
       amount:decimal
-      timeout:integer
+      timeout:time
     )
     (step-with-rollback
       (with-capability (SALE id seller amount timeout (pact-id))
@@ -611,9 +611,9 @@
       (emit-event (RECONCILE id amount sender receiver)))
   )
 
-  (defun sale-active:bool (timeout:integer)
+  (defun sale-active:bool (timeout:time)
     @doc "Sale is active until TIMEOUT block height."
-    (< (at 'block-height (chain-data)) timeout)
+    (< (at 'block-time (chain-data)) timeout)
   )
 
   (defun sale-account:string ()

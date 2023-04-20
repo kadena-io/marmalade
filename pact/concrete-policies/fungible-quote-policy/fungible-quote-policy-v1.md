@@ -36,7 +36,7 @@ To use the `fungible-quote-policy-v1` , enable it by setting it to `true` within
 By utilising this policy module, you can build token sale platforms and marketplaces that offer a simple and secure way of managing token sales with quoted pricing mechanisms.
 
   
-### Payload messages
+## Payload messages
 
   
 #### QUOTE-MSG-KEY
@@ -56,7 +56,7 @@ The `marketplace-account` field specifies the account to which the marketplace f
 Once the `marketplace-fee-spec` object has been read from the message payload, the function extracts the relevant fields from it and performs several checks to ensure the validity of the sale. It then transfers the appropriate funds to the seller, as well as any applicable marketplace fees.
 
 
-### Events Emitted
+## Events Emitted
 
   
 #### QUOTE Event

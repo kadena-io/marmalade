@@ -23,7 +23,7 @@ The `fungible-quote-policy-v1` is specifically tailored for managing token sales
 
 `enforce-offer`: In order to facilitate the sale of tokens in a secure and controlled manner `enforce-offer` provides a mechanism to validate the essential details of a sale before initiating the sale process. The primary function of enforcing this rules is to make sure that the sale conditions are met, ultimately ensuring a safe and reliable marketplace for both buyers and sellers.
 
-`enforce-buy`: Enforces buying rules and handles the payment of marketplace fees and royalties, if applicable. The function also ensures that the correct sale token is used. all with all this ensures for buyers and sellers to trade their tokens are exchanged between the intended parties and transferred accordingly
+`enforce-buy`: Enforces buying rules and handles the payment of marketplace fees and royalties, if applicable. The function also ensures that the correct sale token is used. In the end this ensures for buyers and sellers to trade their tokens are exchanged between the intended parties and transferred accordingly
 
   
 ## Enabling

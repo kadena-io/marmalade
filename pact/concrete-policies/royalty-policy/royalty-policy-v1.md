@@ -42,7 +42,7 @@ The `fungible` field specifies the module that contains the fungible token. The 
 Once the `royalty-schema` object has been read from the message payload, the function extracts the relevant fields from it and performs several checks to ensure the validity of the royalty. It then inserts the royalty into the `royalties` database.
 
  
-### Events Emitted
+## Events Emitted
 
 
 #### ROYALTY Event

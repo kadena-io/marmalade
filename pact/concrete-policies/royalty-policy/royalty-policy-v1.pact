@@ -128,12 +128,13 @@
               (spec:object{quote-spec} (at 'spec quote))
               (price:decimal (at 'price spec))
               (sale-price:decimal (* amount price))
+              (escrow-account:string (at 'account (get-escrow-account sale-id)))
               (royalty-payout:decimal
                  (floor (* sale-price royalty-rate) (fungible::precision))))
         (enforce (= (at 'id quote) (at 'id token)) "incorrect sale token")
         (if
           (> royalty-payout 0.0)
-          (fungible::transfer buyer creator royalty-payout)
+          (fungible::transfer escrow-account creator royalty-payout)
           "No royalty")
         ))
         true)

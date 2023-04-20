@@ -8,7 +8,8 @@
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
   (use marmalade.policy-manager)
-  (use marmalade.fungible-quote-policy-v1 [quote-spec quote-schema])
+  (use marmalade.fungible-quote-policy-v1)
+  (use marmalade.fungible-quote-policy-interface-v1 [quote-spec quote-schema])
   ; TODO: we might need a new concrecte-policy interface
   ; kip.concrete-policy-v1
   ; multi-policy has a list of allowed concrete policies, policy registry

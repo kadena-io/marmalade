@@ -1,7 +1,19 @@
 (namespace 'kip)
 
 (interface token-policy-v2
-  
+
+  (defschema concrete-policy
+    non-fungible-policy:bool
+    quote-policy:bool
+    royalty-policy:bool
+    collection-policy:bool
+  )
+
+  (defconst NON_FUNGIBLE_POLICY 'non-fungible-policy )
+  (defconst QUOTE_POLICY 'quote-policy )
+  (defconst ROYALTY_POLICY 'royalty-policy )
+  (defconst COLLECTION_POLICY 'collection-policy )
+
   (defschema token-policies
     concrete-policies:object{kip.concrete-policy-v1.concrete-policy}
     immutable-policies:[module{token-policy-v2}]

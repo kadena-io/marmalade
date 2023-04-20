@@ -93,7 +93,7 @@ The `QUOTE` event contains the following parameters:
   
 The `QUOTE` event is emitted within the `enforce-offer` function using the following line of code:
 
-(emit-event (QUOTE sale-id (at 'id token) amount price sale-price spec))
+```(emit-event (QUOTE sale-id (at 'id token) amount price sale-price spec))```
 
 This line of code creates and emits the `QUOTE` event with the specified parameters, derived from the function's inputs and the extracted quote specifications from the payload.
 

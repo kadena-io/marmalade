@@ -23,9 +23,9 @@ This policy module includes the following key components:
 
 `enforce-mint`: Enforces minting rules and checks for a valid ledger guard.
  
- `enforce-burn`: Enforces burning rules and checks for a valid ledger guard.
+`enforce-burn`: Enforces burning rules and checks for a valid ledger guard.
 
- `enforce-offer`: Enforces offering rules, such as positive pricing, and captures quote specifications for a token sale. It also emits a `QUOTE` event.
+`enforce-offer`: Enforces offering rules, such as positive pricing, and captures quote specifications for a token sale. It also emits a `QUOTE` event.
 
 `enforce-buy`: Enforces buying rules and handles the payment of marketplace fees and royalties, if applicable. The function also ensures that the correct sale token is used.
 

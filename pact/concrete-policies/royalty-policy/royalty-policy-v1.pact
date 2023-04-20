@@ -130,11 +130,12 @@
               (royalty-payout:decimal
                  (floor (* sale-price royalty-rate) (fungible::precision))))
         (enforce (= (at 'id quote) (at 'id token)) "incorrect sale token")
-        (if
+        (if 
           (> royalty-payout 0.0)
-          (fungible::transfer buyer creator royalty-payout)
-          "No royalty")
-        ))
+          [(fungible::transfer buyer creator royalty-payout)]
+          [(emit-event (ROYALTY sale-id (at 'id token) royalty-payout creator))]
+          "No royalty"
+          )))
         true)
 
   (defun enforce-transfer:bool
@@ -163,8 +164,7 @@
       seller:string
       amount:decimal
       sale-id:string )
-    ;;TODO
-    true
+    (enforce-ledger)
   )
 )
 

@@ -28,7 +28,7 @@ This policy module includes the following key components:
 To use the `royalty-policy-v1` , enable it by setting it to `true` within the concrete policies list.
 
  
-### Payload messages
+## Payload messages
 
 
 #### ROYALTY_SPEC

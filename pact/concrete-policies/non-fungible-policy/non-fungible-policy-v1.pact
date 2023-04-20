@@ -1,5 +1,3 @@
-// 1 
-
 (namespace (read-msg 'ns))
 
 (module non-fungible-policy-v1 GOVERNANCE

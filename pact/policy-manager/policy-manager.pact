@@ -158,14 +158,10 @@
                )
         (with-capability (QUOTE_ESCROW sale-id)
           (fungible::transfer-create buyer escrow-account escrow-guard sale-price)
-          ;; all policies will find escrow-account using get-escrow-account
-          ;; instead of seller, they will be paid from the escrow-account.
-
-          ;; else
-
           (map-buy token seller buyer buyer-guard amount sale-id
-            (merge-policies-list policies)
-          ))) true)
+            (filter (!= quote-policy) (merge-policies-list policies)))
+            (quote-policy::enforce-buy token seller buyer buyer-guard amount sale-id)
+          )) true)
     ))
 
     (defun get-escrow-account (sale-id:string)

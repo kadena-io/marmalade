@@ -1,5 +1,3 @@
-// Kopen  Quote meegeven
-
 (namespace (read-msg 'ns))
 
 (module fungible-quote-policy-v1 GOVERNANCE

@@ -54,12 +54,14 @@
 (load "../concrete-policies/fungible-quote-policy/fungible-quote-policy-v1.pact")
 (load "../concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact")
 (load "../concrete-policies/royalty-policy/royalty-policy-v1.pact")
+(load "../concrete-policies/collection-policy/collection-policy-v1.pact")
 
-(use kip.concrete-policy-v1 [QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY])
+(use kip.concrete-policy-v1 [QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
 (marmalade.policy-manager.init (marmalade.ledger.ledger-guard))
 (marmalade.policy-manager.add-concrete-policy QUOTE_POLICY marmalade.fungible-quote-policy-v1)
 (marmalade.policy-manager.add-concrete-policy NON_FUNGIBLE_POLICY marmalade.non-fungible-policy-v1)
 (marmalade.policy-manager.add-concrete-policy ROYALTY_POLICY marmalade.royalty-policy-v1)
+(marmalade.policy-manager.add-concrete-policy COLLECTION_POLICY marmalade.collection-policy-v1)
 
 (commit-tx)
 

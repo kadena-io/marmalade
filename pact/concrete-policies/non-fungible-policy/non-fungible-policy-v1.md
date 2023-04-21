@@ -19,15 +19,12 @@ This policy module includes the following key components:
 
 ## Policy Functions
  
-`enforce-init`: Ensures that the token initiation is performed by a valid ledger guard and stores the mint guard associated with the token for controlling the minting process.
+`enforce-init`: Ensures that the token initiation is performed by a valid ledger guard and stores the mint guard associated with the token for controlling the minting process. It is executed to set up the necessary conditions and store the mint guard associated with the token before any minting actions can take place. This  is done for maintaining the unique and non-fungible nature of the tokens, ensuring that only authorized entities can mint new tokens and that the process adheres to the predefined rules. 
 
-`enforce-mint`: Enforces minting rules for NFTs, checks for a valid ledger guard, ensures that minting can only be done once for each token, and the minted supply is always 1.
 
-`enforce-burn`: Enforces burning rules for NFTs managed under this policy and checks for a valid ledger guard. It enforces a false condition by using `(enforce false "Burn prohibited")`. This effectively prevents any burning operation from being executed under this policy, as it will always result in an error with the message "Burn prohibited".
+`enforce-mint`: By enforcing the minting rules, in this case allowing only a single mint for each token and ensuring a fixed supply of 1, this maintains the non-fungible. 
 
-`enforce-offer`, `enforce-buy`, `enforce-transfer`, `enforce-withdraw`: These functions enforce ledger restrictions for various token operations but do not implement any additional rules specific to this policy.
 
-`enforce-crosschain`: Enforces cross-chain transfer rules for NFTs under this policy and checks for a valid ledger guard. It enforces a false condition by using `(enforce false "Transfer prohibited")`. This effectively prevents any cross-chain transfer operation from being executed under this policy, as it will always result in an error with the message "Transfer prohibited".
 
 
 ## Enabling

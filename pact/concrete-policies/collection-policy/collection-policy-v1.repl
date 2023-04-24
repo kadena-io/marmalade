@@ -1,0 +1,2 @@
+;;load policy manager, ledger
+(load "../../policy-manager/policy-manager.repl")

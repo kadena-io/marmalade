@@ -105,4 +105,4 @@
 (if (read-msg 'upgrade)
   ["upgrade complete"]
   [ (create-table mintguards)
-  ])
+])

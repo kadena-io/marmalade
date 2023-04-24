@@ -173,9 +173,13 @@
     (compose-capability (UPDATE_SUPPLY))
   )
 
-  (defun ledger-guard:guard ()
+  (defcap LEDGER:bool ()
     @doc "Ledger module guard for policies to be able to validate access to policy operations."
-    (create-module-guard "ledger-guard")
+    true
+  )
+
+  (defun ledger-guard:guard ()
+    (create-capability-guard (LEDGER))
   )
 
   ;  Transform token-schema object to token-info object
@@ -228,21 +232,22 @@
       uri:string
       policies:object{token-policies}
     )
-    (let ((token-details { 'uri: uri, 'precision: precision, 'policies: policies }))
-     (enforce-token-reserved id token-details)
-    )
-    ;; maps policy list and calls policy::enforce-init
-    (marmalade.policy-manager.enforce-init
-      { 'id: id, 'supply: 0.0, 'precision: precision, 'uri: uri,  'policies: policies})
+    (with-capability (LEDGER)
+      (let ((token-details { 'uri: uri, 'precision: precision, 'policies: policies }))
+       (enforce-token-reserved id token-details)
+      )
+      ;; maps policy list and calls policy::enforce-init
+      (marmalade.policy-manager.enforce-init
+        { 'id: id, 'supply: 0.0, 'precision: precision, 'uri: uri,  'policies: policies})
 
-    (insert tokens id {
-      "id": id,
-      "uri": uri,
-      "precision": precision,
-      "supply": 0.0,
-      "policies": policies
-    })
-    (emit-event (TOKEN id precision 0.0 policies uri))
+      (insert tokens id {
+        "id": id,
+        "uri": uri,
+        "precision": precision,
+        "supply": 0.0,
+        "policies": policies
+      })
+      (emit-event (TOKEN id precision 0.0 policies uri)))
   )
 
   (defun enforce-token-reserved:bool (token-id:string token-details:object{token-details})
@@ -287,21 +292,22 @@
       receiver:string
       amount:decimal
     )
-    (enforce (!= sender receiver)
-      "sender cannot be the receiver of a transfer")
-    (enforce-valid-transfer sender receiver (precision id) amount)
-    (with-capability (TRANSFER id sender receiver amount)
-      (enforce-transfer-policy id sender receiver amount)
-      (with-read ledger (key id receiver)
-        { "guard" := g }
-        (let
-          ( (sender (debit id sender amount))
-            (receiver (credit id receiver g amount))
+    (with-capability (LEDGER)
+      (enforce (!= sender receiver)
+        "sender cannot be the receiver of a transfer")
+      (enforce-valid-transfer sender receiver (precision id) amount)
+      (with-capability (TRANSFER id sender receiver amount)
+        (enforce-transfer-policy id sender receiver amount)
+        (with-read ledger (key id receiver)
+          { "guard" := g }
+          (let
+            ( (sender (debit id sender amount))
+              (receiver (credit id receiver g amount))
+            )
+            (emit-event (RECONCILE id amount sender receiver))
           )
-          (emit-event (RECONCILE id amount sender receiver))
         )
-      )
-    )
+      ))
   )
 
   (defun enforce-transfer-policy
@@ -321,19 +327,20 @@
       receiver-guard:guard
       amount:decimal
     )
-    (enforce (!= sender receiver)
-      "sender cannot be the receiver of a transfer")
-    (enforce-valid-transfer sender receiver (precision id) amount)
+    (with-capability (LEDGER)
+      (enforce (!= sender receiver)
+        "sender cannot be the receiver of a transfer")
+      (enforce-valid-transfer sender receiver (precision id) amount)
 
-    (with-capability (TRANSFER id sender receiver amount)
-      (enforce-transfer-policy id sender receiver amount)
-      (let
-        (
-          (sender (debit id sender amount))
-          (receiver (credit id receiver receiver-guard amount))
-        )
-        (emit-event (RECONCILE id amount sender receiver))
-      ))
+      (with-capability (TRANSFER id sender receiver amount)
+        (enforce-transfer-policy id sender receiver amount)
+        (let
+          (
+            (sender (debit id sender amount))
+            (receiver (credit id receiver receiver-guard amount))
+          )
+          (emit-event (RECONCILE id amount sender receiver))
+        )))
   )
 
   (defun mint:bool
@@ -342,18 +349,19 @@
       guard:guard
       amount:decimal
     )
-    (with-capability (MINT id account amount)
-      (let ((token (get-token-info id)))
-        (marmalade.policy-manager.enforce-mint token account guard amount))
-      (let
-        (
-          (receiver (credit id account guard amount))
-          (sender:object{sender-balance-change}
-            {'account: "", 'previous: 0.0, 'current: 0.0})
-        )
-        (emit-event (RECONCILE id amount sender receiver))
-        (update-supply id amount)
-      ))
+    (with-capability (LEDGER)
+      (with-capability (MINT id account amount)
+        (let ((token (get-token-info id)))
+          (marmalade.policy-manager.enforce-mint token account guard amount))
+        (let
+          (
+            (receiver (credit id account guard amount))
+            (sender:object{sender-balance-change}
+              {'account: "", 'previous: 0.0, 'current: 0.0})
+          )
+          (emit-event (RECONCILE id amount sender receiver))
+          (update-supply id amount)
+        )))
   )
 
   (defun burn:bool
@@ -361,18 +369,19 @@
       account:string
       amount:decimal
     )
-    (with-capability (BURN id account amount)
-      (let ((token (get-token-info id)))
-        (marmalade.policy-manager.enforce-burn token account amount))
-      (let
-        (
-          (sender (debit id account amount))
-          (receiver:object{receiver-balance-change}
-            {'account: "", 'previous: 0.0, 'current: 0.0})
-        )
-        (emit-event (RECONCILE id amount sender receiver))
-        (update-supply id (- amount))
-      ))
+    (with-capability (LEDGER)
+      (with-capability (BURN id account amount)
+        (let ((token (get-token-info id)))
+          (marmalade.policy-manager.enforce-burn token account amount))
+        (let
+          (
+            (sender (debit id account amount))
+            (receiver:object{receiver-balance-change}
+              {'account: "", 'previous: 0.0, 'current: 0.0})
+          )
+          (emit-event (RECONCILE id amount sender receiver))
+          (update-supply id (- amount))
+        )))
   )
 
   (defun debit:object{sender-balance-change}
@@ -499,6 +508,7 @@
     @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
     @event
     (enforce (> amount 0.0) "Amount must be positive")
+    (compose-capability (LEDGER))
     (compose-capability (OFFER id seller amount timeout))
     (compose-capability (SALE_PRIVATE sale-id))
   )
@@ -517,6 +527,7 @@
     @doc "Withdraws offer SALE from SELLER of AMOUNT of token ID after timeout."
     @event
     (enforce (not (sale-active timeout)) "WITHDRAW: still active")
+    (compose-capability (LEDGER))
     (compose-capability (DEBIT id (sale-account)))
     (compose-capability (CREDIT id seller))
     (compose-capability (SALE_PRIVATE sale-id))
@@ -527,9 +538,10 @@
     @doc "Completes sale OFFER to BUYER."
     @managed
     (enforce (sale-active timeout) "BUY: expired")
+    (compose-capability (LEDGER))
+    (compose-capability (SALE_PRIVATE sale-id))
     (compose-capability (DEBIT id (sale-account)))
     (compose-capability (CREDIT id buyer))
-    (compose-capability (SALE_PRIVATE sale-id))
   )
 
   (defcap SALE_PRIVATE:bool (sale-id:string) true)
@@ -544,14 +556,13 @@
       (with-capability (SALE id seller amount timeout (pact-id))
         (offer id seller amount))
       (with-capability (WITHDRAW id seller amount timeout (pact-id))
-        (withdraw id seller amount))
-    )
+        (withdraw id seller amount)))
     (step
       (let ( (buyer:string (read-msg "buyer"))
              (buyer-guard:guard (read-msg "buyer-guard")) )
         (with-capability (BUY id seller buyer amount timeout (pact-id))
-          (buy id seller buyer buyer-guard amount (pact-id)))))
-  )
+          (buy id seller buyer buyer-guard amount (pact-id))))))
+
 
   (defun offer:bool
     ( id:string
@@ -565,7 +576,7 @@
     (let
       (
         (sender (debit id seller amount))
-        (receiver (credit id (sale-account) (create-pact-guard "SALE") amount))
+        (receiver (credit id (sale-account) (create-capability-pact-guard (SALE_PRIVATE (pact-id))) amount))
       )
       (emit-event (TRANSFER id seller (sale-account) amount))
       (emit-event (RECONCILE id amount sender receiver)))
@@ -617,7 +628,7 @@
   )
 
   (defun sale-account:string ()
-    (create-principal (create-pact-guard "SALE"))
+    (create-principal (create-capability-pact-guard (SALE_PRIVATE (pact-id))))
   )
 )
 

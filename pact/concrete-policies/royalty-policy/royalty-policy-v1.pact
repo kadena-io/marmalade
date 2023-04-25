@@ -10,9 +10,6 @@
   (use marmalade.policy-manager)
   (use marmalade.fungible-quote-policy-v1)
   (use marmalade.fungible-quote-policy-interface-v1 [quote-spec quote-schema])
-  ; TODO: we might need a new concrecte-policy interface
-  ; kip.concrete-policy-v1
-  ; multi-policy has a list of allowed concrete policies, policy registry
   (implements kip.token-policy-v2)
   (use kip.concrete-policy-v1 [QUOTE_POLICY])
   (use kip.token-policy-v2 [token-info])
@@ -22,7 +19,6 @@
     creator:string
     creator-guard:guard
     royalty-rate:decimal
-    quote-policy:module{kip.token-policy-v2}
   )
 
   (deftable royalties:{royalty-schema})
@@ -49,16 +45,10 @@
      (enforce-guard (marmalade.ledger.ledger-guard))
   )
 
-  ; (defun get-quote-policy:module{kip.token-policy-v2} ()
-  ;   ;  TODO: retrieve quote-policy from multi-policy
-  ;   (marmalade.policy-manager.get-concrete-policy marmalade.policy.manager.QUOTE_POLICY)
-  ; )
-
   (defun enforce-init:bool
     ( token:object{token-info}
     )
     (enforce (is-used (at 'policies token) QUOTE_POLICY) "quote policy must be turned on")
-    ;;checks if quote-policy is true ?
     (enforce-ledger)
     (let* ( (spec:object{royalty-schema} (read-msg ROYALTY_SPEC))
             (fungible:module{fungible-v2} (at 'fungible spec))
@@ -124,7 +114,8 @@
       , 'creator:= creator:string
       , 'royalty-rate:= royalty-rate:decimal
       }
-      (let* ( (quote:object{quote-schema} (marmalade.fungible-quote-policy-v1.get-quote sale-id))
+      (let* ( (quote-policy:module{marmalade.fungible-quote-policy-interface-v1} (marmalade.policy-manager.get-concrete-policy QUOTE_POLICY))
+              (quote:object{quote-schema} (quote-policy::get-quote sale-id))
               (spec:object{quote-spec} (at 'spec quote))
               (price:decimal (at 'price spec))
               (sale-price:decimal (* amount price))
@@ -132,10 +123,12 @@
               (royalty-payout:decimal
                  (floor (* sale-price royalty-rate) (fungible::precision))))
         (enforce (= (at 'id quote) (at 'id token)) "incorrect sale token")
-        (if 
+        (if
           (> royalty-payout 0.0)
-          [(fungible::transfer escrow-account creator royalty-payout)]
-          [(emit-event (ROYALTY sale-id (at 'id token) royalty-payout creator))]
+          [ (install-capability (coin.TRANSFER escrow-account creator royalty-payout))
+            (emit-event (ROYALTY sale-id (at 'id token) royalty-payout creator))
+            (fungible::transfer escrow-account creator royalty-payout)
+          ]
           "No royalty"
           )))
         true)

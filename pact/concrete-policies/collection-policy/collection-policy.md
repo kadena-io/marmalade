@@ -30,6 +30,13 @@ The other enforcements within the collection policy will only return true and in
 `get-token:`: This function is used to retrieve token info by token-id
 
 
+## Enabling
+
+
+To use the `collection-policy-v1` , enable it by setting it to `true` within the concrete policies list.
+
+  
+
 
 ## Capabilities
 

@@ -10,10 +10,20 @@ The main contract in Marmalade is `marmalade.ledger`. This contract stores the t
 
 ### Policy manager
 
-Marmalade V2's new feature is a policy manager. Marmalade tokens now store multiple policies in a `token-policies` format, instead of a single policy. We provide 4 different concrete policies (link)
+Marmalade V2's new feature is a policy manager. Marmalade tokens now store multiple policies in a `token-policies` format, instead of a single policy. We provide 4 different concrete policies
 Policy manager acts as a middleware between policies, and run `policy::enforce-**` functions.
 
 ## Using Policies
+
+### Token Policies 
+
+```
+  (defschema token-policies
+    concrete-policies:object{concrete-policy}
+    immutable-policies:[module{token-policy-v2}]
+    adjustable-policies:[module{token-policy-v2}]
+  )
+```
 
 ### Concrete Policies
 

@@ -4,18 +4,19 @@
 (commit-tx)
 
 (begin-tx)
+(use kip.token-policy-v2 [token-policies concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
 
 (module util GOV
   (defcap GOV () true)
 
-  (defconst DEFAULT_CONCRETE_POLICY_WITH_ROYALTY:object{kip.concrete-policy-v1.concrete-policy}
+  (defconst DEFAULT_CONCRETE_POLICY_WITH_ROYALTY:object{concrete-policy}
     { 'quote-policy: true
      ,'non-fungible-policy: true
      ,'royalty-policy: true
      ,'collection-policy:false
     }
   )
-  (defconst DEFAULT_POLICIES_WITH_ROYALTY:object{kip.token-policy-v2.token-policies}
+  (defconst DEFAULT_POLICIES_WITH_ROYALTY:object{token-policies}
     { 'concrete-policies:DEFAULT_CONCRETE_POLICY_WITH_ROYALTY
      ,'immutable-policies: []
      ,'adjustable-policies:[]

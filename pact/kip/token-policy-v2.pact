@@ -15,7 +15,7 @@
   (defconst COLLECTION_POLICY 'collection-policy )
 
   (defschema token-policies
-    concrete-policies:object{kip.concrete-policy-v1.concrete-policy}
+    concrete-policies:object{concrete-policy}
     immutable-policies:[module{token-policy-v2}]
     adjustable-policies:[module{token-policy-v2}]
   )

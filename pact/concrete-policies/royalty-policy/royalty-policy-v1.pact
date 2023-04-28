@@ -11,8 +11,7 @@
   (use marmalade.fungible-quote-policy-v1)
   (use marmalade.fungible-quote-policy-interface-v1 [quote-spec quote-schema])
   (implements kip.token-policy-v2)
-  (use kip.concrete-policy-v1 [QUOTE_POLICY])
-  (use kip.token-policy-v2 [token-info])
+  (use kip.token-policy-v2 [token-info QUOTE_POLICY])
 
   (defschema royalty-schema
     fungible:module{fungible-v2}

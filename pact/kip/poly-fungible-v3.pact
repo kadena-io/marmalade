@@ -298,11 +298,11 @@
     @doc
       " Give total available quantity of ID. If not supported, return 0."
   )
-  ;
-  ; (defun get-manifest:object{kip.token-manifest.manifest} (id:string)
-  ;   @doc
-  ;     " Give manifest for ID."
-  ; )
+
+  (defun get-uri:string (id:string)
+    @doc
+      " Give uri for ID."
+  )
 
   ;;
   ;; Sale API

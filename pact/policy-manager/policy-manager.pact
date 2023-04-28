@@ -6,8 +6,7 @@
     (enforce-guard 'marmalade-admin ))
 
   (implements kip.token-policy-v2)
-  (use kip.concrete-policy-v1 [concrete-policy NON_FUNGIBLE_POLICY QUOTE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
-  (use kip.token-policy-v2 [token-policies token-info])
+  (use kip.token-policy-v2 [token-policies token-info concrete-policy NON_FUNGIBLE_POLICY QUOTE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
 
   (defschema concrete-policy-list
     policy-field:string

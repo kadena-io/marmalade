@@ -101,7 +101,7 @@ Marmalade Policies allow customised rules for token operations.
 
 - [Collection Policy](./concrete-policies/collection-policy/collection-policy-v1.pact) ([docs](./concrete-policies/collection-policy/collection-policy-v1.md))
 - [Fungible Quote Policy](./concrete-policies/fungible-quote-policy/fungible-quote-policy-v1.pact) ([docs](./concrete-policies/fungible-quote-policy/fungible-quote-policy-v1.md))
-- [Non-Fungible Policy](./concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact) ([docs](./concrete-policies/non-fungible-policy/non-fungible-policy.md))
+- [Non-Fungible Policy](./concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact) ([docs](./concrete-policies/non-fungible-policy/non-fungible-policy-v1.md))
 - [Royalty Policy](./concrete-policies/royalty-policy/royalty-policy-v1.pact) ([docs](./concrete-policies/royalty-policy/royalty-policy-v1.md))
 
 Regular Policies

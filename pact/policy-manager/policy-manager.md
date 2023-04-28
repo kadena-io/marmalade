@@ -1,4 +1,5 @@
 
+
 # Policy Manager
 
 The Policy Manager is a module that enables token creators to define and enforce policies for their tokens. In contrast with marmalade v1 which only supports one policy marmalade v2 supports something we call `stackable-policies` which enables token creators to add multiple policies to their tokens. These policies can include rules for transfers, burns, sales, and more, providing a flexible and customisable way to manage the behaviour of tokens on the platform. The module is built using the `kip.token-policy-v2` interface, which defines the standard interface that token policies must implement.
@@ -30,9 +31,7 @@ Immutable policies are policies that cannot be rotated
 -  `adjustable-policies`: A list of adjustable policies.
 Adjustable policies are policies that can be rotated
 
-  
-
-  
+   
 
 ## Policy Functions
   
@@ -45,11 +44,6 @@ If the `QUOTE_POLICY` is not present in the policies list, the function continue
 
 Regardless of whether the `QUOTE_POLICY` is present, the function then iterates over the list of policies (excluding the `QUOTE_POLICY`) and enforce-buy on each policy within the list.
 
-
-`enforce-mint`: The `enforce-mint` function is part of the token policy interface and is responsible for enforcing the mint policy for a given token. The function.
-
-The `enforce-mint`: Ensures that the mint request meets certain conditions and validates the details of the mint transaction first ensures that the ledger is enforced by calling the `enforce-ledger` function. It retrieves the policy list for the token and merges the policies using the `merge-policies-list` function. 
-
   
 `is-used`:  Is a simple helper function we created to indicate whether a specific policy is currently in use for the token.
 
@@ -57,7 +51,6 @@ The `enforce-mint`: Ensures that the mint request meets certain conditions and v
 
 
 `enforce-sale-pact`: Ensures that the `sale` parameter provided to the function is equal to the ID of the currently executing pact. It does this by calling the `pact-id` function to retrieve the ID of the currently executing pact and comparing it to the provided `sale` parameter. If they are not equal, an exception will be thrown". 
-
 
 `create-concrete-policy-list`: We use this to generate a list of concrete policies from the available policies stored in a `token-policies` object.
 

@@ -4,9 +4,7 @@
 The `non-fungible-policy-v1` facilitates the creation and management of non-fungible tokens (NFTs) with a fixed supply of `ONE`. It's implementing the `kip.token-policy-v2` interface. This policy provides a concrete implementation for handling various token-related actions, such as minting, burning, offering, buying, withdrawing, transferring, and cross-chain transfers.
 
 
-## Overview
-  
-This policy module includes the following key components:
+## Specifications and Tables:
  
   
 **Policy functions**: Several functions that enforce specific rules for token-related actions.

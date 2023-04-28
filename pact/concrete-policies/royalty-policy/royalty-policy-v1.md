@@ -4,10 +4,7 @@
 This policy, `royalty-policy-v1`, is designed to support royalty payouts during the sale of non-fungible token. It implements the `kip.token-policy-v2` interface and extends the functionality provided by the base policy.
 
   
-## Overview
-
-  
-This policy module includes the following key components:
+## Specifications and Tables:
 
 **Policy functions**: Several functions that enforce specific rules for token-related actions.
 
@@ -42,16 +39,5 @@ The `fungible` field specifies the module that contains the fungible token. The 
 Once the `royalty-schema` object has been read from the message payload, the function extracts the relevant fields from it and performs several checks to ensure the validity of the royalty. It then inserts the royalty into the `royalties` database.
 
  
-## Events Emitted
-
-
-#### ROYALTY Event
-
-
-##### Event Parameters
-
-  
-##### Emission
-
-  
-##### Use Cases
+## Events
+TODO

@@ -3,11 +3,7 @@
 
 The `fungible-quote-policy-v1` is specifically tailored for managing token sales through a simple quoted pricing mechanism. By implementing the `kip.token-policy-v2` interface, this policy provides a concrete implementation for handling various token-related actions, such as minting, burning, offering, buying, withdrawing, transferring, and cross-chain transfers.
 
-## Overview
-
-  
-  This policy module includes the following key components:
-
+## Specifications and Tables:
   
 **Policy functions**: Several functions that enforce specific rules for token-related actions.
 
@@ -56,48 +52,14 @@ The `marketplace-account` field specifies the account to which the marketplace f
 Once the `marketplace-fee-spec` object has been read from the message payload, the function extracts the relevant fields from it and performs several checks to ensure the validity of the sale. It then transfers the appropriate funds to the seller, as well as any applicable marketplace fees.
 
 
-## Events Emitted
+## Events
 
   
 #### QUOTE Event
-
-  
-  
 The `QUOTE` event is designed to be emitted during the execution of the `enforce-offer` function within the `fungible-quote-policy-v1` The primary purpose of this event is to log and provide information about a token sale offer, including details about the sale, token, and quote specifications.
 
 
-##### Event Parameters
-
-The `QUOTE` event contains the following parameters:
-
-  
-  
-`sale-id`: A unique identifier for the token sale.
-  
-`token-id`: The ID of the token involved in the sale.
-  
-`amount`: The number of tokens being offered for sale.
-
-`price`: The price per token in the sale.
-
-
-`sale-price`: The total price of the sale, calculated as the product of `amount` and `price`.
-
-  
-
-`spec`: An object containing the quote specifications, which includes details about the fungible token, price, recipient, and recipient guard.
-
-  
-##### Emission
-
-  
-The `QUOTE` event is emitted within the `enforce-offer` function using the following line of code:
-
+This event is emitted using the following line of code:
 ```(emit-event (QUOTE sale-id (at 'id token) amount price sale-price spec))```
 
-This line of code creates and emits the `QUOTE` event with the specified parameters, derived from the function's inputs and the extracted quote specifications from the payload.
 
-  
-##### Use Cases
-
-The `QUOTE` event serves as a useful mechanism for tracking token sale offers in real-time or for later analysis. 

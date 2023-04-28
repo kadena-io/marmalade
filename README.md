@@ -18,12 +18,24 @@ Policy manager acts as a middleware between policies, and run `policy::enforce-*
 ### Token Policies 
 
 ```
+  (defschema concrete-policy
+    non-fungible-policy:bool
+    quote-policy:bool
+    royalty-policy:bool
+    collection-policy:bool
+  )
+```
+```
   (defschema token-policies
     concrete-policies:object{concrete-policy}
     immutable-policies:[module{token-policy-v2}]
     adjustable-policies:[module{token-policy-v2}]
   )
 ```
+
+- `concrete-policies` store boolean values that represent if the token uses the concrete-policy or not. Immutable. 
+- `immutable-policies` store additional immutable policies that the token chooses to be bound with. 
+- `adjustable-policies` store policies that can be rotated by the token owner. Fractional tokens cannot rotate.  
 
 ### Concrete Policies
 

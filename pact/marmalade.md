@@ -1,8 +1,9 @@
+
 # Marmalade V2
 
 ### Marmalade Ledger
 
-The main contract in Marmalade is `marmalade.ledger`. This contract stores the token information, token's accounts, and the policies associated with it. The main functions, `create-token`, `mint`, `burn`, `transfer`, `sale`. Token policies can customize to allow one/both/none of `transfer` and `sale` as a way of transferring. `transfer` allows a direct transfer, and `sale` allows escrowed transfer with timeout.
+The main contract in Marmalade is `marmalade.ledger`. This contract stores the token information, token's accounts, and the policies associated with it. The main functions, `create-token`, `mint`, `burn`, `transfer`, `sale`. Token policies can customise to allow one/both/none of `transfer` and `sale` as a way of transferring. `transfer` allows a direct transfer, and `sale` allows escrowed transfer with timeout.
 
 ### Policy manager
 
@@ -94,15 +95,15 @@ Step 1 executes `buy`. `buy` transfers token from the escrow to the buyer. `buy`
 
 ## Policies
 
-Marmalade Policies allow customized rules for token operations. Read about policies [here](./concrete-policies/concret-policies.md)
+Marmalade Policies allow customised rules for token operations. 
 
-Concrete Policies
+#### Concrete Policies:
 
-- [Collection Policy](./concrete-policies/collection-policy/collection-policy.pact)
-- [Fungible Quote Policy](./concrete-policies/fungible-quote-policy/fungible-quote-policy-v1.pact)
-- [Non-Fungible Policy](./concrete-policies/non-fungible-policy/non-fungible-policy.pact)
-- [Royalty Policy](./concrete-policies/royalty-policy/royalty-policy-v1.pact)
+- [Collection Policy](./concrete-policies/collection-policy/collection-policy-v1.pact) ([docs](./concrete-policies/collection-policy/collection-policy-v1.md))
+- [Fungible Quote Policy](./concrete-policies/fungible-quote-policy/fungible-quote-policy-v1.pact) ([docs](./concrete-policies/collection-policy/fungible-quote-policy-v1.md))
+- [Non-Fungible Policy](./concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact) ([docs](./concrete-policies/collection-policy/non-fungible-policy.md))
+- [Royalty Policy](./concrete-policies/royalty-policy/royalty-policy-v1.pact) ([docs](./concrete-policies/collection-policy/royalty-policy-v1.md))
 
 Regular Policies
 
-- [Whitelist Policy]()
+- [Whitelist Policy]() TODO

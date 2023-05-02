@@ -109,6 +109,8 @@ Marmalade Policies allow customised rules for token operations.
 
 Regular Policies
 
+- [Fixed Issuance Policy]("./pact/policies/fixed-issuance-policy/fixed-issuance-policy.pact) ([docs](todo))
+- [Guard Policy]("./pact/policies/guard-token-policy/guard-token-policy.pact) ([docs](todo))
 - [Whitelist Policy]() TODO
 
 ---

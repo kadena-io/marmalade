@@ -14,16 +14,15 @@
 
   (defschema collection
     id:string
-    collection-size:integer
-    collection-hash:string
-    tokens:[string]
+    current-collection-size:decimal
+    max-collection-size:decimal
     operator-guard:guard
   )
 
   (defschema token
     id:string
     collection-id:string
-    supply:decimal
+    max-supply:decimal
     mint-guard:guard
   )
 
@@ -39,7 +38,7 @@
       (enforce-guard operator-guard))
   )
 
-  (defcap INIT_COLLECTION:bool (collection-id:string collection-size:integer collection-hash:string)
+  (defcap INIT_COLLECTION:bool (collection-id:string collection-size:integer)
     @event
     true)
 
@@ -59,19 +58,15 @@
   )
 
   (defun init-collection:bool
-    (collection-id:string
+    ( collection-id:string
       collection-size:integer
-      collection-hash:string
-      tokens:[string]
       operator-guard:guard
       )
-      (with-capability (INIT_COLLECTION collection-id collection-size collection-hash)
-        (enforce (= collection-hash (hash tokens)) "Token manifests don't match" )
+      (with-capability (INIT_COLLECTION collection-id collection-size)
         (insert collections collection-id {
           "id": collection-id
-          ,"collection-size": collection-size
-          ,"collection-hash": collection-hash
-          ,"tokens": tokens
+          ,"max-collection-size": collection-size ;;(pre-defined, optional)
+          ,"current-collection-size": 0.0
           ,"operator-guard": operator-guard
         }
         )
@@ -82,27 +77,25 @@
   (defun enforce-init:bool (token:object{token-info})
     (enforce-ledger)
     (let* ( (token-id:string  (at 'id token))
-            (precision:integer (at 'precision token))
             (mint-guard:guard (read-msg 'mint-guard ))
-            (collection-id:string (read-msg 'collection-id )) )
+            (collection-id:string (read-msg 'collection-id ))
+            (max-supply:decimal (read-msg 'max-supply )) )
     ;;Enforce operator guard
     (with-capability (OPERATOR token-id)
-      ;;enforce one-off
-      (enforce (= precision 0) "Invalid precision")
-
-      ;;Validate if token belongs to collection
       (with-read collections collection-id {
-        "tokens":= tokens
+        "max-collection-size":= max-collection-size
+       ,"current-collection-size":= current-collection-size
         }
-        (enforce (contains tokens token-id) "Token does not belong to collection")
-      )
-
+        (enforce (>= max-collection-size (+ max-supply current-collection-size)) "Exceeds collection size")
+      (update collections collection-id {
+        "current-collection-size": (+ max-supply current-collection-size)
+      }))
       (insert tokens token-id
         { "id" : token-id
-          ,"collection-id" : collection-id
-          ,"supply": 0.0
-          ,"mint-guard": mint-guard
-        })
+         ,"max-supply": max-supply
+         ,"collection-id" : collection-id
+         ,"mint-guard": mint-guard
+      })
     ))
   )
 
@@ -113,21 +106,16 @@
       amount:decimal
     )
     (enforce-ledger)
-    (enforce (= amount 1.0) "Invalid mint amount")
 
     (let* ( (token-id:string  (at 'id token))
             (collection-id:string (read-msg "collection-id")) )
 
       (with-read tokens token-id {
-        'supply:= supply,
+        'max-supply:= max-supply,
         'mint-guard:= mint-guard
         }
-        (enforce (= supply 0.0) "token has been minted")
-
+        (enforce (<= (+ amount (at 'supply token)) max-supply) "Exceeds max supply")
         (with-capability (MINT token-id account mint-guard)
-          (update tokens token-id
-            { "supply": 1.0
-            })
             true
         ))))
 

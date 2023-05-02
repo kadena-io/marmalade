@@ -7,8 +7,8 @@
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
-  (implements kip.token-policy-v1)
-  (use kip.token-policy-v1 [token-info])
+  (implements kip.token-policy-v2)
+  (use kip.token-policy-v2 [token-info])
 
   (defschema supply-schema
     mint-guard:guard
@@ -18,7 +18,7 @@
 
   (deftable supplies:{supply-schema})
 
-  (defun get-supply:object{policy-schema} (token:object{token-info})
+  (defun get-supply:object{supply-schema} (token:object{token-info})
     (read supplies (at 'id token))
   )
 
@@ -89,6 +89,15 @@
     (enforce-ledger)
   )
 
+  (defun enforce-withdraw:bool
+    ( token:object{token-info}
+      seller:string
+      amount:decimal
+      sale-id:string )
+    (enforce-ledger)
+  )
+
+
   (defun enforce-transfer:bool
     ( token:object{token-info}
       sender:string
@@ -113,5 +122,4 @@
 
 (if (read-msg 'upgrade)
   ["upgrade complete"]
-  [ (create-table quotes)
-    (create-table policies) ])
+  [(create-table supplies) ])

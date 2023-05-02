@@ -80,6 +80,16 @@
     (enforce-guard (at 'sale-guard (get-guards token)))
   )
 
+  (defun enforce-withdraw:bool
+    ( token:object{token-info}
+      seller:string
+      amount:decimal
+      sale-id:string )
+    (enforce-ledger)
+    (enforce-sale-pact sale-id)
+    (enforce-guard (at 'sale-guard (get-guards token)))
+  )
+
   (defun enforce-sale-pact:bool (sale:string)
     "Enforces that SALE is id for currently executing pact"
     (enforce (= sale (pact-id)) "Invalid pact/sale id")

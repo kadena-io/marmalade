@@ -18,7 +18,6 @@
  , 'marmalade-ns-admin: ["marmalade-admin"]
  , 'ns: "marmalade"
  , 'upgrade: false })
-; (load "../kip/concrete-policy-v1.pact")
 (load "../kip/token-policy-v2.pact")
 (load "../kip/poly-fungible-v3.pact")
 
@@ -67,6 +66,10 @@
 
 (commit-tx)
 
+(begin-tx "load regular polices")
+(load "../policies/fixed-issuance-policy/fixed-issuance-policy.pact")
+(load "../policies/guard-policy/guard-policy.pact")
+(commit-tx)
 
 (begin-tx)
 (use marmalade.ledger)

@@ -147,7 +147,7 @@
       amount:decimal
       sale-id:string
     )
-    true
+    (enforce-ledger)
   )
 
   (defun enforce-buy:bool
@@ -158,7 +158,7 @@
       amount:decimal
       sale-id:string
     )
-    true
+    (enforce-ledger)
   )
 
   (defun enforce-withdraw:bool
@@ -167,7 +167,7 @@
       amount:decimal
       sale-id:string
     )
-    true
+    (enforce-ledger)
   )
 
   (defun enforce-transfer:bool
@@ -177,7 +177,7 @@
       receiver:string
       amount:decimal
     )
-    true
+    (enforce-ledger)
   )
 
   (defun enforce-crosschain:bool

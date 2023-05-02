@@ -24,30 +24,6 @@
     true
   )
 
-  ; (defconst QUOTE-MSG-KEY "quote"
-  ;   @doc "Payload field for quote spec")
-  ;
-  ; (defconst MARKETPLACE-FEE-MSG-KEY "marketplace-fee"
-  ;   @doc "Payload field for marketplace fee spec")
-
-  ; (defschema quote-spec
-  ;   @doc "Quote data to include in payload"
-  ;   fungible:module{fungible-v2}
-  ;   price:decimal
-  ;   recipient:string
-  ;   recipient-guard:guard
-  ; )
-  ;
-  ; (defschema marketplace-fee-spec
-  ;   @doc "Marketplace fee data to include in payload"
-  ;   marketplace-account:string
-  ;   fee:decimal
-  ; )
-
-  ; (defschema quote-schema
-  ;   id:string
-  ;   spec:object{quote-spec})
-
   (deftable quotes:{quote-schema})
 
   (defun get-quote:object{quote-schema} (sale-id:string)
@@ -139,7 +115,7 @@
         )
         (install-capability (fungible::TRANSFER escrow-account recipient balance))
         (fungible::transfer escrow-account recipient balance)
-      
+
     ))
     true
   )))
@@ -159,6 +135,14 @@
     (enforce false "Transfer prohibited")
   )
 
+  (defun enforce-withdraw:bool
+    ( token:object{token-info}
+      seller:string
+      amount:decimal
+      sale-id:string )
+    (enforce-ledger)
+  )
+
   (defun enforce-crosschain:bool
     ( token:object{token-info}
       sender:string
@@ -170,14 +154,6 @@
     (enforce false "Transfer prohibited")
   )
 
-  (defun enforce-withdraw:bool
-    ( token:object{token-info}
-      seller:string
-      amount:decimal
-      sale-id:string )
-    ;;TODO
-    true
-  )
 )
 
 (if (read-msg "upgrade")

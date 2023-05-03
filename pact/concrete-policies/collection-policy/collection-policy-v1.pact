@@ -14,22 +14,19 @@
 
   (defschema collection
     id:string
-    current-collection-size:decimal
-    max-collection-size:decimal
+    size:integer
+    max-size:integer
     operator-guard:guard
   )
 
   (defschema token
     id:string
     collection-id:string
-    max-supply:decimal
     mint-guard:guard
   )
 
   (deftable collections:{collection})
   (deftable tokens:{token})
-
-  (defcap INTERNAL () true)
 
   (defcap OPERATOR (collection-id:string)
     (with-read collections collection-id {
@@ -38,11 +35,7 @@
       (enforce-guard operator-guard))
   )
 
-  (defcap INIT_COLLECTION:bool (collection-id:string collection-size:integer)
-    @event
-    true)
-
-  (defcap RESERVE_TOKEN:bool (collection-id:string token-id:string account:string account-guard:guard )
+  (defcap COLLECTION:bool (collection-id:string collection-name:string collection-size:integer)
     @event
     true)
 
@@ -57,18 +50,21 @@
     true
   )
 
-  (defun init-collection:bool
-    ( collection-id:string
+  (defun create-collection:bool
+    ( collection-name:string
       collection-size:integer
       operator-guard:guard
       )
-      (with-capability (INIT_COLLECTION collection-id collection-size)
-        (insert collections collection-id {
-          "id": collection-id
-          ,"max-collection-size": collection-size ;;(pre-defined, optional)
-          ,"current-collection-size": 0.0
-          ,"operator-guard": operator-guard
-        }
+      (enforce (>= collection-size 0) "Collection size must be positive")
+      (let ((collection-id:string (create-collection-id collection-name) ))
+        (with-capability (COLLECTION collection-id collection-name collection-size)
+          (insert collections collection-id {
+           "id": collection-id
+           ,"name": collection-name
+           ,"max-size": collection-size
+           ,"size": 0
+           ,"operator-guard": operator-guard
+          })
         )
       )
       true
@@ -78,21 +74,19 @@
     (enforce-ledger)
     (let* ( (token-id:string  (at 'id token))
             (mint-guard:guard (read-msg 'mint-guard ))
-            (collection-id:string (read-msg 'collection-id ))
-            (max-supply:decimal (read-msg 'max-supply )) )
+            (collection-id:string (read-msg 'collection-id )) )
     ;;Enforce operator guard
     (with-capability (OPERATOR token-id)
       (with-read collections collection-id {
-        "max-collection-size":= max-collection-size
-       ,"current-collection-size":= current-collection-size
+        "max-size":= max-size
+       ,"size":= size
         }
-        (enforce (>= max-collection-size (+ max-supply current-collection-size)) "Exceeds collection size")
+      (enforce (> max-size size) "Exceeds collection size")
       (update collections collection-id {
-        "current-collection-size": (+ max-supply current-collection-size)
+        "size": (+ 1 size)
       }))
       (insert tokens token-id
         { "id" : token-id
-         ,"max-supply": max-supply
          ,"collection-id" : collection-id
          ,"mint-guard": mint-guard
       })
@@ -111,30 +105,18 @@
             (collection-id:string (read-msg "collection-id")) )
 
       (with-read tokens token-id {
-        'max-supply:= max-supply,
         'mint-guard:= mint-guard
         }
-        (enforce (<= (+ amount (at 'supply token)) max-supply) "Exceeds max supply")
         (with-capability (MINT token-id account mint-guard)
             true
         ))))
-
-  ;;GET FUNCTIONS
-
-  (defun get-collection:object{collection} (collection-id:string )
-    (read collections collection-id)
-  )
-
-  (defun get-token:object{token} (token-id:string)
-    (read tokens token-id)
-  )
 
   (defun enforce-burn:bool
     ( token:object{token-info}
       account:string
       amount:decimal
     )
-    (enforce false "BURN prohibited")
+    (enforce-ledger)
   )
 
   (defun enforce-offer:bool
@@ -184,6 +166,21 @@
       target-chain:string
       amount:decimal )
     (enforce false "Transfer prohibited")
+  )
+
+
+  ;;UTILITY FUNCTIONS
+
+  (defun create-collection-id (collection-name:string)
+    (format "collection:{}" [collection-name])
+  )
+
+  (defun get-collection:object{collection} (collection-id:string )
+    (read collections collection-id)
+  )
+
+  (defun get-token:object{token} (token-id:string)
+    (read tokens token-id)
   )
 
 )

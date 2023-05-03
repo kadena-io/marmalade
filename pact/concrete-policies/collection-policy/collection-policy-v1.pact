@@ -121,10 +121,6 @@
 
   ;;GET FUNCTIONS
 
-  (defun get-policy:object{token} (token:object{token-info})
-    (read tokens (at 'id token))
-  )
-
   (defun get-collection:object{collection} (collection-id:string )
     (read collections collection-id)
   )

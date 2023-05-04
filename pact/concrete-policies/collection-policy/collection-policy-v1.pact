@@ -76,7 +76,7 @@
             (mint-guard:guard (read-msg 'mint-guard ))
             (collection-id:string (read-msg 'collection-id )) )
     ;;Enforce operator guard
-    (with-capability (OPERATOR token-id)
+    (with-capability (OPERATOR collection-id)
       (with-read collections collection-id {
         "max-size":= max-size
        ,"size":= size

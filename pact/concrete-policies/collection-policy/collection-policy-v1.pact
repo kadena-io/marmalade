@@ -172,7 +172,7 @@
   ;;UTILITY FUNCTIONS
 
   (defun create-collection-id (collection-name:string)
-    (format "collection:{}" [collection-name])
+    (format "collection:{}" [(hash collection-name)])
   )
 
   (defun get-collection:object{collection} (collection-id:string )

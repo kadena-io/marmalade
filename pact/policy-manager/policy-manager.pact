@@ -34,11 +34,6 @@
     (enforce-guard (at "guard" (read ledger-guard-table "")))
   )
 
-  (defcap ROTATE_POLICY (token-id:string policy:object{token-policies})
-    @event
-    true
-  )
-
   (defcap CONCRETE_POLICY_ADMIN (policy-field:string)
     ;;add admin check
     (enforce-guard 'marmalade-admin)
@@ -254,6 +249,5 @@
 (if (read-msg 'upgrade )
   ["upgrade complete"]
   [ (create-table concrete-policy-table)
-    ; (create-table policy-table)
     (create-table ledger-guard-table)
   ])

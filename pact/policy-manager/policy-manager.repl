@@ -20,6 +20,7 @@
  , 'upgrade: false })
 (load "../kip/token-policy-v2.pact")
 (load "../kip/poly-fungible-v3.pact")
+(load "../kip/manifest.pact")
 
 
 (define-namespace 'util (sig-keyset) (sig-keyset))
@@ -69,6 +70,7 @@
 (begin-tx "load regular polices")
 (load "../policies/fixed-issuance-policy/fixed-issuance-policy.pact")
 (load "../policies/guard-policy/guard-policy.pact")
+(load "../policies/onchain-manifest-policy/onchain-manifest-policy.pact")
 (commit-tx)
 
 (begin-tx)

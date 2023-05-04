@@ -10,12 +10,12 @@ The main contract in Marmalade is `marmalade.ledger`. This contract stores the t
 
 ### Policy manager
 
-Marmalade V2's new feature is a policy manager. Marmalade tokens now store multiple policies in a `token-policies` format, instead of a single policy. We provide 4 different concrete policies
-Policy manager acts as a middleware between policies, and run `policy::enforce-**` functions.
+Marmalade V2's new feature is a policy manager. Marmalade tokens now store multiple policies in a `token-policies` format, instead of a single policy.
+The policy manager makes a distinction between 3 types of policies, concrete, immutable, and adjustable which are explained in detail below. Policy manager acts as a middleware between policies, and runs the `policy::enforce-**` functions.
 
 ## Using Policies
 
-### Token Policies 
+### Token Policies
 
 ```
   (defschema concrete-policy
@@ -33,31 +33,34 @@ Policy manager acts as a middleware between policies, and run `policy::enforce-*
   )
 ```
 
-- `concrete-policies` store boolean values that represent if the token uses the concrete-policy or not. Immutable. 
-- `immutable-policies` store additional immutable policies that the token chooses to be bound with. 
-- `adjustable-policies` store policies that can be rotated by the token owner. Fractional tokens cannot rotate.  
+- `concrete-policies` store boolean values that represent if the token uses the concrete-policy or not. Immutable.
+- `immutable-policies` store additional immutable policies that the token chooses to be bound with.
+- `adjustable-policies` store policies that can be rotated by the token owner. Fractional tokens cannot rotate.
 
 ### Concrete Policies
 
-Marmalade V2 aims to make token creation simple and convenient, yet still offer the rich features using concrete-policies. We provide 4 concrete policies, which will provide the most used functionalities.
+Marmalade V2 aims to make token creation simple and convenient, yet still offer the rich features using concrete-policies. A concrete policy is a simple basic implementation of some of the most used features in token creation.
+We provide 4 concrete policies, which will provide the most used functionalities.
 
 - **Collection Policy**: Initiates a collection with pre-defined token lists
 - **Fungible Quote Policy**: Provides a sale of NFT with fungibles using escrow account
 - **Non-fungible Policy**: Defines the token supply to 1 and precision of 0, so the token becomes non-fungible
-- **Royalty-policy** [dependent on `fungible-quote-policy`]: Defines creator account that will receive royalty whenever the token using `fungible-quote-policy` is sold.
+- **Royalty-policy**: [dependent on `fungible-quote-policy`]: Defines creator account that will receive royalty whenever the token using `fungible-quote-policy` is sold.
 
-Marmalade users can mint tokens with above features by adding `true` or `false` next to the policy fields in `token-policies`. If projects would like to use customized logic in addition to what concrete policies offer, they can add additional policies to `immutable-policies` , or `adjustable-policies` field.
+Marmalade users can mint tokens with above features by adding `true` or `false` next to the policy fields in `token-policies`. If projects would like to use customized logic in addition to what concrete policies offer, they can turn off the concrete policy and add additional policies to the `immutable-policies` , or `adjustable-policies` field.
 
 ## Marmalade Functions
 
-Token is created in marmalade via running `create-token`. Arguments include:
+### Create Token
+
+A Token is created in marmalade via running `create-token`. Arguments include:
 
 - `id`: token-id, formatted in `t:{token-detail-hash}`. Should be created using `create-token-id`
 - `precision`: Number of decimals allowed for for the token amount. For one-off token, precision must be 0, and should be enforced in the policy's `enforce-init`.
 - `uri`: url to external JSON containing metadata
 - `policies`: policies contract with custom functions to execute at marmalade functions
 
-`policy-manager.enforce-init` calls `policy:enforce-init` in stored token-policies, and the function is executed in `ledger.create-token`,
+`policy-manager.enforce-init` calls `policy:enforce-init` in stored token-policies, and the function is executed in `ledger.create-token`.
 
 ### Mint Token
 
@@ -104,19 +107,19 @@ Token amount is transferred from sender to receiver at `transfer`. Arguments inc
 
 Step 0 of `sale` executes `offer`. `offer` transfers the token from the seller to the escrow account.
 
-`policy-manager.enforce-offer` calls `policy:enforce-offer` in stored token-policies, and the function is executed at step 0 of `sale`
+`policy-manager.enforce-offer` calls `policy:enforce-offer` in stored token-policies, and the function is executed at step 0 of `sale`.
 
 #### withdraw (cont)
 
 Step 0-rollback executes `withdraw`. `withdraw` transfers token from the escrow back to the seller. `withdraw` can be executed after timeout, by sending in `cont` command with `rollback: true`, `step: 0`. Formatting `cont` commands can be read in [here](https://pact-language.readthedocs.io/en/latest/pact-reference.html?highlight=continuation#yaml-continuation-command-request)
 
-`policy-manager.enforce-withdraw` calls `policy:enforce-withdraw` in stored token-policies, and the function is executed at step 0-rollback of `sale`
+`policy-manager.enforce-withdraw` calls `policy:enforce-withdraw` in stored token-policies, and the function is executed at step 0-rollback of `sale`.
 
 #### buy (cont)
 
 Step 1 executes `buy`. `buy` transfers token from the escrow to the buyer. `buy` can be executed before `timeout`. The `buyer` and `buyer-guard` information is read from the `env-data` of the command instead of passing in arguments. Just like `withdraw`, `buy` is executed using `cont` command with `rollback:false`, `step: 0`.
 
-`policy-manager.enforce-buy` calls `policy:enforce-buy` in stored token-policies, and the function is executed at step 1 of `sale`
+`policy-manager.enforce-buy` calls `policy:enforce-buy` in stored token-policies, and the function is executed at step 1 of `sale`.
 
 ## Policies
 
@@ -127,12 +130,12 @@ Marmalade Policies allow customised rules for token operations.
 - [Collection Policy](./pact/concrete-policies/collection-policy/collection-policy-v1.pact) ([docs](./pact/concrete-policies/collection-policy/collection-policy-v1.md))
 - [Fungible Quote Policy](./pact/concrete-policies/fungible-quote-policy/fungible-quote-policy-v1.pact) ([docs](./pact/concrete-policies/fungible-quote-policy/fungible-quote-policy-v1.md))
 - [Non-Fungible Policy](./pact/concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact) ([docs](./pact/concrete-policies/non-fungible-policy/non-fungible-policy-v1.md))
-- [Royalty Policy](./pact/concrete-policies/royalty-policy/royalty-policy-v1.pact) ([docs](./concrete-policies/royalty-policy/royalty-policy-v1.md))
+- [Royalty Policy](./pact/concrete-policies/royalty-policy/royalty-policy-v1.pact) ([docs](./pact/concrete-policies/royalty-policy/royalty-policy-v1.md))
 
-Regular Policies
+#### Regular Policies:
 
-- [Fixed Issuance Policy]("./pact/policies/fixed-issuance-policy/fixed-issuance-policy.pact) ([docs](todo))
-- [Guard Policy]("./pact/policies/guard-token-policy/guard-token-policy.pact) ([docs](todo))
+- [Fixed Issuance Policy]("./pact/policies/fixed-issuance-policy/fixed-issuance-policy.pact) ([docs](./pact/policies/fixed-issuance-policy/fixed-issuance-policy.md))
+- [Guard Policy]("./pact/policies/guard-policy/guard-policy.pact) ([docs](./pact/policies/guard-policy/guard-policy.md))
 - [Whitelist Policy]() TODO
 
 ---

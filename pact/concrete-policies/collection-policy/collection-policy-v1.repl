@@ -3,4 +3,78 @@
 
 ;; 1. create collection as nft toknes
 
-;; 2. create collection with max suppply != 1 
+
+
+(begin-tx)
+(use kip.token-policy-v2 [token-policies concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
+
+(module util GOV
+  (defcap GOV () true)
+
+  (defconst DEFAULT_COLLECTION_WITH_ROYALTY:object{concrete-policy}
+    { 'quote-policy: true
+     ,'non-fungible-policy: true
+     ,'royalty-policy: true
+     ,'collection-policy:true
+    }
+  )
+  (defconst DEFAULT_COLLECTION_POLICIES_WITH_ROYALTY:object{token-policies}
+    { 'concrete-policies:DEFAULT_COLLECTION_WITH_ROYALTY
+     ,'immutable-policies: []
+     ,'adjustable-policies:[]
+    })
+)
+(commit-tx)
+
+(begin-tx)
+(use marmalade.ledger)
+(use marmalade.policy-manager)
+(test-capability (coin.COINBASE))
+(env-data {
+  "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
+})
+(coin.coinbase "creator-account" (read-keyset 'creator-guard) 2.0)
+(commit-tx)
+
+(begin-tx)
+(use marmalade.ledger)
+(use marmalade.policy-manager)
+(env-data {
+  "token-id": (create-token-id { 'uri: "test-collection-royalty-uri", 'precision: 0, 'policies: util.DEFAULT_COLLECTION_POLICIES_WITH_ROYALTY } )
+ ,"account": "account"
+ ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
+ ,"royalty_spec": {
+    "fungible": coin
+   ,"creator": 'creator-account
+   ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
+   ,"royalty-rate": 0.05
+  }
+ ,"collection-id": "collection:hSQGbcedpUX030HHNizv3KQokGwdGijDoG7ifTvWKe4"
+ ,"ks": {"keys": ["operator"], "pred": "keys-all"}
+})
+
+(expect "initiate a collection with `create-collection`"
+  true
+  (marmalade.collection-policy-v1.create-collection "test-collection0" 10 (read-keyset 'ks )))
+
+(env-sigs [
+  { 'key: 'operator
+  ,'caps: [(marmalade.collection-policy-v1.OPERATOR "collection:hSQGbcedpUX030HHNizv3KQokGwdGijDoG7ifTvWKe4")]
+  }])
+
+(expect "create a default token with collection-policy, quote-policy, non-fungible-policy, royalty-policy"
+  true
+  (create-token (read-msg 'token-id) 0 "test-collection-royalty-uri" util.DEFAULT_COLLECTION_POLICIES_WITH_ROYALTY ))
+
+(env-sigs [
+  { 'key: 'account
+  ,'caps: [(marmalade.ledger.MINT "t:hkBE3LKTdPz7nji4p62vejoW1TT11L7UpdHhpb4VEHE" "account" 1.0)]
+  }])
+
+(expect "mint a default token with collection-policy, quote-policy, non-fungible-policy, royalty-policy"
+  true
+  (marmalade.ledger.mint (read-msg 'token-id )  (read-msg 'account ) (read-keyset 'mint-guard ) 1.0))
+
+(commit-tx)
+
+;; 2. create collection with max suppply != 1

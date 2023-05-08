@@ -14,6 +14,7 @@
 
   (defschema collection
     id:string
+    name:string
     size:integer
     max-size:integer
     operator-guard:guard
@@ -39,10 +40,13 @@
     @event
     true)
 
-  (defcap MINT (token-id:string account:string account-guard:guard mint-guard:guard)
-    (enforce (validate-principal account-guard account) "Not a valid account")
+  (defcap MINT (token-id:string)
+    (with-read tokens token-id {
+      'mint-guard:= mint-guard
+      }
     (enforce-guard mint-guard)
     true
+    )
   )
 
   (defun enforce-ledger:bool ()
@@ -100,16 +104,11 @@
       amount:decimal
     )
     (enforce-ledger)
+    (with-capability (MINT (at 'id token))
+      true
+    )
+  )
 
-    (let* ( (token-id:string  (at 'id token))
-            (collection-id:string (read-msg "collection-id")) )
-
-      (with-read tokens token-id {
-        'mint-guard:= mint-guard
-        }
-        (with-capability (MINT token-id account mint-guard)
-            true
-        ))))
 
   (defun enforce-burn:bool
     ( token:object{token-info}

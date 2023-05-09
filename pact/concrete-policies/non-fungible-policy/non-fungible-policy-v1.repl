@@ -1,14 +1,98 @@
 ;;load policy manager, ledger
-(load "../../policy-manager/policy-manager.repl")
+(begin-tx)
+  (load "../../policy-manager/policy-manager.repl")
+  (use kip.token-policy-v2 [token-policies concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
+
+  (module util GOV
+    (defcap GOV () true)
+
+    (defconst DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY:object{concrete-policy}
+      { 'quote-policy: false
+       ,'non-fungible-policy: true
+       ,'royalty-policy: false
+       ,'collection-policy:false
+      }
+    )
+    (defconst DEFAULT_NON_FUNGIBLE_POLICIES:object{token-policies}
+      { 'concrete-policies:DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY
+       ,'immutable-policies: []
+       ,'adjustable-policies:[]
+      })
+  )
+(commit-tx)
+
+(begin-tx)
+  (use marmalade.ledger)
+  (use marmalade.policy-manager)
+  (test-capability (coin.COINBASE))
+  (env-data {
+    "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
+  })
+  (coin.coinbase "creator-account" (read-keyset "creator-guard") 2.0)
+(commit-tx)
+
+(begin-tx)
+  (use marmalade.ledger)
+  (use marmalade.policy-manager)
+
+  (env-data {
+    "token-id": (create-token-id { 'uri: "test-non-fungible-uri", 'precision: 0, 'policies: util.DEFAULT_NON_FUNGIBLE_POLICIES } )
+    ,"account": "account"
+    ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
+  })
+
+(commit-tx)
 
 (begin-tx "Create a non-fungible token")
-;  (load "non-fungible-policy-v1.pact")
+  (use marmalade.ledger)
+
+  (create-token (read-msg "token-id") 0 "test-non-fungible-uri" util.DEFAULT_NON_FUNGIBLE_POLICIES )
+(commit-tx)
+
+(begin-tx "Mint with a supply other then 1 fails ")
+  (use marmalade.ledger)
+  (env-sigs [
+    { 'key: 'account
+    ,'caps: [(marmalade.ledger.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg" "account" 5.0)]
+    }])
+
+  (expect-failure "minting with amout of 5 fails"
+    "Mint can only be 1"
+    (mint (read-msg "token-id" )  (read-msg "account" ) (read-keyset "mint-guard" ) 5.0))
+(commit-tx)
+
+(begin-tx "Mint with a fractional amount fails ")
+  (use marmalade.ledger)
+  (env-sigs [
+    { 'key: 'account
+    ,'caps: [(marmalade.ledger.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg" "account" 0.5)]
+    }])
+
+  (expect-failure "minting with amout of 0.5 fails"
+    "Mint can only be 1"
+    (mint (read-msg "token-id" )  (read-msg "account" ) (read-keyset "mint-guard" ) 0.5))
+(commit-tx)
+
+(begin-tx "Mint with amount of 1 succeeds")
+  (use marmalade.ledger)
+  (env-sigs [
+    { 'key: 'account
+    ,'caps: [(marmalade.ledger.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg" "account" 1.0)]
+    }])
+
+  (expect "minting succeeds"
+    true
+    (mint (read-msg "token-id" )  (read-msg "account" ) (read-keyset "mint-guard" ) 1.0))
 (commit-tx)
 
 (begin-tx "Burn a non-fungible token")
-;  (load "non-fungible-policy-v1.pact")
-(commit-tx)
+  (use marmalade.ledger)
+    (env-sigs [
+      { 'key: 'account
+      ,'caps: [(marmalade.ledger.BURN "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg" "account" 1.0)]
+      }])
 
-(begin-tx "Burn a non-fungible token")
-;  (load "non-fungible-policy-v1.pact")
+    (expect-failure "Burning is not allowed"
+      "Burn prohibited"
+      (burn (read-msg "token-id" )  (read-msg "account" ) 1.0))
 (commit-tx)

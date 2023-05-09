@@ -39,6 +39,7 @@
 (env-data {
   "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: util.DEFAULT_POLICIES_WITH_ROYALTY } )
  ,"account": "account"
+ ,"nfp-mint-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
     "fungible": coin
@@ -69,6 +70,7 @@
 (env-data {
   "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: util.DEFAULT_POLICIES_WITH_ROYALTY } )
  ,"account": "account"
+ ,"nfp-mint-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
     "fungible": coin
@@ -84,7 +86,8 @@
 
 (env-sigs [
   { 'key: 'account
-  ,'caps: [(marmalade.ledger.MINT "t:HkE3HBAU8gDsFqtoko3KRBvSZa-l5HAsJWchDZw0eRs" "account" 1.0)]
+  ,'caps: [(marmalade.ledger.MINT "t:HkE3HBAU8gDsFqtoko3KRBvSZa-l5HAsJWchDZw0eRs" "account" 1.0)
+           (marmalade.non-fungible-policy-v1.MINT "t:HkE3HBAU8gDsFqtoko3KRBvSZa-l5HAsJWchDZw0eRs")]
   }])
 
 (expect "mint a default token with quote-policy, non-fungible-policy"

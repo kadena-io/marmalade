@@ -91,11 +91,11 @@
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
-  ,"quote": {
-    "fungible": coin
-    ,"price": 2.0
-    ,"recipient": 'seller-account
-    ,"recipient-guard": {"keys": ["seller"], "pred": "keys-all"}}
+  , "quote": {
+      "fungible": coin
+      ,"price": 2.0
+      ,"recipient": 'seller-account
+      ,"recipient-guard": {"keys": ["seller"], "pred": "keys-all"}}
     })
 
   (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})

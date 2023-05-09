@@ -250,6 +250,3 @@
     (coin.get-balance "marketplace"))
 
 (rollback-tx)
-
-
-;; withdraw

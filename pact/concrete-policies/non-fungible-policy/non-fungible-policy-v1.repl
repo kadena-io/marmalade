@@ -38,6 +38,7 @@
   (env-data {
     "token-id": (create-token-id { 'uri: "test-non-fungible-uri", 'precision: 0, 'policies: util.DEFAULT_NON_FUNGIBLE_POLICIES } )
     ,"account": "account"
+    ,"nfp-mint-guard": {"keys": ["account"], "pred": "keys-all"}
     ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
   })
 
@@ -50,13 +51,16 @@
 (commit-tx)
 
 (begin-tx "Mint with a supply other then 1 fails ")
+
   (use marmalade.ledger)
   (env-sigs [
     { 'key: 'account
-    ,'caps: [(marmalade.ledger.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg" "account" 5.0)]
+     ,'caps: [(marmalade.ledger.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg" "account" 5.0)
+             (marmalade.non-fungible-policy-v1.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg")
+    ]
     }])
 
-  (expect-failure "minting with amout of 5 fails"
+  (expect-failure "minting with amount of 5 fails"
     "Mint can only be 1"
     (mint (read-msg "token-id" )  (read-msg "account" ) (read-keyset "mint-guard" ) 5.0))
 (commit-tx)
@@ -65,7 +69,8 @@
   (use marmalade.ledger)
   (env-sigs [
     { 'key: 'account
-    ,'caps: [(marmalade.ledger.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg" "account" 0.5)]
+    ,'caps: [(marmalade.ledger.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg" "account" 0.5)
+             (marmalade.non-fungible-policy-v1.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg")]
     }])
 
   (expect-failure "minting with amout of 0.5 fails"
@@ -77,7 +82,8 @@
   (use marmalade.ledger)
   (env-sigs [
     { 'key: 'account
-    ,'caps: [(marmalade.ledger.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg" "account" 1.0)]
+    ,'caps: [(marmalade.ledger.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg" "account" 1.0)
+             (marmalade.non-fungible-policy-v1.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg")]
     }])
 
   (expect "minting succeeds"

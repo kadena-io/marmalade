@@ -81,11 +81,14 @@
 (env-data {
   "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-default-policies DEFAULT) } )
  ,"account": "account"
+ ,"nfp-mint-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
   })
 (env-sigs [
   { 'key: 'account
-   ,'caps: [(marmalade.ledger.MINT "t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8" "account" 1.0)]
+   ,'caps: [(marmalade.ledger.MINT "t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8" "account" 1.0)
+            (marmalade.non-fungible-policy-v1.MINT "t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8")
+   ]
    }])
 
 (expect "create a default token with quote-policy, non-fungible-policy"
@@ -160,7 +163,6 @@
 
   ]}])
 
-(marmalade.ledger.account-guard "t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8" "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE" )
 (env-hash (hash "offer-0"))
 
 (expect "Buy succeeds"

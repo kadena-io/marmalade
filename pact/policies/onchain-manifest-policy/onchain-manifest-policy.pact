@@ -1,6 +1,6 @@
 (namespace (read-msg 'ns))
 
-(module onchain-manifest-policy GOVERNANCE
+(module onchain-manifest-policy-v1 GOVERNANCE
 
   @doc "onchain manifest storage for marmalade-v2"
   (implements kip.token-policy-v2)
@@ -11,14 +11,15 @@
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
-  (defschema onchain-manifest
-    manifest:{manifest}
+  (defschema manifest-spec
+    manifest:object{manifest}
     guard:guard
   )
 
-  (deftable manifests:{onchain-manifest})
+  (deftable manifests:{manifest-spec})
 
   (defcap UPGRADE (token-id:string)
+    @managed
     (with-read manifests token-id {
       "guard":=manifest-guard
       }
@@ -30,13 +31,22 @@
      (enforce-guard (marmalade.ledger.ledger-guard))
   )
 
+  (defun get-manifest:object{manifest} (token-id:string)
+    (with-read manifests token-id {
+      "manifest":= manifest
+    }
+    manifest
+  ))
+
   (defun upgrade-manifest
-    ( token:object{token-info}
-      manifest:{manifest}
+    ( token-id:string
+      manifest:object{manifest}
     )
-    (with-capability (UPGRADE (at 'id token) )
+    (with-capability (UPGRADE token-id )
       (enforce-verify-manifest manifest)
-      (update manifests (at 'id token) manifest)
+      (update manifests token-id {
+        "manifest": manifest
+      })
     )
   )
 
@@ -44,8 +54,8 @@
     ( token:object{token-info}
     )
     (enforce-ledger)
-    (let ( (manifest:{manifest} (read-msg 'manifest )) )
-      (enforce-verify-manifest manifest)
+    (let ( (manifest:object{manifest-spec} (read-msg 'manifest-spec )) )
+      (enforce-verify-manifest (at 'manifest manifest))
       (insert manifests (at 'id token) manifest)
     )
   )

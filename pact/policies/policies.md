@@ -22,16 +22,16 @@ To get started, you will need to define the schema for your token using the toke
 
 Once you have imported the interface, and have defined the token-info data type, you can define your own policies by creating functions that implement the required functions defined by the interface. Here are the functions you can implement:
 
-## enforce-mint: 
+## enforce-mint:
 This function enforces the policy related to minting of tokens. It takes in the token object, the account to mint tokens to, the guard, and the amount to be minted. You can define your own policies related to minting by adding custom checks in this function.
 
-## enforce-burn: 
+## enforce-burn:
 This function enforces the policy related to burning of tokens. It takes in the token object, the account to burn tokens from, and the amount to be burned. You can define your own policies related to burning by adding custom checks in this function.
 
-## enforce-init: 
+## enforce-init:
 This function enforces the policy related to initialization of tokens. It takes in the token object and can be used to define custom initialization checks.
 
-## enforce-offer: 
+## enforce-offer:
 This function enforces the policy related to offering tokens for sale. It takes in the token object, the seller offering the tokens, the amount being offered, and the sale-id. You can define your own policies related to offering tokens for sale by adding custom checks in this function.
 
 ## enforce-buy:
@@ -46,3 +46,4 @@ This function enforces the policy related to cross-chain transfers of tokens. It
 To define your own policies, simply create a new function with the name of the policy you want to implement and add your custom checks. Make sure the function returns a boolean value indicating whether or not the policy is enforced.
 
 Overall, the token-policy-v2 interface provides a powerful tool for defining policies that govern the behavior of tokens written in Pact on the kadena blockchain. By creating custom functions to enforce policies related to minting, burning, offering, buying, transferring, and cross-chain transfers of tokens, you can ensure that your marmalade token operates in a secure and reliable manner.
+

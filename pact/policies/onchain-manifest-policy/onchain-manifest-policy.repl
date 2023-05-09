@@ -18,7 +18,7 @@
   )
   (defconst DEFAULT_ONCHAIN_COLLECTION_POLICIES_WITH_ROYALTY:object{token-policies}
     { 'concrete-policies:DEFAULT_ONCHAIN_COLLECTION_WITH_ROYALTY
-     ,'immutable-policies: [marmalade.onchain-manifest-policy]
+     ,'immutable-policies: [marmalade.onchain-manifest-policy-v1]
      ,'adjustable-policies:[]
     })
 )
@@ -37,10 +37,12 @@
 (begin-tx)
 (use marmalade.ledger)
 (use marmalade.policy-manager)
+(use marmalade.onchain-manifest-policy-v1)
 (env-data {
   "token-id": (create-token-id { 'uri: "test-onchain-collection-royalty-uri", 'precision: 0, 'policies: util.DEFAULT_ONCHAIN_COLLECTION_POLICIES_WITH_ROYALTY } )
  ,"account": "account"
- ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
+ ,"nfp-mint-guard": {"keys": ["account"], "pred": "keys-all"}
+ ,"cp-mint-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
     "fungible": coin
    ,"creator": 'creator-account
@@ -48,7 +50,11 @@
    ,"royalty-rate": 0.05
   }
  ,"collection-id": "collection:0txKISGOkuyzaIiZ3zMQPhpenruQWsGJga1TEvGX398"
- ,"manifest": (kip.token-manifest.create-manifest (kip.token-manifest.uri "text" "data") [])
+ ,"manifest-spec": {
+    "manifest": (kip.token-manifest.create-manifest (kip.token-manifest.uri "text" "data") [])
+   ,"guard": {"keys": ["manifest"], "pred": "keys-all"}
+ }
+ ,"manifest1": (kip.token-manifest.create-manifest (kip.token-manifest.uri "text1" "data") [])
  ,"ks": {"keys": ["operator"], "pred": "keys-all"}
 })
 
@@ -64,3 +70,16 @@
 (expect "create a default token with collection-policy, quote-policy, non-fungible-policy, royalty-policy, onchain manifest"
   true
   (create-token (read-msg 'token-id) 0 "test-onchain-collection-royalty-uri" util.DEFAULT_ONCHAIN_COLLECTION_POLICIES_WITH_ROYALTY ))
+
+(env-sigs [
+  { 'key: 'manifest
+  ,'caps: [(UPGRADE "t:TdFRkBLE3QPGcbGVFYERXwkXnEKXNBfIHd5tIMyo4N0")]
+  }])
+
+(get-manifest (read-msg 'token-id))
+
+(expect "upgrade a onchain manifest"
+  "Write succeeded"
+  (upgrade-manifest (read-msg 'token-id ) (read-msg 'manifest1 )))
+
+(get-manifest (read-msg 'token-id))

@@ -1,6 +1,6 @@
 ;;load policy manager, ledger, and all concrete policies
 (load "../../policy-manager/policy-manager.repl")
-
+(env-exec-config [])
 (begin-tx "Create a fungible token")
 (use kip.token-policy-v2 [token-policies concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
 
@@ -217,6 +217,7 @@
     "buyer": "buyer-account"
   ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
   ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
+  ,"marketplace-fee": {"marketplace-account": "", "mk-fee-percentage": 0.0 }
   })
 
   (test-capability (coin.COINBASE))

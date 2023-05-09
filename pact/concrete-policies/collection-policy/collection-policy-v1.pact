@@ -41,6 +41,7 @@
     true)
 
   (defcap MINT (token-id:string)
+    @managed
     (with-read tokens token-id {
       'mint-guard:= mint-guard
       }
@@ -48,6 +49,9 @@
     true
     )
   )
+
+  (defconst CP_MINT_GUARD "cp-mint-guard")
+  (defconst COLLECTION_ID "collection-id")
 
   (defun enforce-ledger:bool ()
     (enforce-guard (marmalade.ledger.ledger-guard))
@@ -77,8 +81,8 @@
   (defun enforce-init:bool (token:object{token-info})
     (enforce-ledger)
     (let* ( (token-id:string  (at 'id token))
-            (mint-guard:guard (read-msg 'mint-guard ))
-            (collection-id:string (read-msg 'collection-id )) )
+            (mint-guard:guard (read-msg CP_MINT_GUARD))
+            (collection-id:string (read-msg COLLECTION_ID)) )
     ;;Enforce operator guard
     (with-capability (OPERATOR collection-id)
       (with-read collections collection-id {

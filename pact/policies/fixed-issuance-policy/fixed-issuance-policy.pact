@@ -30,9 +30,9 @@
     ( token:object{token-info}
     )
     (enforce-ledger)
-    (let* ( (mint-guard:guard (read-keyset 'mint-guard ))
-            (max-supply:decimal (read-decimal 'max-supply ))
-            (min-amount:decimal (read-decimal 'min-amount ))
+    (let* ( (mint-guard:guard (read-keyset 'fip-mint-guard ))
+            (max-supply:decimal (read-decimal 'fip-max-supply ))
+            (min-amount:decimal (read-decimal 'fip-min-amount ))
             )
     (enforce (>= min-amount 0.0) "Invalid min-amount")
     (enforce (>= max-supply 0.0) "Invalid max-supply")

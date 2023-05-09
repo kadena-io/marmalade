@@ -88,7 +88,8 @@
         "max-size":= max-size
        ,"size":= size
         }
-      (enforce (> max-size size) "Exceeds collection size")
+      (if (= 0 max-size) "No size limit" (enforce (> max-size size) "Exceeds collection size"))
+
       (update collections collection-id {
         "size": (+ 1 size)
       }))

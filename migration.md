@@ -39,7 +39,7 @@ We also introduce `escrow` accounts in the policy manager, which are for tokens 
 
 In marmalade v1, we expected manifests in a data format specified by `kip.token-manifest.manifest` schema. Although this allowed easy storage of customized data for projects, it was impossible to build a standard around it.
 
-In V2, to provide marmalade tools, and marketplaces that standardizes the way of looking up token data, we are requesting `uri` in tokens. This `uri` will be expected to host a json object that follows the schema defined [here](./README.md#json-schema). We recommend storing data on IPFS for decentralized and available storage, but projects can decide depending on project needs.
+In V2, to provide marmalade tools, and marketplaces that standardizes the way of looking up token data, we are requesting `uri` in tokens. This `uri` will be expected to host a json object that follows the schema defined [here](./README.md#off-chain-schema). We recommend storing data on IPFS for decentralized and available storage, but projects can decide depending on project needs.
 
 Here are some guides to using IPFS:
 

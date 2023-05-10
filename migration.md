@@ -7,16 +7,27 @@ The migration from V1 to V2 introduces several important changes that enhance th
 - [Token Policies](#token-policies)
 - [Policy Manager](#policy-manager)
 - [Offchain URI](#offchain-uri)
+- [Migration of minted token from v1](#migration-of-minted-token-from-v1)
 
 ### Token Policies
 
 We are upgrading the kip.token-policy-v1 interface to kip.token-policy-v2.
 
-In Marmalade v1, it was necessary to select **one** policy that implements `kip.token-policy-v1` when creating tokens. In Marmalade V2, we now expect a `kip.token-policy-v2.token-policies` object, which includes `concrete-policies`, `immutable-policies`, and `adjustable-policies`, which each store a list of policies that implement `kip.token-policy-v2`. Detailed information about each policy field can be found [here](./README.md#using-policies)
+In Marmalade v1, it was necessary to select **one** policy that implements `kip.token-policy-v1` when creating tokens. In Marmalade V2, we now expect a `kip.token-policy-v2.token-policies` object, which is displayed below. Each of the policies field store a list of policies that implement `kip.token-policy-v2`.
+
+```
+(defschema token-policies
+  concrete-policies:object{concrete-policy}
+  immutable-policies:[module{token-policy-v2}]
+  adjustable-policies:[module{token-policy-v2}]
+)
+```
+
+Detailed information about each policies field can be found [here](./README.md#using-policies)
 
 #### Re-writing v1 Contract with concrete-policies
 
-TODO
+TODO (re-written collection-policy link)
 
 ### Policy Manager
 
@@ -35,13 +46,9 @@ Here are some guides to using IPFS:
 - [Marmalade guide to storing file on IPFS](https://docs.kadena.io/build/guides/marmalade-tutorial#interplanetary-storage-saving)
 - [Best Practices for Storing NFT Data Using IPFS](https://docs.ipfs.tech/how-to/best-practices-for-nft-data/#best-practices-for-storing-nft-data-using-ipfs)
 
-## Example of token creation
+### Migration of minted token from v1
 
-create-token
-
-```
-
-```
+TODO - upgrade policy, burn v1 and mint v2
 
 ## Using Onchain with V2
 

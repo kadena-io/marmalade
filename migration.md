@@ -46,13 +46,9 @@ Here are some guides to using IPFS:
 - [Marmalade guide to storing file on IPFS](https://docs.kadena.io/build/guides/marmalade-tutorial#interplanetary-storage-saving)
 - [Best Practices for Storing NFT Data Using IPFS](https://docs.ipfs.tech/how-to/best-practices-for-nft-data/#best-practices-for-storing-nft-data-using-ipfs)
 
-### Migration of minted token from v1
+#### Using Onchain with V2
 
-TODO - upgrade policy, burn v1 and mint v2
-
-## Using Onchain with V2
-
-With the transition to V2, we do not require using onchain-manifests. HHowever, for projects wishing to continue using onchain-manifests similar to V1, they can do so by adding `onchain-manifest-policy-v1` to the `immutable-policies` field. This policy accepts the `kip.token-manifest` schema, which aligns with the schema used in V1.
+With the transition to V2, we do not require using onchain-manifests. However, for projects wishing to continue using onchain-manifests similar to V1, they can do so by adding `onchain-manifest-policy-v1` to the `immutable-policies` field. This policy accepts the `kip.token-manifest` schema, which aligns with the schema used in V1.
 
 The manifests stored with `onchain-manifest-policy-v1` will be upgradable, hence it will require a guard to manage the upgrades. If the projects don't desire upgradable manifests, they can simple register a failing guard as the manifest guard.
 
@@ -65,4 +61,8 @@ Below is an example demonstrating the env-data required to add a manifest to the
  }
 ```
 
-Please be aware that offchain-uri will still be required in order to ensure that the tokens are supported by marmalade standards. Therefore, we recommend migrating to offchain-uri only if onchain-manifests are needed, as offchain-uri adequately fulfills most requirements.
+Please be aware that offchain-uri will still be required in order to ensure that the tokens are supported by marmalade standards. Therefore, we recommend using onchain-manifest-policy **only if** onchain-manifests are needed, as offchain-uri adequately fulfills most requirements.
+
+## Migration of minted token from v1
+
+TODO - upgrade policy, burn v1 and mint v2

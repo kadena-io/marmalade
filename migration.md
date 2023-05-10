@@ -6,7 +6,7 @@ The migration from V1 to V2 introduces several important changes that enhance th
 
 - [Token Policies](#token-policies)
 - [Policy Manager](#policy-manager)
-- [Offchain URI](#offchain-uri)
+- [Onchain Manifest to offchain URI](#onchain-manifest-to-offchain-uri)
 - [Migration of minted token from v1](#migration-of-minted-token-from-v1)
 
 ### Token Policies
@@ -35,7 +35,7 @@ In Marmalade v1, we called the `enforce-**` functions directly from the policy. 
 
 We also introduce `escrow` accounts in the policy manager, which are for tokens that use `fungible-quote-policy`. We let multiple policies to access the fungible quote, and escrow account to be used for paying a portion of the fungible to other policies that request it, i.e.) `royalty-policy`.
 
-### Manifests to Offchain URI
+### Onchain manifest to offchain URI
 
 In marmalade v1, we expected manifests in a data format specified by `kip.token-manifest.manifest` schema. Although this allowed easy storage of customized data for projects, it was impossible to build a standard around it.
 

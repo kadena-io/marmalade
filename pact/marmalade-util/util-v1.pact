@@ -1,6 +1,6 @@
 (namespace (read-msg 'ns))
 
-(module util GOVERNANCE
+(module util-v1 GOVERNANCE
   (use kip.token-policy-v2 [token-policies concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
 
   (defcap GOVERNANCE ()
@@ -53,7 +53,7 @@
     }
   )
 
-  (defun create-single-policy:object{token-policies} (policy:module{token-policy-v2})
+  (defun create-single-policy:object{token-policies} (policy:module{kip.token-policy-v2})
     {
       'concrete-policies: EMPTY
      ,'immutable-policies: [policy]

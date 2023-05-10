@@ -1,7 +1,7 @@
 
 (namespace (read-msg 'ns))
 
-(module guard-token-policy GOVERNANCE
+(module guard-policy-v1 GOVERNANCE
 
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))

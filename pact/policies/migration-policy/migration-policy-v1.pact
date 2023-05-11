@@ -1,6 +1,6 @@
 (namespace (read-msg 'ns))
 
-(module migration_v1 GOVERNANCE
+(module migration-policy-v1 GOVERNANCE
 
   @doc "Helper contract to migrate marmalade v1 tokens to v2"
   (implements kip.token-policy-v2)

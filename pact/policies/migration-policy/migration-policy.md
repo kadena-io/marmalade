@@ -39,19 +39,17 @@ Once v1 to v2 migration is complete, `migration-policy-v1` can be removed from `
 
 ## Migration Steps
 
-1. Allow burn in marmalade v1.
+#### Allow burn in marmalade v1.
 
 Marmalade v1 tokens are linked with a single policy, that implements `token-policy-v1`. Make sure that your token policy allows `enforce-burn`. If not, contract admins should upgrade the contract and allow `enforce-burn` to enable migration.
 
-2. Create off-chain URI that will store metadata, which was used in `token-manifest`
+#### Create off-chain URI that will store metadata, which was used in `token-manifest`
 
 Marmalade v2 expects off chain uri, specified [here](../../README.md#using-policies). Read about the [onchain to offchain migration](../../migration.md#onchain-manifest-to-offchain-uri)
 
-3. Create token with `marmalade-policy-v1` with marmalade v2.
+#### Create token with `marmalade-policy-v1` with marmalade v2.
 
 With the created `uri`, you can now create a new token. Note that you need to add `marmalade-policy-v1` as `adjustable-policies`, and add `token-id-v1` information in the `data` field.
-
-pact code
 
 ```
 (marmalade.ledger-v2.create-token
@@ -72,17 +70,15 @@ pact code
   })
 ```
 
-env-data
-
 ```
 {"token-id-v1": old-token-id-from-v1}
 ```
 
-4. Mint the token
+#### Mint the token
 
 Mint process will be the same as any other marmalade tokens. Note that `burn` need to be enabled in marmalade v1 policy for the desired token.
 
-5. Remove `migration-policy-v1` from the `adjustable-policies`
+#### Remove `migration-policy-v1` from the `adjustable-policies`
 
 The policy does not have any reason to be stored in the `adjustable-policies` field. It only adds extra function to be run at `marmalade` functions. We suggest removing the policy when the migration is complete.
 You will still have access to `migration` history, and lookup functions for old and new token-ids with `get-migration`, `get-token-id-v1`, `get-token-id-v2`.

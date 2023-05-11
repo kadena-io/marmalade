@@ -17,14 +17,12 @@ The `migration-policy-v1` policy is specifically built to migrate `marmalade.led
 **Capabilities**:
 
 - `GOVERNANCE` that enforce access control of the contract.
-- `V1_MIGRATE_TOKEN` that emits `token-id-v1`, `token-id-v2` information at `enforce-init`
+- `V1_MIGRATE_TOKEN` that emits `token-id-v1`, `token-id-v2` information at `enforce-mint` at initial mint
 - `V1_MIGRATE_MINT` that emits `token-id-v1`, `token-id-v2`, `amount` information at `enforce-mint`
 
 ## Policy Functions
 
-`enforce-init`: runs at `marmalade.ledger.create-token`, and registers `token-id-v1` into the `migrations` table, `adds token-id-v2` into `token-ids` table.
-
-`enforce-mint`: runs at `marmalade.ledger.mint`, burns `token-id-v1` from v1's ledger, and updates `amount` in the migrations table.
+`enforce-mint`: runs at `marmalade.ledger.mint`. registers `token-id-v2` into the `token-ids` table at initial mint. burns `token-id-v1` from v1's ledger, and updates `amount` in the migrations table.
 
 `get-migration`: Takes in `token-id-v2` and returns migration information.
 
@@ -70,13 +68,15 @@ With the created `uri`, you can now create a new token. Note that you need to ad
   })
 ```
 
-```
-{"token-id-v1": old-token-id-from-v1}
-```
-
 #### Mint the token
 
-Mint process will be the same as any other marmalade tokens. Note that `burn` need to be enabled in marmalade v1 policy for the desired token.
+At `mint`, information about `token-id-v1` is required. To pass this information, add into data field of the transaction with token-id of marmalade-v1 in an object keyed with `token-id-v1`
+
+```
+{"token-id-v1": "old-token-id-from-v1"}
+```
+
+Note that `burn` need to be enabled in marmalade v1 policy for the desired token.
 
 #### Remove `migration-policy-v1` from the `adjustable-policies`
 

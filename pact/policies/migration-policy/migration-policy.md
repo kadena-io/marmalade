@@ -58,7 +58,11 @@ pact code
   (create-token-id {
      "precision": precision
     ,"uri": uri
-    ,"policies": policies
+    ,"policies":
+      { 'concrete-policies: CONCRETE_POLICIES
+       ,'immutable-policies: IMMUTABLE_POLICIES
+       ,'adjustable-policies: [migration-policy-v1]
+      }
   })
   precision
   uri

@@ -84,7 +84,6 @@
       amount:decimal
       sale-id:string
     )
-    @doc "Capture quote spec for SALE of TOKEN from message"
     (enforce-ledger)
     true)
 

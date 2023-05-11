@@ -65,4 +65,4 @@ Please be aware that offchain-uri will still be required in order to ensure that
 
 ## Migration of minted token from v1
 
-TODO - upgrade policy, burn v1 and mint v2
+For tokens minted in marmalade v1, we provide a `migration-policy-v1`, which allows to track old token-ids from new token-ids, and the amount burnt and minted. Please follow the instructions in [Migration steps using migration policy](./policies/migration-policy/migration-policy.md#migration-steps)

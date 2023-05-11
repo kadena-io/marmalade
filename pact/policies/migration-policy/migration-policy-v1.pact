@@ -29,7 +29,7 @@
     true
   )
 
-  (defcap V1_MIGRATION_MINT (token-id-v1:string token-id-v2:string amount:decimal)
+  (defcap V1_MIGRATION_MINT (token-id-v1:string token-id-v2:string account:string amount:decimal)
     @event
     true
   )
@@ -74,7 +74,7 @@
         })
       ;; specify v1's ledger
       (marmalade.ledger.burn token-id-v1 account amount)
-      (emit-event (V1_MIGRATION_MINT token-id-v1 (at 'id token) amount)))
+      (emit-event (V1_MIGRATION_MINT token-id-v1 (at 'id token) account amount)))
   )
 
   (defun enforce-burn:bool

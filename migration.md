@@ -43,7 +43,7 @@ In V2, to provide marmalade tools, and marketplaces that standardizes the way of
 
 Here are some guides to using IPFS:
 
-- [Marmalade guide to storing file on IPFS](https://docs.kadena.io/build/guides/marmalade-tutorial#interplanetary-storage-saving)
+~~- [Marmalade guide to storing file on IPFS](https://docs.kadena.io/build/guides/marmalade-tutorial#interplanetary-storage-saving)~~outdated
 - [Best Practices for Storing NFT Data Using IPFS](https://docs.ipfs.tech/how-to/best-practices-for-nft-data/#best-practices-for-storing-nft-data-using-ipfs)
 
 #### Using Onchain with V2

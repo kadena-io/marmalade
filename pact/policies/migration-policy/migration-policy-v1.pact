@@ -54,6 +54,7 @@
     @doc "BURN previous ledger's token by AMOUNT and MINT in marmalade v2 ledger"
     (enforce-ledger)
     (let ((token-id-v1:string (read-msg 'token-id-v1 )))
+      (enforce (= (marmalade.ledger.account-guard token-id-v1) guard) "v1 account guards do not match")
       (with-default-read migrations (at 'id token) {
          "amount": 0.0
         } {

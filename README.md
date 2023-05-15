@@ -329,14 +329,8 @@ The reason for hashing the token-details is to capture all the data on the ledge
 
 ## Rationale
 
-### Why the Manifest was Replaced by URI:
+### Why the Manifest was Replaced by URI 
 
-Marmalade has undergone a change in its schema with regards to the metadata attached to non-fungible tokens (NFTs). Previously, the metadata for NFTs was stored on-chain within the manifest schema. The manifest schema was called from the ledger by the use of kip.token-manifest. However, the manifest schema has been deprecated and replaced by an off-chain schema.
+We decided to replace the manifest schema with a URI-based schema. The new schema for NFT metadata is a simple JSON schema that describes the properties of the metadata. This schema enables compatibility with various marketplaces and wallets, making Marmalade tokens more interoperable. By utilising a URI-based schema, Marmalade tokens can improve scalability, and provide greater flexibility for developers and most of all simplicity of usage in general.
 
-We decided to replace the manifest schema with a URI-based schema. The new schema stores the metadata off-chain and utilises a URI to reference the metadata. By utilising a URI-based schema, Marmalade tokens can improve scalability, and provide greater flexibility for developers and most of all simplicity of usage in general.
-
-### Why Off-Chain Schema Choice was Made:
-
-The new schema for NFT metadata is a simple JSON schema that describes the properties of the metadata. This schema enables compatibility with various marketplaces and wallets, making Marmalade tokens more interoperable.
-
-Additionally, the schema allows for arbitrary properties to be added to the metadata, providing developers with more flexibility in customising the metadata. The decision to move NFT metadata off-chain and use a widely accepted standard for the metadata schema is a positive step for Marmalade tokens.
+The decision to move NFT metadata off-chain and use a widely accepted standard for the metadata schema is a positive step for Marmalade tokens.

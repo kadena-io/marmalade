@@ -64,6 +64,3 @@ The `ROTATE_POLICY` event is emitted when a new policy is set for a token ID in 
 This event is emitted using the following line of code:
 `(emit-event (ROTATE_POLICY token-id policy))`
 
-#TODO
-
-  

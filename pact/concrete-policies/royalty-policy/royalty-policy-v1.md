@@ -40,4 +40,25 @@ Once the `royalty-schema` object has been read from the message payload, the fun
 
  
 ## Events
-TODO
+
+
+  (defcap ROYALTY:bool
+    ( sale-id:string
+      token-id:string
+      royalty-payout:decimal
+      creator:string
+    )
+    @doc "For event emission purposes"
+    @event
+    true
+  )
+
+
+
+#### `ROYALTY` Event
+  
+The ROYALTY event is emitted within the enforce-buy function whenever a sale is completed and a royalty payment is made to the creator of the token being sold. 
+
+This event is emitted using the following line of code:
+`(emit-event (ROYALTY sale-id (at 'id token) royalty-payout creator))`
+

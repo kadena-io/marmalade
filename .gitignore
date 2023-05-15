@@ -4,3 +4,4 @@ src/scratch-pad.js
 .DS_Store
 *.code-workspace
 yarn-error.log
+.pact-history

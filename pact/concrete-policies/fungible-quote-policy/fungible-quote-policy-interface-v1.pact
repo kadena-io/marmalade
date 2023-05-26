@@ -26,8 +26,7 @@
     @doc "Quote data to include in payload"
     fungible:module{fungible-v2}
     price:decimal
-    recipient:string
-    recipient-guard:guard
+    seller-guard:guard
   )
 
   (defschema marketplace-fee-spec
@@ -38,7 +37,9 @@
 
   (defschema quote-schema
     id:string
-    spec:object{quote-spec})
+    spec:object{quote-spec}
+    reserved:string
+  )
 
   (defun get-quote:object{quote-schema} (sale-id:string)
     @doc "Get Quote information"

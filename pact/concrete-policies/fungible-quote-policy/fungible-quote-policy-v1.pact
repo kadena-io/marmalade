@@ -11,6 +11,22 @@
   (use marmalade.fungible-quote-policy-interface-v1 [quote-spec quote-schema marketplace-fee-spec QUOTE-MSG-KEY MARKETPLACE-FEE-MSG-KEY ])
   (use kip.token-policy-v2 [token-info])
 
+  (defschema bids-schema
+    token-id:string
+    buyer:string
+    buyer-guard:guard
+    amount:decimal
+    price:decimal
+    status:integer
+  )
+
+  (defconst BID-STATUS-OPEN 0)
+  (defconst BID-STATUS-ACCEPTED 1)
+  (defconst BID-STATUS-WITHDRAWN 2)
+
+  (deftable quotes:{quote-schema})
+  (deftable bids:{bids-schema})
+
   (defcap QUOTE:bool
     ( sale-id:string
       token-id:string
@@ -24,7 +40,54 @@
     true
   )
 
-  (deftable quotes:{quote-schema})
+  (defcap BID:bool
+    ( bid-id:string
+      sale-id:string
+      token-id:string
+      amount:decimal
+      price:decimal
+      buyer:string
+    )
+    @doc "For event emission purposes"
+    @event
+    true
+  )
+
+  (defcap BID-WITHDRAWN:bool
+    ( bid-id:string
+      sale-id:string
+      token-id:string
+      amount:decimal
+      price:decimal
+      buyer:string
+    )
+    @doc "For event emission purposes"
+    @event
+    true
+  )
+
+  (defcap BID-ACCEPTED:bool
+    ( bid-id:string
+      sale-id:string
+      token-id:string
+      amount:decimal
+      price:decimal
+      buyer:string
+    )
+    @doc "For event emission purposes"
+    @event
+    true
+  )
+
+  (defcap BID_PRIVATE:bool (bid-id:string) true)
+
+  (defun bid-escrow-account:string (bid-id:string)
+    (create-principal (create-capability-pact-guard (BID_PRIVATE bid-id)))
+  )
+
+  (defun get-bid-id:string (sale-id:string buyer:string)
+    (format "{}-{}" [sale-id buyer])
+  )
 
   (defun get-quote:object{quote-schema} (sale-id:string)
     (read quotes sale-id))
@@ -68,16 +131,15 @@
     (let* ( (spec:object{quote-spec} (read-msg QUOTE-MSG-KEY))
             (fungible:module{fungible-v2} (at 'fungible spec) )
             (price:decimal (at 'price spec))
-            (recipient:string (at 'recipient spec))
-            (recipient-guard:guard (at 'recipient-guard spec))
-            (recipient-details:object (fungible::details recipient))
+            (seller-guard:guard (at 'seller-guard spec))
+            (seller-details:object (fungible::details seller))
             (sale-price:decimal (* amount price)) )
       (fungible::enforce-unit sale-price)
       (enforce (< 0.0 price) "Offer price must be positive")
       (enforce (=
-        (at 'guard recipient-details) recipient-guard)
-        "Recipient guard does not match")
-      (insert quotes sale-id { 'id: (at 'id token), 'spec: spec })
+        (at 'guard seller-details) seller-guard)
+        "Seller guard does not match")
+      (insert quotes sale-id { 'id: (at 'id token), 'spec: spec, 'reserved: "" })
       (emit-event (QUOTE sale-id (at 'id token) amount price sale-price spec)))
       true
   )
@@ -137,7 +199,7 @@
       receiver:string
       amount:decimal )
     (enforce-ledger)
-    (enforce false "Transfer prohibited")
+    true
   )
 
   (defun enforce-withdraw:bool
@@ -146,6 +208,10 @@
       amount:decimal
       sale-id:string )
     (enforce-ledger)
+    (with-read quotes sale-id { 'reserved:= reserved }
+      (enforce (= reserved "") "Cannot withdraw from sale with accepted bid")
+    )
+    true
   )
 
   (defun enforce-crosschain:bool
@@ -159,8 +225,93 @@
     (enforce false "Transfer prohibited")
   )
 
-)
+  (defun place-bid:bool
+    ( token-id:string
+      buyer:string
+      buyer-guard:guard
+      amount:decimal
+      price:decimal
+      sale-id:string )
+      (enforce-guard buyer-guard)
+
+      (with-read quotes sale-id { 'id:= qtoken, 'spec:= spec:object{quote-spec} }
+        (enforce (= qtoken token-id) "incorrect sale token")
+
+        (bind spec
+          { 'fungible := fungible:module{fungible-v2}
+            ,'amount := quote-amount
+          }
+          (let ((bid-id:string (get-bid-id sale-id buyer)))
+
+          (enforce (= quote-amount amount) "Bid can only be placed for full quote amount")
+
+          ;; Transfer amount from buyer to escrow-account
+          (fungible::transfer-create buyer (bid-escrow-account bid-id) (create-capability-pact-guard (BID_PRIVATE bid-id)) (* amount price))
+
+          ;; Store bid
+          (write bids bid-id {
+            "token-id": token-id
+            ,"buyer": buyer
+            ,"buyer-guard": buyer-guard
+            ,"amount": amount
+            ,"price": price
+            ,"status": BID-STATUS-OPEN
+          })
+
+          (BID bid-id sale-id token-id amount price buyer)
+        )))
+  )
+
+  (defun withdraw-bid:bool (bid-id:string)
+    (with-read bids-table bid-id
+      { 'token-id:= token-id,
+        'buyer:= buyer,
+        'buyer-guard:= buyer-guard,
+        'amount:= amount,
+        'price:= price,
+        'status:= status
+      }
+      (enforce-guard buyer-guard)
+      (enforce (= status BID-STATUS-OPEN) "Bid is not open")
+
+      (install-capability (fungible::TRANSFER (bid-escrow-account bid-id) buyer (* amount price)))
+      (fungible::transfer (bid-escrow-account bid-id) buyer (* amount price))
+      (update bids-table bid-id { 'status: BID-STATUS-WITHDRAWN })
+
+      (BID-WITHDRAWN bid-id sale-id token-id amount price buyer)
+    )
+  )
+
+  (defun accept-bid:bool (
+    bid-id:string,
+    sale-id:string)
+
+    (with-read bids-table bid-id
+      { 'token-id:= token-id,
+        'buyer:= buyer,
+        'buyer-guard:= buyer-guard,
+        'amount:= amount,
+        'price:= price,
+        'status:= status
+      }
+      (enforce (= status BID-STATUS-OPEN) "Bid is not open")
+      (with-read quotes sale-id { 'spec:= spec:object{quote-spec} }
+        (let* (
+          (fungible:module{fungible-v2} (at 'fungible spec))
+          (seller-guard:guard (at 'seller-guard spec)))
+
+          (enforce-guard seller-guard)
+          (update quotes sale-id { 'spec: { 'fungible: fungible, 'price: price, 'seller-guard: seller-guard }, 'reserved: buyer })
+          (update bids-table bid-id { 'status: BID-STATUS-ACCEPTED })
+        )
+      )
+      (BID-ACCEPTED bid-id sale-id token-id amount price buyer)
+    )
+  )
 
 (if (read-msg "upgrade")
   ["upgrade complete"]
-  [ (create-table quotes)])
+  [
+    (create-table quotes)
+    (create-table bids)
+  ])

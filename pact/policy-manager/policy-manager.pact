@@ -28,15 +28,6 @@
   (defschema ledger-guard-schema
     guard:guard
   )
-
-  (defschema mint-guard-schema
-    mint-guard:guard
-  )
-
-  (defconst MINT_GUARD "mint-guard")
-
-  (deftable mintguards:{mint-guard-schema})
-
   (deftable ledger-guard-table:{ledger-guard-schema})
 
   (defun enforce-ledger:bool ()
@@ -50,14 +41,6 @@
 
   (defcap QUOTE_ESCROW (sale-id:string)
     true
-  )
-
-  (defcap MINT (token-id:string)
-    (with-read mintguards token-id
-      { "mint-guard":= mint-guard }
-    (enforce-guard mint-guard)
-    true
-    )
   )
 
   (defun init(marmalade-ledger-guard:guard)
@@ -102,6 +85,11 @@
     )
   )
 
+  (defun enforce-init:bool (token:object{token-info})
+    (enforce-ledger)
+    (map-init token (merge-policies-list (at 'policies token)))
+  )
+
   (defun create-concrete-policy-list:[module{kip.token-policy-v2}] (policies:object{token-policies})
     (let* ((is-used-policies (lambda (policy:string) (is-used policies policy)))
            (policy-fields:[string] (filter (is-used-policies) CONCRETE_POLICY_V1_LIST)))
@@ -112,18 +100,6 @@
     (at policy (at 'concrete-policies policies))
   )
 
-
-
-  (defun enforce-init:bool (token:object{token-info})
-    (enforce-ledger)
-    (let ((mint-guard:guard (read-msg MINT_GUARD)))
-      (insert mintguards (at 'id token) {
-        "mint-guard": mint-guard
-      })
-      (map-init token (merge-policies-list (at 'policies token)))
-    )
-  )
-
   (defun enforce-mint:bool
     ( token:object{token-info}
       account:string
@@ -132,12 +108,8 @@
     )
     (enforce-ledger)
     (let ((policies:object{token-policies}  (at 'policies token)))
-      (with-capability (MINT (at 'id token))
-        (map-mint token account guard amount
-           (merge-policies-list policies))
-      )
-    )
-  )
+      (map-mint token account guard amount
+         (merge-policies-list policies))))
 
   (defun enforce-burn:bool
     ( token:object{token-info}
@@ -190,14 +162,6 @@
       { 'account: (create-principal (create-capability-guard (QUOTE_ESCROW sale-id)))
       , 'guard: (create-capability-guard (QUOTE_ESCROW sale-id))
       })
-
-    (defun get-mint-guard:guard (token-id:string)
-      (with-read mintguards token-id {
-        "mint-guard":= mint-guard
-      }
-        mint-guard
-      )
-    )
 
     (defun enforce-sale-pact:bool (sale:string)
       "Enforces that SALE is id for currently executing pact"
@@ -286,5 +250,4 @@
   ["upgrade complete"]
   [ (create-table concrete-policy-table)
     (create-table ledger-guard-table)
-    (create-table mintguards)
   ])

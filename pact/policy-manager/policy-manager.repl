@@ -92,7 +92,7 @@
 (env-sigs [
   { 'key: 'account
    ,'caps: [(marmalade.ledger.MINT "t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8" "account" 1.0)
-           ]
+   ]
    }])
 
 (expect "create a default token with quote-policy, non-fungible-policy"

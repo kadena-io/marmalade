@@ -154,7 +154,6 @@
     (enforce false "Transfer prohibited")
   )
 
-
   ;;UTILITY FUNCTIONS
 
   (defun create-collection-id (collection-name:string)

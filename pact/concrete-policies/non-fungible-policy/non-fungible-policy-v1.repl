@@ -80,8 +80,7 @@
   (use marmalade.ledger)
   (env-sigs [
     { 'key: 'account
-    ,'caps: [(marmalade.ledger.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg" "account" 1.0)
-             ]
+    ,'caps: [(marmalade.ledger.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg" "account" 1.0)]
     }])
 
   (expect "minting succeeds"

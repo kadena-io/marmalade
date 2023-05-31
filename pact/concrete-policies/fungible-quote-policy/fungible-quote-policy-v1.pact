@@ -89,6 +89,12 @@
     (format "{}-{}" [sale-id buyer])
   )
 
+  (defun is-reserved:bool (sale-id:string)
+    (with-read quotes sale-id { 'reserved:= reserved }
+      (!= reserved "")
+    )    
+  )
+
   (defun get-quote:object{quote-schema} (sale-id:string)
     (read quotes sale-id))
 
@@ -158,8 +164,7 @@
 
       (bind spec
         { 'fungible := fungible:module{fungible-v2}
-        , 'price := price:decimal
-        , 'recipient := recipient:string
+        , 'price := price:decimal        
         }
 
       (let* (
@@ -180,8 +185,8 @@
         (let (
           (balance:decimal (fungible::get-balance escrow-account))
         )
-        (install-capability (fungible::TRANSFER escrow-account recipient balance))
-        (fungible::transfer escrow-account recipient balance)
+        (install-capability (fungible::TRANSFER escrow-account seller balance))
+        (fungible::transfer escrow-account seller balance)
 
     ))
     true
@@ -207,10 +212,8 @@
       seller:string
       amount:decimal
       sale-id:string )
-    (enforce-ledger)
-    (with-read quotes sale-id { 'reserved:= reserved }
-      (enforce (= reserved "") "Cannot withdraw from sale with accepted bid")
-    )
+    (enforce-ledger)    
+    (enforce (= is-reserved false) "Cannot withdraw from sale with accepted bid")    
     true
   )
 
@@ -262,8 +265,8 @@
         )))
   )
 
-  (defun withdraw-bid:bool (bid-id:string)
-    (with-read bids-table bid-id
+  (defun withdraw-bid:bool (bid-id:string sale-id:string)
+    (with-read bids bid-id
       { 'token-id:= token-id,
         'buyer:= buyer,
         'buyer-guard:= buyer-guard,
@@ -273,20 +276,21 @@
       }
       (enforce-guard buyer-guard)
       (enforce (= status BID-STATUS-OPEN) "Bid is not open")
+      (with-read quotes sale-id { 'spec:= spec:object{quote-spec} }
+        (let* (
+          (fungible:module{fungible-v2} (at 'fungible spec)))
 
-      (install-capability (fungible::TRANSFER (bid-escrow-account bid-id) buyer (* amount price)))
-      (fungible::transfer (bid-escrow-account bid-id) buyer (* amount price))
-      (update bids-table bid-id { 'status: BID-STATUS-WITHDRAWN })
-
+          (install-capability (fungible::TRANSFER (bid-escrow-account bid-id) buyer (* amount price)))
+          (fungible::transfer (bid-escrow-account bid-id) buyer (* amount price))
+          (update bids bid-id { 'status: BID-STATUS-WITHDRAWN })
+        )
+      )
       (BID-WITHDRAWN bid-id sale-id token-id amount price buyer)
     )
   )
 
-  (defun accept-bid:bool (
-    bid-id:string,
-    sale-id:string)
-
-    (with-read bids-table bid-id
+  (defun accept-bid:bool (bid-id:string sale-id:string)
+    (with-read bids bid-id
       { 'token-id:= token-id,
         'buyer:= buyer,
         'buyer-guard:= buyer-guard,
@@ -302,12 +306,32 @@
 
           (enforce-guard seller-guard)
           (update quotes sale-id { 'spec: { 'fungible: fungible, 'price: price, 'seller-guard: seller-guard }, 'reserved: buyer })
-          (update bids-table bid-id { 'status: BID-STATUS-ACCEPTED })
+          (update bids bid-id { 'status: BID-STATUS-ACCEPTED })
         )
       )
       (BID-ACCEPTED bid-id sale-id token-id amount price buyer)
     )
   )
+
+  (defun transfer-bid:bool (
+    buyer:string 
+    sale-id:string
+    escrow-account:string
+    escrow-guard:guard
+    sale-price:decimal)
+    (enforce-ledger)
+    (enforce-sale-pact sale-id)
+    (with-read quotes sale-id { 'spec:= spec:object{quote-spec} }
+      (let* (
+        (fungible:module{fungible-v2} (at 'fungible spec)))
+        
+        (install-capability (fungible::TRANSFER (bid-escrow-account (get-bid-id sale-id buyer)) escrow-account sale-price))
+        (fungible::transfer-create (bid-escrow-account (get-bid-id sale-id buyer)) escrow-account escrow-guard sale-price)    
+        true
+      )
+    )     
+  )
+)
 
 (if (read-msg "upgrade")
   ["upgrade complete"]

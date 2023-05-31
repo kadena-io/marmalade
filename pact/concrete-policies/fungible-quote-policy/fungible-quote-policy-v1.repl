@@ -94,8 +94,7 @@
   , "quote": {
       "fungible": coin
       ,"price": 2.0
-      ,"recipient": 'seller-account
-      ,"recipient-guard": {"keys": ["seller"], "pred": "keys-all"}}
+      ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
     })
 
   (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
@@ -120,15 +119,14 @@
   (env-data {
     "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
   })
-  (coin.coinbase "seller-account" (read-keyset 'seller-guard) 2.0)
+  (coin.coinbase "account" (read-keyset 'seller-guard) 2.0)
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
   ,"quote": {
     "fungible": coin
     ,"price": 2.0
-    ,"recipient": 'seller-account
-    ,"recipient-guard": {"keys": ["seller"], "pred": "keys-all"}}
+    ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
     })
 
   (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
@@ -174,7 +172,7 @@
 
   (expect "Seller account has 3.9 tokens"
     3.9
-    (coin.get-balance "seller-account"))
+    (coin.get-balance "account"))
 
   (expect "Marketplace fee account has 2.1 tokens"
     2.1
@@ -191,15 +189,14 @@
   (env-data {
     "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
   })
-  (coin.coinbase "seller-account" (read-keyset 'seller-guard) 2.0)
+  (coin.coinbase "account" (read-keyset 'seller-guard) 2.0)
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
   ,"quote": {
     "fungible": coin
     ,"price": 2.0
-    ,"recipient": 'seller-account
-    ,"recipient-guard": {"keys": ["seller"], "pred": "keys-all"}}
+    ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
     })
 
   (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
@@ -243,7 +240,7 @@
 
   (expect "Seller account has 4.0 tokens"
     4.0
-    (coin.get-balance "seller-account"))
+    (coin.get-balance "account"))
 
   (expect "Marketplace fee account has 2.0 tokens"
     2.0

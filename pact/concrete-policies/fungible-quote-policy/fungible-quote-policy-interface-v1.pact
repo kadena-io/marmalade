@@ -45,4 +45,17 @@
     @doc "Get Quote information"
   )
 
+  (defun is-reserved:bool (sale-id:string)
+    @doc "Determine if a bid has been accepted"
+  )
+
+  (defun transfer-bid:bool (
+    buyer:string 
+    sale-id:string
+    escrow-account:string
+    escrow-guard:guard
+    sale-price:decimal)
+    @doc "Transfer of the bid amount from the bid-escrow account"       
+  )
+
 )

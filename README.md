@@ -338,6 +338,8 @@ The decision to move NFT metadata off-chain and use a widely accepted standard f
 
 
 
+
+
 ## IPFS Storage Guide
 
 This guide provides our recommend approach to storing metadata and image assets on IPFS, leveraging hypothetical paths and CIDs. Our manual illustrates two distinctive storage scenarios and outlines the method for accessing stored data.
@@ -362,14 +364,21 @@ This guide provides our recommend approach to storing metadata and image assets 
 
 ### Example:
 
-**uri:** [ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna/1.json](ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna/1.json)
-**gateway:** [[click here]](https://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna.ipfs.dweb.link/1.json)
+ - **uri:** [ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna/1.json](ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna/1.json)
+   
+ - **gateway:** [[click here]](https://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna.ipfs.dweb.link/1.json)
 
-**collection-asset-folder:** ipfs://bafybeie4ktsgx4x3gnpvo2uptngez4cvvqdq75iimpnukvpee2x34yp6jm
-**collection-asset-folder-gateway:** [[click here]](https://bafybeie4ktsgx4x3gnpvo2uptngez4cvvqdq75iimpnukvpee2x34yp6jm.ipfs.dweb.link/)
 
-**collection-metadata-folder:** ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna
-**collection-metadata-folder-gateway:** [[click here]](https://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna.ipfs.dweb.link/)
+ - **collection-asset-folder:** ipfs://bafybeie4ktsgx4x3gnpvo2uptngez4cvvqdq75iimpnukvpee2x34yp6jm
+
+   
+ - **collection-asset-folder-gateway:** [[click here]](https://bafybeie4ktsgx4x3gnpvo2uptngez4cvvqdq75iimpnukvpee2x34yp6jm.ipfs.dweb.link/)
+ 
+ - **collection-metadata-folder:** ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna
+
+
+ - **collection-metadata-folder-gateway:** [[click here]](https://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna.ipfs.dweb.link/)
+
 
 
 
@@ -388,9 +397,10 @@ This guide provides our recommend approach to storing metadata and image assets 
     -  Retrieve the path containing the CID for the uploaded metadata file (e.g., "ipfs//Bayfxyz.../metadata.json")
 
 **Example:**
-**uri:** [ipfs://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese/metadata.json](ipfs://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese/metadata.json)
-**gateway-link:** [[click here]](https://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese.ipfs.dweb.link/metadata.json)
 
+ - **uri:** [ipfs://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese/metadata.json](ipfs://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese/metadata.json)
+   
+ - **gateway-link:** [[click here]](https://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese.ipfs.dweb.link/metadata.json)
 
 ### Metadata Structure
 
@@ -415,4 +425,3 @@ When creating a token in the ledger, you should use the `create-token` function.
 Please be reminded that these CIDs are hypothetical and should be tailored to match your specific use case and IPFS setup. A thorough understanding of the IPFS storage mechanism is crucial, and the steps should be adjusted as necessary.
 
 By faithfully following these detailed steps, you can efficiently store metadata and image assets on IPFS, associate them with NFTs, and seamlessly retrieve them in your DApp or application.
-

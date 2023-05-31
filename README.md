@@ -337,6 +337,7 @@ The decision to move NFT metadata off-chain and use a widely accepted standard f
 
 
 
+
 ## IPFS Storage Guide
 
 This guide provides our recommend approach to storing metadata and image assets on IPFS, leveraging hypothetical paths and CIDs. Our manual illustrates two distinctive storage scenarios and outlines the method for accessing stored data.
@@ -359,15 +360,16 @@ This guide provides our recommend approach to storing metadata and image assets 
     -  Merge the metadata folder CID (e.g., "Baymetx...") with the respective filename and extension to construct a comprehensive URI (e.g., "ipfs://Baymetx.../1.json").
     -  Forge the final URI for the token on the ledger to the combined CID (e.g., "ipfs://Baymetx.../1.json")
 
-**Example:**
-uri: [ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna/1.json](ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna/1.json)
-gateway: [click here](https://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna.ipfs.dweb.link/1.json)
+### Example:
 
-collection-asset-folder: ipfs://bafybeie4ktsgx4x3gnpvo2uptngez4cvvqdq75iimpnukvpee2x34yp6jm
-collection-asset-folder-gateway [click here](https://bafybeie4ktsgx4x3gnpvo2uptngez4cvvqdq75iimpnukvpee2x34yp6jm.ipfs.dweb.link/)
+**uri:** [ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna/1.json](ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna/1.json)
+**gateway:** [[click here]](https://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna.ipfs.dweb.link/1.json)
 
-collection-metadata-folder: ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna
-collection-metadata-folder-gateway [click here](https://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna.ipfs.dweb.link/)
+**collection-asset-folder:** ipfs://bafybeie4ktsgx4x3gnpvo2uptngez4cvvqdq75iimpnukvpee2x34yp6jm
+**collection-asset-folder-gateway:** [[click here]](https://bafybeie4ktsgx4x3gnpvo2uptngez4cvvqdq75iimpnukvpee2x34yp6jm.ipfs.dweb.link/)
+
+**collection-metadata-folder:** ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna
+**collection-metadata-folder-gateway:** [[click here]](https://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna.ipfs.dweb.link/)
 
 
 
@@ -386,8 +388,8 @@ collection-metadata-folder-gateway [click here](https://bafybeig4ihtm2phax2eodfp
     -  Retrieve the path containing the CID for the uploaded metadata file (e.g., "ipfs//Bayfxyz.../metadata.json")
 
 **Example:**
-uri: [ipfs://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese/metadata.json](ipfs://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese/metadata.json)
-gateway-link: [click here](https://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese.ipfs.dweb.link/metadata.json)
+**uri:** [ipfs://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese/metadata.json](ipfs://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese/metadata.json)
+**gateway-link:** [[click here]](https://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese.ipfs.dweb.link/metadata.json)
 
 
 ### Metadata Structure

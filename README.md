@@ -345,14 +345,14 @@ This guide provides our recommend approach to storing metadata and image assets 
 
 1.  **Image Upload to IPFS:**
     
-    -  Uploading you image assets folder to IPFS, adopting sequential numbering for streamlined referencing (e.g., "1.jpg, 2.jpg...").
+    -  Uploading your image assets folder to IPFS, adopting sequential numbering for streamlined referencing (e.g., "1.jpg, 2.jpg...").
 2.  **Metadata Update:**
     
     -  After the upload, capture the CID for the assets folder (e.g., "Bayfol...").
     -  Proceed to update the metadata files, correlating the image property with the path to CID (e.g., "ipfs://Bayfol.../1.jpg").
 3.  **Metadata Upload to IPFS:**
     
-    -   Upload the metadata files to IPFS, maintaining sequential numbering that corresponds with the asset (e.g., "1.json, 2.json...").
+    -  Upload the metadata files to IPFS, maintaining sequential numbering that corresponds with the asset (e.g., "1.json, 2.json...").
     -  Retrieve the CID for the uploaded metadata folder (e.g., "Baymetx...).
 4.  **Finalizing URI:**
     

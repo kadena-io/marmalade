@@ -396,7 +396,7 @@ This guide provides our recommend approach to storing metadata and image assets 
 4.  **Finalizing URI:**
     -  Retrieve the path containing the CID for the uploaded metadata file (e.g., "ipfs//Bayfxyz.../metadata.json")
 
-**Example:**
+### Example:
 
  - **uri:** [ipfs://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese/metadata.json](ipfs://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese/metadata.json)
    

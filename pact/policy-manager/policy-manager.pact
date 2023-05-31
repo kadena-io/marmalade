@@ -155,7 +155,10 @@
           (map-buy token seller buyer buyer-guard amount sale-id
             (filter (!= quote-policy) (merge-policies-list policies)))
             (quote-policy::enforce-buy token seller buyer buyer-guard amount sale-id)
-          )) true)
+          ))
+          (map-buy token seller buyer buyer-guard amount sale-id
+            (merge-policies-list policies))
+          )
     ))
 
     (defun get-escrow-account (sale-id:string)

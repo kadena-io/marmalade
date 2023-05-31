@@ -101,7 +101,7 @@
         }
 
       (let* (
-        (mk-fee-spec:object{marketplace-fee-spec} (read-msg MARKETPLACE-FEE-MSG-KEY))
+        (mk-fee-spec:object{marketplace-fee-spec} (try { "marketplace-account": "", "mk-fee-percentage": 0.0 } (read-msg MARKETPLACE-FEE-MSG-KEY)))
         (mk-account:string (at 'marketplace-account mk-fee-spec))
         (mk-fee-percentage:decimal (at 'mk-fee-percentage mk-fee-spec))
         (mk-fee:decimal (floor (* mk-fee-percentage price) (fungible::precision)))

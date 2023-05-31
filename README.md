@@ -425,3 +425,15 @@ When creating a token in the ledger, you should use the `create-token` function.
 Please be reminded that these CIDs are hypothetical and should be tailored to match your specific use case and IPFS setup. A thorough understanding of the IPFS storage mechanism is crucial, and the steps should be adjusted as necessary.
 
 By faithfully following these detailed steps, you can efficiently store metadata and image assets on IPFS, associate them with NFTs, and seamlessly retrieve them in your DApp or application.
+
+### URI retrieval from Ledger
+
+Retrieving the URI for a specific token from the ledger is facilitated through a function called `get-uri`. This function requires a token ID as its argument and returns the associated URI.
+
+    (defun get-uri:string (id:string)
+      (at 'uri (read tokens id))
+    )
+
+When you call the `get-uri` function and pass in a token ID, it will access the `tokens` map, find the row corresponding to the provided token ID, and return the value stored in the `'uri` field of that row. Essentially, it retrieves the URI that corresponds to the token ID you specified.
+
+Thus, by utilising this `get-uri` function, you can efficiently retrieve the URI associated with any token stored within the ledger by simply providing its token ID.

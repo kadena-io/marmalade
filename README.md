@@ -334,3 +334,70 @@ The reason for hashing the token-details is to capture all the data on the ledge
 We decided to replace the manifest schema with a URI-based schema. The new schema for NFT metadata is a simple JSON schema that describes the properties of the metadata. This schema enables compatibility with various marketplaces and wallets, making Marmalade tokens more interoperable. By utilising a URI-based schema, Marmalade tokens can improve scalability, and provide greater flexibility for developers and most of all simplicity of usage in general.
 
 The decision to move NFT metadata off-chain and use a widely accepted standard for the metadata schema is a positive step for Marmalade tokens.
+
+
+
+## IPFS Storage Guide
+
+This guide provides our recommend approach to storing metadata and image assets on IPFS, leveraging hypothetical paths and CIDs. Our manual illustrates two distinctive storage scenarios and outlines the method for accessing stored data.
+
+### Storing Collections: Step-by-Step Guide
+
+1.  **Image Upload to IPFS:**
+    
+    -   Uploading you image assets folder to IPFS, adopting sequential numbering for streamlined referencing (e.g., "1.jpg, 2.jpg...").
+2.  **Metadata Update:**
+    
+    -   After the upload, capture the CID for the assets folder (e.g., "Bayfol...").
+    -   Proceed to update the metadata files, correlating the image property with the path to CID (e.g., "ipfs://Bayfol.../1.jpg").
+3.  **Metadata Upload to IPFS:**
+    
+    -   Upload the metadata files to IPFS, maintaining sequential numbering that corresponds with the asset (e.g., "1.json, 2.json...").
+    -   Retrieve the CID for the uploaded metadata folder (e.g., "Baymetx...).
+4.  **Finalizing URI:**
+    
+    -   Merge the metadata folder CID (e.g., "Baymetx...") with the respective filename and extension to construct a comprehensive URI (e.g., "ipfs://Baymetx.../1.json").
+    -  Forge the final URI for the token on the ledger to the combined CID (e.g., "ipfs://Baymetx.../1.json").
+
+
+### Single NFT Storage: Step-by-Step Guide
+
+1.  **Image and Metadata Upload to IPFS:**
+    
+    -  Upload the image asset to IPFS.
+2.  **Metadata Update:**
+    
+    -   Upon successful upload, retrieve the CID for the asset (e.g., "Bayfabc...").
+    -   Revise the metadata files, matching the image property with the path to CID (e.g., "ipfs://Bayfabc.../1.jpg").
+3.  **Metadata Upload to IPFS:**
+    
+    -   Upload the metadata file to IPFS.
+    -  Retrieve the CID for the uploaded metadata file (e.g., "Bayfxyz...").
+4.  **Finalizing URI:**
+    
+    -   Unite the CID of the metadata file (e.g., "Bayfxyz...") with the filename and extension to forge a uniform URI (e.g., "ipfs://Bayfxyz.../metadata.json").
+    -   Create the final URI for the token for usage on the ledger  (e.g., "ipfs://Bayfxyz.../metadata.json").
+
+### Metadata Structure
+
+Your metadata files should adhere to our JSON schema. The schema provides a structure for your metadata, ensuring that necessary details are present and formatted correctly. This schema can be found within this readme.
+
+In this schema, the `image` property should contain a link to the image on IPFS (as illustrated in the previous examples).
+
+### Token Creation in the Ledger
+
+When creating a token in the ledger, you should use the `create-token` function. The link obtained from IPFS (.json) serves as the URI supplied to create a token within the ledger:
+
+
+    (defun create-token:bool
+        ( id:string
+          precision:integer
+          uri:string
+          policies:object{token-policies}
+        )
+        ...
+    )
+
+Please be reminded that these CIDs are hypothetical and should be tailored to match your specific use case and IPFS setup. A thorough understanding of the IPFS storage mechanism is crucial, and the steps should be adjusted as necessary.
+
+By faithfully following these detailed steps, you can efficiently store metadata and image assets on IPFS, associate them with NFTs, and seamlessly retrieve them in your DApp or application.

@@ -73,7 +73,7 @@ In V2, to provide marmalade tools, and marketplaces that standardises the way of
 
 Here are some guides to using IPFS:
   
-- [Marmalade guide to storing file on IPFS](./README.md#IPFS%20Storage%20Guide)
+- [Marmalade guide to storing file on IPFS](./README.md#ipfs-storage-guide)
 - [Best Practices for Storing NFT Data Using IPFS](https://docs.ipfs.tech/how-to/best-practices-for-nft-data/#best-practices-for-storing-nft-data-using-ipfs)
 
   

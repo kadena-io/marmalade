@@ -41,8 +41,7 @@
 (env-data {
   "token-id": (create-token-id { 'uri: "test-onchain-collection-royalty-uri", 'precision: 0, 'policies: util.DEFAULT_ONCHAIN_COLLECTION_POLICIES_WITH_ROYALTY } )
  ,"account": "account"
- ,"nfp-mint-guard": {"keys": ["account"], "pred": "keys-all"}
- ,"cp-mint-guard": {"keys": ["account"], "pred": "keys-all"}
+ ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
     "fungible": coin
    ,"creator": 'creator-account
@@ -73,7 +72,7 @@
 
 (env-sigs [
   { 'key: 'manifest
-  ,'caps: [(UPGRADE "t:TdFRkBLE3QPGcbGVFYERXwkXnEKXNBfIHd5tIMyo4N0")]
+  ,'caps: [(UPGRADE "t:GOT4D2gdFTLBxgFYpCGjkywn8GT7pcSLY8YGNgEuxI8")]
   }])
 
 (get-manifest (read-msg 'token-id))

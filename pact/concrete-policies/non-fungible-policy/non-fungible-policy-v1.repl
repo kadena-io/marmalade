@@ -56,7 +56,6 @@
   (env-sigs [
     { 'key: 'account
      ,'caps: [(marmalade.ledger.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg" "account" 5.0)
-             (marmalade.non-fungible-policy-v1.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg")
     ]
     }])
 
@@ -69,8 +68,7 @@
   (use marmalade.ledger)
   (env-sigs [
     { 'key: 'account
-    ,'caps: [(marmalade.ledger.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg" "account" 0.5)
-             (marmalade.non-fungible-policy-v1.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg")]
+    ,'caps: [(marmalade.ledger.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg" "account" 0.5)]
     }])
 
   (expect-failure "minting with amout of 0.5 fails"
@@ -83,7 +81,7 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [(marmalade.ledger.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg" "account" 1.0)
-             (marmalade.non-fungible-policy-v1.MINT "t:qDAvy0zdAwC7cYdMKgFKufZjDiu16qms8kOu2TMy9Rg")]
+             ]
     }])
 
   (expect "minting succeeds"

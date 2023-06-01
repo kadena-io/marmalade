@@ -337,6 +337,9 @@ The decision to move NFT metadata off-chain and use a widely accepted standard f
 
 
 
+
+
+
 ## IPFS Storage Guide
 
 This guide provides our recommend approach to storing metadata and image assets on IPFS, leveraging hypothetical paths and CIDs. Our manual illustrates two distinctive storage scenarios and outlines the method for accessing stored data.
@@ -345,19 +348,38 @@ This guide provides our recommend approach to storing metadata and image assets 
 
 1.  **Image Upload to IPFS:**
     
-    -  Uploading you image assets folder to IPFS, adopting sequential numbering for streamlined referencing (e.g., "1.jpg, 2.jpg...").
+    -  Uploading your image assets folder to IPFS, adopting sequential numbering for streamlined referencing (e.g., "1.jpg, 2.jpg...").
 2.  **Metadata Update:**
     
     -  After the upload, capture the CID for the assets folder (e.g., "Bayfol...").
     -  Proceed to update the metadata files, correlating the image property with the path to CID (e.g., "ipfs://Bayfol.../1.jpg").
 3.  **Metadata Upload to IPFS:**
     
-    -   Upload the metadata files to IPFS, maintaining sequential numbering that corresponds with the asset (e.g., "1.json, 2.json...").
+    -  Upload the metadata files to IPFS, maintaining sequential numbering that corresponds with the asset (e.g., "1.json, 2.json...").
     -  Retrieve the CID for the uploaded metadata folder (e.g., "Baymetx...).
 4.  **Finalizing URI:**
     
     -  Merge the metadata folder CID (e.g., "Baymetx...") with the respective filename and extension to construct a comprehensive URI (e.g., "ipfs://Baymetx.../1.json").
-    -  Forge the final URI for the token on the ledger to the combined CID (e.g., "ipfs://Baymetx.../1.json").
+    -  Forge the final URI for the token on the ledger to the combined CID (e.g., "ipfs://Baymetx.../1.json")
+
+### Example:
+
+ - **uri:** [ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna/1.json](ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna/1.json)
+   
+ - **gateway:** [[click here]](https://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna.ipfs.dweb.link/1.json)
+
+
+ - **collection-asset-folder:** ipfs://bafybeie4ktsgx4x3gnpvo2uptngez4cvvqdq75iimpnukvpee2x34yp6jm
+
+   
+ - **collection-asset-folder-gateway:** [[click here]](https://bafybeie4ktsgx4x3gnpvo2uptngez4cvvqdq75iimpnukvpee2x34yp6jm.ipfs.dweb.link/)
+ 
+ - **collection-metadata-folder:** ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna
+
+
+ - **collection-metadata-folder-gateway:** [[click here]](https://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna.ipfs.dweb.link/)
+
+
 
 
 ### Single NFT Storage: Step-by-Step Guide
@@ -373,6 +395,12 @@ This guide provides our recommend approach to storing metadata and image assets 
     -  Upload the metadata file to IPFS.
 4.  **Finalizing URI:**
     -  Retrieve the path containing the CID for the uploaded metadata file (e.g., "ipfs//Bayfxyz.../metadata.json")
+
+### Example:
+
+ - **uri:** [ipfs://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese/metadata.json](ipfs://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese/metadata.json)
+   
+ - **gateway-link:** [[click here]](https://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese.ipfs.dweb.link/metadata.json)
 
 ### Metadata Structure
 
@@ -397,3 +425,15 @@ When creating a token in the ledger, you should use the `create-token` function.
 Please be reminded that these CIDs are hypothetical and should be tailored to match your specific use case and IPFS setup. A thorough understanding of the IPFS storage mechanism is crucial, and the steps should be adjusted as necessary.
 
 By faithfully following these detailed steps, you can efficiently store metadata and image assets on IPFS, associate them with NFTs, and seamlessly retrieve them in your DApp or application.
+
+### URI retrieval from Ledger
+
+Retrieving the URI for a specific token from the ledger is facilitated through a function called `get-uri`. This function requires a token ID as its argument and returns the associated URI.
+
+    (defun get-uri:string (id:string)
+      (at 'uri (read tokens id))
+    )
+
+When you call the `get-uri` function and pass in a token ID, it will access the `tokens` map, find the row corresponding to the provided token ID, and return the value stored in the `'uri` field of that row. Essentially, it retrieves the URI that corresponds to the token ID you specified.
+
+Thus, by utilising this `get-uri` function, you can efficiently retrieve the URI associated with any token stored within the ledger by simply providing its token ID.

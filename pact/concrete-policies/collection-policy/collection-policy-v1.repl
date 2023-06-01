@@ -12,6 +12,7 @@
      ,'non-fungible-policy: true
      ,'royalty-policy: true
      ,'collection-policy:true
+     ,'guard-policy: true
     }
   )
   (defconst DEFAULT_COLLECTION_POLICIES_WITH_ROYALTY:object{token-policies}
@@ -88,7 +89,7 @@
 
   (env-sigs [
     { 'key: 'account1
-    ,'caps: [(marmalade.ledger.MINT "t:hkBE3LKTdPz7nji4p62vejoW1TT11L7UpdHhpb4VEHE" "account" 1.0)]
+    ,'caps: [(marmalade.ledger.MINT "t:4ROy-Sx2Q8BrkGYQdFE9UAIJku9kpMXejUL3GnA0j3A" "account" 1.0)]
     }])
 
   (expect "mint a default token with collection-policy, quote-policy, non-fungible-policy, royalty-policy"

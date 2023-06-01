@@ -12,6 +12,7 @@
      ,'non-fungible-policy: false
      ,'royalty-policy: false
      ,'collection-policy:false
+     ,'guard-policy: true
     }
   )
 
@@ -26,7 +27,7 @@
 (begin-tx)
 (use marmalade.ledger)
 (use marmalade.policy-manager)
-
+(env-exec-config ["DisablePact44"])
 (env-data {
    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
   ,"account": 'account

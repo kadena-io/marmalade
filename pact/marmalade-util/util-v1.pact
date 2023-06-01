@@ -11,6 +11,7 @@
      ,'non-fungible-policy: true
      ,'royalty-policy: false
      ,'collection-policy:false
+     ,'guard-policy: true
      })
 
   (defconst DEFAULT_ROYALTY:object{concrete-policy}
@@ -18,6 +19,7 @@
      ,'non-fungible-policy: true
      ,'royalty-policy: true
      ,'collection-policy:false
+     ,'guard-policy: true
     }
   )
 
@@ -26,6 +28,7 @@
      ,'non-fungible-policy: true
      ,'royalty-policy: false
      ,'collection-policy:true
+     ,'guard-policy: true
     }
   )
 
@@ -34,6 +37,7 @@
      ,'non-fungible-policy: true
      ,'royalty-policy: true
      ,'collection-policy:true
+     ,'guard-policy: true
     }
   )
 
@@ -42,6 +46,7 @@
      ,'non-fungible-policy: false
      ,'royalty-policy: false
      ,'collection-policy:false
+     ,'guard-policy: true
     }
   )
 

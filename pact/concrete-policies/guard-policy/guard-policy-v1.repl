@@ -12,12 +12,13 @@
      ,'non-fungible-policy: true
      ,'royalty-policy: false
      ,'collection-policy:false
+     ,'guard-policy: true
     }
   )
 
   (defconst DEFAULT_POLICIES_WITH_GUARD:object{token-policies}
     { 'concrete-policies:DEFAULT
-     ,'immutable-policies: [marmalade.guard-policy-v1]
+     ,'immutable-policies: []
      ,'adjustable-policies:[]
   })
 )
@@ -42,7 +43,7 @@
 
 (env-sigs [
   { 'key: 'account
-   ,'caps: [(marmalade.ledger.MINT "t:rtdvUpiO11avY0PEahQ4ZOui4B9MCTX-3ciBvwy4MIA" "account" 1.0)]
+   ,'caps: [(marmalade.ledger.MINT "t:oj7qLIkldM7MwNgEz5jIJy_VunqiLuqhgvmIFVLtaRI" "account" 1.0)]
   }])
 
 (expect "create token succeeds without mint-guard"
@@ -73,7 +74,7 @@
 
  (env-sigs [
    { 'key: 'mint-false
-    ,'caps: [(marmalade.ledger.MINT "t:rtdvUpiO11avY0PEahQ4ZOui4B9MCTX-3ciBvwy4MIA" "account" 1.0)]
+    ,'caps: [(marmalade.ledger.MINT "t:oj7qLIkldM7MwNgEz5jIJy_VunqiLuqhgvmIFVLtaRI" "account" 1.0)]
    }])
 
 (expect-failure "Mint token fails without mint-guard"
@@ -82,7 +83,7 @@
 
 (env-sigs [
   { 'key: 'mint
-   ,'caps: [(marmalade.ledger.MINT "t:rtdvUpiO11avY0PEahQ4ZOui4B9MCTX-3ciBvwy4MIA" "account" 1.0)]
+   ,'caps: [(marmalade.ledger.MINT "t:oj7qLIkldM7MwNgEz5jIJy_VunqiLuqhgvmIFVLtaRI" "account" 1.0)]
   }])
 
 (expect "Mint token fails without mint-guard"

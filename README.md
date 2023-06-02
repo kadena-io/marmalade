@@ -360,7 +360,7 @@ This guide provides our recommend approach to storing metadata and image assets 
 4.  **Finalizing URI:**
     
     -  Merge the metadata folder CID (e.g., "Baymetx...") with the respective filename and extension to construct a comprehensive URI (e.g., "ipfs://Baymetx.../1.json").
-    -  Forge the final URI for the token on the ledger to the combined CID (e.g., "ipfs://Baymetx.../1.json")
+   
 
 ### Example:
 
@@ -394,7 +394,7 @@ This guide provides our recommend approach to storing metadata and image assets 
 3.  **Metadata Upload to IPFS:**
     -  Upload the metadata file to IPFS.
 4.  **Finalizing URI:**
-    -  Retrieve the path containing the CID for the uploaded metadata file (e.g., "ipfs//Bayfxyz.../metadata.json")
+    -  Retrieve the path containing the CID for the uploaded metadata file (e.g., "ipfs://Bayfxyz.../metadata.json")
 
 ### Example:
 

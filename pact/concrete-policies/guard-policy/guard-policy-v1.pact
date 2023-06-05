@@ -26,13 +26,21 @@
   (defconst GUARD_SUCCESS:guard (create-user-guard (success)))
   (defconst GUARD_FAILURE:guard (create-user-guard (failure)))
 
+  (defcap GUARDS:object{guards} (guards:object{guards})
+    @event
+    guards
+  )
+
   (defun success:bool ()
-    true)
+    true
+  )
 
   (defun failure:bool ()
-    (enforce false "Disabled"))
+    (enforce false "Disabled")
+    true
+  )
 
-  (defun mint-guard:guard (token-id:string)
+  (defun get-mint-guard:guard (token-id:string)
     (with-read guards token-id {
       "mint-guard":= mint-guard
     }
@@ -40,7 +48,7 @@
     )
   )
 
-  (defun burn-guard:guard (token-id:string)
+  (defun get-burn-guard:guard (token-id:string)
     (with-read guards token-id {
       "burn-guard":= burn-guard
     }
@@ -48,7 +56,7 @@
     )
   )
 
-  (defun sale-guard:guard (token-id:string)
+  (defun get-sale-guard:guard (token-id:string)
     (with-read guards token-id {
       "sale-guard":= sale-guard
     }
@@ -56,7 +64,7 @@
     )
   )
 
-  (defun transfer-guard:guard (token-id:string)
+  (defun get-transfer-guard:guard (token-id:string)
     (with-read guards token-id {
       "transfer-guard":= transfer-guard
     }
@@ -70,6 +78,21 @@
 
   (defun enforce-ledger:bool ()
     (enforce-guard (marmalade.ledger.ledger-guard))
+  )
+
+  (defun enforce-init:bool
+    ( token:object{token-info}
+    )
+    (enforce-ledger)
+    (let ((guards:object{guards}
+      { 'mint-guard: (try GUARD_SUCCESS (read-msg MINT_GUARD) ) ;; type error becomes successful guard
+      , 'burn-guard: (try GUARD_SUCCESS (read-msg BURN_GUARD) )
+      , 'sale-guard: (try GUARD_SUCCESS (read-msg SALE_GUARD) )
+      , 'transfer-guard: (try GUARD_SUCCESS (read-msg TRANSFER_GUARD) ) } ))
+    (insert policy-guards (at 'id token)
+      guards)
+    (emit-event (GUARDS guards)) )
+    true
   )
 
   (defun enforce-mint:bool
@@ -91,18 +114,9 @@
     (enforce-guard (at BURN_GUARD (get-guards token)))
   )
 
-  (defun enforce-init:bool
-    ( token:object{token-info}
-    )
-    (enforce-ledger)
-    (insert policy-guards (at 'id token)
-      { 'mint-guard: (try GUARD_SUCCESS (read-keyset MINT_GUARD) )
-      , 'burn-guard: (try GUARD_SUCCESS (read-keyset BURN_GUARD) )
-      , 'sale-guard: (try GUARD_SUCCESS (read-keyset SALE_GUARD) )
-      , 'transfer-guard: (try GUARD_SUCCESS (read-keyset TRANSFER_GUARD) ) })
+  (defcap CREATE_MINT ()
     true
   )
-
 
   (defun enforce-offer:bool
     ( token:object{token-info}
@@ -133,12 +147,12 @@
       sale-id:string )
     (enforce-ledger)
     (enforce-sale-pact sale-id)
-    (enforce-guard (at 'sale-guard (get-guards token)))
+    (enforce-guard (at SALE_GUARD (get-guards token)))
   )
 
-  (defun enforce-sale-pact:bool (sale:string)
+  (defun enforce-sale-pact:bool (sale-id:string)
     "Enforces that SALE is id for currently executing pact"
-    (enforce (= sale (pact-id)) "Invalid pact/sale id")
+    (enforce (= sale-id (pact-id)) "Invalid pact/sale id")
   )
 
   (defun enforce-transfer:bool

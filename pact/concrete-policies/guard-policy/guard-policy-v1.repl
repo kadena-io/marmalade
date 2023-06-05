@@ -16,19 +16,21 @@
     }
   )
 
+
+
   (defconst DEFAULT_POLICIES_WITH_GUARD:object{token-policies}
     { 'concrete-policies:DEFAULT
      ,'immutable-policies: []
      ,'adjustable-policies:[]
   })
 )
+
 (commit-tx)
 
 (begin-tx)
   (use marmalade.ledger)
   (use marmalade.policy-manager)
   (test-capability (coin.COINBASE))
-
 (commit-tx)
 
 (begin-tx "Create token without mint guard")

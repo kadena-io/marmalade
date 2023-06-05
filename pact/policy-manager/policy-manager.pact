@@ -28,6 +28,7 @@
   (defschema ledger-guard-schema
     guard:guard
   )
+  
   (deftable ledger-guard-table:{ledger-guard-schema})
 
   (defun enforce-ledger:bool ()

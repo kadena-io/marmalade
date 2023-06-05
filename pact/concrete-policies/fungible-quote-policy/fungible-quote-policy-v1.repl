@@ -247,3 +247,82 @@
     (coin.get-balance "marketplace"))
 
 (rollback-tx)
+
+(begin-tx "Sell token and place multiple bids")
+
+  (env-hash (hash "offer-bidding-1"))
+  (use marmalade.ledger)
+
+  (test-capability (coin.COINBASE))
+  (env-data {
+    "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
+  })
+  (coin.coinbase "account" (read-keyset 'seller-guard) 2.0)
+
+  (env-data {
+    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
+  ,"quote": {
+    "fungible": coin
+    ,"price": 10.0
+    ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
+    })
+
+  (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
+  (env-sigs [
+    { 'key: 'account
+    ,'caps: [
+    (marmalade.ledger.OFFER (read-msg 'token-id ) "account" 1.0 (time "2023-07-22T11:26:35Z") )]
+    }])
+
+  (expect "Start offer succeeds"
+    true
+    (sale (read-msg 'token-id) 'account 1.0 (time "2023-07-22T11:26:35Z")))
+
+  ; (expect "events"
+  ;   (format "{}" [[   {"name": "coin.TRANSFER","params": ["" "account" 2.0]}
+  ;     {"name": "marmalade.ledger.OFFER","params": ["t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8" "account" 1.0 "2023-07-22T11:26:35Z"]}
+  ;     {"name": "marmalade.ledger.SALE","params": ["t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8" "account" 1.0 "2023-07-22T11:26:35Z" "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"]}
+  ;     {"name": "marmalade.fungible-quote-policy-v1.QUOTE","params": ["C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg" "t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8" 1.0 2.0 2.0 {"fungible": coin,"price": 2.0,"seller-guard": ""}]}
+  ;     {"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8" "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE" (create-capability-pact-guard (SALE_PRIVATE "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"))]}
+  ;     {"name": "marmalade.ledger.TRANSFER","params": ["t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8" "account" "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE" 1.0]}
+  ;     {"name": "marmalade.ledger.RECONCILE","params": ["t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8" 1.0 {"account": "account","current": 0.0,"previous": 1.0} {"account": "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE","current": 1.0,"previous": 0.0}]}]])
+  ;   (format "{}" [(map (remove "module-hash")  (env-events true))])
+  ; )(rollback-tx)
+
+  (env-data {
+    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
+    ,"sale-id": "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8"
+    ,"bidder": "bidder"
+    ,"bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
+  })
+
+  (test-capability (coin.COINBASE))
+  (coin.coinbase "bidder-account" (read-keyset 'bidder-guard) 25.0)
+
+  (env-sigs
+  [{'key:'bidder
+    ,'caps: [
+      ; (BUY (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } ) "account" "buyer-account"  1.0 (time  "2023-07-22T11:26:35Z") "v86vqj0OkIZQfD3XGETjij1sLjJH7Q6GZBZJeytDsEo")
+      (coin.TRANSFER "bidder-account" "c:cbnfX-2IcN_in1gOZpdheAlkbERuqFIUNOYE8egBx38" 5.0)
+    ]}])
+  ;
+  ; (env-hash (hash "offer-royalty-0"))
+
+  (expect "Place Bid succeeds"
+    true
+    (marmalade.fungible-quote-policy-v1.place-bid (read-msg 'token-id) 'bidder (read-keyset 'bidder-guard) 1.0 5.0 (read-msg 'sale-id))
+  )
+
+  ; (expect "Buyer account has 0.0 tokens left"
+  ;   0.0
+  ;   (coin.get-balance "buyer-account"))
+  ;
+  ; (expect "Seller account has 4.0 tokens"
+  ;   4.0
+  ;   (coin.get-balance "account"))
+  ;
+  ; (expect "Marketplace fee account has 2.0 tokens"
+  ;   2.0
+  ;   (coin.get-balance "marketplace"))
+
+(rollback-tx)

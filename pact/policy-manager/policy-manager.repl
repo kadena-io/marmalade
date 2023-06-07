@@ -121,6 +121,7 @@
  ,"quote": {
    "fungible": coin
   ,"price": 2.0
+  ,"amount": 1.0
   ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
   })
 
@@ -140,7 +141,7 @@
   (format "{}" [[   {"name": "coin.TRANSFER","params": ["" "account" 2.0]}
     {"name": "marmalade.ledger.OFFER","params": ["t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8" "account" 1.0 "2023-07-22T11:26:35Z"]}
     {"name": "marmalade.ledger.SALE","params": ["t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8" "account" 1.0 "2023-07-22T11:26:35Z" "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"]}
-    {"name": "marmalade.fungible-quote-policy-v1.QUOTE","params": ["C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg" "t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8" 1.0 2.0 2.0 {"fungible": coin,"price": 2.0,"seller-guard": (read-keyset 'seller-guard )}]}
+    {"name": "marmalade.fungible-quote-policy-v1.QUOTE","params": ["C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg" "t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8" 1.0 2.0 2.0 {"amount": 1.0,"fungible": coin,"price": 2.0,"seller-guard": (read-keyset 'seller-guard )}]}
     {"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8" "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE" (create-capability-pact-guard (SALE_PRIVATE "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"))]}
     {"name": "marmalade.ledger.TRANSFER","params": ["t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8" "account" "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE" 1.0]}
     {"name": "marmalade.ledger.RECONCILE","params": ["t:u5kvgh1HISROlQGLTQGF7gTzyjBtXxSe7BQjI3cPcC8" 1.0 {"account": "account","current": 0.0,"previous": 1.0} {"account": "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE","current": 1.0,"previous": 0.0}]}]])

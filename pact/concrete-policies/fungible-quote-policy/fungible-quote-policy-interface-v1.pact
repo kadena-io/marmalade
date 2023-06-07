@@ -26,6 +26,7 @@
     @doc "Quote data to include in payload"
     fungible:module{fungible-v2}
     price:decimal
+    amount:decimal
     seller-guard:guard
   )
 

@@ -38,15 +38,37 @@ jobs:
           version: "4.8.10"
           architecture: "x64"
           distribution: "ubuntu-18.04"
-      - name: pact/marmalade.repl
+          
+      - name: Test pact/marmalade.repl
         run: |
           bin/pact -t pact/marmalade.repl > out.log 2>&1
           cat out.log
           r=`tail -1 out.log | grep "Load successful"`
           if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi
+
       - name: Test concrete collection-policy
         run: |
           bin/pact -t pact/concrete-policies/collection-policy/collection-policy-v1.repl > out.log 2>&1
           cat out.log
           r=`tail -1 out.log | grep "Load successful"`
           if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi     
+      - name: Test concrete fungible-quote-policy
+        run: |
+          bin/pact -t pact/concrete-policies/fungible-quote-policy/fungible-quote-policy-v1.repl > out.log 2>&1
+          cat out.log
+          r=`tail -1 out.log | grep "Load successful"`
+          if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi
+     
+      - name: Test concrete non-fungible-policy
+        run: |
+          bin/pact -t pact/concrete-policies/non-fungible-policy/non-fungible-policy-v1.repl > out.log 2>&1
+          cat out.log
+          r=`tail -1 out.log | grep "Load successful"`
+          if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi
+     
+      - name: Test concrete royalty-policy
+        run: |
+          bin/pact -t pact/concrete-policies/royalty-policy/royalty-policy-v1.repl > out.log 2>&1
+          cat out.log
+          r=`tail -1 out.log | grep "Load successful"`
+          if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi

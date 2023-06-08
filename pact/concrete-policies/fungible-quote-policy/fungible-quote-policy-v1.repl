@@ -320,7 +320,7 @@
   (env-sigs
   [{'key:'bidder
     ,'caps: [
-      (BUYER (read-keyset 'bidder-guard))
+      (BUYER (read-msg 'bid-id))
     ]}])
 
   (expect "Withdraw Bid succeeds"
@@ -347,7 +347,7 @@
   (env-sigs [
     { 'key: 'seller
     ,'caps: [
-      (SELLER (read-msg 'seller-guard))
+      (SELLER (read-msg 'sale-id))
     ]
     }])
 

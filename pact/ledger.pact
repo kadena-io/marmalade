@@ -282,18 +282,16 @@
   )
 
   (defun rotate:bool (id:string account:string new-guard:guard)
-    (enforce false "Rotate prohibited")
-    ; (with-capability (LEDGER)
-    ;   (with-capability (ROTATE id account)
-    ;     (enforce-transfer-policy id account account 0.0)
-    ;     (with-read ledger (key id account)
-    ;       { "guard" := old-guard }
-    ;
-    ;       (enforce-guard old-guard)
-    ;       (update ledger (key id account)
-    ;         { "guard" : new-guard })
-    ;       (emit-event (ACCOUNT_GUARD id account new-guard))))))
-  )
+    (with-capability (LEDGER)
+      (with-capability (ROTATE id account)
+        (enforce-transfer-policy id account account 0.0)
+        (with-read ledger (key id account)
+          { "guard" := old-guard }
+
+          (enforce-guard old-guard)
+          (update ledger (key id account)
+            { "guard" : new-guard })
+          (emit-event (ACCOUNT_GUARD id account new-guard))))))
 
   (defun transfer:bool
     ( id:string

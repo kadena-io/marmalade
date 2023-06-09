@@ -142,6 +142,7 @@
     (let ((policies:object{token-policies}  (at 'policies token))
           (quote-policy:module{kip.token-policy-v2, marmalade.fungible-quote-policy-interface-v1} (get-concrete-policy QUOTE_POLICY)))
       (if (is-used policies QUOTE_POLICY)
+        ;; enforce-buy when quote policy is used
         (let* ((quote:object{marmalade.fungible-quote-policy-interface-v1.quote-schema} (quote-policy::get-quote sale-id))
                (spec:object{marmalade.fungible-quote-policy-interface-v1.quote-spec} (at 'spec quote))
                (fungible:module{fungible-v2} (at 'fungible spec))
@@ -151,12 +152,20 @@
                (escrow-account:string (create-principal escrow-guard))
                )
         (with-capability (QUOTE_ESCROW sale-id)
-          (fungible::transfer-create buyer escrow-account escrow-guard sale-price)
+          (if (quote-policy::is-reserved sale-id)            
+            (quote-policy::transfer-bid buyer sale-id escrow-account escrow-guard sale-price)
+            (fungible::transfer-create buyer escrow-account escrow-guard sale-price)            
+          )
+          
           (map-buy token seller buyer buyer-guard amount sale-id
             (filter (!= quote-policy) (merge-policies-list policies)))
             (quote-policy::enforce-buy token seller buyer buyer-guard amount sale-id)
-          )) true)
-    ))
+          )) 
+          
+        ;; enforce-buy without the use of quote policy
+        (map-buy token seller buyer buyer-guard amount sale-id (merge-policies-list policies))
+      )        
+    ))    
 
     (defun get-escrow-account (sale-id:string)
       { 'account: (create-principal (create-capability-guard (QUOTE_ESCROW sale-id)))

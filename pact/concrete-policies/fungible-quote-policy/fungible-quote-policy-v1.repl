@@ -106,8 +106,8 @@
   , "quote": {
       "fungible": coin
       ,"price": 2.0
-      ,"recipient": 'seller-account
-      ,"recipient-guard": {"keys": ["seller"], "pred": "keys-all"}}
+      ,"amount": 1.0
+      ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
     })
 
   (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
@@ -132,15 +132,15 @@
   (env-data {
     "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
   })
-  (coin.coinbase "seller-account" (read-keyset 'seller-guard) 2.0)
+  (coin.coinbase "account" (read-keyset 'seller-guard) 2.0)
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
   ,"quote": {
     "fungible": coin
     ,"price": 2.0
-    ,"recipient": 'seller-account
-    ,"recipient-guard": {"keys": ["seller"], "pred": "keys-all"}}
+    ,"amount": 1.0
+    ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
     })
 
   (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
@@ -186,7 +186,7 @@
 
   (expect "Seller account has 3.9 tokens"
     3.9
-    (coin.get-balance "seller-account"))
+    (coin.get-balance "account"))
 
   (expect "Marketplace fee account has 2.1 tokens"
     2.1
@@ -203,15 +203,15 @@
   (env-data {
     "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
   })
-  (coin.coinbase "seller-account" (read-keyset 'seller-guard) 2.0)
+  (coin.coinbase "account" (read-keyset 'seller-guard) 2.0)
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
   ,"quote": {
     "fungible": coin
     ,"price": 2.0
-    ,"recipient": 'seller-account
-    ,"recipient-guard": {"keys": ["seller"], "pred": "keys-all"}}
+    ,"amount": 1.0
+    ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
     })
 
   (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
@@ -255,10 +255,139 @@
 
   (expect "Seller account has 4.0 tokens"
     4.0
-    (coin.get-balance "seller-account"))
+    (coin.get-balance "account"))
 
   (expect "Marketplace fee account has 2.0 tokens"
     2.0
     (coin.get-balance "marketplace"))
-
 (rollback-tx)
+
+(begin-tx "Sell token and place bid")
+
+  (env-hash (hash "offer-bidding-1"))
+  (use marmalade.ledger)
+
+  (test-capability (coin.COINBASE))
+  (env-data {
+    "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
+  })
+  (coin.coinbase "account" (read-keyset 'seller-guard) 2.0)
+
+  (env-data {
+    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
+  ,"quote": {
+    "fungible": coin
+    ,"price": 10.0
+    ,"amount": 1.0
+    ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
+    })
+
+  (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
+  (env-sigs [
+    { 'key: 'account
+    ,'caps: [
+    (marmalade.ledger.OFFER (read-msg 'token-id) "account" 1.0 (time "2023-07-22T11:26:35Z") )]
+    }])
+
+  (expect "Start offer succeeds"
+    true
+    (sale (read-msg 'token-id) 'account 1.0 (time "2023-07-22T11:26:35Z")))
+
+  (env-data {
+    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
+    ,"sale-id": "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8"
+    ,"bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
+  })
+
+  (test-capability (coin.COINBASE))
+  (coin.coinbase "bidder-account" (read-keyset 'bidder-guard) 25.0)
+
+  (env-sigs
+  [{'key:'bidder
+    ,'caps: [
+       (coin.TRANSFER "bidder-account" "c:fsTjb6w6jogvXcyIEhzFaOv-G5f_R6bOWeDR16ON0kM" 5.0)
+    ]}])
+
+  (expect "Place Bid succeeds"
+    true
+    (marmalade.fungible-quote-policy-v1.place-bid (read-msg 'token-id) 'bidder-account (read-keyset 'bidder-guard) 1.0 5.0 (read-msg 'sale-id))
+  )
+
+  (expect "Buyer account has 20.0 tokens left"
+    20.0
+    (coin.get-balance "bidder-account"))
+(commit-tx)
+
+(begin-tx "Withdraw bid")
+
+  (env-hash (hash "withdraw-bidding-1"))
+  (use marmalade.fungible-quote-policy-v1)
+
+  (env-data {
+    "bid-id": (get-bid-id "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8" "bidder-account")
+    ,"sale-id": "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8"
+    ,"bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
+  })
+
+  (env-sigs
+  [{'key:'bidder
+    ,'caps: [
+      (BUYER (read-msg 'bid-id))
+    ]}])
+
+  (expect "Withdraw Bid succeeds"
+    true
+    (withdraw-bid (read-msg 'bid-id) (read-msg 'sale-id))
+  )
+
+  (expect "Buyer account has 25.0 tokens"
+    25.0
+    (coin.get-balance "bidder-account"))
+(rollback-tx)
+
+(begin-tx "Accept bid and finish sale")
+
+  (env-hash (hash "accept-bidding-1"))
+  (use marmalade.fungible-quote-policy-v1)
+
+  (env-data {
+    "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
+    ,"bid-id": (get-bid-id "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8" "bidder-account")
+    ,"sale-id": "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8"
+  })
+
+  (env-sigs [
+    { 'key: 'seller
+    ,'caps: [
+      (SELLER (read-msg 'sale-id))
+    ]
+    }])
+
+  (expect "Accept-bid succeeds"
+    true
+    (accept-bid (read-msg 'bid-id) (read-msg 'sale-id)))
+
+  (env-data {
+    "buyer": "bidder-account"
+    ,"buyer-guard": {"keys": ["bidder"], "pred": "keys-all"}
+    ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
+    ,"marketplace-fee": {
+    "marketplace-account":""
+    ,"mk-fee-percentage": 0.0
+  }})
+
+  (env-sigs [
+    { 'key: 'bidder
+    ,'caps: [
+      (marmalade.ledger.BUY (marmalade.ledger.create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } ) "account" "bidder-account"  1.0 (time  "2023-07-22T11:26:35Z") "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8")
+      ]
+    }])
+
+  (expect "Buy succeeds"
+      true
+      (continue-pact 1 false "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8"))
+
+  (expect "Seller account has increased with 5 tokens"
+    7.0
+    (coin.get-balance "account"))
+(commit-tx)

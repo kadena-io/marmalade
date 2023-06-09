@@ -106,8 +106,8 @@
  ,"quote": {
    "fungible": coin
   ,"price": 2.0
-  ,"recipient": 'seller-account
-  ,"recipient-guard": {"keys": ["seller"], "pred": "keys-all"}}
+  ,"amount": 1.0
+  ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
   })
 
 (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})

@@ -1,7 +1,7 @@
 (namespace (read-msg 'ns))
 
 (module util-v1 GOVERNANCE
-  (use kip.token-policy-v2 [token-policies concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
+  (use kip.token-policy-v2 [token-policies concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
 
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
@@ -11,6 +11,7 @@
      ,'non-fungible-policy: true
      ,'royalty-policy: false
      ,'collection-policy:false
+     ,'guard-policy: true
      })
 
   (defconst DEFAULT_ROYALTY:object{concrete-policy}
@@ -18,6 +19,7 @@
      ,'non-fungible-policy: true
      ,'royalty-policy: true
      ,'collection-policy:false
+     ,'guard-policy: true
     }
   )
 
@@ -25,7 +27,8 @@
     { 'quote-policy: true
      ,'non-fungible-policy: true
      ,'royalty-policy: false
-     ,'collection-policy:true
+     ,'collection-policy: true
+     ,'guard-policy: true
     }
   )
 
@@ -33,7 +36,8 @@
     { 'quote-policy: true
      ,'non-fungible-policy: true
      ,'royalty-policy: true
-     ,'collection-policy:true
+     ,'collection-policy: true
+     ,'guard-policy: true
     }
   )
 
@@ -42,6 +46,7 @@
      ,'non-fungible-policy: false
      ,'royalty-policy: false
      ,'collection-policy:false
+     ,'guard-policy: false
     }
   )
 

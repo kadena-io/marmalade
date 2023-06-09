@@ -7,12 +7,14 @@
     quote-policy:bool
     royalty-policy:bool
     collection-policy:bool
+    guard-policy:bool
   )
 
   (defconst NON_FUNGIBLE_POLICY 'non-fungible-policy )
   (defconst QUOTE_POLICY 'quote-policy )
   (defconst ROYALTY_POLICY 'royalty-policy )
   (defconst COLLECTION_POLICY 'collection-policy )
+  (defconst GUARD_POLICY 'guard-policy )
 
   (defschema token-policies
     concrete-policies:object{concrete-policy}

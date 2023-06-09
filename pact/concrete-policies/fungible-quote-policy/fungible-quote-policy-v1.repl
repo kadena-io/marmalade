@@ -12,6 +12,7 @@
      ,'non-fungible-policy: false
      ,'royalty-policy: false
      ,'collection-policy:false
+     ,'guard-policy: true
     }
   )
 
@@ -26,10 +27,11 @@
 (begin-tx)
 (use marmalade.ledger)
 (use marmalade.policy-manager)
-
+(env-exec-config ["DisablePact44"])
 (env-data {
-  "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
- ,"account": 'account
+   "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
+  ,"account": 'account
+  ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
 })
 
 (expect "create a default token with quote-policy, non-fungible-policy"
@@ -47,8 +49,8 @@
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
 })
 
-(expect "mint 2.0 amount of quote-only tokens with random key"
-  true
+(expect-failure "mint 2.0 amount of quote-only tokens with random key"
+  "Keyset failure"
   (mint (read-msg 'token-id )  (read-msg 'account ) (read-keyset 'account-guard ) 2.0))
 
 (commit-tx)
@@ -68,12 +70,22 @@
     ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id ) "account" 2.0)]
     }])
 
-  (expect "mint extra 2.0 token of quote-only tokens with random key"
+  (expect-failure "mint 2.0 amount of quote-only tokens with random key"
+    "Keyset failure"
+    (mint (read-msg 'token-id )  (read-msg 'account ) (read-keyset 'account-guard ) 2.0))
+
+  (env-sigs [
+    { 'key: 'account
+    ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id ) "account" 2.0)]
+    }])
+
+  (expect "mint 2.0 amount of quote-only tokens with mint-guard key"
     true
     (mint (read-msg 'token-id )  (read-msg 'account ) (read-keyset 'account-guard ) 2.0))
 
+
   (expect "total supply of the token is 4.0"
-    4.0
+    2.0
     (total-supply (read-msg 'token-id )))
 
 (commit-tx)

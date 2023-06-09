@@ -23,8 +23,10 @@ The policy manager makes a distinction between 3 types of policies, concrete, im
     quote-policy:bool
     royalty-policy:bool
     collection-policy:bool
+    guard-policy:bool
   )
 ```
+
 ```
   (defschema token-policies
     concrete-policies:object{concrete-policy}
@@ -42,6 +44,7 @@ The policy manager makes a distinction between 3 types of policies, concrete, im
 Marmalade V2 aims to make token creation simple and convenient, yet still offer the rich features using concrete-policies. A concrete policy is a simple basic implementation of some of the most used features in token creation.
 We provide 4 concrete policies, which will provide the most used functionalities.
 
+- **Guard Policy**: Initiates a guard with each marmalade activities. The guards are optional, but mint guards are recommended to prevent foreign entity from minting the created tokens.
 - **Collection Policy**: Initiates a collection with pre-defined token lists
 - **Fungible Quote Policy**: Provides a sale of NFT with fungibles using escrow account
 - **Non-fungible Policy**: Defines the token supply to 1 and precision of 0, so the token becomes non-fungible
@@ -131,12 +134,11 @@ Marmalade Policies allow customised rules for token operations.
 - [Fungible Quote Policy](./pact/concrete-policies/fungible-quote-policy/fungible-quote-policy-v1.pact) ([docs](./pact/concrete-policies/fungible-quote-policy/fungible-quote-policy-v1.md))
 - [Non-Fungible Policy](./pact/concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact) ([docs](./pact/concrete-policies/non-fungible-policy/non-fungible-policy-v1.md))
 - [Royalty Policy](./pact/concrete-policies/royalty-policy/royalty-policy-v1.pact) ([docs](./pact/concrete-policies/royalty-policy/royalty-policy-v1.md))
+- [Guard Policy]("./pact/concrete-policies/guard-policy/guard-policy-v1.pact) ([docs](./pact/policies/guard-policy/guard-policy.md))
 
 #### Regular Policies:
 
 - [Fixed Issuance Policy]("./pact/policies/fixed-issuance-policy/fixed-issuance-policy.pact) ([docs](./pact/policies/fixed-issuance-policy/fixed-issuance-policy.md))
-- [Guard Policy]("./pact/policies/guard-policy/guard-policy.pact) ([docs](./pact/policies/guard-policy/guard-policy.md))
-- [Whitelist Policy]() TODO
 
 ---
 

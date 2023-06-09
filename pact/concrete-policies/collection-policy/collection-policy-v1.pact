@@ -23,7 +23,6 @@
   (defschema token
     id:string
     collection-id:string
-    mint-guard:guard
   )
 
   (deftable collections:{collection})
@@ -39,18 +38,6 @@
   (defcap COLLECTION:bool (collection-id:string collection-name:string collection-size:integer)
     @event
     true)
-
-  (defcap MINT (token-id:string)
-    @managed
-    (with-read tokens token-id {
-      'mint-guard:= mint-guard
-      }
-    (enforce-guard mint-guard)
-    true
-    )
-  )
-
-  (defconst CP_MINT_GUARD "cp-mint-guard")
 
   (defun enforce-ledger:bool ()
     (enforce-guard (marmalade.ledger.ledger-guard))
@@ -80,7 +67,6 @@
   (defun enforce-init:bool (token:object{token-info})
     (enforce-ledger)
     (let* ( (token-id:string  (at 'id token))
-            (mint-guard:guard (read-msg CP_MINT_GUARD))
             (collection-id:string (read-msg "collection-id")) )
     ;;Enforce operator guard
     (with-capability (OPERATOR collection-id)
@@ -96,7 +82,6 @@
       (insert tokens token-id
         { "id" : token-id
          ,"collection-id" : collection-id
-         ,"mint-guard": mint-guard
       })
     ))
   )
@@ -108,9 +93,7 @@
       amount:decimal
     )
     (enforce-ledger)
-    (with-capability (MINT (at 'id token))
-      true
-    )
+    true
   )
 
 
@@ -170,7 +153,6 @@
       amount:decimal )
     (enforce false "Transfer prohibited")
   )
-
 
   ;;UTILITY FUNCTIONS
 

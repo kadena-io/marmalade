@@ -3,9 +3,9 @@
 (module migration-policy-v1 GOVERNANCE
 
   @doc "Helper contract to migrate marmalade v1 tokens to v2"
-  (implements marmalade.token-policy-v2)
+  (implements kip.token-policy-v2)
 
-  (use marmalade.token-policy-v2 [token-info])
+  (use kip.token-policy-v2 [token-info])
 
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
@@ -53,7 +53,7 @@
     )
     @doc "BURN previous ledger's token by AMOUNT and MINT in marmalade v2 ledger"
     (enforce-ledger)
-     ;; v1 ledger 
+     ;; v1 ledger
     (let* ((token-id-v1:string (read-msg 'token-id-v1 ))
            (token-guard-v1:guard (marmalade.ledger.account-guard token-id-v1 account)) )
       (enforce (= token-guard-v1 guard) "v1 account guards do not match")

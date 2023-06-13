@@ -85,23 +85,33 @@
 (use marmalade.util-v1)
 
 (env-data {
-  "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-default-policies DEFAULT) } )
+  "default-token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-default-policies DEFAULT) } )
+ ,"empty-token-id": (create-token-id { 'uri: "test-uri-1", 'precision: 0, 'policies: (create-default-policies EMPTY) } )
  ,"account": "account"
- ,"nfp-mint-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
   })
 (env-sigs [
   { 'key: 'account
-   ,'caps: [(marmalade.ledger.MINT "t:jEkXrh56WxrSF73Vpq5nVlAp9N9EIU8VXPJKaJegGc4" "account" 1.0)]
+   ,'caps: [(marmalade.ledger.MINT "t:jEkXrh56WxrSF73Vpq5nVlAp9N9EIU8VXPJKaJegGc4" "account" 1.0)
+            (marmalade.ledger.MINT "t:6ll2WfFkYk7Pi6oZiFlpRLC7VadDLg50f9Ref4oA54Y" "account" 1.0)
+   ]
    }])
 
 (expect "create a default token with quote-policy, non-fungible-policy"
   true
-  (create-token (read-msg 'token-id) 0 "test-uri" (create-default-policies DEFAULT) ))
+  (create-token (read-msg 'default-token-id) 0 "test-uri" (create-default-policies DEFAULT) ))
+
+(expect "create a token with no concrete-policy"
+  true
+  (create-token (read-msg 'empty-token-id) 0 "test-uri-1" (create-default-policies EMPTY) ))
 
 (expect "mint a default token with quote-policy, non-fungible-policy"
   true
-  (mint (read-msg 'token-id )  (read-msg 'account ) (read-keyset 'mint-guard ) 1.0))
+  (mint (read-msg 'default-token-id )  (read-msg 'account ) (read-keyset 'mint-guard ) 1.0))
+
+(expect "mint an empty token with no policy"
+  true
+  (mint (read-msg 'empty-token-id )  (read-msg 'account ) (read-keyset 'mint-guard ) 1.0))
 
 (commit-tx)
 

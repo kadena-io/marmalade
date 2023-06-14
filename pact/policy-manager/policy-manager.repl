@@ -133,8 +133,8 @@
               (marmalade.ledger.ROTATE "t:6ll2WfFkYk7Pi6oZiFlpRLC7VadDLg50f9Ref4oA54Y" "account")]
      }])
 
-  (expect-failure "t:jEkXrh56WxrSF73Vpq5nVlAp9N9EIU8VXPJKaJegGc4 rotate fails because `fungible-quote-policy-v1` prohibits transfer"
-    "Transfer prohibited"
+  (expect "t:jEkXrh56WxrSF73Vpq5nVlAp9N9EIU8VXPJKaJegGc4 `fungible-quote-policy-v1` allows transfer"
+    true
     (rotate (read-msg 'default-token-id) 'account (read-keyset 'new-guard ) ))
 
   (expect "t:6ll2WfFkYk7Pi6oZiFlpRLC7VadDLg50f9Ref4oA54Y Rotate succeeds"
@@ -233,7 +233,7 @@
     "seller-guard": {"keys": ["seller"], "pred": "keys-all"},
     "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
   })
-  (coin.coinbase "account" (read-keyset 'seller-guard) 2.0)
+  (coin.coinbase "seller-account" (read-keyset 'seller-guard) 2.0)
   (coin.coinbase "creator-account" (read-keyset 'creator-guard) 2.0)
 
   (env-data {
@@ -276,23 +276,23 @@
   (env-sigs [
     { 'key: 'seller
     ,'caps: [
-    (marmalade.ledger.MINT "t:FOPgAhfprDFexl8kS89KO9iXLWkecDk9Z8xs1ki2ksw" "account" 1.0)]
+    (marmalade.ledger.MINT "t:FOPgAhfprDFexl8kS89KO9iXLWkecDk9Z8xs1ki2ksw" "seller-account" 1.0)]
   }])
 
   (expect "mint 1.0 amount "
      true
-     (mint (read-msg 'token-id) 'account (read-keyset 'seller-guard ) 1.0))
+     (mint (read-msg 'token-id) 'seller-account (read-keyset 'seller-guard ) 1.0))
 
   (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
   (env-sigs [
     { 'key: 'seller
     ,'caps: [
-    (marmalade.ledger.OFFER (read-msg 'token-id) "account" 1.0 (time "2023-07-22T11:26:35Z") )]
+    (marmalade.ledger.OFFER (read-msg 'token-id) "seller-account" 1.0 (time "2023-07-22T11:26:35Z") )]
     }])
 
   (expect "Start offer succeeds"
     true
-    (sale (read-msg 'token-id) 'account 1.0 (time "2023-07-22T11:26:35Z")))
+    (sale (read-msg 'token-id) 'seller-account 1.0 (time "2023-07-22T11:26:35Z")))
 
   (env-data {
     "token-id": (create-token-id {
@@ -308,26 +308,26 @@
     })
     ,"sale-id": "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
     ,"bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
-    ,"bid-id": (marmalade.fungible-quote-policy-v1.get-bid-id "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "bidder-account")
+    ,"bid-id": (marmalade.fungible-quote-policy-v1.get-bid-id "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "bid-account")
   })
 
   (test-capability (coin.COINBASE))
-  (coin.coinbase "bidder-account" (read-keyset 'bidder-guard) 25.0)
+  (coin.coinbase "bid-account" (read-keyset 'bidder-guard) 25.0)
 
   (env-sigs
   [{'key:'bidder
     ,'caps: [
-       (coin.TRANSFER "bidder-account" "c:nH8SHleA22jG1zRIFyNzOW1S5wVdKxB1mwyjZt4mH8Y" 5.0)
+       (coin.TRANSFER "bid-account" "c:OUabb7V15zMKQhdm_XqOpVIi8SjsvRRhGSgL5zkCWQ8" 5.0)
     ]}])
 
   (expect "Place Bid succeeds"
     true
-    (marmalade.fungible-quote-policy-v1.place-bid (read-msg 'token-id) 'bidder-account (read-keyset 'bidder-guard) 1.0 5.0 (read-msg 'sale-id))
+    (marmalade.fungible-quote-policy-v1.place-bid (read-msg 'token-id) 'bid-account (read-keyset 'bidder-guard) 1.0 5.0 (read-msg 'sale-id))
   )
 
   (expect "Buyer account has 20.0 tokens left"
     20.0
-    (coin.get-balance "bidder-account"))
+    (coin.get-balance "bid-account"))
 
   (env-sigs [
    { 'key: 'seller
@@ -353,7 +353,7 @@
       })
     })
     ,"sale-id": "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
-    ,"buyer": "bidder-account"
+    ,"buyer": "bid-account"
     ,"buyer-guard": {"keys": ["bidder"], "pred": "keys-all"}
     ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
     ,"marketplace-fee": {
@@ -365,7 +365,7 @@
   (env-sigs [
     { 'key: 'bidder
     ,'caps: [
-      (BUY (read-msg 'token-id) "account" "bidder-account"  1.0 (time  "2023-07-22T11:26:35Z") (read-msg 'sale-id))
+      (BUY (read-msg 'token-id) "seller-account" "bid-account"  1.0 (time  "2023-07-22T11:26:35Z") (read-msg 'sale-id))
       ]
     }])
 
@@ -375,7 +375,7 @@
 
   (expect "Seller account has increased with 5 tokens minus royalty fees"
     6.75
-    (coin.get-balance "account"))
+    (coin.get-balance "seller-account"))
 
   (expect "Creator account has received royalties"
       2.25

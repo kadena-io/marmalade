@@ -26,11 +26,10 @@
 (begin-tx)
   (use marmalade.ledger)
   (use marmalade.policy-manager)
-  (test-capability (coin.COINBASE))
   (env-data {
     "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
   })
-  (coin.coinbase "creator-account" (read-keyset "creator-guard") 2.0)
+  (marmalade.abc.create-account "creator-account" (read-keyset 'creator-guard))
 (commit-tx)
 
 (begin-tx)

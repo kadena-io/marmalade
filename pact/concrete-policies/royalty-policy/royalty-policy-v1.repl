@@ -26,11 +26,10 @@
 (begin-tx)
 (use marmalade.ledger)
 (use marmalade.policy-manager)
-(test-capability (coin.COINBASE))
 (env-data {
   "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
 })
-(coin.coinbase "creator-account" (read-keyset 'creator-guard) 2.0)
+(marmalade.abc.create-account "creator-account" (read-keyset 'creator-guard))
 (commit-tx)
 (begin-tx)
 (use marmalade.ledger)
@@ -67,7 +66,7 @@
  ,"account": "account"
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
-    "fungible": coin
+    "fungible": marmalade.abc
    ,"creator": 'creator-account
    ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
    ,"royalty-rate": 0.05
@@ -93,16 +92,15 @@
 (env-hash (hash "offer-royalty-0"))
 (use marmalade.ledger)
 
-(test-capability (coin.COINBASE))
 (env-data {
   "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
 })
-(coin.coinbase "account" (read-keyset 'seller-guard) 2.0)
+(marmalade.abc.create-account "account" (read-keyset 'seller-guard))
 
 (env-data {
   "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: util.DEFAULT_POLICIES_WITH_ROYALTY } )
  ,"quote": {
-   "fungible": coin
+   "fungible": marmalade.abc
   ,"price": 2.0
   ,"amount": 1.0
   ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
@@ -121,10 +119,6 @@
 
 (env-data { "recipient-guard": {"keys": ["seller"], "pred": "keys-all"}})
 
-; (expect "events"
-;   []
-;   (map (remove 'module-hash)  (env-events true)))
-
 (env-data {
   "buyer": "buyer-account"
  ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
@@ -133,15 +127,16 @@
    "marketplace-account":"marketplace"
   ,"mk-fee-percentage": 0.05
   }})
-(test-capability (coin.COINBASE))
-(coin.coinbase "buyer-account" (read-keyset 'buyer-guard) 2.0)
-(coin.coinbase "marketplace" (read-keyset 'market-guard) 1.0)
+
+(marmalade.abc.create-account "buyer-account" (read-keyset 'buyer-guard))
+(marmalade.abc.create-account "marketplace" (read-keyset 'market-guard))
+(marmalade.abc.fund "buyer-account" 2.0)
 
 (env-sigs
  [{'key:'buyer
   ,'caps: [
     (BUY (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: util.DEFAULT_POLICIES_WITH_ROYALTY } ) "account" "buyer-account"  1.0 (time  "2023-07-22T11:26:35Z") "0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM")
-    (coin.TRANSFER "buyer-account" "c:z85Gnsq2GGFlAPL4lmU1beh3QCi2rOt_VHHZZ6hjU2g" 2.0)
+    (marmalade.abc.TRANSFER "buyer-account" "c:z85Gnsq2GGFlAPL4lmU1beh3QCi2rOt_VHHZZ6hjU2g" 2.0)
    ]}])
 
 (env-hash (hash "offer-royalty-0"))

@@ -1,7 +1,5 @@
 ;;load policy manager, ledger
-(begin-tx)
 (load "../../policy-manager/policy-manager.repl")
-(commit-tx)
 
 (begin-tx)
 (use kip.token-policy-v2 [token-policies concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
@@ -99,7 +97,7 @@
 (env-data {
   "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
 })
-(coin.coinbase "seller-account" (read-keyset 'seller-guard) 2.0)
+(coin.coinbase "account" (read-keyset 'seller-guard) 2.0)
 
 (env-data {
   "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: util.DEFAULT_POLICIES_WITH_ROYALTY } )
@@ -137,6 +135,7 @@
   }})
 (test-capability (coin.COINBASE))
 (coin.coinbase "buyer-account" (read-keyset 'buyer-guard) 2.0)
+(coin.coinbase "marketplace" (read-keyset 'market-guard) 1.0)
 
 (env-sigs
  [{'key:'buyer

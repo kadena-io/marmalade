@@ -27,7 +27,7 @@
 
 
   (define-namespace 'util (sig-keyset) (sig-keyset))
-  (load "../util/fungible-util.pact")
+  (load "../util/fungible-util.pact")  
 (commit-tx)
 
 (begin-tx)
@@ -52,6 +52,7 @@
   (load "../policy-manager/policy-manager.pact")
   (load "../ledger.pact")
   (load "../marmalade-util/util-v1.pact")
+  (load "../test/abc.pact")
 (commit-tx)
 
 (begin-tx "load concrete-polices")

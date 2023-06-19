@@ -95,16 +95,14 @@
   (env-hash (hash "offer-quote-only-0"))
   (use marmalade.ledger)
 
-  (test-capability (coin.COINBASE))
   (env-data {
     "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
   })
-  (coin.coinbase "seller-account" (read-keyset 'seller-guard) 2.0)
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
   , "quote": {
-      "fungible": coin
+      "fungible": marmalade.abc
       ,"price": 2.0
       ,"amount": 1.0
       ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
@@ -128,16 +126,16 @@
   (env-hash (hash "offer-quote-only-1"))
   (use marmalade.ledger)
 
-  (test-capability (coin.COINBASE))
   (env-data {
     "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
   })
-  (coin.coinbase "account" (read-keyset 'seller-guard) 2.0)
+  (marmalade.abc.create-account "account" (read-keyset 'seller-guard))
+  (marmalade.abc.fund "account" 2.0)
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
   ,"quote": {
-    "fungible": coin
+    "fungible": marmalade.abc
     ,"price": 2.0
     ,"amount": 1.0
     ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
@@ -163,15 +161,15 @@
     ,"mk-fee-percentage": 0.05
     }})
 
-  (test-capability (coin.COINBASE))
-  (coin.coinbase "buyer-account" (read-keyset 'buyer-guard) 2.0)
-  (coin.coinbase "marketplace" (read-keyset 'buyer-guard) 2.0)
+  (marmalade.abc.create-account "buyer-account" (read-keyset 'buyer-guard))
+  (marmalade.abc.create-account "marketplace" (read-keyset 'market-guard))
+  (marmalade.abc.fund "buyer-account" 2.0)
 
   (env-sigs
   [{'key:'buyer
     ,'caps: [
       (BUY (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } ) "account" "buyer-account"  1.0 (time  "2023-07-22T11:26:35Z") "v86vqj0OkIZQfD3XGETjij1sLjJH7Q6GZBZJeytDsEo")
-      (coin.TRANSFER "buyer-account" "c:cbnfX-2IcN_in1gOZpdheAlkbERuqFIUNOYE8egBx38" 2.0)
+      (marmalade.abc.TRANSFER "buyer-account" "c:cbnfX-2IcN_in1gOZpdheAlkbERuqFIUNOYE8egBx38" 2.0)
     ]}])
 
   (env-hash (hash "offer-royalty-0"))
@@ -182,15 +180,15 @@
 
   (expect "Buyer account has 0.0 tokens left"
     0.0
-    (coin.get-balance "buyer-account"))
+    (marmalade.abc.get-balance "buyer-account"))
 
   (expect "Seller account has 3.9 tokens"
     3.9
-    (coin.get-balance "account"))
+    (marmalade.abc.get-balance "account"))
 
   (expect "Marketplace fee account has 2.1 tokens"
-    2.1
-    (coin.get-balance "marketplace"))
+    0.1
+    (marmalade.abc.get-balance "marketplace"))
 
 (rollback-tx)
 
@@ -199,16 +197,15 @@
   (env-hash (hash "offer-quote-only-1"))
   (use marmalade.ledger)
 
-  (test-capability (coin.COINBASE))
   (env-data {
     "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
   })
-  (coin.coinbase "account" (read-keyset 'seller-guard) 2.0)
+  (marmalade.abc.create-account "account" (read-keyset 'seller-guard))
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
   ,"quote": {
-    "fungible": coin
+    "fungible": marmalade.abc
     ,"price": 2.0
     ,"amount": 1.0
     ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
@@ -232,15 +229,15 @@
   ,"marketplace-fee": {"marketplace-account": "", "mk-fee-percentage": 0.0 }
   })
 
-  (test-capability (coin.COINBASE))
-  (coin.coinbase "buyer-account" (read-keyset 'buyer-guard) 2.0)
-  (coin.coinbase "marketplace" (read-keyset 'buyer-guard) 2.0)
+  (marmalade.abc.create-account "buyer-account" (read-keyset 'buyer-guard))
+  (marmalade.abc.create-account "marketplace" (read-keyset 'market-guard))
+  (marmalade.abc.fund "buyer-account" 2.0)
 
   (env-sigs
   [{'key:'buyer
     ,'caps: [
       (BUY (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } ) "account" "buyer-account"  1.0 (time  "2023-07-22T11:26:35Z") "v86vqj0OkIZQfD3XGETjij1sLjJH7Q6GZBZJeytDsEo")
-      (coin.TRANSFER "buyer-account" "c:cbnfX-2IcN_in1gOZpdheAlkbERuqFIUNOYE8egBx38" 2.0)
+      (marmalade.abc.TRANSFER "buyer-account" "c:cbnfX-2IcN_in1gOZpdheAlkbERuqFIUNOYE8egBx38" 2.0)
     ]}])
 
   (env-hash (hash "offer-royalty-0"))
@@ -251,15 +248,15 @@
 
   (expect "Buyer account has 0.0 tokens left"
     0.0
-    (coin.get-balance "buyer-account"))
+    (marmalade.abc.get-balance "buyer-account"))
 
-  (expect "Seller account has 4.0 tokens"
-    4.0
-    (coin.get-balance "account"))
-
-  (expect "Marketplace fee account has 2.0 tokens"
+  (expect "Seller account has 2.0 tokens"
     2.0
-    (coin.get-balance "marketplace"))
+    (marmalade.abc.get-balance "account"))
+
+  (expect "Marketplace fee account has 0 tokens"
+    0.0
+    (marmalade.abc.get-balance "marketplace"))
 (rollback-tx)
 
 (begin-tx "Sell token and place bid")
@@ -267,16 +264,15 @@
   (env-hash (hash "offer-bidding-1"))
   (use marmalade.ledger)
 
-  (test-capability (coin.COINBASE))
   (env-data {
     "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
   })
-  (coin.coinbase "account" (read-keyset 'seller-guard) 2.0)
+  (marmalade.abc.create-account "account" (read-keyset 'seller-guard))
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
   ,"quote": {
-    "fungible": coin
+    "fungible": marmalade.abc
     ,"price": 10.0
     ,"amount": 1.0
     ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
@@ -299,13 +295,13 @@
     ,"bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
   })
 
-  (test-capability (coin.COINBASE))
-  (coin.coinbase "bidder-account" (read-keyset 'bidder-guard) 25.0)
+  (marmalade.abc.create-account "bidder-account" (read-keyset 'bidder-guard))
+  (marmalade.abc.fund "bidder-account" 25.0)
 
   (env-sigs
   [{'key:'bidder
     ,'caps: [
-       (coin.TRANSFER "bidder-account" "c:fsTjb6w6jogvXcyIEhzFaOv-G5f_R6bOWeDR16ON0kM" 5.0)
+       (marmalade.abc.TRANSFER "bidder-account" "c:fsTjb6w6jogvXcyIEhzFaOv-G5f_R6bOWeDR16ON0kM" 5.0)
     ]}])
 
   (expect "Place Bid succeeds"
@@ -315,7 +311,7 @@
 
   (expect "Buyer account has 20.0 tokens left"
     20.0
-    (coin.get-balance "bidder-account"))
+    (marmalade.abc.get-balance "bidder-account"))
 (commit-tx)
 
 (begin-tx "Withdraw bid")
@@ -342,7 +338,7 @@
 
   (expect "Buyer account has 25.0 tokens"
     25.0
-    (coin.get-balance "bidder-account"))
+    (marmalade.abc.get-balance "bidder-account"))
 (rollback-tx)
 
 (begin-tx "Accept bid and finish sale")
@@ -388,6 +384,6 @@
       (continue-pact 1 false "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8"))
 
   (expect "Seller account has increased with 5 tokens"
-    7.0
-    (coin.get-balance "account"))
+    5.0
+    (marmalade.abc.get-balance "account"))
 (commit-tx)

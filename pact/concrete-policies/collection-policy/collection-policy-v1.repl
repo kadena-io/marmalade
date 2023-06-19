@@ -26,11 +26,10 @@
 (begin-tx)
   (use marmalade.ledger)
   (use marmalade.policy-manager)
-  (test-capability (coin.COINBASE))
   (env-data {
     "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
   })
-  (coin.coinbase "creator-account" (read-keyset 'creator-guard) 2.0)
+  (marmalade.abc.create-account "creator-account" (read-keyset 'creator-guard))
 (commit-tx)
 
 (begin-tx "Creating collection")
@@ -41,7 +40,7 @@
   ,"account": "account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
   ,"royalty_spec": {
-      "fungible": coin
+      "fungible": marmalade.abc
     ,"creator": 'creator-account
     ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
     ,"royalty-rate": 0.05
@@ -124,7 +123,7 @@
   ,"account": "account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
   ,"royalty_spec": {
-      "fungible": coin
+      "fungible": marmalade.abc
     ,"creator": 'creator-account
     ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
     ,"royalty-rate": 0.05
@@ -160,7 +159,7 @@
   ,"account": "account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
   ,"royalty_spec": {
-      "fungible": coin
+      "fungible": marmalade.abc
     ,"creator": 'creator-account
     ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
     ,"royalty-rate": 0.05

@@ -178,7 +178,7 @@ The off-chain schema contains properties that describe the metadata of an NFT st
 | :-------------- | :--------------: | :-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | name            |      string      |                                                                                                          Identifies the asset to which this NFT represents                                                                                                          |
 | description     |      string      |                                                                                                          Describes the asset to which this NFT represents                                                                                                           |
-| image           |      string      |                   A URI pointing to a resource with mime type image/\* representing the asset to which this NFT represents. Consider making any images at a width between 320 and 1080 pixels and aspect ratio between 1.91:1 and 4:5 inclusive.                    |
+| \*image         |      string      |                   A URI pointing to a resource with mime type image/\* representing the asset to which this NFT represents. Consider making any images at a width between 320 and 1080 pixels and aspect ratio between 1.91:1 and 4:5 inclusive.                    |
 | \*properties    |      object      |                                                                                               Arbitrary properties. Values may be strings, numbers, object or arrays.                                                                                               |
 | \*authors       | array of objects |                                                               An array of authors who created or contributed to the asset. Each author is an object with a "name" field specifying the author's name.                                                               |
 | \*external_url  |      string      |                                                                                            URL to an external application or website where users can also view the asset                                                                                            |
@@ -198,7 +198,6 @@ The off-chain schema contains properties that describe the metadata of an NFT st
       "required": [
         "name",
         "description",
-        "image"
       ],
       "properties": {
         "name": {

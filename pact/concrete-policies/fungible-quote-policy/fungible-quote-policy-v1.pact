@@ -236,7 +236,6 @@
     (enforce false "Transfer prohibited")
   )
 
-  ;; TODO: what happens if you place a bid on a token that has already been sold?  
   (defun place-bid:bool
     ( token-id:string
       buyer:string
@@ -348,32 +347,6 @@
       )      
     ))
   )
-
-  ;  (defun transfer-bid:bool (
-  ;    buyer:string
-  ;    sale-id:string
-  ;    escrow-account:string
-  ;    escrow-guard:guard
-  ;    sale-price:decimal)
-  ;    (enforce-ledger)
-  ;    (enforce-sale-pact sale-id)
-  ;    (with-read quotes sale-id { 'spec:= spec:object{quote-spec} }
-  ;      (let* (
-  ;        (fungible:module{fungible-v2} (at 'fungible spec))
-  ;        (bid-id:string (get-bid-id sale-id buyer)))
-
-  ;        (with-read bids bid-id { 'buyer:= bid-buyer }
-  ;          (enforce (= buyer bid-buyer) "Invalid buyer")
-  ;        )
-
-  ;        (with-capability (BID_PRIVATE bid-id)
-  ;          (install-capability (fungible::TRANSFER (bid-escrow-account bid-id) escrow-account sale-price))
-  ;          (fungible::transfer-create (bid-escrow-account bid-id) escrow-account escrow-guard sale-price)
-  ;        )
-  ;        true
-  ;      )
-  ;    )
-  ;  )
 )
 
 (if (read-msg "upgrade")

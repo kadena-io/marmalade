@@ -30,7 +30,7 @@ The `fungible-quote-policy-v1` is specifically tailored for managing token sales
 
 `withdraw-bid`: The withdraw-bid function is responsible for withdrawing a previously placed bid. It retrieves the bid details from the bids collection based on the provided bid-id. It verifies that the bid is in an open status and belongs to the buyer by checking the buyer's capability. It then transfers the bid amount from the bid's escrow account back to the buyer. Finally, it updates the bid status to "withdrawn" in the bids collection and emits a bid withdrawn event.
 
-`accept-bid`: The accept-bid function is responsible for accepting a bid for a sale. It retrieves the bid details from the bids collection based on the provided bid-id. It verifies that the bid is in an open status. It then retrieves the sale details from the quotes collection based on the provided sale-id. It updates the sale's spec by setting the fungible, price, seller-guard, and amount fields to match the bid. It also sets the buyer as reserved for the sale, so it can only be purchased by the buyer that placed the bid. The function can only be executed by the seller because it requires the capability of the seller's guard. It updates the bid status to "accepted" in the bids collection. Finally, it emits a bid accepted event.
+`accept-bid`: The accept-bid function is responsible for accepting a bid for a sale. It retrieves the bid details from the bids collection based on the provided bid-id. It verifies that the bid is in an open status. It then retrieves the sale details from the quotes collection based on the provided sale-id. It updates the sale's spec by setting the fungible, price, seller-guard, and amount fields to match the bid. This function can only be executed from the policy-manager's `enforce-buy` function, by the seller because it requires the capability of the seller's guard. It updates the bid status to "accepted" in the bids collection. Finally, it emits a bid accepted event.
 
 `transfer-bid`: The transfer-bid function facilitates the transfer of the bid amount to the escrow account that holds the funds for a specific sale before `enforce-buy` is executed in all attached policies. 
 
@@ -66,6 +66,9 @@ The `marketplace-account` field specifies the account to which the marketplace f
 
 Once the `marketplace-fee-spec` object has been read from the message payload, the function extracts the relevant fields from it and performs several checks to ensure the validity of the sale. It then transfers the appropriate funds to the seller, as well as any applicable marketplace fees.
 
+#### BID_ID-MSG-KEY
+  
+The `enforce-buy` function executes functionality to accept a bid when the message payload contains a bid-id under the `bid-id` message key.
 
 ## Events
 

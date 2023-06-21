@@ -21,6 +21,9 @@
 
   (defconst MARKETPLACE-FEE-MSG-KEY "marketplace-fee"
     @doc "Payload field for marketplace fee spec")
+  
+  (defconst BID_ID-MSG-KEY "bid-id"
+    @doc "Payload field for bid-id")
 
   (defschema quote-spec
     @doc "Quote data to include in payload"
@@ -38,25 +41,20 @@
 
   (defschema quote-schema
     id:string
-    spec:object{quote-spec}
-    reserved:string
+    spec:object{quote-spec}    
   )
 
   (defun get-quote:object{quote-schema} (sale-id:string)
     @doc "Get Quote information"
   )
 
-  (defun is-reserved:bool (sale-id:string)
-    @doc "Determine if a bid has been accepted"
-  )
-
-  (defun transfer-bid:bool (
+  (defun accept-bid:bool (
+    bid-id:string 
     buyer:string 
     sale-id:string
     escrow-account:string
-    escrow-guard:guard
-    sale-price:decimal)
-    @doc "Transfer of the bid amount from the bid-escrow account"       
+    escrow-guard:guard)
+    @doc "Aceept a bid and transfer the bid amount from the bid-escrow account"
   )
 
 )

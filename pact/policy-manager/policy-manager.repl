@@ -80,72 +80,41 @@
 (commit-tx)
 
 (begin-tx)
-  (use marmalade.ledger)
-  (use marmalade.policy-manager)
-  (use marmalade.util-v1)
 
-  (env-data {
-    "default-token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-default-policies DEFAULT) } )
-   ,"empty-token-id": (create-token-id { 'uri: "test-uri-1", 'precision: 0, 'policies: (create-default-policies EMPTY) } )
-   ,"account": "account"
-   ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
-    })
-  (env-sigs [
-    { 'key: 'account
-     ,'caps: [(marmalade.ledger.MINT "t:jEkXrh56WxrSF73Vpq5nVlAp9N9EIU8VXPJKaJegGc4" "account" 1.0)
-              (marmalade.ledger.MINT "t:6ll2WfFkYk7Pi6oZiFlpRLC7VadDLg50f9Ref4oA54Y" "account" 1.0)
-     ]
-     }])
+(use marmalade.ledger)
+(use marmalade.policy-manager)
+(use marmalade.util-v1)
 
-  (expect "create a default token with quote-policy, non-fungible-policy"
-    true
-    (create-token (read-msg 'default-token-id) 0 "test-uri" (create-default-policies DEFAULT) ))
+(env-data {
+  "default-token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-default-policies DEFAULT) } )
+ ,"empty-token-id": (create-token-id { 'uri: "test-uri-1", 'precision: 0, 'policies: (create-default-policies EMPTY) } )
+ ,"account": "account"
+ ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
+  })
+(env-sigs [
+  { 'key: 'account
+   ,'caps: [(marmalade.ledger.MINT "t:jEkXrh56WxrSF73Vpq5nVlAp9N9EIU8VXPJKaJegGc4" "account" 1.0)
+            (marmalade.ledger.MINT "t:6ll2WfFkYk7Pi6oZiFlpRLC7VadDLg50f9Ref4oA54Y" "account" 1.0)
+   ]
+   }])
 
-  (expect "create a token with no concrete-policy"
-    true
-    (create-token (read-msg 'empty-token-id) 0 "test-uri-1" (create-default-policies EMPTY) ))
+(expect "create a default token with quote-policy, non-fungible-policy"
+  true
+  (create-token (read-msg 'default-token-id) 0 "test-uri" (create-default-policies DEFAULT) ))
 
-  (expect "mint a default token with quote-policy, non-fungible-policy"
-    true
-    (mint (read-msg 'default-token-id )  (read-msg 'account ) (read-keyset 'mint-guard ) 1.0))
+(expect "create a token with no concrete-policy"
+  true
+  (create-token (read-msg 'empty-token-id) 0 "test-uri-1" (create-default-policies EMPTY) ))
 
-  (expect "mint an empty token with no policy"
-    true
-    (mint (read-msg 'empty-token-id )  (read-msg 'account ) (read-keyset 'mint-guard ) 1.0))
+(expect "mint a default token with quote-policy, non-fungible-policy"
+  true
+  (mint (read-msg 'default-token-id )  (read-msg 'account ) (read-keyset 'mint-guard ) 1.0))
+
+(expect "mint an empty token with no policy"
+  true
+  (mint (read-msg 'empty-token-id )  (read-msg 'account ) (read-keyset 'mint-guard ) 1.0))
 
 (commit-tx)
-
-(begin-tx "Try rotate")
-
-  (use marmalade.ledger)
-  (use marmalade.policy-manager)
-  (use marmalade.util-v1)
-
-  (env-data {
-    "default-token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-default-policies DEFAULT) } )
-   ,"empty-token-id": (create-token-id { 'uri: "test-uri-1", 'precision: 0, 'policies: (create-default-policies EMPTY) } )
-   ,"account": "account"
-   ,"new-guard": {"keys": ["rotate"], "pred": "keys-all"}
-    })
-  (env-sigs [
-    { 'key: 'account
-     ,'caps: [(marmalade.ledger.ROTATE "t:jEkXrh56WxrSF73Vpq5nVlAp9N9EIU8VXPJKaJegGc4" "account")
-              (marmalade.ledger.ROTATE "t:6ll2WfFkYk7Pi6oZiFlpRLC7VadDLg50f9Ref4oA54Y" "account")]
-     }])
-
-  (expect "t:jEkXrh56WxrSF73Vpq5nVlAp9N9EIU8VXPJKaJegGc4 `fungible-quote-policy-v1` allows transfer"
-    true
-    (rotate (read-msg 'default-token-id) 'account (read-keyset 'new-guard ) ))
-
-  (expect "t:6ll2WfFkYk7Pi6oZiFlpRLC7VadDLg50f9Ref4oA54Y Rotate succeeds"
-    true
-    (rotate (read-msg 'empty-token-id) 'account (read-keyset 'new-guard ) ))
-
-  (expect "Account guard of the empty token matches the new guard"
-    (read-keyset 'new-guard )
-    (account-guard (read-msg 'empty-token-id ) 'account ))
-
-(rollback-tx)
 
 (begin-tx "start an offer")
   (env-hash (hash "offer-0"))

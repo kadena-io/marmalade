@@ -1,6 +1,7 @@
 ;;load policy manager, ledger
+(load "../../policy-manager/policy-manager.repl")
+
 (begin-tx)
-  (load "../../policy-manager/policy-manager.repl")
   (use kip.token-policy-v2 [token-policies concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
 
   (module util GOV
@@ -25,11 +26,10 @@
 (begin-tx)
   (use marmalade.ledger)
   (use marmalade.policy-manager)
-  (test-capability (coin.COINBASE))
   (env-data {
     "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
   })
-  (coin.coinbase "creator-account" (read-keyset "creator-guard") 2.0)
+  (marmalade.abc.create-account "creator-account" (read-keyset 'creator-guard))
 (commit-tx)
 
 (begin-tx)

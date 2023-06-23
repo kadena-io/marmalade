@@ -346,22 +346,12 @@
   (env-hash (hash "accept-bidding-1"))
   (use marmalade.fungible-quote-policy-v1)
 
-  (env-data {
-    "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
-    ,"bid-id": (get-bid-id "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8" "bidder-account")
-    ,"sale-id": "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8"
-  })
-
   (env-sigs [
     { 'key: 'seller
     ,'caps: [
       (SELLER (read-msg 'sale-id))
     ]
     }])
-
-  (expect "Accept-bid succeeds"
-    true
-    (accept-bid (read-msg 'bid-id) (read-msg 'sale-id)))
 
   (env-data {
     "buyer": "bidder-account"
@@ -370,16 +360,24 @@
     ,"marketplace-fee": {
     "marketplace-account":""
     ,"mk-fee-percentage": 0.0
-  }})
+    }
+    ,"bid-id": (get-bid-id "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8" "bidder-account")
+    ,"sale-id": "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8"
+  })
 
   (env-sigs [
     { 'key: 'bidder
     ,'caps: [
       (marmalade.ledger.BUY (marmalade.ledger.create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } ) "account" "bidder-account"  1.0 (time  "2023-07-22T11:26:35Z") "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8")
       ]
+    },
+    { 'key: 'seller
+    ,'caps: [
+      (SELLER (read-msg 'sale-id))
+    ]
     }])
 
-  (expect "Buy succeeds"
+  (expect "Accepting bid & buy succeeds"
       true
       (continue-pact 1 false "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8"))
 

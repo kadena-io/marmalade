@@ -104,12 +104,6 @@
     (format "{}-{}" [sale-id buyer])
   )
 
-  (defun is-reserved:bool (sale-id:string)
-    (with-read quotes sale-id { 'reserved:= reserved }
-      (!= reserved "")
-    )
-  )
-
   (defun get-quote:object{quote-schema} (sale-id:string)
     (read quotes sale-id))
 
@@ -160,7 +154,7 @@
       (enforce (=
         (at 'guard seller-details) seller-guard)
         "Seller guard does not match")
-      (insert quotes sale-id { 'id: (at 'id token), 'spec: spec, 'reserved: "" })
+      (insert quotes sale-id { 'id: (at 'id token), 'spec: spec })
       (emit-event (QUOTE sale-id (at 'id token) amount price sale-price spec)))
       true
   )
@@ -227,8 +221,7 @@
       seller:string
       amount:decimal
       sale-id:string )
-    (enforce-ledger)
-    (enforce (= is-reserved false) "Cannot withdraw from sale with accepted bid")
+    (enforce-ledger)    
     true
   )
 
@@ -253,11 +246,9 @@
 
       (with-read quotes sale-id { 
         'id:= qtoken
-        ,'spec:= spec:object{quote-spec} 
-        ,'reserved:= reserved
+        ,'spec:= spec:object{quote-spec}         
       }
-        (enforce (= qtoken token-id) "incorrect sale token")
-        (enforce (= reserved "") "Sale already has accepted bid")
+        (enforce (= qtoken token-id) "incorrect sale token")        
 
         (bind spec
           { 'fungible := fungible:module{fungible-v2}
@@ -309,62 +300,52 @@
     )
   )
 
-  (defun accept-bid:bool (bid-id:string sale-id:string)
+  (defun accept-bid:bool (
+      bid-id:string 
+      buyer:string
+      sale-id:string
+      escrow-account:string
+      escrow-guard:guard
+    )
+    (enforce-ledger)
+    (with-capability (SELLER sale-id)
     (with-read bids bid-id
       { 'token-id:= token-id,
-        'buyer:= buyer,
+        'buyer:= bid-buyer,
         'buyer-guard:= buyer-guard,
         'amount:= amount,
         'price:= price,
         'status:= status
       }
+
       (enforce (= status BID-STATUS-OPEN) "Bid is not open")
+      (enforce (= bid-buyer buyer) "Bid buyer does not match buyer")
       (with-read quotes sale-id { 'spec:= spec:object{quote-spec} }
         (let* (
           (fungible:module{fungible-v2} (at 'fungible spec))
-          (seller-guard:guard (at 'seller-guard spec)))
+          (seller-guard:guard (at 'seller-guard spec))
+          (sale-price:decimal (floor (* price amount) (fungible::precision))))
 
-          (with-capability (SELLER sale-id)
-            (update quotes sale-id { 
-              'spec: { 
-                'fungible: fungible, 
-                'price: price, 
-                'seller-guard: seller-guard, 
-                'amount: amount 
-              }, 
-              'reserved: buyer })
-            (update bids bid-id { 'status: BID-STATUS-ACCEPTED })
+          ; Update quote to reflect accepted bid (so other policies will have access to the right quote)
+          (update quotes sale-id { 
+            'spec: { 
+              'fungible: fungible, 
+              'price: price, 
+              'seller-guard: seller-guard, 
+              'amount: amount 
+            }})
+
+          ; Set bid status to accepted
+          (update bids bid-id { 'status: BID-STATUS-ACCEPTED })   
+          
+          (with-capability (BID_PRIVATE bid-id)
+            (install-capability (fungible::TRANSFER (bid-escrow-account bid-id) escrow-account sale-price))
+            (fungible::transfer-create (bid-escrow-account bid-id) escrow-account escrow-guard sale-price)
           )
+          (emit-event (BID-ACCEPTED bid-id sale-id token-id amount price buyer buyer-guard))
         )
-      )
-      (emit-event (BID-ACCEPTED bid-id sale-id token-id amount price buyer buyer-guard))
-    )
-  )
-
-  (defun transfer-bid:bool (
-    buyer:string
-    sale-id:string
-    escrow-account:string
-    escrow-guard:guard
-    sale-price:decimal)
-    (enforce-ledger)
-    (enforce-sale-pact sale-id)
-    (with-read quotes sale-id { 'spec:= spec:object{quote-spec} }
-      (let* (
-        (fungible:module{fungible-v2} (at 'fungible spec))
-        (bid-id:string (get-bid-id sale-id buyer)))
-
-        (with-read bids bid-id { 'buyer:= bid-buyer }
-          (enforce (= buyer bid-buyer) "Invalid buyer")
-        )
-
-        (with-capability (BID_PRIVATE bid-id)
-          (install-capability (fungible::TRANSFER (bid-escrow-account bid-id) escrow-account sale-price))
-          (fungible::transfer-create (bid-escrow-account bid-id) escrow-account escrow-guard sale-price)
-        )
-        true
-      )
-    )
+      )      
+    ))
   )
 )
 

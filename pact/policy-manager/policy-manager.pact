@@ -151,11 +151,12 @@
                (sale-price:decimal (floor (* price amount) (fungible::precision)))
                (escrow-guard:guard (create-capability-guard (QUOTE_ESCROW sale-id )))
                (escrow-account:string (create-principal escrow-guard))
-               )
+               (bid-id:string (try "" (read-msg quote-policy::BID_ID-MSG-KEY)))
+              )
         (with-capability (QUOTE_ESCROW sale-id)
-          (if (quote-policy::is-reserved sale-id)            
-            (quote-policy::transfer-bid buyer sale-id escrow-account escrow-guard sale-price)
+          (if (= bid-id "")                        
             (fungible::transfer-create buyer escrow-account escrow-guard sale-price)            
+            (quote-policy::accept-bid bid-id buyer sale-id escrow-account escrow-guard)
           )
           
           (map-buy token seller buyer buyer-guard amount sale-id

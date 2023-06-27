@@ -260,14 +260,13 @@
   (defun enforce-token-reserved:bool (token-id:string token-details:object{token-details})
     @doc "Enforce reserved token-id name protocols."
     (let ((r (check-reserved token-id)))
-      (if (= "" r) true
-        (if (= "t" r)
-          (enforce
-            (= token-id
-               (create-token-id token-details))
-            "Token protocol violation")
-          (enforce false
-            (format "Unrecognized reserved protocol: {}" [r]) )))))
+      (if (= "t" r)
+        (enforce
+          (= token-id
+             (create-token-id token-details))
+          "Token protocol violation")
+        (enforce false
+          (format "Unrecognized reserved protocol: {}" [r]) ))))
 
   (defun truncate:decimal (id:string amount:decimal)
     (floor amount (precision id))
@@ -281,7 +280,7 @@
     ( id:string account:string )
     (read ledger (key id account))
   )
-  
+
   (defun transfer:bool
     ( id:string
       sender:string

@@ -29,7 +29,7 @@
   (env-data {
     "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
   })
-  (marmalade.abc.create-account "creator-account" (read-keyset 'creator-guard))
+  (marmalade.abc.create-account "k:creator" (read-keyset 'creator-guard))
 (commit-tx)
 
 (begin-tx "Creating collection")
@@ -37,11 +37,11 @@
   (use marmalade.policy-manager)
   (env-data {
     "token-id": (create-token-id { 'uri: "test-collection-royalty-uri", 'precision: 0, 'policies: util.DEFAULT_COLLECTION_POLICIES_WITH_ROYALTY } )
-  ,"account": "account"
+  ,"account": "k:account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
   ,"royalty_spec": {
       "fungible": marmalade.abc
-    ,"creator": 'creator-account
+    ,"creator": "k:creator"
     ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
     ,"royalty-rate": 0.05
     }
@@ -88,7 +88,7 @@
 
   (env-sigs [
     { 'key: 'account1
-    ,'caps: [(marmalade.ledger.MINT "t:4ROy-Sx2Q8BrkGYQdFE9UAIJku9kpMXejUL3GnA0j3A" "account" 1.0)]
+    ,'caps: [(marmalade.ledger.MINT "t:4ROy-Sx2Q8BrkGYQdFE9UAIJku9kpMXejUL3GnA0j3A" "k:account" 1.0)]
     }])
 
   (expect "mint a default token with collection-policy, quote-policy, non-fungible-policy, royalty-policy"
@@ -120,11 +120,11 @@
   (env-data {
     "token-id1": (create-token-id { 'uri: "test-collection-size-uri1", 'precision: 0, 'policies: util.DEFAULT_COLLECTION_POLICIES_WITH_ROYALTY } )
   ,"token-id2": (create-token-id { 'uri: "test-collection-size-uri2", 'precision: 0, 'policies: util.DEFAULT_COLLECTION_POLICIES_WITH_ROYALTY } )
-  ,"account": "account"
+  ,"account": "k:account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
   ,"royalty_spec": {
       "fungible": marmalade.abc
-    ,"creator": 'creator-account
+    ,"creator": "k:creator"
     ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
     ,"royalty-rate": 0.05
     }
@@ -156,11 +156,11 @@
   (env-data {
     "token-id1": (create-token-id { 'uri: "test-collection-size-uri1", 'precision: 0, 'policies: util.DEFAULT_COLLECTION_POLICIES_WITH_ROYALTY } )
   ,"token-id2": (create-token-id { 'uri: "test-collection-size-uri2", 'precision: 0, 'policies: util.DEFAULT_COLLECTION_POLICIES_WITH_ROYALTY } )
-  ,"account": "account"
+  ,"account": "k:account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
   ,"royalty_spec": {
       "fungible": marmalade.abc
-    ,"creator": 'creator-account
+    ,"creator": "k:creator"
     ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
     ,"royalty-rate": 0.05
     }

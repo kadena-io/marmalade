@@ -198,7 +198,6 @@
       account:string
       guard:guard
     )
-    (enforce-valid-account account)
     (enforce-reserved account guard)
     (insert ledger (key id account)
       { "balance" : 0.0
@@ -250,6 +249,13 @@
       })
       (emit-event (TOKEN id precision 0.0 policies uri)))
   )
+
+  (defun check-reserved:string (token-id:string)
+    " Checks token-id for reserved name and returns type if \
+    \ found or empty string. Reserved names start with a \
+    \ single char and colon, e.g. 't:foo', which would return 't' as type."
+    (let ((pfx (take 2 token-id)))
+      (if (= ":" (take -1 pfx)) (take 1 pfx) "")))
 
   (defun enforce-token-reserved:bool (token-id:string token-details:object{token-details})
     @doc "Enforce reserved token-id name protocols."
@@ -408,34 +414,35 @@
     @model [ (property (> amount 0.0))
              (property (valid-account account))
            ]
-    (enforce-valid-account account)
+    (enforce-reserved account guard)
     (enforce-unit id amount)
 
     (require-capability (CREDIT id account))
 
     (with-default-read ledger (key id account)
-      { "balance" : -1.0, "guard" : guard }
-      { "balance" := old-bal, "guard" := retg }
-      (enforce (= retg guard)
-        "account guards do not match")
+      { "balance" : -1.0 }
+      { "balance" := old-bal }
 
-      (let* ((is-new
-               (if (= old-bal -1.0)
-                   (enforce-reserved account guard)
-                 false))
-              (new-bal (if is-new amount (+ old-bal amount)))
-            )
-
-      (write ledger (key id account)
-        { "balance" : new-bal
-        , "guard"   : retg
-        , "id"   : id
-        , "account" : account
-        })
-        (if is-new (emit-event (ACCOUNT_GUARD id account retg)) true)
-        {'account: account, 'previous: (if is-new 0.0 old-bal), 'current: new-bal}
+      (let* ((is-new:bool
+               (= old-bal -1.0))
+             (old-bal:decimal (if is-new 0.0 old-bal))
+             (new-bal:decimal  (+ old-bal amount)))
+      (if is-new
+        [ (insert ledger (key id account)
+            { "balance" : new-bal
+            , "guard"   : guard
+            , "id" : id
+            , "account" : account
+            })
+          (emit-event (ACCOUNT_GUARD id account guard))
+        ]
+        (update ledger (key id account)
+          { "balance" : new-bal
+          }))
+      {'account: account, 'previous: old-bal, 'current: new-bal}
       ))
-  )
+    )
+
 
   (defun credit-account:object{receiver-balance-change}
     ( id:string

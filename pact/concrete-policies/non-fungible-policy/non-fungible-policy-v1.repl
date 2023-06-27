@@ -29,7 +29,7 @@
   (env-data {
     "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
   })
-  (marmalade.abc.create-account "creator-account" (read-keyset 'creator-guard))
+  (marmalade.abc.create-account "k:creator" (read-keyset 'creator-guard))
 (commit-tx)
 
 (begin-tx)
@@ -38,7 +38,7 @@
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-non-fungible-uri", 'precision: 0, 'policies: util.DEFAULT_NON_FUNGIBLE_POLICIES } )
-    ,"account": "account"
+    ,"account": "k:account"
     ,"nfp-mint-guard": {"keys": ["account"], "pred": "keys-all"}
     ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
   })
@@ -56,7 +56,7 @@
   (use marmalade.ledger)
   (env-sigs [
     { 'key: 'account
-     ,'caps: [(marmalade.ledger.MINT "t:ql_vIepldcYgTSOzuW0VtvdQXDP7_EWP4g-jKL9mxUM" "account" 5.0)
+     ,'caps: [(marmalade.ledger.MINT "t:ql_vIepldcYgTSOzuW0VtvdQXDP7_EWP4g-jKL9mxUM" "k:account" 5.0)
     ]
     }])
 
@@ -69,7 +69,7 @@
   (use marmalade.ledger)
   (env-sigs [
     { 'key: 'account
-    ,'caps: [(marmalade.ledger.MINT "t:ql_vIepldcYgTSOzuW0VtvdQXDP7_EWP4g-jKL9mxUM" "account" 0.5)]
+    ,'caps: [(marmalade.ledger.MINT "t:ql_vIepldcYgTSOzuW0VtvdQXDP7_EWP4g-jKL9mxUM" "k:account" 0.5)]
     }])
 
   (expect-failure "minting with amout of 0.5 fails"
@@ -81,7 +81,7 @@
   (use marmalade.ledger)
   (env-sigs [
     { 'key: 'account
-    ,'caps: [(marmalade.ledger.MINT "t:ql_vIepldcYgTSOzuW0VtvdQXDP7_EWP4g-jKL9mxUM" "account" 1.0)]
+    ,'caps: [(marmalade.ledger.MINT "t:ql_vIepldcYgTSOzuW0VtvdQXDP7_EWP4g-jKL9mxUM" "k:account" 1.0)]
     }])
 
   (expect "minting succeeds"
@@ -93,7 +93,7 @@
   (use marmalade.ledger)
     (env-sigs [
       { 'key: 'account
-      ,'caps: [(marmalade.ledger.BURN "t:ql_vIepldcYgTSOzuW0VtvdQXDP7_EWP4g-jKL9mxUM" "account" 1.0)]
+      ,'caps: [(marmalade.ledger.BURN "t:ql_vIepldcYgTSOzuW0VtvdQXDP7_EWP4g-jKL9mxUM" "k:account" 1.0)]
       }])
 
     (expect-failure "Burning is not allowed"

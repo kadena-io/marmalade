@@ -262,14 +262,13 @@
   (defun enforce-token-reserved:bool (token-id:string token-details:object{token-details})
     @doc "Enforce reserved token-id name protocols."
     (let ((r (check-reserved token-id)))
-      (if (= "" r) true
-        (if (= "t" r)
-          (enforce
-            (= token-id
-               (create-token-id token-details))
-            "Token protocol violation")
-          (enforce false
-            (format "Unrecognized reserved protocol: {}" [r]) )))))
+      (if (= "t" r)
+        (enforce
+          (= token-id
+             (create-token-id token-details))
+          "Token protocol violation")
+        (enforce false
+          (format "Unrecognized reserved protocol: {}" [r]) ))))
 
   (defun enforce-uri-reserved:bool (uri:string)
     " Enforce reserved uri name protocols "

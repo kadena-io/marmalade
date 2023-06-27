@@ -89,6 +89,8 @@
   "default-token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-default-policies DEFAULT) } )
  ,"reserved-token-id": (create-token-id { 'uri: "marmalade-uri", 'precision: 0, 'policies: (create-default-policies DEFAULT) } )
  ,"empty-token-id": (create-token-id { 'uri: "test-uri-1", 'precision: 0, 'policies: (create-default-policies EMPTY) } )
+ ,"wrong-token-protocol-id": "t:wrong"
+ ,"wrong-token-id": "wrong"
  ,"account": "k:account"
  ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
   })
@@ -102,6 +104,14 @@
 (expect-failure "create a token with uri starting with marmalade fails"
   "Reserved protocol: marmalade"
   (create-token (read-msg 'reserved-token-id) 0 "marmalade-uri" (create-default-policies DEFAULT) ))
+
+(expect-failure "create a token with unmatching token-id"
+  "Token protocol violation"
+  (create-token (read-msg 'wrong-token-protocol-id) 0 "test-uri" (create-default-policies DEFAULT) ))
+
+(expect-failure "create a token without token protocol"
+  "Unrecognized reserved protocol"
+  (create-token (read-msg 'wrong-token-id) 0 "test-uri" (create-default-policies DEFAULT) ))
 
 (expect "create a default token with quote-policy, non-fungible-policy"
   true

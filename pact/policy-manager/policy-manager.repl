@@ -87,6 +87,7 @@
 
 (env-data {
   "default-token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-default-policies DEFAULT) } )
+ ,"reserved-token-id": (create-token-id { 'uri: "marmalade-uri", 'precision: 0, 'policies: (create-default-policies DEFAULT) } )
  ,"empty-token-id": (create-token-id { 'uri: "test-uri-1", 'precision: 0, 'policies: (create-default-policies EMPTY) } )
  ,"wrong-token-protocol-id": "t:wrong"
  ,"wrong-token-id": "wrong"
@@ -99,6 +100,10 @@
             (marmalade.ledger.MINT "t:6ll2WfFkYk7Pi6oZiFlpRLC7VadDLg50f9Ref4oA54Y" "k:account" 1.0)
    ]
    }])
+
+(expect-failure "create a token with uri starting with marmalade fails"
+  "Reserved protocol: marmalade"
+  (create-token (read-msg 'reserved-token-id) 0 "marmalade-uri" (create-default-policies DEFAULT) ))
 
 (expect-failure "create a token with unmatching token-id"
   "Token protocol violation"

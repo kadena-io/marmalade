@@ -233,6 +233,8 @@
       policies:object{token-policies}
     )
     (with-capability (LEDGER)
+      ;; enforces token and uri protocols
+      (enforce-uri-reserved uri)
       (let ((token-details { 'uri: uri, 'precision: precision, 'policies: policies }))
        (enforce-token-reserved id token-details)
       )
@@ -269,6 +271,14 @@
           (enforce false
             (format "Unrecognized reserved protocol: {}" [r]) )))))
 
+  (defun enforce-uri-reserved:bool (uri:string)
+    " Enforce reserved uri name protocols "
+    (if (= "marmalade" (take 9 uri))
+        (enforce false "Reserved protocol: marmalade")
+        true
+    )
+  )
+
   (defun truncate:decimal (id:string amount:decimal)
     (floor amount (precision id))
   )
@@ -281,7 +291,7 @@
     ( id:string account:string )
     (read ledger (key id account))
   )
-  
+
   (defun transfer:bool
     ( id:string
       sender:string

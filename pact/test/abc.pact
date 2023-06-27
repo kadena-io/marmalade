@@ -49,7 +49,7 @@
     ( account:string
       guard:guard
     )
-    (enforce-valid-account account)
+    (enforce-reserved account guard)
     (insert ledger account
       { "balance" : 0.0
       , "guard"   : guard

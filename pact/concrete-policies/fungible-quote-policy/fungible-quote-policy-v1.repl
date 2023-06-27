@@ -30,7 +30,7 @@
 (env-exec-config ["DisablePact44"])
 (env-data {
    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
-  ,"account": 'account
+  ,"account": "k:account"
   ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
 })
 
@@ -40,12 +40,12 @@
 
 (env-sigs [
   { 'key: 'random
-  ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id ) "account" 2.0)]
+  ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id ) "k:account" 2.0)]
   }])
 
 (env-data {
   "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
- ,"account": 'account
+ ,"account": "k:account"
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
 })
 
@@ -62,12 +62,12 @@
   (env-data {
     "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
-  ,"account": 'account
+  ,"account": "k:account"
   })
 
   (env-sigs [
     { 'key: 'any-key
-    ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id ) "account" 2.0)]
+    ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id ) "k:account" 2.0)]
     }])
 
   (expect-failure "mint 2.0 amount of quote-only tokens with random key"
@@ -76,7 +76,7 @@
 
   (env-sigs [
     { 'key: 'account
-    ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id ) "account" 2.0)]
+    ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id ) "k:account" 2.0)]
     }])
 
   (expect "mint 2.0 amount of quote-only tokens with mint-guard key"
@@ -96,7 +96,7 @@
   (use marmalade.ledger)
 
   (env-data {
-    "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
+    "seller-guard": {"keys": ["account"], "pred": "keys-all"}
   })
 
   (env-data {
@@ -105,19 +105,19 @@
       "fungible": marmalade.abc
       ,"price": 2.0
       ,"amount": 1.0
-      ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
+      ,"seller-guard": {"keys": ["account"], "pred": "keys-all"}}
     })
 
   (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
   (env-sigs [
     { 'key: 'account-wrong
     ,'caps: [
-    (marmalade.ledger.OFFER (read-msg 'token-id ) "account" 1.0 (time "2023-07-22T11:26:35Z") )]
+    (marmalade.ledger.OFFER (read-msg 'token-id ) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
     }])
 
   (expect-failure "offer fails because of keyset failure"
     "Keyset failure (keys-all): [account]"
-    (sale (read-msg 'token-id) 'account 1.0 (time "2023-07-22T11:26:35Z")))
+    (sale (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z")))
 (rollback-tx)
 
 
@@ -127,10 +127,10 @@
   (use marmalade.ledger)
 
   (env-data {
-    "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
+    "seller-guard": {"keys": ["account"], "pred": "keys-all"}
   })
-  (marmalade.abc.create-account "account" (read-keyset 'seller-guard))
-  (marmalade.abc.fund "account" 2.0)
+  (marmalade.abc.create-account "k:account" (read-keyset 'seller-guard))
+  (marmalade.abc.fund "k:account" 2.0)
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
@@ -138,38 +138,38 @@
     "fungible": marmalade.abc
     ,"price": 2.0
     ,"amount": 1.0
-    ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
+    ,"seller-guard": {"keys": ["account"], "pred": "keys-all"}}
     })
 
   (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-    (marmalade.ledger.OFFER (read-msg 'token-id ) "account" 1.0 (time "2023-07-22T11:26:35Z") )]
+    (marmalade.ledger.OFFER (read-msg 'token-id ) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
     }])
 
   (expect "Start offer succeeds"
     true
-    (sale (read-msg 'token-id) 'account 1.0 (time "2023-07-22T11:26:35Z")))
+    (sale (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z")))
 
   (env-data {
-    "buyer": "buyer-account"
+    "buyer": "k:buyer"
   ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
   ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
   ,"marketplace-fee": {
-    "marketplace-account":"marketplace"
+    "marketplace-account":"k:market"
     ,"mk-fee-percentage": 0.05
     }})
 
-  (marmalade.abc.create-account "buyer-account" (read-keyset 'buyer-guard))
-  (marmalade.abc.create-account "marketplace" (read-keyset 'market-guard))
-  (marmalade.abc.fund "buyer-account" 2.0)
+  (marmalade.abc.create-account "k:buyer" (read-keyset 'buyer-guard))
+  (marmalade.abc.create-account "k:market" (read-keyset 'market-guard))
+  (marmalade.abc.fund "k:buyer" 2.0)
 
   (env-sigs
   [{'key:'buyer
     ,'caps: [
-      (BUY (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } ) "account" "buyer-account"  1.0 (time  "2023-07-22T11:26:35Z") "v86vqj0OkIZQfD3XGETjij1sLjJH7Q6GZBZJeytDsEo")
-      (marmalade.abc.TRANSFER "buyer-account" "c:cbnfX-2IcN_in1gOZpdheAlkbERuqFIUNOYE8egBx38" 2.0)
+      (BUY (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } ) "k:account" "k:buyer"  1.0 (time  "2023-07-22T11:26:35Z") "v86vqj0OkIZQfD3XGETjij1sLjJH7Q6GZBZJeytDsEo")
+      (marmalade.abc.TRANSFER "k:buyer" "c:cbnfX-2IcN_in1gOZpdheAlkbERuqFIUNOYE8egBx38" 2.0)
     ]}])
 
   (env-hash (hash "offer-royalty-0"))
@@ -180,15 +180,15 @@
 
   (expect "Buyer account has 0.0 tokens left"
     0.0
-    (marmalade.abc.get-balance "buyer-account"))
+    (marmalade.abc.get-balance "k:buyer"))
 
   (expect "Seller account has 3.9 tokens"
     3.9
-    (marmalade.abc.get-balance "account"))
+    (marmalade.abc.get-balance "k:account"))
 
   (expect "Marketplace fee account has 2.1 tokens"
     0.1
-    (marmalade.abc.get-balance "marketplace"))
+    (marmalade.abc.get-balance "k:market"))
 
 (rollback-tx)
 
@@ -198,9 +198,9 @@
   (use marmalade.ledger)
 
   (env-data {
-    "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
+    "seller-guard": {"keys": ["account"], "pred": "keys-all"}
   })
-  (marmalade.abc.create-account "account" (read-keyset 'seller-guard))
+  (marmalade.abc.create-account "k:account" (read-keyset 'seller-guard))
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
@@ -208,36 +208,36 @@
     "fungible": marmalade.abc
     ,"price": 2.0
     ,"amount": 1.0
-    ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
+    ,"seller-guard": {"keys": ["account"], "pred": "keys-all"}}
     })
 
   (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-    (marmalade.ledger.OFFER (read-msg 'token-id ) "account" 1.0 (time "2023-07-22T11:26:35Z") )]
+    (marmalade.ledger.OFFER (read-msg 'token-id ) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
     }])
 
   (expect "Start offer succeeds"
     true
-    (sale (read-msg 'token-id) 'account 1.0 (time "2023-07-22T11:26:35Z")))
+    (sale (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z")))
 
   (env-data {
-    "buyer": "buyer-account"
+    "buyer": "k:buyer"
   ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
   ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
   ,"marketplace-fee": {"marketplace-account": "", "mk-fee-percentage": 0.0 }
   })
 
-  (marmalade.abc.create-account "buyer-account" (read-keyset 'buyer-guard))
-  (marmalade.abc.create-account "marketplace" (read-keyset 'market-guard))
-  (marmalade.abc.fund "buyer-account" 2.0)
+  (marmalade.abc.create-account "k:buyer" (read-keyset 'buyer-guard))
+  (marmalade.abc.create-account "k:market" (read-keyset 'market-guard))
+  (marmalade.abc.fund "k:buyer" 2.0)
 
   (env-sigs
   [{'key:'buyer
     ,'caps: [
-      (BUY (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } ) "account" "buyer-account"  1.0 (time  "2023-07-22T11:26:35Z") "v86vqj0OkIZQfD3XGETjij1sLjJH7Q6GZBZJeytDsEo")
-      (marmalade.abc.TRANSFER "buyer-account" "c:cbnfX-2IcN_in1gOZpdheAlkbERuqFIUNOYE8egBx38" 2.0)
+      (BUY (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } ) "k:account" "k:buyer"  1.0 (time  "2023-07-22T11:26:35Z") "v86vqj0OkIZQfD3XGETjij1sLjJH7Q6GZBZJeytDsEo")
+      (marmalade.abc.TRANSFER "k:buyer" "c:cbnfX-2IcN_in1gOZpdheAlkbERuqFIUNOYE8egBx38" 2.0)
     ]}])
 
   (env-hash (hash "offer-royalty-0"))
@@ -248,15 +248,15 @@
 
   (expect "Buyer account has 0.0 tokens left"
     0.0
-    (marmalade.abc.get-balance "buyer-account"))
+    (marmalade.abc.get-balance "k:buyer"))
 
   (expect "Seller account has 2.0 tokens"
     2.0
-    (marmalade.abc.get-balance "account"))
+    (marmalade.abc.get-balance "k:account"))
 
   (expect "Marketplace fee account has 0 tokens"
     0.0
-    (marmalade.abc.get-balance "marketplace"))
+    (marmalade.abc.get-balance "k:market"))
 (rollback-tx)
 
 (begin-tx "Sell token and place bid")
@@ -265,9 +265,9 @@
   (use marmalade.ledger)
 
   (env-data {
-    "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
+    "seller-guard": {"keys": ["account"], "pred": "keys-all"}
   })
-  (marmalade.abc.create-account "account" (read-keyset 'seller-guard))
+  (marmalade.abc.create-account "k:account" (read-keyset 'seller-guard))
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
@@ -275,19 +275,19 @@
     "fungible": marmalade.abc
     ,"price": 10.0
     ,"amount": 1.0
-    ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
+    ,"seller-guard": {"keys": ["account"], "pred": "keys-all"}}
     })
 
   (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-    (marmalade.ledger.OFFER (read-msg 'token-id) "account" 1.0 (time "2023-07-22T11:26:35Z") )]
+    (marmalade.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
     }])
 
   (expect "Start offer succeeds"
     true
-    (sale (read-msg 'token-id) 'account 1.0 (time "2023-07-22T11:26:35Z")))
+    (sale (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z")))
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
@@ -295,23 +295,23 @@
     ,"bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
   })
 
-  (marmalade.abc.create-account "bidder-account" (read-keyset 'bidder-guard))
-  (marmalade.abc.fund "bidder-account" 25.0)
+  (marmalade.abc.create-account "k:bidder" (read-keyset 'bidder-guard))
+  (marmalade.abc.fund "k:bidder" 25.0)
 
   (env-sigs
   [{'key:'bidder
     ,'caps: [
-       (marmalade.abc.TRANSFER "bidder-account" "c:fsTjb6w6jogvXcyIEhzFaOv-G5f_R6bOWeDR16ON0kM" 5.0)
+       (marmalade.abc.TRANSFER "k:bidder" "c:xm9OAtNJtczDgymM7tkdmVoya2gz8jq0hHhjZo0b2lw" 5.0)
     ]}])
 
   (expect "Place Bid succeeds"
     true
-    (marmalade.fungible-quote-policy-v1.place-bid (read-msg 'token-id) 'bidder-account (read-keyset 'bidder-guard) 1.0 5.0 (read-msg 'sale-id))
+    (marmalade.fungible-quote-policy-v1.place-bid (read-msg 'token-id) "k:bidder" (read-keyset 'bidder-guard) 1.0 5.0 (read-msg 'sale-id))
   )
 
   (expect "Buyer account has 20.0 tokens left"
     20.0
-    (marmalade.abc.get-balance "bidder-account"))
+    (marmalade.abc.get-balance "k:bidder"))
 (commit-tx)
 
 (begin-tx "Withdraw bid")
@@ -320,7 +320,7 @@
   (use marmalade.fungible-quote-policy-v1)
 
   (env-data {
-    "bid-id": (get-bid-id "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8" "bidder-account")
+    "bid-id": (get-bid-id "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8" "k:bidder")
     ,"sale-id": "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8"
     ,"bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
   })
@@ -338,7 +338,7 @@
 
   (expect "Buyer account has 25.0 tokens"
     25.0
-    (marmalade.abc.get-balance "bidder-account"))
+    (marmalade.abc.get-balance "k:bidder"))
 (rollback-tx)
 
 (begin-tx "Accept bid and finish sale")
@@ -354,24 +354,24 @@
     }])
 
   (env-data {
-    "buyer": "bidder-account"
+    "buyer": "k:bidder"
     ,"buyer-guard": {"keys": ["bidder"], "pred": "keys-all"}
     ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
     ,"marketplace-fee": {
     "marketplace-account":""
     ,"mk-fee-percentage": 0.0
     }
-    ,"bid-id": (get-bid-id "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8" "bidder-account")
+    ,"bid-id": (get-bid-id "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8" "k:bidder")
     ,"sale-id": "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8"
   })
 
   (env-sigs [
     { 'key: 'bidder
     ,'caps: [
-      (marmalade.ledger.BUY (marmalade.ledger.create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } ) "account" "bidder-account"  1.0 (time  "2023-07-22T11:26:35Z") "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8")
+      (marmalade.ledger.BUY (marmalade.ledger.create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } ) "k:account" "k:bidder"  1.0 (time  "2023-07-22T11:26:35Z") "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8")
       ]
     },
-    { 'key: 'seller
+    { 'key: 'account
     ,'caps: [
       (SELLER (read-msg 'sale-id))
     ]
@@ -383,5 +383,5 @@
 
   (expect "Seller account has increased with 5 tokens"
     5.0
-    (marmalade.abc.get-balance "account"))
+    (marmalade.abc.get-balance "k:account"))
 (commit-tx)

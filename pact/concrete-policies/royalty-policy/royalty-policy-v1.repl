@@ -29,7 +29,7 @@
 (env-data {
   "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
 })
-(marmalade.abc.create-account "creator-account" (read-keyset 'creator-guard))
+(marmalade.abc.create-account "k:creator" (read-keyset 'creator-guard))
 (commit-tx)
 (begin-tx)
 (use marmalade.ledger)
@@ -40,7 +40,7 @@
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
     "fungible": marmalade.abc
-   ,"creator": 'creator-account
+   ,"creator": "k:creator"
    ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
    ,"royalty-rate": -0.000001
   }
@@ -63,11 +63,11 @@
 (use marmalade.policy-manager)
 (env-data {
   "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: util.DEFAULT_POLICIES_WITH_ROYALTY } )
- ,"account": "account"
+ ,"account": "k:account"
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
     "fungible": marmalade.abc
-   ,"creator": 'creator-account
+   ,"creator": "k:creator"
    ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
    ,"royalty-rate": 0.05
   }
@@ -79,7 +79,7 @@
 
 (env-sigs [
   { 'key: 'account
-  ,'caps: [(marmalade.ledger.MINT "t:RrGm1DQPjuSxKHkKNm5kXJf34zo_G9goEycEZ4kk_no" "account" 1.0)]
+  ,'caps: [(marmalade.ledger.MINT "t:RrGm1DQPjuSxKHkKNm5kXJf34zo_G9goEycEZ4kk_no" "k:account" 1.0)]
   }])
 
 (expect "mint a default token with quote-policy, non-fungible-policy"
@@ -93,9 +93,9 @@
 (use marmalade.ledger)
 
 (env-data {
-  "seller-guard": {"keys": ["seller"], "pred": "keys-all"}
+  "seller-guard": {"keys": ["account"], "pred": "keys-all"}
 })
-(marmalade.abc.create-account "account" (read-keyset 'seller-guard))
+(marmalade.abc.create-account "k:account" (read-keyset 'seller-guard))
 
 (env-data {
   "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: util.DEFAULT_POLICIES_WITH_ROYALTY } )
@@ -103,40 +103,40 @@
    "fungible": marmalade.abc
   ,"price": 2.0
   ,"amount": 1.0
-  ,"seller-guard": {"keys": ["seller"], "pred": "keys-all"}}
+  ,"seller-guard": {"keys": ["account"], "pred": "keys-all"}}
   })
 
 (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
 (env-sigs [
   { 'key: 'account
    ,'caps: [
-   (marmalade.ledger.OFFER "t:RrGm1DQPjuSxKHkKNm5kXJf34zo_G9goEycEZ4kk_no" "account" 1.0 (time "2023-07-22T11:26:35Z") )]
+   (marmalade.ledger.OFFER "t:RrGm1DQPjuSxKHkKNm5kXJf34zo_G9goEycEZ4kk_no" "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
    }])
 
 (expect "stat offer by running step 0 of sale"
   true
-  (sale (read-msg 'token-id) 'account 1.0 (time "2023-07-22T11:26:35Z")))
+  (sale (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z")))
 
 (env-data { "recipient-guard": {"keys": ["seller"], "pred": "keys-all"}})
 
 (env-data {
-  "buyer": "buyer-account"
+  "buyer": "k:buyer"
  ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
  ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
  ,"marketplace-fee": {
-   "marketplace-account":"marketplace"
+   "marketplace-account":"k:market"
   ,"mk-fee-percentage": 0.05
   }})
 
-(marmalade.abc.create-account "buyer-account" (read-keyset 'buyer-guard))
-(marmalade.abc.create-account "marketplace" (read-keyset 'market-guard))
-(marmalade.abc.fund "buyer-account" 2.0)
+(marmalade.abc.create-account "k:buyer" (read-keyset 'buyer-guard))
+(marmalade.abc.create-account "k:market" (read-keyset 'market-guard))
+(marmalade.abc.fund "k:buyer" 2.0)
 
 (env-sigs
  [{'key:'buyer
   ,'caps: [
-    (BUY (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: util.DEFAULT_POLICIES_WITH_ROYALTY } ) "account" "buyer-account"  1.0 (time  "2023-07-22T11:26:35Z") "0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM")
-    (marmalade.abc.TRANSFER "buyer-account" "c:z85Gnsq2GGFlAPL4lmU1beh3QCi2rOt_VHHZZ6hjU2g" 2.0)
+    (BUY (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: util.DEFAULT_POLICIES_WITH_ROYALTY } ) "k:account" "k:buyer"  1.0 (time  "2023-07-22T11:26:35Z") "0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM")
+    (marmalade.abc.TRANSFER "k:buyer" "c:z85Gnsq2GGFlAPL4lmU1beh3QCi2rOt_VHHZZ6hjU2g" 2.0)
    ]}])
 
 (env-hash (hash "offer-royalty-0"))

@@ -14,6 +14,7 @@
      ,'non-fungible-policy: true
      ,'royalty-policy: true
      ,'collection-policy:true
+     ,'guard-policy: true
     }
   )
   (defconst DEFAULT_ONCHAIN_COLLECTION_POLICIES_WITH_ROYALTY:object{token-policies}
@@ -30,7 +31,7 @@
 (env-data {
   "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
 })
-(marmalade.abc.create-account "creator-account" (read-keyset 'creator-guard))
+(marmalade.abc.create-account "k:creator" (read-keyset 'creator-guard))
 (commit-tx)
 
 (begin-tx)
@@ -39,11 +40,11 @@
 (use marmalade.onchain-manifest-policy-v1)
 (env-data {
   "token-id": (create-token-id { 'uri: "test-onchain-collection-royalty-uri", 'precision: 0, 'policies: util.DEFAULT_ONCHAIN_COLLECTION_POLICIES_WITH_ROYALTY } )
- ,"account": "account"
+ ,"account": "k:account"
  ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
     "fungible": marmalade.abc
-   ,"creator": 'creator-account
+   ,"creator": "k:creator"
    ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
    ,"royalty-rate": 0.05
   }
@@ -71,7 +72,7 @@
 
 (env-sigs [
   { 'key: 'manifest
-  ,'caps: [(UPGRADE "t:GOT4D2gdFTLBxgFYpCGjkywn8GT7pcSLY8YGNgEuxI8")]
+  ,'caps: [(UPGRADE "t:g7yD8xrFZT1YZCzlmiaEbpRGXsYNmHGHQlzy4ofwzh8")]
   }])
 
 (get-manifest (read-msg 'token-id))

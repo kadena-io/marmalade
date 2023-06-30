@@ -5,7 +5,6 @@
   (defcap GOVERNANCE ()
     (enforce-guard 'marmalade-admin ))
 
-  (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-policies token-info concrete-policy NON_FUNGIBLE_POLICY QUOTE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
 
   (defschema concrete-policy-list
@@ -86,7 +85,7 @@
     )
   )
 
-  (defun enforce-init:bool (token:object{token-info})
+  (defun enforce-init:[bool] (token:object{token-info})
     (enforce-ledger)
     (map-init token (merge-policies-list (at 'policies token)))
   )
@@ -101,7 +100,7 @@
     (at policy (at 'concrete-policies policies))
   )
 
-  (defun enforce-mint:bool
+  (defun enforce-mint:[bool]
     ( token:object{token-info}
       account:string
       guard:guard
@@ -112,7 +111,7 @@
       (map-mint token account guard amount
          (merge-policies-list policies))))
 
-  (defun enforce-burn:bool
+  (defun enforce-burn:[bool]
     ( token:object{token-info}
       account:string
       amount:decimal
@@ -122,7 +121,7 @@
       (map-burn token account amount
          (merge-policies-list policies))))
 
-  (defun enforce-offer:bool
+  (defun enforce-offer:[bool]
     ( token:object{token-info}
       seller:string
       amount:decimal
@@ -179,7 +178,7 @@
       (enforce (= sale (pact-id)) "Invalid pact/sale id")
     )
 
-  (defun enforce-transfer:bool
+  (defun enforce-transfer:[bool]
     ( token:object{token-info}
       sender:string
       guard:guard
@@ -190,7 +189,7 @@
       (map-transfer token sender guard receiver amount
         (merge-policies-list policies))))
 
-  (defun enforce-crosschain:bool
+  (defun enforce-crosschain:[bool]
     ( token:object{token-info}
       sender:string
       guard:guard

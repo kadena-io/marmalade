@@ -72,7 +72,7 @@
 
 (env-sigs [
   { 'key: 'manifest
-  ,'caps: [(UPGRADE "t:g7yD8xrFZT1YZCzlmiaEbpRGXsYNmHGHQlzy4ofwzh8")]
+  ,'caps: [(UPGRADE "t:mCJHHeO73hemftLex8QFH506Z2u3E7xVUxnujQ62CL0")]
   }])
 
 (get-manifest (read-msg 'token-id))

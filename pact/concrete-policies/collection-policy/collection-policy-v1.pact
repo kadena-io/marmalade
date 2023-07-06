@@ -145,16 +145,6 @@
     (enforce-ledger)
   )
 
-  (defun enforce-crosschain:bool
-    ( token:object{token-info}
-      sender:string
-      guard:guard
-      receiver:string
-      target-chain:string
-      amount:decimal )
-    (enforce false "Transfer prohibited")
-  )
-
   ;;UTILITY FUNCTIONS
 
   (defun create-collection-id (collection-name:string)

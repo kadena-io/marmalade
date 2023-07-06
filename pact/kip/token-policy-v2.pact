@@ -89,14 +89,4 @@
          \ Also governs rotate of SENDER (with same RECEIVER and 0.0 AMOUNT). "
   )
 
-  (defun enforce-crosschain:bool
-    ( token:object{token-info}
-      sender:string
-      guard:guard
-      receiver:string
-      target-chain:string
-      amount:decimal )
-    @doc " Enforce rules on crosschain transfer of TOKEN AMOUNT \
-         \ from SENDER to RECEIVER on TARGET-CHAIN."
-  )
 )

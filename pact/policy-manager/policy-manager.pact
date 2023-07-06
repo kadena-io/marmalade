@@ -171,17 +171,6 @@
     (let ((policies:[module{kip.token-policy-v2}]  (at 'policies token)))
       (map-transfer token sender guard receiver amount policies)))
 
-  (defun enforce-crosschain:[bool]
-    ( token:object{token-info}
-      sender:string
-      guard:guard
-      receiver:string
-      target-chain:string
-      amount:decimal )
-    (enforce-ledger)
-    (let ((policies:[module{kip.token-policy-v2}]  (at 'policies token)))
-      (map-crosschain token sender guard receiver target-chain amount policies)))
-
   (defun enforce-withdraw:[bool]
     ( token:object{token-info}
       seller:string
@@ -249,12 +238,6 @@
 
    (defun map-transfer (token:object{token-info} sender:string guard:guard receiver:string amount:decimal policy-list:[module{kip.token-policy-v2}])
      (map (token-transfer  token sender guard receiver amount) policy-list))
-
-   (defun token-crosschain (token:object{token-info} sender:string guard:guard receiver:string target-chain:string amount:decimal policy:module{kip.token-policy-v2})
-     (policy::enforce-crosschain  token sender guard receiver target-chain amount))
-
-   (defun map-crosschain (token:object{token-info} params:object sender:string guard:guard receiver:string target-chain:string amount:decimal policy-list:[module{kip.token-policy-v2}])
-     (map (token-crosschain  token sender guard receiver target-chain amount) policy-list))
 )
 
 (if (read-msg 'upgrade )

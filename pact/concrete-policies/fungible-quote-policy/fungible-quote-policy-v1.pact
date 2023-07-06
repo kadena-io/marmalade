@@ -80,19 +80,19 @@
     true
   )
 
-  (defcap BUYER:bool (bid-id:string) 
+  (defcap BUYER:bool (bid-id:string)
     @doc "Only accessible for buyer"
     (with-read bids bid-id { 'buyer-guard:= buyer-guard }
       (enforce-guard buyer-guard)
-    )    
+    )
   )
-  
-  (defcap SELLER:bool (sale-id:string) 
+
+  (defcap SELLER:bool (sale-id:string)
     @doc "Only accessible for seller"
-    (with-read quotes sale-id { 'spec:= spec:object{quote-spec} }      
-      (enforce-guard (at 'seller-guard spec))      
-    )    
-  )  
+    (with-read quotes sale-id { 'spec:= spec:object{quote-spec} }
+      (enforce-guard (at 'seller-guard spec))
+    )
+  )
 
   (defcap BID_PRIVATE:bool (bid-id:string) true)
 
@@ -221,19 +221,8 @@
       seller:string
       amount:decimal
       sale-id:string )
-    (enforce-ledger)    
-    true
-  )
-
-  (defun enforce-crosschain:bool
-    ( token:object{token-info}
-      sender:string
-      guard:guard
-      receiver:string
-      target-chain:string
-      amount:decimal )
     (enforce-ledger)
-    (enforce false "Transfer prohibited")
+    true
   )
 
   (defun place-bid:bool
@@ -242,13 +231,13 @@
       buyer-guard:guard
       amount:decimal
       price:decimal
-      sale-id:string )      
+      sale-id:string )
 
-      (with-read quotes sale-id { 
+      (with-read quotes sale-id {
         'id:= qtoken
-        ,'spec:= spec:object{quote-spec}         
+        ,'spec:= spec:object{quote-spec}
       }
-        (enforce (= qtoken token-id) "incorrect sale token")        
+        (enforce (= qtoken token-id) "incorrect sale token")
 
         (bind spec
           { 'fungible := fungible:module{fungible-v2}
@@ -301,7 +290,7 @@
   )
 
   (defun accept-bid:bool (
-      bid-id:string 
+      bid-id:string
       buyer:string
       sale-id:string
       escrow-account:string
@@ -327,24 +316,24 @@
           (sale-price:decimal (floor (* price amount) (fungible::precision))))
 
           ; Update quote to reflect accepted bid (so other policies will have access to the right quote)
-          (update quotes sale-id { 
-            'spec: { 
-              'fungible: fungible, 
-              'price: price, 
-              'seller-guard: seller-guard, 
-              'amount: amount 
+          (update quotes sale-id {
+            'spec: {
+              'fungible: fungible,
+              'price: price,
+              'seller-guard: seller-guard,
+              'amount: amount
             }})
 
           ; Set bid status to accepted
-          (update bids bid-id { 'status: BID-STATUS-ACCEPTED })   
-          
+          (update bids bid-id { 'status: BID-STATUS-ACCEPTED })
+
           (with-capability (BID_PRIVATE bid-id)
             (install-capability (fungible::TRANSFER (bid-escrow-account bid-id) escrow-account sale-price))
             (fungible::transfer-create (bid-escrow-account bid-id) escrow-account escrow-guard sale-price)
           )
           (emit-event (BID-ACCEPTED bid-id sale-id token-id amount price buyer buyer-guard))
         )
-      )      
+      )
     ))
   )
 )

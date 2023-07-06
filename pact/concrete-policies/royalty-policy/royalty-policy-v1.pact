@@ -143,17 +143,6 @@
     (enforce false "Transfer prohibited")
   )
 
-  (defun enforce-crosschain:bool
-    ( token:object{token-info}
-      sender:string
-      guard:guard
-      receiver:string
-      target-chain:string
-      amount:decimal )
-    (enforce-ledger)
-    (enforce false "Transfer prohibited")
-  )
-
   (defun enforce-withdraw:bool
     ( token:object{token-info}
       seller:string

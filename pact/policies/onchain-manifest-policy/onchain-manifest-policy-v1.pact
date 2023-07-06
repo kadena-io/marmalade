@@ -58,6 +58,7 @@
       (enforce-verify-manifest (at 'manifest manifest))
       (insert manifests (at 'id token) manifest)
     )
+    true
   )
 
 

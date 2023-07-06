@@ -83,6 +83,7 @@
         { "id" : token-id
          ,"collection-id" : collection-id
       })
+      true
     ))
   )
 

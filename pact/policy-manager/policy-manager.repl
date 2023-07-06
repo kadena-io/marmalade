@@ -167,7 +167,7 @@
 
   (env-data { "seller-guard": {"keys": ["account"], "pred": "keys-all"}})
 
-  (expect "events" 
+  (expect "events"
     (format "{}" [[
       {"name": "marmalade.ledger.OFFER","params": ["t:x2ei8hWjzQW_ozuq075Kf7YzgdLxQ3dBWZbb_7PegN4" "k:account" 1.0 "2023-07-22T11:26:35Z"]}
       {"name": "marmalade.ledger.SALE","params": ["t:x2ei8hWjzQW_ozuq075Kf7YzgdLxQ3dBWZbb_7PegN4" "k:account" 1.0 "2023-07-22T11:26:35Z" "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"]}

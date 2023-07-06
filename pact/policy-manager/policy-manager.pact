@@ -192,12 +192,13 @@
   )
 
   (defun create-concrete-policy:object{concrete-policy} (policies:[module{kip.token-policy-v2}])
-    { 'quote-policy: (is-used policies QUOTE_POLICY)
-     ,'non-fungible-policy: (is-used policies NON_FUNGIBLE_POLICY)
-     ,'royalty-policy: (is-used policies ROYALTY_POLICY)
-     ,'collection-policy: (is-used policies COLLECTION_POLICY)
-     ,'guard-policy: (is-used policies GUARD_POLICY)
-     }
+    (let ((registered-policies:object{concrete-policy-manager} (get-concrete-policies (get-ledger-info))))
+      { 'quote-policy: (contains (at QUOTE_POLICY registered-policies) policies )
+       ,'non-fungible-policy: (contains (at NON_FUNGIBLE_POLICY registered-policies) policies)
+       ,'royalty-policy: (contains (at ROYALTY_POLICY registered-policies) policies)
+       ,'collection-policy: (contains (at COLLECTION_POLICY registered-policies) policies)
+       ,'guard-policy: (contains (at GUARD_POLICY registered-policies) policies)
+      })
   )
 
   (defun create-policies (concrete-policy:object{concrete-policy})

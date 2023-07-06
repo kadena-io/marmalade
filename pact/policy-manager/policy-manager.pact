@@ -5,37 +5,41 @@
   (defcap GOVERNANCE ()
     (enforce-guard 'marmalade-admin ))
 
-  (implements kip.token-policy-v2)
-  (use kip.token-policy-v2 [token-policies token-info concrete-policy NON_FUNGIBLE_POLICY QUOTE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
-
-  (defschema concrete-policy-list
-    policy-field:string
-    policy:module{kip.token-policy-v2}
-  )
-
-  (deftable concrete-policy-table:{concrete-policy-list})
+  ; (implements kip.token-policy-v2)
+  (use kip.token-policy-v2 [ token-info concrete-policy NON_FUNGIBLE_POLICY QUOTE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
 
   (defconst CONCRETE_POLICY_V1_LIST
     [NON_FUNGIBLE_POLICY QUOTE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY] )
 
   ;; schema to save policy list in table
-  (defschema policies-list
-    concrete-policies:[module{kip.token-policy-v2}]
-    immutable-policies:[module{kip.token-policy-v2}]
-    adjustable-policies:[module{kip.token-policy-v2}]
+  (defschema concrete-policy-manager
+    non-fungible-policy:module{kip.token-policy-v2}
+    quote-policy:module{kip.token-policy-v2}
+    royalty-policy:module{kip.token-policy-v2}
+    collection-policy:module{kip.token-policy-v2}
+    guard-policy:module{kip.token-policy-v2}
   )
 
-  (defschema ledger-guard-schema
-    guard:guard
+  ;; used in the filter
+  (defconst CONCRETE_POLICY_LIST
+    [NON_FUNGIBLE_POLICY QUOTE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY] )
+
+
+  (defschema ledger
+    ledger:module{kip.poly-fungible-v3} ;; marmalade.ledger
+    guard:guard  ;;marmalade-ledger guard
+    ;; ledger vs guard
+    concrete-policies:object{concrete-policy-manager} ;; module ref to concrete-policies
   )
-  
-  (deftable ledger-guard-table:{ledger-guard-schema})
+
+  (deftable ledgers:{ledger})
 
   (defun enforce-ledger:bool ()
-    (enforce-guard (at "guard" (read ledger-guard-table "")))
+    ;;dependency issue
+    (enforce-guard (get-ledger-guard (get-ledger-info)))
   )
 
-  (defcap CONCRETE_POLICY_ADMIN (policy-field:string)
+  (defcap ADMIN ()
     ;;add admin check
     (enforce-guard 'marmalade-admin)
   )
@@ -44,94 +48,72 @@
     true
   )
 
-  (defun init(marmalade-ledger-guard:guard)
-    ;;TODO adds 4 concrete policies to concrete-policy table
-    (insert ledger-guard-table "" {
-      "guard": marmalade-ledger-guard
-    })
+  (defun init:bool(ledger-info:object{ledger})
+    (with-capability (ADMIN)
+      (insert ledgers "" ledger-info)
+    )
     true
   )
 
-  (defun add-concrete-policy (policy-field:string policy:module{kip.token-policy-v2} )
-    (enforce (contains policy-field CONCRETE_POLICY_V1_LIST) "Not a concrete policy")
-    (with-capability (CONCRETE_POLICY_ADMIN policy-field)
-      (insert concrete-policy-table policy-field {
-        'policy-field: policy-field
-       ,'policy: policy
-      })
-    )
-  )
-
   (defun get-concrete-policy:module{kip.token-policy-v2} (policy-field:string)
-    (with-read concrete-policy-table policy-field
-      {"policy":=policy }
-      policy
-    )
+    (at policy-field (get-concrete-policies (get-ledger-info)))
   )
 
-  (defun get-policies-list:object{policies-list} (policies:object{token-policies})
-    (let* ( (concrete-p:[module{kip.token-policy-v2}] (create-concrete-policy-list policies))
-            (imm-p:[module{kip.token-policy-v2}] (at 'immutable-policies policies))
-            (adj-p:[module{kip.token-policy-v2}] (at 'adjustable-policies policies)) )
-      { 'concrete-policy: concrete-p
-      , 'immutable-policy: imm-p
-      , 'adjustable-policy: adj-p  } )
+  (defun get-concrete-policies:object{concrete-policy-manager} (ledger:object{ledger})
+    (at 'concrete-policies ledger)
   )
 
-  (defun merge-policies-list:[module{kip.token-policy-v2}] (policies:object{token-policies})
-    (let* ( (concrete-p:[module{kip.token-policy-v2}] (create-concrete-policy-list policies ))
-            (concrete-imm-p:[module{kip.token-policy-v2}] (+ concrete-p (at 'immutable-policies policies)))
-            (concrete-imm-adj-p:[module{kip.token-policy-v2}] (+ concrete-imm-p (at 'adjustable-policies policies))) )
-    concrete-imm-adj-p
-    )
+  (defun get-ledger-guard:guard (ledger:object{ledger})
+    (at 'guard ledger)
   )
 
-  (defun enforce-init:bool (token:object{token-info})
+  (defun get-ledger-contract:module{kip.poly-fungible-v3} (ledger:object{ledger})
+    (at 'ledger ledger)
+  )
+
+  (defun get-ledger-info:object{ledger} ()
+    (read ledgers "") ;; default to ""
+  )
+
+  (defun enforce-init:[bool] (token:object{token-info})
     (enforce-ledger)
-    (map-init token (merge-policies-list (at 'policies token)))
+    (map-init token (at 'policies token))
   )
 
-  (defun create-concrete-policy-list:[module{kip.token-policy-v2}] (policies:object{token-policies})
-    (let* ((is-used-policies (lambda (policy:string) (is-used policies policy)))
-           (policy-fields:[string] (filter (is-used-policies) CONCRETE_POLICY_V1_LIST)))
-      (map (get-concrete-policy) policy-fields))
+  (defun is-used:bool (policies:[module{kip.token-policy-v2}] policy:string)
+    (contains (get-concrete-policy policy) policies)
   )
 
-  (defun is-used:bool (policies:object{token-policies} policy:string)
-    (at policy (at 'concrete-policies policies))
-  )
 
-  (defun enforce-mint:bool
+
+  (defun enforce-mint:[bool]
     ( token:object{token-info}
       account:string
       guard:guard
       amount:decimal
     )
     (enforce-ledger)
-    (let ((policies:object{token-policies}  (at 'policies token)))
-      (map-mint token account guard amount
-         (merge-policies-list policies))))
+    (let ((policies:[module{kip.token-policy-v2}]  (at 'policies token)))
+      (map-mint token account guard amount policies)))
 
-  (defun enforce-burn:bool
+  (defun enforce-burn:[bool]
     ( token:object{token-info}
       account:string
       amount:decimal
     )
     (enforce-ledger)
-    (let ((policies:object{token-policies}  (at 'policies token)))
-      (map-burn token account amount
-         (merge-policies-list policies))))
+    (let ((policies:[module{kip.token-policy-v2}]  (at 'policies token)))
+      (map-burn token account amount policies)))
 
-  (defun enforce-offer:bool
+  (defun enforce-offer:[bool]
     ( token:object{token-info}
       seller:string
       amount:decimal
       sale-id:string )
     (enforce-ledger)
-    (let ((policies:object{token-policies}  (at 'policies token)))
-      (map-offer token seller amount sale-id
-         (merge-policies-list policies))))
-
+    (let ((policies:[module{kip.token-policy-v2}]  (at 'policies token)))
+      (map-offer token seller amount sale-id policies)))
+;;[bool]
   (defun enforce-buy:bool
     ( token:object{token-info}
       seller:string
@@ -140,7 +122,7 @@
       amount:decimal
       sale-id:string )
     (enforce-ledger)
-    (let ((policies:object{token-policies}  (at 'policies token))
+    (let ((policies:[module{kip.token-policy-v2}]  (at 'policies token))
           (quote-policy:module{kip.token-policy-v2, marmalade.fungible-quote-policy-interface-v1} (get-concrete-policy QUOTE_POLICY)))
       (if (is-used policies QUOTE_POLICY)
         ;; enforce-buy when quote policy is used
@@ -154,20 +136,20 @@
                (bid-id:string (try "" (read-msg quote-policy::BID_ID-MSG-KEY)))
               )
         (with-capability (QUOTE_ESCROW sale-id)
-          (if (= bid-id "")                        
-            (fungible::transfer-create buyer escrow-account escrow-guard sale-price)            
+          (if (= bid-id "")
+            (fungible::transfer-create buyer escrow-account escrow-guard sale-price)
             (quote-policy::accept-bid bid-id buyer sale-id escrow-account escrow-guard)
           )
-          
-          (map-buy token seller buyer buyer-guard amount sale-id
-            (filter (!= quote-policy) (merge-policies-list policies)))
-            (quote-policy::enforce-buy token seller buyer buyer-guard amount sale-id)
-          )) 
-          
+
+           (map-buy token seller buyer buyer-guard amount sale-id
+              (filter (!= quote-policy) policies))
+              (quote-policy::enforce-buy token seller buyer buyer-guard amount sale-id)
+          ))
+
         ;; enforce-buy without the use of quote policy
-        (map-buy token seller buyer buyer-guard amount sale-id (merge-policies-list policies))
-      )        
-    ))    
+        (map-buy token seller buyer buyer-guard amount sale-id policies)
+      )
+    ))
 
     (defun get-escrow-account (sale-id:string)
       { 'account: (create-principal (create-capability-guard (QUOTE_ESCROW sale-id)))
@@ -179,18 +161,17 @@
       (enforce (= sale (pact-id)) "Invalid pact/sale id")
     )
 
-  (defun enforce-transfer:bool
+  (defun enforce-transfer:[bool]
     ( token:object{token-info}
       sender:string
       guard:guard
       receiver:string
       amount:decimal )
     (enforce-ledger)
-    (let ((policies:object{token-policies}  (at 'policies token)))
-      (map-transfer token sender guard receiver amount
-        (merge-policies-list policies))))
+    (let ((policies:[module{kip.token-policy-v2}]  (at 'policies token)))
+      (map-transfer token sender guard receiver amount policies)))
 
-  (defun enforce-crosschain:bool
+  (defun enforce-crosschain:[bool]
     ( token:object{token-info}
       sender:string
       guard:guard
@@ -198,11 +179,10 @@
       target-chain:string
       amount:decimal )
     (enforce-ledger)
-    (let ((policies:object{token-policies}  (at 'policies token)))
-      (map-crosschain token sender guard receiver target-chain amount
-        (merge-policies-list policies))))
+    (let ((policies:[module{kip.token-policy-v2}]  (at 'policies token)))
+      (map-crosschain token sender guard receiver target-chain amount policies)))
 
-  (defun enforce-withdraw:bool
+  (defun enforce-withdraw:[bool]
     ( token:object{token-info}
       seller:string
       amount:decimal
@@ -210,6 +190,27 @@
     ;;TODO
     true
   )
+
+  (defun create-concrete-policy:object{concrete-policy} (policies:[module{kip.token-policy-v2}])
+    { 'quote-policy: (is-used policies QUOTE_POLICY)
+     ,'non-fungible-policy: (is-used policies NON_FUNGIBLE_POLICY)
+     ,'royalty-policy: (is-used policies ROYALTY_POLICY)
+     ,'collection-policy: (is-used policies COLLECTION_POLICY)
+     ,'guard-policy: (is-used policies GUARD_POLICY)
+     }
+  )
+
+  (defun create-policies (concrete-policy:object{concrete-policy})
+    (let* ( (is-used-policy (lambda (policy-field:string) (at policy-field concrete-policy)))
+            (used-policies:[string] (filter (is-used-policy) CONCRETE_POLICY_LIST)))
+          (map (get-concrete-policy) used-policies))
+  )
+
+  ; (defun mint-guard ()
+  ;   (if (is-used guard-policy)
+  ;     (guard-policy.get-mint-guard)
+  ;   )
+  ; )
 
    ;;utility functions to map policy list
    (defun token-init (token:object{token-info} policy:module{kip.token-policy-v2})
@@ -239,7 +240,7 @@
    (defun token-buy (token:object{token-info} seller:string buyer:string buyer-guard:guard amount:decimal sale-id:string policy:module{kip.token-policy-v2})
      (policy::enforce-buy token seller buyer buyer-guard amount sale-id))
 
-   (defun map-buy (token:object{token-info} seller:string buyer:string buyer-guard:guard amount:decimal sale-id:string policy-list:[module{kip.token-policy-v2}])
+   (defun map-buy:[bool] (token:object{token-info} seller:string buyer:string buyer-guard:guard amount:decimal sale-id:string policy-list:[module{kip.token-policy-v2}])
      (map (token-buy token seller buyer buyer-guard amount sale-id) policy-list))
 
    (defun token-transfer (token:object{token-info} sender:string guard:guard receiver:string amount:decimal policy:module{kip.token-policy-v2})
@@ -253,12 +254,9 @@
 
    (defun map-crosschain (token:object{token-info} params:object sender:string guard:guard receiver:string target-chain:string amount:decimal policy-list:[module{kip.token-policy-v2}])
      (map (token-crosschain  token sender guard receiver target-chain amount) policy-list))
-
-
 )
 
 (if (read-msg 'upgrade )
   ["upgrade complete"]
-  [ (create-table concrete-policy-table)
-    (create-table ledger-guard-table)
+  [ (create-table ledgers)
   ])

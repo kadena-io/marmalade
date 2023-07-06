@@ -1,10 +1,11 @@
 (namespace (read-msg 'ns))
 
 (module util-v1 GOVERNANCE
-  (use kip.token-policy-v2 [token-policies concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
+  (use kip.token-policy-v2 [ concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
 
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+
 
   (defconst DEFAULT:object{concrete-policy}
     { 'quote-policy: true
@@ -50,19 +51,4 @@
     }
   )
 
-  (defun create-default-policies:object{token-policies} (concrete-policies:object{concrete-policy})
-    {
-      'concrete-policies: concrete-policies
-     ,'immutable-policies: []
-     ,'adjustable-policies: []
-    }
-  )
-
-  (defun create-single-policy:object{token-policies} (policy:module{kip.token-policy-v2})
-    {
-      'concrete-policies: EMPTY
-     ,'immutable-policies: [policy]
-     ,'adjustable-policies: []
-    }
-  )
 )

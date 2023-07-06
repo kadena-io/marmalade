@@ -16,18 +16,12 @@
   (defconst COLLECTION_POLICY 'collection-policy )
   (defconst GUARD_POLICY 'guard-policy )
 
-  (defschema token-policies
-    concrete-policies:object{concrete-policy}
-    immutable-policies:[module{token-policy-v2}]
-    adjustable-policies:[module{token-policy-v2}]
-  )
-
   (defschema token-info
     id:string
     supply:decimal
     precision:integer
     uri:string
-    policies:object{token-policies})
+    policies:[module{token-policy-v2}])
 
   (defun enforce-mint:bool
     ( token:object{token-info}

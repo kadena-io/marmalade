@@ -12,7 +12,6 @@
   (use marmalade.policy-manager)
   (implements kip.poly-fungible-v3)
   (use kip.poly-fungible-v3 [account-details sender-balance-change receiver-balance-change])
-  (use kip.token-policy-v2 [token-policies])
 
   ;;
   ;; Tables/Schemas
@@ -25,13 +24,13 @@
     uri:string
     precision:integer
     supply:decimal
-    policies:object{token-policies}
+    policies:[module{kip.token-policy-v2}]
   )
 
   (defschema token-details
     uri:string
     precision:integer
-    policies:object{token-policies}
+    policies:[module{kip.token-policy-v2}]
   )
 
   (deftable tokens:{token-schema})
@@ -86,7 +85,7 @@
     @event true
   )
 
-  (defcap TOKEN:bool (id:string precision:integer supply:decimal policies:object{token-policies} uri:string)
+  (defcap TOKEN:bool (id:string precision:integer supply:decimal policies:[module{kip.token-policy-v2}] uri:string)
     @event
     true
   )
@@ -111,29 +110,29 @@
   )
 
 
-  ;; dependent on marmalade
-  (defcap ADJUST_POLICY (token-id:string account:string)
-    @event
-    (enforce (= (get-balance token-id account) (total-supply token-id)) "Account doesn't own token")
-    (enforce-guard (account-guard token-id account)))
+  ; ;; dependent on marmalade
+  ; (defcap ADJUST_POLICY (token-id:string account:string)
+  ;   @event
+  ;   (enforce (= (get-balance token-id account) (total-supply token-id)) "Account doesn't own token")
+  ;   (enforce-guard (account-guard token-id account)))
 
-  (defun adjust-policy
-    ( token-id:string
-      account:string
-      adjustable-policies:[module{kip.token-policy-v2}] )
-    (with-capability (ADJUST_POLICY token-id account) ;; needs sigs from token owner
-      (with-read tokens token-id {
-        "policies":= old-policies
-        }
-        (let* ((new-policies:object{token-policies} (+
-                  {'adjustable-policies: adjustable-policies}
-                  old-policies
-              )))
-        (update tokens token-id {
-          "policies": new-policies
-        })
-    ))
-  ))
+  ; (defun adjust-policy
+  ;   ( token-id:string
+  ;     account:string
+  ;     adjustable-policies:[module{kip.token-policy-v2}] )
+  ;   (with-capability (ADJUST_POLICY token-id account) ;; needs sigs from token owner
+  ;     (with-read tokens token-id {
+  ;       "policies":= old-policies
+  ;       }
+  ;       (let* ((new-policies:[module{kip.token-policy-v2}] (+
+  ;                 {'adjustable-policies: adjustable-policies}
+  ;                 old-policies
+  ;             )))
+  ;       (update tokens token-id {
+  ;         "policies": new-policies
+  ;       })
+  ;   ))
+  ; ))
 
   ;;
   ;; Implementation caps
@@ -179,7 +178,7 @@
   ;  Transform token-schema object to token-info object
   (defun get-token-info:object{kip.token-policy-v2.token-info} (id:string)
     (with-read tokens id
-     { 'policies := policies:object{token-policies}
+     { 'policies := policies:[module{kip.token-policy-v2}]
      , 'supply := supply
      , 'precision := precision
      , 'uri := uri
@@ -217,20 +216,14 @@
 
   (defun create-token-id:string (token-details:object{token-details})
     (format "t:{}"
-      [(hash (+  {'policies:
-                    (+
-                      {'adjustable-policies: []}
-                      (at 'policies token-details))
-                }
-                token-details ))
-      ])
+      [(hash [token-details (at 'chain-id (chain-data))])])
   )
 
   (defun create-token:bool
     ( id:string
       precision:integer
       uri:string
-      policies:object{token-policies}
+      policies:[module{kip.token-policy-v2}]
     )
     (with-capability (LEDGER)
       ;; enforces token and uri protocols
@@ -626,6 +619,7 @@
       )
       (emit-event (TRANSFER id (sale-account) buyer amount))
       (emit-event (RECONCILE id amount sender receiver)))
+      true
   )
 
   (defun sale-active:bool (timeout:time)

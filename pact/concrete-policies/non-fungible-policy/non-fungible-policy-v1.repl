@@ -2,7 +2,7 @@
 (load "../../policy-manager/policy-manager.repl")
 
 (begin-tx)
-  (use kip.token-policy-v2 [token-policies concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
+  (use kip.token-policy-v2 [concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
 
   (module util GOV
     (defcap GOV () true)
@@ -15,11 +15,6 @@
        ,'guard-policy: true
       }
     )
-    (defconst DEFAULT_NON_FUNGIBLE_POLICIES:object{token-policies}
-      { 'concrete-policies:DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY
-       ,'immutable-policies: []
-       ,'adjustable-policies:[]
-      })
   )
 (commit-tx)
 
@@ -35,9 +30,8 @@
 (begin-tx)
   (use marmalade.ledger)
   (use marmalade.policy-manager)
-
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-non-fungible-uri", 'precision: 0, 'policies: util.DEFAULT_NON_FUNGIBLE_POLICIES } )
+    "token-id": (create-token-id { 'uri: "test-non-fungible-uri", 'precision: 0, 'policies: (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) } )
     ,"account": "k:account"
     ,"nfp-mint-guard": {"keys": ["account"], "pred": "keys-all"}
     ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
@@ -47,8 +41,8 @@
 
 (begin-tx "Create a non-fungible token")
   (use marmalade.ledger)
-
-  (create-token (read-msg "token-id") 0 "test-non-fungible-uri" util.DEFAULT_NON_FUNGIBLE_POLICIES )
+  (use marmalade.policy-manager)
+  (create-token (read-msg "token-id") 0 "test-non-fungible-uri" (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) )
 (commit-tx)
 
 (begin-tx "Mint with a supply other then 1 fails ")
@@ -56,7 +50,7 @@
   (use marmalade.ledger)
   (env-sigs [
     { 'key: 'account
-     ,'caps: [(marmalade.ledger.MINT "t:ql_vIepldcYgTSOzuW0VtvdQXDP7_EWP4g-jKL9mxUM" "k:account" 5.0)
+     ,'caps: [(marmalade.ledger.MINT "t:YJJSttfw3EWOaMZHWyIbCGhj1ZVm2FuO8tRjGFekDzo" "k:account" 5.0)
     ]
     }])
 
@@ -69,7 +63,7 @@
   (use marmalade.ledger)
   (env-sigs [
     { 'key: 'account
-    ,'caps: [(marmalade.ledger.MINT "t:ql_vIepldcYgTSOzuW0VtvdQXDP7_EWP4g-jKL9mxUM" "k:account" 0.5)]
+    ,'caps: [(marmalade.ledger.MINT "t:YJJSttfw3EWOaMZHWyIbCGhj1ZVm2FuO8tRjGFekDzo" "k:account" 0.5)]
     }])
 
   (expect-failure "minting with amout of 0.5 fails"
@@ -81,7 +75,7 @@
   (use marmalade.ledger)
   (env-sigs [
     { 'key: 'account
-    ,'caps: [(marmalade.ledger.MINT "t:ql_vIepldcYgTSOzuW0VtvdQXDP7_EWP4g-jKL9mxUM" "k:account" 1.0)]
+    ,'caps: [(marmalade.ledger.MINT "t:YJJSttfw3EWOaMZHWyIbCGhj1ZVm2FuO8tRjGFekDzo" "k:account" 1.0)]
     }])
 
   (expect "minting succeeds"
@@ -93,7 +87,7 @@
   (use marmalade.ledger)
     (env-sigs [
       { 'key: 'account
-      ,'caps: [(marmalade.ledger.BURN "t:ql_vIepldcYgTSOzuW0VtvdQXDP7_EWP4g-jKL9mxUM" "k:account" 1.0)]
+      ,'caps: [(marmalade.ledger.BURN "t:YJJSttfw3EWOaMZHWyIbCGhj1ZVm2FuO8tRjGFekDzo" "k:account" 1.0)]
       }])
 
     (expect-failure "Burning is not allowed"

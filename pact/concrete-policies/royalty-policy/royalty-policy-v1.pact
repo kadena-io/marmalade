@@ -47,15 +47,16 @@
   (defun enforce-init:bool
     ( token:object{token-info}
     )
-    (enforce (is-used (at 'policies token) QUOTE_POLICY) "quote policy must be turned on")
     (enforce-ledger)
-    (let* ( (spec:object{royalty-schema} (read-msg ROYALTY_SPEC))
+    (let* ( (quote-used:bool (is-used (at 'policies token) QUOTE_POLICY))
+            (spec:object{royalty-schema} (read-msg ROYALTY_SPEC))
             (fungible:module{fungible-v2} (at 'fungible spec))
             (creator:string (at 'creator spec))
             (creator-guard:guard (at 'creator-guard spec))
             (royalty-rate:decimal (at 'royalty-rate spec))
             (creator-details:object (fungible::details creator ))
             )
+      (enforce quote-used "quote policy must be turned on")
       (enforce (=
         (at 'guard creator-details) creator-guard)
         "Creator guard does not match")

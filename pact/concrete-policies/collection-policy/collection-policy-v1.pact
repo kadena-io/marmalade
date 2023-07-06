@@ -84,6 +84,7 @@
          ,"collection-id" : collection-id
       })
     ))
+    true
   )
 
   (defun enforce-mint:bool

@@ -2,7 +2,7 @@
 (load "../../policy-manager/policy-manager.repl")
 (env-exec-config [])
 (begin-tx "Create a fungible token")
-(use kip.token-policy-v2 [token-policies concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
+(use kip.token-policy-v2 [concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
 
 (module util GOV
   (defcap GOV () true)
@@ -16,11 +16,6 @@
     }
   )
 
-  (defconst QUOTE_ONLY_POLICIES:object{token-policies}
-    { 'concrete-policies:QUOTE_ONLY
-     ,'immutable-policies: []
-     ,'adjustable-policies:[]
-  })
 )
 (commit-tx)
 
@@ -29,14 +24,14 @@
 (use marmalade.policy-manager)
 (env-exec-config ["DisablePact44"])
 (env-data {
-   "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
+   "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: (create-policies util.QUOTE_ONLY)} )
   ,"account": "k:account"
   ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
 })
 
 (expect "create a default token with quote-policy, non-fungible-policy"
   true
-  (create-token (read-msg 'token-id) 0 "test-quote-only-uri" util.QUOTE_ONLY_POLICIES ))
+  (create-token (read-msg 'token-id) 0 "test-quote-only-uri" (create-policies util.QUOTE_ONLY)))
 
 (env-sigs [
   { 'key: 'random
@@ -44,7 +39,7 @@
   }])
 
 (env-data {
-  "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
+  "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: (create-policies util.QUOTE_ONLY)} )
  ,"account": "k:account"
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
 })
@@ -60,7 +55,7 @@
   (use marmalade.policy-manager)
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
+    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: (create-policies util.QUOTE_ONLY)} )
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
   ,"account": "k:account"
   })
@@ -94,13 +89,14 @@
 
   (env-hash (hash "offer-quote-only-0"))
   (use marmalade.ledger)
+  (use marmalade.policy-manager)
 
   (env-data {
     "seller-guard": {"keys": ["account"], "pred": "keys-all"}
   })
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
+    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: (create-policies util.QUOTE_ONLY)} )
   , "quote": {
       "fungible": marmalade.abc
       ,"price": 2.0
@@ -125,7 +121,7 @@
 
   (env-hash (hash "offer-quote-only-1"))
   (use marmalade.ledger)
-
+  (use marmalade.policy-manager)
   (env-data {
     "seller-guard": {"keys": ["account"], "pred": "keys-all"}
   })
@@ -133,7 +129,7 @@
   (marmalade.abc.fund "k:account" 2.0)
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
+    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: (create-policies util.QUOTE_ONLY)} )
   ,"quote": {
     "fungible": marmalade.abc
     ,"price": 2.0
@@ -168,7 +164,7 @@
   (env-sigs
   [{'key:'buyer
     ,'caps: [
-      (BUY (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } ) "k:account" "k:buyer"  1.0 (time  "2023-07-22T11:26:35Z") "v86vqj0OkIZQfD3XGETjij1sLjJH7Q6GZBZJeytDsEo")
+      (BUY (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: (create-policies util.QUOTE_ONLY)} ) "k:account" "k:buyer"  1.0 (time  "2023-07-22T11:26:35Z") "v86vqj0OkIZQfD3XGETjij1sLjJH7Q6GZBZJeytDsEo")
       (marmalade.abc.TRANSFER "k:buyer" "c:cbnfX-2IcN_in1gOZpdheAlkbERuqFIUNOYE8egBx38" 2.0)
     ]}])
 
@@ -196,14 +192,14 @@
 
   (env-hash (hash "offer-quote-only-1"))
   (use marmalade.ledger)
-
+  (use marmalade.policy-manager)
   (env-data {
     "seller-guard": {"keys": ["account"], "pred": "keys-all"}
   })
   (marmalade.abc.create-account "k:account" (read-keyset 'seller-guard))
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
+    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: (create-policies util.QUOTE_ONLY)} )
   ,"quote": {
     "fungible": marmalade.abc
     ,"price": 2.0
@@ -236,7 +232,7 @@
   (env-sigs
   [{'key:'buyer
     ,'caps: [
-      (BUY (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } ) "k:account" "k:buyer"  1.0 (time  "2023-07-22T11:26:35Z") "v86vqj0OkIZQfD3XGETjij1sLjJH7Q6GZBZJeytDsEo")
+      (BUY (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: (create-policies util.QUOTE_ONLY)} ) "k:account" "k:buyer"  1.0 (time  "2023-07-22T11:26:35Z") "v86vqj0OkIZQfD3XGETjij1sLjJH7Q6GZBZJeytDsEo")
       (marmalade.abc.TRANSFER "k:buyer" "c:cbnfX-2IcN_in1gOZpdheAlkbERuqFIUNOYE8egBx38" 2.0)
     ]}])
 
@@ -263,14 +259,14 @@
 
   (env-hash (hash "offer-bidding-1"))
   (use marmalade.ledger)
-
+  (use marmalade.policy-manager)
   (env-data {
     "seller-guard": {"keys": ["account"], "pred": "keys-all"}
   })
   (marmalade.abc.create-account "k:account" (read-keyset 'seller-guard))
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
+    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: (create-policies util.QUOTE_ONLY)} )
   ,"quote": {
     "fungible": marmalade.abc
     ,"price": 10.0
@@ -290,7 +286,7 @@
     (sale (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z")))
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } )
+    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: (create-policies util.QUOTE_ONLY)} )
     ,"sale-id": "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8"
     ,"bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
   })
@@ -345,7 +341,7 @@
 
   (env-hash (hash "accept-bidding-1"))
   (use marmalade.fungible-quote-policy-v1)
-
+  (use marmalade.policy-manager)
   (env-sigs [
     { 'key: 'seller
     ,'caps: [
@@ -368,7 +364,7 @@
   (env-sigs [
     { 'key: 'bidder
     ,'caps: [
-      (marmalade.ledger.BUY (marmalade.ledger.create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: util.QUOTE_ONLY_POLICIES } ) "k:account" "k:bidder"  1.0 (time  "2023-07-22T11:26:35Z") "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8")
+      (marmalade.ledger.BUY (marmalade.ledger.create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: (create-policies util.QUOTE_ONLY)} ) "k:account" "k:bidder"  1.0 (time  "2023-07-22T11:26:35Z") "FRVsiHGeVPQNZEpnJ8MrF6_fpB0o2tj-xztJRHQe_m8")
       ]
     },
     { 'key: 'account

@@ -9,7 +9,6 @@
 
 (begin-tx "Create token without mint guard")
   (use marmalade.ledger)
-  (use marmalade.policy-manager)
   (use marmalade.util-v1)
 (env-data {
    "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: (create-policies DEFAULT) } )
@@ -19,13 +18,12 @@
 
 (env-sigs [
   { 'key: 'account
-   ,'caps: [(marmalade.ledger.MINT "t:uucCnqSCIiWJPPto-snb1Dzbvm2Tuu77b9NSJf4F60c" "k:account" 1.0)]
+   ,'caps: [(marmalade.ledger.MINT "t:UHU7ilVZEH0GxsPdfO39DN-_ZteJd0rX9EaiL34stT4" "k:account" 1.0)]
   }])
 
 (expect "create token succeeds without mint-guard"
  true
  (create-token (read-msg 'token-id) 0 "test-default-guard" (create-policies DEFAULT) ))
-(env-keys ["marmalade-admin"])
 
 (expect "Mint token succeeds without mint-guard"
   true
@@ -36,7 +34,6 @@
 
 (begin-tx "Create token without operator guard fails")
   (use marmalade.ledger)
-  (use marmalade.policy-manager)
   (use marmalade.util-v1)
 (env-data {
    "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: (create-policies DEFAULT) } )
@@ -51,7 +48,7 @@
 
  (env-sigs [
    { 'key: 'mint-false
-    ,'caps: [(marmalade.ledger.MINT "t:uucCnqSCIiWJPPto-snb1Dzbvm2Tuu77b9NSJf4F60c" "k:account" 1.0)]
+    ,'caps: [(marmalade.ledger.MINT "t:UHU7ilVZEH0GxsPdfO39DN-_ZteJd0rX9EaiL34stT4" "k:account" 1.0)]
    }])
 
 (expect-failure "Mint token fails without mint-guard"
@@ -60,7 +57,7 @@
 
 (env-sigs [
   { 'key: 'mint
-   ,'caps: [(marmalade.ledger.MINT "t:uucCnqSCIiWJPPto-snb1Dzbvm2Tuu77b9NSJf4F60c" "k:account" 1.0)]
+   ,'caps: [(marmalade.ledger.MINT "t:UHU7ilVZEH0GxsPdfO39DN-_ZteJd0rX9EaiL34stT4" "k:account" 1.0)]
   }])
 
 (expect "Mint token fails without mint-guard"

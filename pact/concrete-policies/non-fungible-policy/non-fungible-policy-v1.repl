@@ -20,7 +20,7 @@
 
 (begin-tx)
   (use marmalade.ledger)
-  (use marmalade.policy-manager)
+  (use marmalade.util-v1)
   (env-data {
     "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
   })
@@ -29,7 +29,7 @@
 
 (begin-tx)
   (use marmalade.ledger)
-  (use marmalade.policy-manager)
+  (use marmalade.util-v1)
   (env-data {
     "token-id": (create-token-id { 'uri: "test-non-fungible-uri", 'precision: 0, 'policies: (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) } )
     ,"account": "k:account"
@@ -41,7 +41,7 @@
 
 (begin-tx "Create a non-fungible token")
   (use marmalade.ledger)
-  (use marmalade.policy-manager)
+  (use marmalade.util-v1)
   (create-token (read-msg "token-id") 0 "test-non-fungible-uri" (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) )
 (commit-tx)
 
@@ -50,7 +50,7 @@
   (use marmalade.ledger)
   (env-sigs [
     { 'key: 'account
-     ,'caps: [(marmalade.ledger.MINT "t:YJJSttfw3EWOaMZHWyIbCGhj1ZVm2FuO8tRjGFekDzo" "k:account" 5.0)
+     ,'caps: [(marmalade.ledger.MINT "t:DI4FHziasc_JhUMhxS366zMJ3KKDXWUcytBo6RhPnBQ" "k:account" 5.0)
     ]
     }])
 
@@ -63,7 +63,7 @@
   (use marmalade.ledger)
   (env-sigs [
     { 'key: 'account
-    ,'caps: [(marmalade.ledger.MINT "t:YJJSttfw3EWOaMZHWyIbCGhj1ZVm2FuO8tRjGFekDzo" "k:account" 0.5)]
+    ,'caps: [(marmalade.ledger.MINT "t:DI4FHziasc_JhUMhxS366zMJ3KKDXWUcytBo6RhPnBQ" "k:account" 0.5)]
     }])
 
   (expect-failure "minting with amout of 0.5 fails"
@@ -75,7 +75,7 @@
   (use marmalade.ledger)
   (env-sigs [
     { 'key: 'account
-    ,'caps: [(marmalade.ledger.MINT "t:YJJSttfw3EWOaMZHWyIbCGhj1ZVm2FuO8tRjGFekDzo" "k:account" 1.0)]
+    ,'caps: [(marmalade.ledger.MINT "t:DI4FHziasc_JhUMhxS366zMJ3KKDXWUcytBo6RhPnBQ" "k:account" 1.0)]
     }])
 
   (expect "minting succeeds"
@@ -87,7 +87,7 @@
   (use marmalade.ledger)
     (env-sigs [
       { 'key: 'account
-      ,'caps: [(marmalade.ledger.BURN "t:YJJSttfw3EWOaMZHWyIbCGhj1ZVm2FuO8tRjGFekDzo" "k:account" 1.0)]
+      ,'caps: [(marmalade.ledger.BURN "t:DI4FHziasc_JhUMhxS366zMJ3KKDXWUcytBo6RhPnBQ" "k:account" 1.0)]
       }])
 
     (expect-failure "Burning is not allowed"

@@ -4,7 +4,7 @@
 (begin-tx)
 (use kip.token-policy-v2 [concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
 (use marmalade.ledger)
-(use marmalade.policy-manager)
+
 (env-data {
   "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
 })
@@ -13,7 +13,7 @@
 (begin-tx)
 (use marmalade.ledger)
 (use marmalade.util-v1)
-(use marmalade.policy-manager)
+
 (env-data {
   "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} )
  ,"account": "account"
@@ -32,7 +32,7 @@
 
 (begin-tx)
 (use marmalade.ledger)
-(use marmalade.policy-manager)
+
 (use marmalade.util-v1)
 
 (expect-failure "create-token with negative royalty rate fails"
@@ -42,7 +42,7 @@
 
 (begin-tx)
 (use marmalade.ledger)
-(use marmalade.policy-manager)
+
 (use marmalade.util-v1)
 
 (env-data {
@@ -63,7 +63,7 @@
 
 (env-sigs [
   { 'key: 'account
-  ,'caps: [(marmalade.ledger.MINT "t:bNYfmbNGX0gqTrG-PeS9_BsVwVtXmsNDVnUDLs_lQXU" "k:account" 1.0)]
+  ,'caps: [(marmalade.ledger.MINT "t:fiZhyILqrnz9jeziJru0vYuTkXDLBO17v-LKPu6TLK8" "k:account" 1.0)]
   }])
 
 (expect "mint a default token with quote-policy, non-fungible-policy"
@@ -75,7 +75,7 @@
 
 (env-hash (hash "offer-royalty-0"))
 (use marmalade.ledger)
-(use marmalade.policy-manager)
+
 (use marmalade.util-v1)
 
 (env-data {
@@ -96,7 +96,7 @@
 (env-sigs [
   { 'key: 'account
    ,'caps: [
-   (marmalade.ledger.OFFER "t:bNYfmbNGX0gqTrG-PeS9_BsVwVtXmsNDVnUDLs_lQXU" "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
+   (marmalade.ledger.OFFER "t:fiZhyILqrnz9jeziJru0vYuTkXDLBO17v-LKPu6TLK8" "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
    }])
 
 (expect "stat offer by running step 0 of sale"

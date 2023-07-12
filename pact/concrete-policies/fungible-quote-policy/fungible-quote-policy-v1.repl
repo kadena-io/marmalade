@@ -21,7 +21,7 @@
 
 (begin-tx)
 (use marmalade.ledger)
-(use marmalade.policy-manager)
+(use marmalade.util-v1)
 (env-exec-config ["DisablePact44"])
 (env-data {
    "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: (create-policies util.QUOTE_ONLY)} )
@@ -52,7 +52,7 @@
 
 (begin-tx "mint for the second time")
   (use marmalade.ledger)
-  (use marmalade.policy-manager)
+  (use marmalade.util-v1)
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-quote-only-uri", 'precision: 0, 'policies: (create-policies util.QUOTE_ONLY)} )
@@ -89,7 +89,7 @@
 
   (env-hash (hash "offer-quote-only-0"))
   (use marmalade.ledger)
-  (use marmalade.policy-manager)
+  (use marmalade.util-v1)
 
   (env-data {
     "seller-guard": {"keys": ["account"], "pred": "keys-all"}
@@ -121,7 +121,7 @@
 
   (env-hash (hash "offer-quote-only-1"))
   (use marmalade.ledger)
-  (use marmalade.policy-manager)
+  (use marmalade.util-v1)
   (env-data {
     "seller-guard": {"keys": ["account"], "pred": "keys-all"}
   })
@@ -192,7 +192,7 @@
 
   (env-hash (hash "offer-quote-only-1"))
   (use marmalade.ledger)
-  (use marmalade.policy-manager)
+  (use marmalade.util-v1)
   (env-data {
     "seller-guard": {"keys": ["account"], "pred": "keys-all"}
   })
@@ -259,7 +259,7 @@
 
   (env-hash (hash "offer-bidding-1"))
   (use marmalade.ledger)
-  (use marmalade.policy-manager)
+  (use marmalade.util-v1)
   (env-data {
     "seller-guard": {"keys": ["account"], "pred": "keys-all"}
   })
@@ -341,7 +341,7 @@
 
   (env-hash (hash "accept-bidding-1"))
   (use marmalade.fungible-quote-policy-v1)
-  (use marmalade.policy-manager)
+  (use marmalade.util-v1)
   (env-sigs [
     { 'key: 'seller
     ,'caps: [

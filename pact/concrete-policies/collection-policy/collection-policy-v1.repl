@@ -71,7 +71,7 @@
 
   (env-sigs [
     { 'key: 'account1
-    ,'caps: [(marmalade.ledger.MINT "t:vcih_tznz0xRme7Uc1J2I8kxHQWX7BBAIenUrijyGvA" "k:account" 1.0)]
+    ,'caps: [(marmalade.ledger.MINT "t:v8PHL_65vsRJva2bXCERDewJuBWgnWr0uTASq4VABEU" "k:account" 1.0)]
     }])
 
   (expect "mint a default token with collection-policy, quote-policy, non-fungible-policy, royalty-policy"

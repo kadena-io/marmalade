@@ -43,4 +43,3 @@ This policy module has the following capabilities:
 - `GOVERNANCE`: Enforces that only the `marmalade-admin` keyset has the authority to call this capability.
 - `COLLECTION`: Used to publish the COLLECTION event.
 - `OPERATOR`: Enforces that only the operator of the specified collection has the authority to call this capability.
-- `MINT`: Validates that the account minting the token is allowed to do so.

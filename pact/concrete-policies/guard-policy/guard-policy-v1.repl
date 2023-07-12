@@ -25,6 +25,7 @@
 (expect "create token succeeds without mint-guard"
  true
  (create-token (read-msg 'token-id) 0 "test-default-guard" (create-policies DEFAULT) ))
+(env-keys ["marmalade-admin"])
 
 (expect "Mint token succeeds without mint-guard"
   true

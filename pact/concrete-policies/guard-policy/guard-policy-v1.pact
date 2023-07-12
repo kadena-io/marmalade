@@ -41,15 +41,15 @@
   )
 
   (defun get-mint-guard:guard (token-id:string)
-    (with-read guards token-id {
-      "mint-guard":= mint-guard
+    (with-read policy-guards token-id {
+      'mint-guard:= mint-g
     }
-    mint-guard
+    mint-g
     )
   )
 
   (defun get-burn-guard:guard (token-id:string)
-    (with-read guards token-id {
+    (with-read policy-guards token-id {
       "burn-guard":= burn-guard
     }
     burn-guard
@@ -57,7 +57,7 @@
   )
 
   (defun get-sale-guard:guard (token-id:string)
-    (with-read guards token-id {
+    (with-read policy-guards token-id {
       "sale-guard":= sale-guard
     }
     sale-guard
@@ -65,7 +65,7 @@
   )
 
   (defun get-transfer-guard:guard (token-id:string)
-    (with-read guards token-id {
+    (with-read policy-guards token-id {
       "transfer-guard":= transfer-guard
     }
     transfer-guard

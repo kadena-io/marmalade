@@ -2,6 +2,7 @@
 
 (module util-v1 GOVERNANCE
   (use kip.token-policy-v2 [ concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
+  (use marmalade.policy-manager )
 
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
@@ -49,6 +50,12 @@
      ,'collection-policy:false
      ,'guard-policy: false
     }
+  )
+
+  (defun create-policies (concrete-policy:object{concrete-policy})
+    (let* ( (is-used-policy (lambda (policy-field:string) (at policy-field concrete-policy)))
+            (used-policies:[string] (filter (is-used-policy) CONCRETE_POLICY_LIST)))
+          (map (get-concrete-policy) used-policies))
   )
 
 )

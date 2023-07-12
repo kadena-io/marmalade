@@ -39,6 +39,10 @@
     @event
     true)
 
+  (defcap TOKEN_COLLECTION:bool (token-id:string collection-id:string)
+    @event
+    true)
+
   (defun enforce-ledger:bool ()
     (enforce-guard (marmalade.ledger.ledger-guard))
     true
@@ -83,7 +87,8 @@
         { "id" : token-id
          ,"collection-id" : collection-id
       })
-    ))
+    )
+    (emit-event (TOKEN_COLLECTION token-id collection-id)))
     true
   )
 

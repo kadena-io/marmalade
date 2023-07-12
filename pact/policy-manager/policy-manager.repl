@@ -23,8 +23,6 @@
   (load "../kip/token-policy-v2.pact")
   (load "../kip/poly-fungible-v2.pact")
   (load "../kip/poly-fungible-v3.pact")
-
-
   (define-namespace 'util (sig-keyset) (sig-keyset))
   (load "../util/fungible-util.pact")
 (commit-tx)
@@ -47,6 +45,7 @@
    , 'marmalade-ns-admin: ["marmalade-admin"]
    , 'ns: "marmalade"
    , 'upgrade: false })
+
   (load "../concrete-policies/fungible-quote-policy/fungible-quote-policy-interface-v1.pact")
   (load "../policy-manager/policy-manager.pact")
   (load "../ledger.pact")
@@ -70,7 +69,7 @@
       ,'collection-policy:marmalade.collection-policy-v1
       ,'guard-policy:marmalade.guard-policy-v1
       }
-    ,"guard": (marmalade.ledger.ledger-guard)
+    ,"ledger-guard": (marmalade.ledger.ledger-guard)
     ,"ledger": marmalade.ledger
   })
 
@@ -124,7 +123,6 @@
 (expect "create a token with no concrete-policy"
   true
   (create-token (read-msg 'empty-token-id) 0 "test-uri-1" (create-policies EMPTY) ))
-
 (expect "mint a default token with quote-policy, non-fungible-policy"
   true
   (mint (read-msg 'default-token-id )  (read-msg 'account ) (read-keyset 'mint-guard ) 1.0))

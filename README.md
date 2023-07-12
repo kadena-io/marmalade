@@ -10,8 +10,10 @@ The main contract in Marmalade is `marmalade.ledger`. This contract stores the t
 
 ### Policy manager
 
-Marmalade V2's new feature is a policy manager. Marmalade tokens now store multiple policies in a `token-policies` format, instead of a single policy.
-The policy manager makes a distinction between 3 types of policies, concrete, immutable, and adjustable which are explained in detail below. Policy manager acts as a middleware between policies, and runs the `policy::enforce-**` functions.
+Marmalade V2's new feature is a policy manager. Marmalade tokens now store multiple policies in a `policies` format, instead of a single policy.
+All policies are immutable, meaning tokens will permanently store and run the rules that are attached when the token was created. However, the policy manager makes a distinction of some policies we call, `concrete-policies`. Concrete policies are the policies that policy manager knows about, and adds extra logic to run exceptions for some of the policies, that were thought to be most-used features.
+
+Policy manager acts as a middleware between policies, and runs the `policy::enforce-**` functions.
 
 ## Using Policies
 
@@ -26,18 +28,6 @@ The policy manager makes a distinction between 3 types of policies, concrete, im
     guard-policy:bool
   )
 ```
-
-```
-  (defschema token-policies
-    concrete-policies:object{concrete-policy}
-    immutable-policies:[module{token-policy-v2}]
-    adjustable-policies:[module{token-policy-v2}]
-  )
-```
-
-- `concrete-policies` store boolean values that represent if the token uses the concrete-policy or not. Immutable.
-- `immutable-policies` store additional immutable policies that the token chooses to be bound with.
-- `adjustable-policies` store policies that can be rotated by the token owner. Fractional tokens cannot rotate.
 
 ### Concrete Policies
 
@@ -330,16 +320,11 @@ The reason for hashing the token-details is to capture all the data on the ledge
 
 ## Rationale
 
-### Why the Manifest was Replaced by URI 
+### Why the Manifest was Replaced by URI
 
 We decided to replace the manifest schema with a URI-based schema. The new schema for NFT metadata is a simple JSON schema that describes the properties of the metadata. This schema enables compatibility with various marketplaces and wallets, making Marmalade tokens more interoperable. By utilising a URI-based schema, Marmalade tokens can improve scalability, and provide greater flexibility for developers and most of all simplicity of usage in general.
 
 The decision to move NFT metadata off-chain and use a widely accepted standard for the metadata schema is a positive step for Marmalade tokens.
-
-
-
-
-
 
 ## IPFS Storage Guide
 
@@ -348,60 +333,58 @@ This guide provides our recommend approach to storing metadata and image assets 
 ### Storing Collections: Step-by-Step Guide
 
 1.  **Image Upload to IPFS:**
-    
-    -  Uploading your image assets folder to IPFS, adopting sequential numbering for streamlined referencing (e.g., "1.jpg, 2.jpg...").
+
+    - Uploading your image assets folder to IPFS, adopting sequential numbering for streamlined referencing (e.g., "1.jpg, 2.jpg...").
+
 2.  **Metadata Update:**
-    
-    -  After the upload, capture the CID for the assets folder (e.g., "Bayfol...").
-    -  Proceed to update the metadata files, correlating the image property with the path to CID (e.g., "ipfs://Bayfol.../1.jpg").
+
+    - After the upload, capture the CID for the assets folder (e.g., "Bayfol...").
+    - Proceed to update the metadata files, correlating the image property with the path to CID (e.g., "ipfs://Bayfol.../1.jpg").
+
 3.  **Metadata Upload to IPFS:**
-    
-    -  Upload the metadata files to IPFS, maintaining sequential numbering that corresponds with the asset (e.g., "1.json, 2.json...").
-    -  Retrieve the CID for the uploaded metadata folder (e.g., "Baymetx...).
+
+    - Upload the metadata files to IPFS, maintaining sequential numbering that corresponds with the asset (e.g., "1.json, 2.json...").
+    - Retrieve the CID for the uploaded metadata folder (e.g., "Baymetx...).
+
 4.  **Finalizing URI:**
-    
-    -  Merge the metadata folder CID (e.g., "Baymetx...") with the respective filename and extension to construct a comprehensive URI (e.g., "ipfs://Baymetx.../1.json").
-   
+
+    - Merge the metadata folder CID (e.g., "Baymetx...") with the respective filename and extension to construct a comprehensive URI (e.g., "ipfs://Baymetx.../1.json").
 
 ### Example:
 
- - **uri:** [ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna/1.json](ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna/1.json)
-   
- - **gateway:** [[click here]](https://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna.ipfs.dweb.link/1.json)
+- **uri:** [ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna/1.json](ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna/1.json)
 
+- **gateway:** [[click here]](https://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna.ipfs.dweb.link/1.json)
 
- - **collection-asset-folder:** ipfs://bafybeie4ktsgx4x3gnpvo2uptngez4cvvqdq75iimpnukvpee2x34yp6jm
+* **collection-asset-folder:** ipfs://bafybeie4ktsgx4x3gnpvo2uptngez4cvvqdq75iimpnukvpee2x34yp6jm
 
-   
- - **collection-asset-folder-gateway:** [[click here]](https://bafybeie4ktsgx4x3gnpvo2uptngez4cvvqdq75iimpnukvpee2x34yp6jm.ipfs.dweb.link/)
- 
- - **collection-metadata-folder:** ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna
+- **collection-asset-folder-gateway:** [[click here]](https://bafybeie4ktsgx4x3gnpvo2uptngez4cvvqdq75iimpnukvpee2x34yp6jm.ipfs.dweb.link/)
 
+- **collection-metadata-folder:** ipfs://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna
 
- - **collection-metadata-folder-gateway:** [[click here]](https://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna.ipfs.dweb.link/)
-
-
-
+* **collection-metadata-folder-gateway:** [[click here]](https://bafybeig4ihtm2phax2eodfpubwy467szuiieqafkoywp5khzt6cz2hqrna.ipfs.dweb.link/)
 
 ### Single NFT Storage: Step-by-Step Guide
 
 1.  **Image and Metadata Upload to IPFS:**
-    
-    -  Upload the image asset to IPFS.
+
+    - Upload the image asset to IPFS.
+
 2.  **Metadata Update:**
-    
-    -  Upon successful upload, retrieve the CID for the asset (e.g., "Bayfabc...").
-    -  Revise the metadata files, matching the image property with the path to CID (e.g., "ipfs://Bayfabc.../1.jpg").
+
+    - Upon successful upload, retrieve the CID for the asset (e.g., "Bayfabc...").
+    - Revise the metadata files, matching the image property with the path to CID (e.g., "ipfs://Bayfabc.../1.jpg").
+
 3.  **Metadata Upload to IPFS:**
-    -  Upload the metadata file to IPFS.
+    - Upload the metadata file to IPFS.
 4.  **Finalizing URI:**
-    -  Retrieve the path containing the CID for the uploaded metadata file (e.g., "ipfs://Bayfxyz.../metadata.json")
+    - Retrieve the path containing the CID for the uploaded metadata file (e.g., "ipfs://Bayfxyz.../metadata.json")
 
 ### Example:
 
- - **uri:** [ipfs://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese/metadata.json](ipfs://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese/metadata.json)
-   
- - **gateway-link:** [[click here]](https://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese.ipfs.dweb.link/metadata.json)
+- **uri:** [ipfs://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese/metadata.json](ipfs://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese/metadata.json)
+
+- **gateway-link:** [[click here]](https://bafyreiainnf575ivbxffep3xqx4d4v2jrpyz4yrggylfp5i7lru7zpfese.ipfs.dweb.link/metadata.json)
 
 ### Metadata Structure
 
@@ -412,7 +395,6 @@ In this schema, the `image` property should contain a link to the image on IPFS 
 ### Token Creation in the Ledger
 
 When creating a token in the ledger, you should use the `create-token` function. The link obtained from IPFS (.json) serves as the URI supplied to create a token within the ledger:
-
 
     (defun create-token:bool
         ( id:string

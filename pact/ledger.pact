@@ -8,10 +8,10 @@
           (> (length account) 2))
     ]
 
-  (use util.fungible-util)
-  (use marmalade.policy-manager)
   (implements kip.poly-fungible-v3)
   (use kip.poly-fungible-v3 [account-details sender-balance-change receiver-balance-change])
+  (use util.fungible-util)
+  (use marmalade.policy-manager)
 
   ;;
   ;; Tables/Schemas
@@ -108,31 +108,6 @@
     @event
     true
   )
-
-
-  ; ;; dependent on marmalade
-  ; (defcap ADJUST_POLICY (token-id:string account:string)
-  ;   @event
-  ;   (enforce (= (get-balance token-id account) (total-supply token-id)) "Account doesn't own token")
-  ;   (enforce-guard (account-guard token-id account)))
-
-  ; (defun adjust-policy
-  ;   ( token-id:string
-  ;     account:string
-  ;     adjustable-policies:[module{kip.token-policy-v2}] )
-  ;   (with-capability (ADJUST_POLICY token-id account) ;; needs sigs from token owner
-  ;     (with-read tokens token-id {
-  ;       "policies":= old-policies
-  ;       }
-  ;       (let* ((new-policies:[module{kip.token-policy-v2}] (+
-  ;                 {'adjustable-policies: adjustable-policies}
-  ;                 old-policies
-  ;             )))
-  ;       (update tokens token-id {
-  ;         "policies": new-policies
-  ;       })
-  ;   ))
-  ; ))
 
   ;;
   ;; Implementation caps

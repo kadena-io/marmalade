@@ -60,18 +60,16 @@
   (load "../concrete-policies/collection-policy/collection-policy-v1.pact")
   (load "../concrete-policies/guard-policy/guard-policy-v1.pact")
 
-  (use kip.token-policy-v2 [QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
+  (use marmalade.policy-manager [QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
   (marmalade.policy-manager.init {
-    "concrete-policies": {
-      'non-fungible-policy:marmalade.non-fungible-policy-v1
-      ,'quote-policy:marmalade.fungible-quote-policy-v1
-      ,'royalty-policy:marmalade.royalty-policy-v1
-      ,'collection-policy:marmalade.collection-policy-v1
-      ,'guard-policy:marmalade.guard-policy-v1
-      }
-    ,"ledger-guard": (marmalade.ledger.ledger-guard)
+     "ledger-guard": (marmalade.ledger.ledger-guard)
     ,"ledger": marmalade.ledger
   })
+  (marmalade.policy-manager.add-concrete-policy QUOTE_POLICY marmalade.fungible-quote-policy-v1)
+  (marmalade.policy-manager.add-concrete-policy NON_FUNGIBLE_POLICY marmalade.non-fungible-policy-v1)
+  (marmalade.policy-manager.add-concrete-policy ROYALTY_POLICY marmalade.royalty-policy-v1)
+  (marmalade.policy-manager.add-concrete-policy COLLECTION_POLICY marmalade.collection-policy-v1)
+  (marmalade.policy-manager.add-concrete-policy GUARD_POLICY marmalade.guard-policy-v1)
 
 (commit-tx)
 

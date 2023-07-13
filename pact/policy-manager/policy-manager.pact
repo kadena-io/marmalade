@@ -6,28 +6,26 @@
     (enforce-guard 'marmalade-admin ))
 
   ; (implements kip.token-policy-v2)
-  (use kip.token-policy-v2 [token-info concrete-policy NON_FUNGIBLE_POLICY QUOTE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
+  (use kip.token-policy-v2 [token-info ])
 
-  ;; schema to save policy list in table
-  (defschema concrete-policy-manager
-    non-fungible-policy:module{kip.token-policy-v2}
-    quote-policy:module{kip.token-policy-v2}
-    royalty-policy:module{kip.token-policy-v2}
-    collection-policy:module{kip.token-policy-v2}
-    guard-policy:module{kip.token-policy-v2}
-  )
+  (defconst NON_FUNGIBLE_POLICY 'non-fungible-policy )
+  (defconst QUOTE_POLICY 'quote-policy )
+  (defconst ROYALTY_POLICY 'royalty-policy )
+  (defconst COLLECTION_POLICY 'collection-policy )
+  (defconst GUARD_POLICY 'guard-policy )
 
   (defschema ledger ;; rename to ledger-info
     ledger:module{kip.poly-fungible-v3}
     ledger-guard:guard
-    concrete-policies:object{concrete-policy-manager}
   )
 
   (deftable ledgers:{ledger})
 
-  ;; used in the filter
-  (defconst CONCRETE_POLICY_LIST
-    [NON_FUNGIBLE_POLICY QUOTE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY] )
+  (defschema concrete-policy
+    policy:module{kip.token-policy-v2}
+  )
+
+  (deftable concrete-policies:{concrete-policy})
 
   (defcap ADMIN ()
     (enforce-guard 'marmalade-admin)
@@ -161,23 +159,29 @@
   )
 
 
-  (defun create-concrete-policy:object{concrete-policy} (policies:[module{kip.token-policy-v2}])
-    (let ((registered-policies:object{concrete-policy-manager} (get-concrete-policies (get-ledger-info))))
-      { 'quote-policy: (contains (at QUOTE_POLICY registered-policies) policies )
-       ,'non-fungible-policy: (contains (at NON_FUNGIBLE_POLICY registered-policies) policies)
-       ,'royalty-policy: (contains (at ROYALTY_POLICY registered-policies) policies)
-       ,'collection-policy: (contains (at COLLECTION_POLICY registered-policies) policies)
-       ,'guard-policy: (contains (at GUARD_POLICY registered-policies) policies)
-      })
+  (defun add-concrete-policy:bool (policy-field:string policy:module{kip.token-policy-v2})
+    (with-capability (ADMIN)
+      (insert concrete-policies policy-field {
+        "policy": policy
+        }
+      )
+    true)
   )
 
-  ;;utility functions to get ledger-info
+  (defun update-concrete-policy:bool (policy-field:string policy:module{kip.token-policy-v2})
+    (with-capability (ADMIN)
+      (update concrete-policies policy-field {
+        "policy": policy
+        }
+      )
+    true)
+  )
+
   (defun get-concrete-policy:module{kip.token-policy-v2} (policy-field:string)
-    (at policy-field (get-concrete-policies (get-ledger-info)))
-  )
-
-  (defun get-concrete-policies:object{concrete-policy-manager} (ledger:object{ledger})
-    (at 'concrete-policies ledger)
+    (with-read concrete-policies policy-field {
+      "policy":= policy
+      }
+      policy)
   )
 
   (defun get-ledger-guard:guard (ledger:object{ledger})
@@ -236,4 +240,5 @@
 (if (read-msg 'upgrade )
   ["upgrade complete"]
   [ (create-table ledgers)
+    (create-table concrete-policies)
   ])

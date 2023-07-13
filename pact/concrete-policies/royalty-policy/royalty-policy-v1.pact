@@ -8,10 +8,12 @@
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
   (use marmalade.policy-manager)
+  (use marmalade.policy-manager [QUOTE_POLICY])
   (use marmalade.fungible-quote-policy-v1)
   (use marmalade.fungible-quote-policy-interface-v1 [quote-spec quote-schema])
   (implements kip.token-policy-v2)
-  (use kip.token-policy-v2 [token-info QUOTE_POLICY])
+  (use kip.token-policy-v2 [token-info])
+
 
   (defschema royalty-schema
     fungible:module{fungible-v2}

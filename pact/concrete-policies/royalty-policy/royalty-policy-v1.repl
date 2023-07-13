@@ -63,7 +63,7 @@
 
 (env-sigs [
   { 'key: 'account
-  ,'caps: [(marmalade.ledger.MINT "t:fiZhyILqrnz9jeziJru0vYuTkXDLBO17v-LKPu6TLK8" "k:account" 1.0)]
+  ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
   }])
 
 (expect "mint a default token with quote-policy, non-fungible-policy"
@@ -96,7 +96,7 @@
 (env-sigs [
   { 'key: 'account
    ,'caps: [
-   (marmalade.ledger.OFFER "t:fiZhyILqrnz9jeziJru0vYuTkXDLBO17v-LKPu6TLK8" "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
+   (marmalade.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
    }])
 
 (expect "stat offer by running step 0 of sale"

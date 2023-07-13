@@ -18,7 +18,7 @@
 
 (env-sigs [
   { 'key: 'account
-   ,'caps: [(marmalade.ledger.MINT "t:UHU7ilVZEH0GxsPdfO39DN-_ZteJd0rX9EaiL34stT4" "k:account" 1.0)]
+   ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
   }])
 
 (expect "create token succeeds without mint-guard"
@@ -48,7 +48,7 @@
 
  (env-sigs [
    { 'key: 'mint-false
-    ,'caps: [(marmalade.ledger.MINT "t:UHU7ilVZEH0GxsPdfO39DN-_ZteJd0rX9EaiL34stT4" "k:account" 1.0)]
+    ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
    }])
 
 (expect-failure "Mint token fails without mint-guard"
@@ -57,7 +57,7 @@
 
 (env-sigs [
   { 'key: 'mint
-   ,'caps: [(marmalade.ledger.MINT "t:UHU7ilVZEH0GxsPdfO39DN-_ZteJd0rX9EaiL34stT4" "k:account" 1.0)]
+   ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
   }])
 
 (expect "Mint token fails without mint-guard"

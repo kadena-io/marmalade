@@ -50,7 +50,7 @@
   (use marmalade.ledger)
   (env-sigs [
     { 'key: 'account
-     ,'caps: [(marmalade.ledger.MINT "t:DI4FHziasc_JhUMhxS366zMJ3KKDXWUcytBo6RhPnBQ" "k:account" 5.0)
+     ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id) "k:account" 5.0)
     ]
     }])
 
@@ -63,7 +63,7 @@
   (use marmalade.ledger)
   (env-sigs [
     { 'key: 'account
-    ,'caps: [(marmalade.ledger.MINT "t:DI4FHziasc_JhUMhxS366zMJ3KKDXWUcytBo6RhPnBQ" "k:account" 0.5)]
+    ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id) "k:account" 0.5)]
     }])
 
   (expect-failure "minting with amout of 0.5 fails"
@@ -75,7 +75,7 @@
   (use marmalade.ledger)
   (env-sigs [
     { 'key: 'account
-    ,'caps: [(marmalade.ledger.MINT "t:DI4FHziasc_JhUMhxS366zMJ3KKDXWUcytBo6RhPnBQ" "k:account" 1.0)]
+    ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
     }])
 
   (expect "minting succeeds"
@@ -87,7 +87,7 @@
   (use marmalade.ledger)
     (env-sigs [
       { 'key: 'account
-      ,'caps: [(marmalade.ledger.BURN "t:DI4FHziasc_JhUMhxS366zMJ3KKDXWUcytBo6RhPnBQ" "k:account" 1.0)]
+      ,'caps: [(marmalade.ledger.BURN (read-msg 'token-id) "k:account" 1.0)]
       }])
 
     (expect-failure "Burning is not allowed"

@@ -95,6 +95,7 @@
  ,"account": "k:account"
  ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
   })
+
 (env-sigs [
   { 'key: 'account
    ,'caps: [(marmalade.ledger.MINT (read-msg "default-token-id") "k:account" 1.0)
@@ -130,7 +131,113 @@
   true
   (mint (read-msg 'empty-token-id )  (read-msg 'account ) (read-keyset 'mint-guard ) 1.0))
 
+(env-sigs [
+  { 'key: 'marmalade-admin
+   ,'caps: []
+   }])
+
 (commit-tx)
+
+
+(begin-tx)
+(env-sigs [
+  { 'key: 'marmalade-admin
+   ,'caps: []
+   }])
+(env-data {
+  "ns": "marmalade"
+  })
+  (namespace 'marmalade)
+  (namespace (read-msg 'ns))
+
+  (module non-fungible-policy-v1 GOVERNANCE
+
+    @doc "Concrete policy for issuing an nft with a fixed supply of 1"
+
+    (defcap GOVERNANCE ()
+      (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+
+    (implements kip.token-policy-v2)
+    (use kip.token-policy-v2 [token-info])
+
+    (defun enforce-ledger:bool ()
+       (enforce-guard (marmalade.ledger.ledger-guard))
+    )
+
+    (defun enforce-init:bool
+      ( token:object{token-info}
+      )
+      (enforce-ledger)
+      true
+    )
+
+    (defun enforce-mint:bool
+      ( token:object{token-info}
+        account:string
+        guard:guard
+        amount:decimal
+      )
+      (enforce-ledger)
+    )
+
+    (defun enforce-burn:bool
+      ( token:object{token-info}
+        account:string
+        amount:decimal
+      )
+      (enforce-ledger)
+    )
+
+    (defun enforce-offer:bool
+      ( token:object{token-info}
+        seller:string
+        amount:decimal
+        sale-id:string
+      )
+      @doc "Capture quote spec for SALE of TOKEN from message"
+      (enforce-ledger)
+    )
+
+    (defun enforce-buy:bool
+      ( token:object{token-info}
+        seller:string
+        buyer:string
+        buyer-guard:guard
+        amount:decimal
+        sale-id:string )
+      (enforce-ledger)
+    )
+
+    (defun enforce-transfer:bool
+      ( token:object{token-info}
+        sender:string
+        guard:guard
+        receiver:string
+        amount:decimal )
+      (enforce-ledger)
+    )
+
+    (defun enforce-withdraw:bool
+      ( token:object{token-info}
+        seller:string
+        amount:decimal
+        sale-id:string )
+      (enforce-ledger)
+    )
+  )
+
+  (use marmalade.policy-manager)
+  (use marmalade.policy-manager [NON_FUNGIBLE_POLICY])
+  (use marmalade.util-v1)
+  (use marmalade.ledger)
+  (expect "upgrade non-fungible-policy"
+    true
+    (update-concrete-policy NON_FUNGIBLE_POLICY marmalade.non-fungible-policy-v1))
+  (expect "check if stored policy matches with saved concrete-policy"
+    true
+    (is-used (at 'policies (get-token-info "t:9BJQ9Qyqfq4pmDGC18xjAao3ZclVz3jFATq2LBBgIpQ")) NON_FUNGIBLE_POLICY))
+
+(rollback-tx)
 
 (begin-tx "start an offer")
   (env-hash (hash "offer-0"))

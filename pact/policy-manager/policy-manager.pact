@@ -8,6 +8,9 @@
   ; (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info ])
 
+  (defconst CONCRETE_POLICY_LIST
+    [NON_FUNGIBLE_POLICY QUOTE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY] )
+
   (defconst NON_FUNGIBLE_POLICY 'non-fungible-policy )
   (defconst QUOTE_POLICY 'quote-policy )
   (defconst ROYALTY_POLICY 'royalty-policy )
@@ -160,6 +163,7 @@
 
 
   (defun add-concrete-policy:bool (policy-field:string policy:module{kip.token-policy-v2})
+    (contains policy-field CONCRETE_POLICY_LIST)
     (with-capability (ADMIN)
       (insert concrete-policies policy-field {
         "policy": policy
@@ -169,6 +173,7 @@
   )
 
   (defun update-concrete-policy:bool (policy-field:string policy:module{kip.token-policy-v2})
+    (contains policy-field CONCRETE_POLICY_LIST)
     (with-capability (ADMIN)
       (update concrete-policies policy-field {
         "policy": policy

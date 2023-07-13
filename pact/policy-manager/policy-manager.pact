@@ -148,6 +148,7 @@
     (let ((policies:[module{kip.token-policy-v2}]  (at 'policies token)))
       (map-transfer token sender guard receiver amount policies)))
 
+
 ;; Sale/Escrow Functions
   (defun get-escrow-account (sale-id:string)
     { 'account: (create-principal (create-capability-guard (QUOTE_ESCROW sale-id)))

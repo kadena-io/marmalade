@@ -4,7 +4,7 @@
 (begin-tx)
   (use marmalade.policy-manager [QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
   (use marmalade.util-v1 [concrete-policy-bool])
-  
+
   (module util GOV
     (defcap GOV () true)
 

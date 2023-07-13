@@ -17,7 +17,7 @@
   (defconst COLLECTION_POLICY 'collection-policy )
   (defconst GUARD_POLICY 'guard-policy )
 
-  (defschema ledger ;; rename to ledger-info
+  (defschema ledger 
     ledger:module{kip.poly-fungible-v3}
     ledger-guard:guard
   )

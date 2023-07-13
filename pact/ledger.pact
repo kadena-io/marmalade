@@ -203,7 +203,7 @@
     (with-capability (LEDGER)
       ;; enforces token and uri protocols
       (enforce-uri-reserved uri)
-      (let ((token-details { 'uri: uri, 'precision: precision, 'policies: policies }))
+      (let ((token-details { 'uri: uri, 'precision: precision, 'policies: (sort policies) }))
        (enforce-token-reserved id token-details)
       )
       ;; maps policy list and calls policy::enforce-init

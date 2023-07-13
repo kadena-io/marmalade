@@ -147,8 +147,16 @@
 (env-data {
   "ns": "marmalade"
   })
-  (namespace 'marmalade)
   (namespace (read-msg 'ns))
+  (use marmalade.ledger)
+  (use marmalade.util-v1)
+  (env-data {
+    'token-id: (create-token-id { 'uri: "test-uri-3", 'precision: 0, 'policies: (create-policies DEFAULT)  } )
+    })
+
+  (expect  "create a token "
+    true
+    (create-token (read-msg 'token-id ) 0 "test-uri-3"  (create-policies DEFAULT)  ))
 
   (module non-fungible-policy-v1 GOVERNANCE
 
@@ -228,14 +236,14 @@
 
   (use marmalade.policy-manager)
   (use marmalade.policy-manager [NON_FUNGIBLE_POLICY])
-  (use marmalade.util-v1)
-  (use marmalade.ledger)
+
   (expect "upgrade non-fungible-policy"
     true
     (update-concrete-policy NON_FUNGIBLE_POLICY marmalade.non-fungible-policy-v1))
+
   (expect "check if stored policy matches with saved concrete-policy"
     true
-    (is-used (at 'policies (get-token-info "t:9BJQ9Qyqfq4pmDGC18xjAao3ZclVz3jFATq2LBBgIpQ")) NON_FUNGIBLE_POLICY))
+    (is-used (at 'policies (get-token-info (read-msg 'token-id))) NON_FUNGIBLE_POLICY))
 
 (rollback-tx)
 

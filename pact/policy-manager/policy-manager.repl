@@ -99,8 +99,8 @@
   })
 (env-sigs [
   { 'key: 'account
-   ,'caps: [(marmalade.ledger.MINT "t:_32y1dNvPtMpUdJgSaJIOoUkpwd9AckPMAFENnDZ7AY" "k:account" 1.0)
-            (marmalade.ledger.MINT "t:mXoVZ-STyWr5aAyVXpgjRAkD5Cpgs33pG7mVQiftTrk" "k:account" 1.0)
+   ,'caps: [(marmalade.ledger.MINT (read-msg "default-token-id") "k:account" 1.0)
+            (marmalade.ledger.MINT (read-msg 'empty-token-id) "k:account" 1.0)
    ]
    }])
 
@@ -146,7 +146,7 @@
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } )
-  ,"quote": {
+   ,"quote": {
     "fungible": marmalade.abc
     ,"price": 2.0
     ,"amount": 1.0
@@ -157,23 +157,26 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-    (marmalade.ledger.OFFER "t:_32y1dNvPtMpUdJgSaJIOoUkpwd9AckPMAFENnDZ7AY" "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
+    (marmalade.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
     }])
 
   (expect "stat offer by running step 0 of sale"
     true
     (sale (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z")))
 
-  (env-data { "seller-guard": {"keys": ["account"], "pred": "keys-all"}})
+  (env-data { "seller-guard": {"keys": ["account"], "pred": "keys-all"}
+            , "token-id" : (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } )
+}
+  )
 
   (expect "events"
     (format "{}" [[
-      {"name": "marmalade.ledger.OFFER","params": ["t:_32y1dNvPtMpUdJgSaJIOoUkpwd9AckPMAFENnDZ7AY" "k:account" 1.0 "2023-07-22T11:26:35Z"]}
-      {"name": "marmalade.ledger.SALE","params": ["t:_32y1dNvPtMpUdJgSaJIOoUkpwd9AckPMAFENnDZ7AY" "k:account" 1.0 "2023-07-22T11:26:35Z" "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"]}
-      {"name": "marmalade.fungible-quote-policy-v1.QUOTE","params": ["C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg" "t:_32y1dNvPtMpUdJgSaJIOoUkpwd9AckPMAFENnDZ7AY" 1.0 2.0 2.0 {"amount": 1.0,"fungible": marmalade.abc,"price": 2.0,"seller-guard": (read-keyset 'seller-guard )}]}
-      {"name": "marmalade.ledger.ACCOUNT_GUARD","params": ["t:_32y1dNvPtMpUdJgSaJIOoUkpwd9AckPMAFENnDZ7AY" "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE" (create-capability-pact-guard (SALE_PRIVATE "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"))]}
-      {"name": "marmalade.ledger.TRANSFER","params": ["t:_32y1dNvPtMpUdJgSaJIOoUkpwd9AckPMAFENnDZ7AY" "k:account" "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE" 1.0]}
-      {"name": "marmalade.ledger.RECONCILE","params": ["t:_32y1dNvPtMpUdJgSaJIOoUkpwd9AckPMAFENnDZ7AY" 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE","current": 1.0,"previous": 0.0}]}]])
+      {"name": "marmalade.ledger.OFFER","params": [(read-msg 'token-id) "k:account" 1.0 "2023-07-22T11:26:35Z"]}
+      {"name": "marmalade.ledger.SALE","params": [(read-msg 'token-id) "k:account" 1.0 "2023-07-22T11:26:35Z" "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"]}
+      {"name": "marmalade.fungible-quote-policy-v1.QUOTE","params": ["C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg" (read-msg 'token-id) 1.0 2.0 2.0 {"amount": 1.0,"fungible": marmalade.abc,"price": 2.0,"seller-guard": (read-keyset 'seller-guard )}]}
+      {"name": "marmalade.ledger.ACCOUNT_GUARD","params": [(read-msg 'token-id) "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE" (create-capability-pact-guard (SALE_PRIVATE "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"))]}
+      {"name": "marmalade.ledger.TRANSFER","params": [(read-msg 'token-id) "k:account" "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE" 1.0]}
+      {"name": "marmalade.ledger.RECONCILE","params": [(read-msg 'token-id) 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE","current": 1.0,"previous": 0.0}]}]])
     (format "{}" [(map (remove "module-hash")  (env-events true))])
   )
 

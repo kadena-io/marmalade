@@ -1,12 +1,22 @@
 (namespace (read-msg 'ns))
 
 (module util-v1 GOVERNANCE
-  (use kip.token-policy-v2 [token-policies concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
+  (use kip.token-policy-v2)
+  (use marmalade.policy-manager )
+  (use marmalade.policy-manager [CONCRETE_POLICY_LIST NON_FUNGIBLE_POLICY QUOTE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
+
+  (defschema concrete-policy-bool
+    non-fungible-policy:bool
+    quote-policy:bool
+    royalty-policy:bool
+    collection-policy:bool
+    guard-policy:bool
+  )
 
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
-  (defconst DEFAULT:object{concrete-policy}
+  (defconst DEFAULT:object{concrete-policy-bool}
     { 'quote-policy: true
      ,'non-fungible-policy: true
      ,'royalty-policy: false
@@ -14,7 +24,7 @@
      ,'guard-policy: true
      })
 
-  (defconst DEFAULT_ROYALTY:object{concrete-policy}
+  (defconst DEFAULT_ROYALTY:object{concrete-policy-bool}
     { 'quote-policy: true
      ,'non-fungible-policy: true
      ,'royalty-policy: true
@@ -23,7 +33,7 @@
     }
   )
 
-  (defconst DEFAULT_COLLECTION:object{concrete-policy}
+  (defconst DEFAULT_COLLECTION:object{concrete-policy-bool}
     { 'quote-policy: true
      ,'non-fungible-policy: true
      ,'royalty-policy: false
@@ -32,7 +42,7 @@
     }
   )
 
-  (defconst DEFAULT_COLLECTION_ROYALTY:object{concrete-policy}
+  (defconst DEFAULT_COLLECTION_ROYALTY:object{concrete-policy-bool}
     { 'quote-policy: true
      ,'non-fungible-policy: true
      ,'royalty-policy: true
@@ -41,7 +51,7 @@
     }
   )
 
-  (defconst EMPTY:object{concrete-policy}
+  (defconst EMPTY:object{concrete-policy-bool}
     { 'quote-policy: false
      ,'non-fungible-policy: false
      ,'royalty-policy: false
@@ -50,19 +60,18 @@
     }
   )
 
-  (defun create-default-policies:object{token-policies} (concrete-policies:object{concrete-policy})
-    {
-      'concrete-policies: concrete-policies
-     ,'immutable-policies: []
-     ,'adjustable-policies: []
-    }
+  (defun create-policies (concrete-policy:object{concrete-policy-bool})
+    (let* ( (is-used-policy (lambda (policy-field:string) (at policy-field concrete-policy)))
+            (used-policies:[string] (filter (is-used-policy) CONCRETE_POLICY_LIST)))
+          (map (get-concrete-policy) used-policies))
   )
 
-  (defun create-single-policy:object{token-policies} (policy:module{kip.token-policy-v2})
-    {
-      'concrete-policies: EMPTY
-     ,'immutable-policies: [policy]
-     ,'adjustable-policies: []
+  (defun create-concrete-policy:object{concrete-policy-bool} (policies:[module{kip.token-policy-v2}])
+    { 'quote-policy: (contains (get-concrete-policy QUOTE_POLICY) policies )
+     ,'non-fungible-policy: (contains (get-concrete-policy NON_FUNGIBLE_POLICY) policies)
+     ,'royalty-policy: (contains (get-concrete-policy ROYALTY_POLICY) policies)
+     ,'collection-policy: (contains (get-concrete-policy COLLECTION_POLICY) policies)
+     ,'guard-policy: (contains (get-concrete-policy GUARD_POLICY) policies)
     }
   )
 )

@@ -77,15 +77,4 @@
       sale-id:string )
     (enforce-ledger)
   )
-
-  (defun enforce-crosschain:bool
-    ( token:object{token-info}
-      sender:string
-      guard:guard
-      receiver:string
-      target-chain:string
-      amount:decimal )
-    (enforce-ledger)
-    (enforce false "Transfer prohibited")
-  )
 )

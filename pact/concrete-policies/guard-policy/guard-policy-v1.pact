@@ -41,15 +41,15 @@
   )
 
   (defun get-mint-guard:guard (token-id:string)
-    (with-read guards token-id {
-      "mint-guard":= mint-guard
+    (with-read policy-guards token-id {
+      'mint-guard:= mint-g
     }
-    mint-guard
+    mint-g
     )
   )
 
   (defun get-burn-guard:guard (token-id:string)
-    (with-read guards token-id {
+    (with-read policy-guards token-id {
       "burn-guard":= burn-guard
     }
     burn-guard
@@ -57,7 +57,7 @@
   )
 
   (defun get-sale-guard:guard (token-id:string)
-    (with-read guards token-id {
+    (with-read policy-guards token-id {
       "sale-guard":= sale-guard
     }
     sale-guard
@@ -65,7 +65,7 @@
   )
 
   (defun get-transfer-guard:guard (token-id:string)
-    (with-read guards token-id {
+    (with-read policy-guards token-id {
       "transfer-guard":= transfer-guard
     }
     transfer-guard
@@ -163,17 +163,6 @@
       amount:decimal )
     (enforce-ledger)
     (enforce-guard (at TRANSFER_GUARD (get-guards token)))
-  )
-
-  (defun enforce-crosschain:bool
-    ( token:object{token-info}
-      sender:string
-      guard:guard
-      receiver:string
-      target-chain:string
-      amount:decimal )
-    (enforce-ledger)
-    (enforce false "Transfer prohibited")
   )
 )
 

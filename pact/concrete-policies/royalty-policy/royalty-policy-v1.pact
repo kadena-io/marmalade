@@ -8,10 +8,12 @@
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
   (use marmalade.policy-manager)
+  (use marmalade.policy-manager [QUOTE_POLICY])
   (use marmalade.fungible-quote-policy-v1)
   (use marmalade.fungible-quote-policy-interface-v1 [quote-spec quote-schema])
   (implements kip.token-policy-v2)
-  (use kip.token-policy-v2 [token-info QUOTE_POLICY])
+  (use kip.token-policy-v2 [token-info])
+
 
   (defschema royalty-schema
     fungible:module{fungible-v2}
@@ -47,15 +49,16 @@
   (defun enforce-init:bool
     ( token:object{token-info}
     )
-    (enforce (is-used (at 'policies token) QUOTE_POLICY) "quote policy must be turned on")
     (enforce-ledger)
-    (let* ( (spec:object{royalty-schema} (read-msg ROYALTY_SPEC))
+    (let* ( (quote-used:bool (is-used (at 'policies token) QUOTE_POLICY))
+            (spec:object{royalty-schema} (read-msg ROYALTY_SPEC))
             (fungible:module{fungible-v2} (at 'fungible spec))
             (creator:string (at 'creator spec))
             (creator-guard:guard (at 'creator-guard spec))
             (royalty-rate:decimal (at 'royalty-rate spec))
             (creator-details:object (fungible::details creator ))
             )
+      (enforce quote-used "quote policy must be turned on")
       (enforce (=
         (at 'guard creator-details) creator-guard)
         "Creator guard does not match")
@@ -137,17 +140,6 @@
       sender:string
       guard:guard
       receiver:string
-      amount:decimal )
-    (enforce-ledger)
-    (enforce false "Transfer prohibited")
-  )
-
-  (defun enforce-crosschain:bool
-    ( token:object{token-info}
-      sender:string
-      guard:guard
-      receiver:string
-      target-chain:string
       amount:decimal )
     (enforce-ledger)
     (enforce false "Transfer prohibited")

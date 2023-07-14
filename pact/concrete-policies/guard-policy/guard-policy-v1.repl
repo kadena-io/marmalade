@@ -2,52 +2,28 @@
 (load "../../policy-manager/policy-manager.repl")
 
 (begin-tx)
-(use kip.token-policy-v2 [token-policies concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
-
-(module util GOV
-  (defcap GOV () true)
-
-  (defconst DEFAULT:object{concrete-policy}
-    { 'quote-policy: true
-     ,'non-fungible-policy: true
-     ,'royalty-policy: false
-     ,'collection-policy:false
-     ,'guard-policy: true
-    }
-  )
-
-  (defconst DEFAULT_POLICIES_WITH_GUARD:object{token-policies}
-    { 'concrete-policies:DEFAULT
-     ,'immutable-policies: []
-     ,'adjustable-policies:[]
-  })
-)
+(use marmalade.policy-manager [QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
 
 (commit-tx)
 
-(begin-tx)
-  (use marmalade.ledger)
-  (use marmalade.policy-manager)
-(commit-tx)
 
 (begin-tx "Create token without mint guard")
   (use marmalade.ledger)
-  (use marmalade.policy-manager)
-
+  (use marmalade.util-v1)
 (env-data {
-   "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: util.DEFAULT_POLICIES_WITH_GUARD } )
+   "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: (create-policies DEFAULT) } )
   ,"account": "k:account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
 })
 
 (env-sigs [
   { 'key: 'account
-   ,'caps: [(marmalade.ledger.MINT "t:oj7qLIkldM7MwNgEz5jIJy_VunqiLuqhgvmIFVLtaRI" "k:account" 1.0)]
+   ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
   }])
 
 (expect "create token succeeds without mint-guard"
  true
- (create-token (read-msg 'token-id) 0 "test-default-guard" util.DEFAULT_POLICIES_WITH_GUARD ))
+ (create-token (read-msg 'token-id) 0 "test-default-guard" (create-policies DEFAULT) ))
 
 (expect "Mint token succeeds without mint-guard"
   true
@@ -58,10 +34,9 @@
 
 (begin-tx "Create token without operator guard fails")
   (use marmalade.ledger)
-  (use marmalade.policy-manager)
-
+  (use marmalade.util-v1)
 (env-data {
-   "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: util.DEFAULT_POLICIES_WITH_GUARD } )
+   "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: (create-policies DEFAULT) } )
   ,"account": "k:account"
   ,"mint-guard": {"keys": ["mint"], "pred": "keys-all"}
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
@@ -69,11 +44,11 @@
 
 (expect "create token succeeds with mint-guard"
  true
- (create-token (read-msg 'token-id) 0 "test-default-guard" util.DEFAULT_POLICIES_WITH_GUARD ))
+ (create-token (read-msg 'token-id) 0 "test-default-guard" (create-policies DEFAULT) ))
 
  (env-sigs [
    { 'key: 'mint-false
-    ,'caps: [(marmalade.ledger.MINT "t:oj7qLIkldM7MwNgEz5jIJy_VunqiLuqhgvmIFVLtaRI" "k:account" 1.0)]
+    ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
    }])
 
 (expect-failure "Mint token fails without mint-guard"
@@ -82,7 +57,7 @@
 
 (env-sigs [
   { 'key: 'mint
-   ,'caps: [(marmalade.ledger.MINT "t:oj7qLIkldM7MwNgEz5jIJy_VunqiLuqhgvmIFVLtaRI" "k:account" 1.0)]
+   ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
   }])
 
 (expect "Mint token fails without mint-guard"

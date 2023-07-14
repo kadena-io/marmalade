@@ -21,7 +21,7 @@
 
   (defconst MARKETPLACE-FEE-MSG-KEY "marketplace-fee"
     @doc "Payload field for marketplace fee spec")
-  
+
   (defconst BID_ID-MSG-KEY "bid-id"
     @doc "Payload field for bid-id")
 
@@ -41,7 +41,7 @@
 
   (defschema quote-schema
     id:string
-    spec:object{quote-spec}    
+    spec:object{quote-spec}
   )
 
   (defun get-quote:object{quote-schema} (sale-id:string)
@@ -49,8 +49,8 @@
   )
 
   (defun accept-bid:bool (
-    bid-id:string 
-    buyer:string 
+    bid-id:string
+    buyer:string
     sale-id:string
     escrow-account:string
     escrow-guard:guard)

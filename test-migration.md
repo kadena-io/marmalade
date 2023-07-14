@@ -4,37 +4,37 @@ To enable smooth migration from Marmalade V1 into Marmalade V2, V2 contracts on 
 
 ## Test Namespace and Chain
 
-- Namespace: `n_fa5008565e171dca599c6accfd71d6006ddecce0`
+- Namespace: `n_42174c7f0ec646f47ba227ffeb24714da378f4d1`
 - Chain ID: `1`
 
 ## Interfaces
 
-- `n_fa5008565e171dca599c6accfd71d6006ddecce0.poly-fungible-v3`
-- `n_fa5008565e171dca599c6accfd71d6006ddecce0.token-policy-v2`
-- `n_fa5008565e171dca599c6accfd71d6006ddecce0.fungible-quote-policy-interface-v1`
+- `n_42174c7f0ec646f47ba227ffeb24714da378f4d1.poly-fungible-v3`
+- `n_42174c7f0ec646f47ba227ffeb24714da378f4d1.token-policy-v2`
+- `n_42174c7f0ec646f47ba227ffeb24714da378f4d1.fungible-quote-policy-interface-v1`
 
 ## Ledger, Policy Manager
 
-- `n_fa5008565e171dca599c6accfd71d6006ddecce0.ledger`
-- `n_fa5008565e171dca599c6accfd71d6006ddecce0.policy-manager`
+- `n_42174c7f0ec646f47ba227ffeb24714da378f4d1.ledger`
+- `n_42174c7f0ec646f47ba227ffeb24714da378f4d1.policy-manager`
 
 ## Concrete policies
 
-- `n_fa5008565e171dca599c6accfd71d6006ddecce0.fungible-quote-policy-v1`
-- `n_fa5008565e171dca599c6accfd71d6006ddecce0.collection-policy-v1`
-- `n_fa5008565e171dca599c6accfd71d6006ddecce0.royalty-policy-v1`
-- `n_fa5008565e171dca599c6accfd71d6006ddecce0.non-fungible-policy-v1`
+- `n_42174c7f0ec646f47ba227ffeb24714da378f4d1.fungible-quote-policy-v1`
+- `n_42174c7f0ec646f47ba227ffeb24714da378f4d1.collection-policy-v1`
+- `n_42174c7f0ec646f47ba227ffeb24714da378f4d1.royalty-policy-v1`
+- `n_42174c7f0ec646f47ba227ffeb24714da378f4d1.non-fungible-policy-v1`
+- `n_42174c7f0ec646f47ba227ffeb24714da378f4d1.guard--policy-v1`
 
 ## Regular Policies
 
-- `n_fa5008565e171dca599c6accfd71d6006ddecce0.onchain-manifest-policy-v1`
-- `n_fa5008565e171dca599c6accfd71d6006ddecce0.guard-policy-v1`
-- `n_fa5008565e171dca599c6accfd71d6006ddecce0.fixed-issuance-policy-v1`
-- `n_fa5008565e171dca599c6accfd71d6006ddecce0.migration-policy-v1`
+- `n_42174c7f0ec646f47ba227ffeb24714da378f4d1.onchain-manifest-policy-v1`
+- `n_42174c7f0ec646f47ba227ffeb24714da378f4d1.fixed-issuance-policy-v1`
+- `n_42174c7f0ec646f47ba227ffeb24714da378f4d1.migration-policy-v1`
 
 ## Util (WIP)
 
-- `n_fa5008565e171dca599c6accfd71d6006ddecce0.util-v1`
+- `n_42174c7f0ec646f47ba227ffeb24714da378f4d1.util-v1`
 
 ## Docs
 

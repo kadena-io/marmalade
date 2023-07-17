@@ -18,9 +18,9 @@
             amount:decimal
             sale-id:string )
         @doc "Offer policy of sale SALE-ID by SELLER of AMOUNT of TOKEN."
-        )
+    )
     
-        (defun enforce-buy:bool
+    (defun enforce-buy:bool
         ( token:object{token-info}
             seller:string
             buyer:string
@@ -28,15 +28,13 @@
             amount:decimal
             sale-id:string )
         @doc "Buy policy on SALE-ID by SELLER to BUYER AMOUNT of TOKEN."
-        )
+    )
     
-        (defun enforce-withdraw:bool
+    (defun enforce-withdraw:bool
         ( token:object{token-info}
             seller:string
             amount:decimal
             sale-id:string )
         @doc "Withdraw policy on SALE-ID by SELLER of AMOUNT of TOKEN"
-        )
+    )
 )
-
-

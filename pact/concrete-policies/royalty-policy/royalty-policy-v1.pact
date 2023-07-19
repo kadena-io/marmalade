@@ -58,7 +58,6 @@
             (royalty-rate:decimal (at 'royalty-rate spec))
             (creator-details:object (fungible::details creator ))
             )
-      (enforce quote-used "quote policy must be turned on")
       (enforce (=
         (at 'guard creator-details) creator-guard)
         "Creator guard does not match")

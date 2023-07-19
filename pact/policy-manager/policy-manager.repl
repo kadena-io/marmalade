@@ -45,8 +45,6 @@
    , 'marmalade-ns-admin: ["marmalade-admin"]
    , 'ns: "marmalade"
    , 'upgrade: false })
-
-  (load "../concrete-policies/fungible-quote-policy/fungible-quote-policy-interface-v1.pact")
   (load "../policy-manager/policy-manager.pact")
   (load "../ledger.pact")
   (load "../marmalade-util/util-v1.pact")
@@ -54,7 +52,6 @@
 (commit-tx)
 
 (begin-tx "load concrete-polices")
-  (load "../concrete-policies/fungible-quote-policy/fungible-quote-policy-v1.pact")
   (load "../concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact")
   (load "../concrete-policies/royalty-policy/royalty-policy-v1.pact")
   (load "../concrete-policies/collection-policy/collection-policy-v1.pact")
@@ -65,9 +62,9 @@
      "ledger-guard": (marmalade.ledger.ledger-guard)
     ,"ledger": marmalade.ledger
   })
-  (marmalade.policy-manager.add-concrete-policy QUOTE_POLICY marmalade.fungible-quote-policy-v1)
+  ; (marmalade.policy-manager.add-concrete-policy QUOTE_POLICY marmalade.fungible-quote-policy-v1)
   (marmalade.policy-manager.add-concrete-policy NON_FUNGIBLE_POLICY marmalade.non-fungible-policy-v1)
-  (marmalade.policy-manager.add-concrete-policy ROYALTY_POLICY marmalade.royalty-policy-v1)
+  ; (marmalade.policy-manager.add-concrete-policy ROYALTY_POLICY marmalade.royalty-policy-v1)
   (marmalade.policy-manager.add-concrete-policy COLLECTION_POLICY marmalade.collection-policy-v1)
   (marmalade.policy-manager.add-concrete-policy GUARD_POLICY marmalade.guard-policy-v1)
 

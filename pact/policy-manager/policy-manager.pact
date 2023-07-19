@@ -203,10 +203,16 @@
      (fungible::transfer-create buyer (at 'account escrow-account) (at 'guard escrow-account) sale-price)
      ;; Run policies::enforce-buy
      (map-buy token seller buyer buyer-guard amount sale-id policies)
+
      ;; Transfer Escrow account to seller
      (with-capability (QUOTE_ESCROW sale-id)
-       (fungible::transfer-create (at 'account escrow-account) (at 'account seller-account) (at 'guard seller-account) sale-price))
-     )
+       (let (
+             (balance:decimal (fungible::get-balance (at 'account escrow-account)))
+           )
+           (install-capability (fungible::TRANSFER (at 'account escrow-account) seller balance))
+           (fungible::transfer-create (at 'account escrow-account) (at 'account seller-account) (at 'guard seller-account) balance)
+       )
+     ))
   )
 
   (defun enforce-transfer:[bool]

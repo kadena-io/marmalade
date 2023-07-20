@@ -40,19 +40,27 @@
   (defconst QUOTE-MSG-KEY "quote"
     @doc "Payload field for quote spec")
 
-
   (defschema quote-spec
-    @doc "Quote data to include in payload"
+    @doc "Quote spec of the sale"
     fungible:module{fungible-v2}
     seller-account:object{fungible-account}
-    quote-guards:[guard]
     price:decimal
     amount:decimal
   )
 
+  (defschema quote-msg
+    @doc "Quote data to include in payload"
+    spec:object{quote-spec}
+    seller-guard:guard
+    quote-guards:[guard]
+  )
+
+
   (defschema quote-schema
     id:string
     spec:object{quote-spec}
+    seller-guard:guard
+    quote-guards:[guard]
     status:integer
   )
 
@@ -71,17 +79,38 @@
     true
   )
 
+  (defcap QUOTE-GUARDS:bool
+    ( sale-id:string
+      token-id:string
+      seller-guard:guard
+      quote-guards:[guard]
+    )
+    @doc "For event emission purposes"
+    @event
+    true
+  )
+
   (defconst QUOTE-STATUS-OPEN 0)
   (defconst QUOTE-STATUS-WITHDRAWN 1)
 
   (deftable quotes:{quote-schema})
 
-  (defcap UPDATE-QUOTE (sale-id:string)
+  (defcap UPDATE-QUOTE:bool (sale-id:string)
     (with-read quotes sale-id {
       "quote-guards":=quote-guards
       }
       (enforce-one quote-guards)
     )
+    true
+  )
+
+  (defcap UPDATE-QUOTE-GUARD:bool (sale-id:string)
+    (with-read quotes {
+      "seller-guard":= guard
+      }
+      (enforce-guard guard)
+    )
+    true
   )
 
   (defschema ledger
@@ -157,9 +186,11 @@
     (enforce-sale-pact sale-id)
     ;; saves quote
     (with-capability (OFFER sale-id)
-      (let* ( (quote:object{quote-spec} (read-msg QUOTE-MSG-KEY))
+      (let* ( (quote:object{quote-msg} (read-msg QUOTE-MSG-KEY))
+              (seller-guard:guard (at 'seller-guard quote))
+              (quote-guards:[guard] (at 'quote-guards quote))
               (policies:[module{kip.token-policy-v2}]  (at 'policies token)))
-        (add-quote sale-id (at 'id token) quote)
+        (add-quote sale-id (at 'id token) seller-guard quote-guards quote)
         (map-offer token seller amount sale-id policies))))
 
   (defun enforce-withdraw:[bool]
@@ -193,11 +224,11 @@
            (policies:[module{kip.token-policy-v2}]  (at 'policies token))
            (escrow-account:object{fungible-account} (get-escrow-account sale-id))
            (quote:object{quote-schema} (get-quote-info sale-id))
-             (spec:object{quote-spec} (at 'spec quote))
-               (fungible:module{fungible-v2} (at 'fungible spec))
-               (seller-account:object{fungible-account} (at 'seller-account spec))
-               (price:decimal (at 'price spec))
-               (sale-price:decimal (floor (* price amount) (fungible::precision)))
+           (spec:object{quote-spec} (at 'spec quote))
+           (fungible:module{fungible-v2} (at 'fungible spec))
+           (seller-account:object{fungible-account} (at 'seller-account spec))
+           (price:decimal (at 'price spec))
+           (sale-price:decimal (floor (* price amount) (fungible::precision)))
       )
      ;; transfer fungible to escrow account
      (fungible::transfer-create buyer (at 'account escrow-account) (at 'guard escrow-account) sale-price)
@@ -228,21 +259,32 @@
 
 ;; Sale/Escrow Functions
 
-; who gets access to update quote guards?
-; (defun update-quote-guards:bool (guards:[guard])
-;   (with-capability (UPDATE-QUOTE-GUARD)
-;     (update quotes {
-;       "quote-guards":guards
-;     })
-;     true)
-; )
+  (defun update-quote-guards:bool (sale-id:string token-id:string guards:[guard])
+    (with-capability (UPDATE-QUOTE-GUARD sale-id)
+      (with-read quotes {
+        "id":=token-id
+       ,"seller-guard":= seller-guard
+      }
+        (update quotes {
+          "quote-guards": guards
+        })
+        true
+    (emit-event (QUOTE-GUARDS sale-id token-id seller-guard guards))))
+  )
 
-  (defun add-quote:bool (sale-id:string token-id:string quote:object{quote-spec})
+  (defun add-quote:bool (sale-id:string token-id:string seller-guard:guard quote-guards:[guard] quote:object{quote-spec})
     @doc "Get Quote information"
     (require-capability (OFFER sale-id))
     (enforce-sale-pact sale-id)
     (validate-quote quote)
-    (insert quotes sale-id {"id": token-id, "quote": quote, "status": QUOTE-STATUS-OPEN})
+    (insert quotes sale-id {
+       "id": token-id
+     , "seller-guard":seller-guard
+     , "quote-guards": quote-guards
+     , "quote": quote
+     , "status": QUOTE-STATUS-OPEN
+    })
+    (emit-event (QUOTE-GUARDS sale-id token-id seller-guard quote-guards))
     (emit-event (QUOTE sale-id token-id quote))
     true
   )

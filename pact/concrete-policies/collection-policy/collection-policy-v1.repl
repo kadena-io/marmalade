@@ -2,7 +2,7 @@
 (load "../../policy-manager/policy-manager.repl")
 
 (begin-tx)
-(use marmalade.policy-manager [QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
+(use marmalade.policy-manager [ NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
 (commit-tx)
 
 (begin-tx)

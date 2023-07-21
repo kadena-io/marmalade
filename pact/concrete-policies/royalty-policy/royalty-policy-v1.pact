@@ -8,9 +8,7 @@
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
   (use marmalade.policy-manager)
-  (use marmalade.policy-manager [QUOTE_POLICY])
-  (use marmalade.fungible-quote-policy-v1)
-  (use marmalade.fungible-quote-policy-interface-v1 [quote-spec quote-schema])
+  (use marmalade.policy-manager [quote-spec quote-schema])
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
 
@@ -50,8 +48,7 @@
     ( token:object{token-info}
     )
     (enforce-ledger)
-    (let* ( (quote-used:bool (is-used (at 'policies token) QUOTE_POLICY))
-            (spec:object{royalty-schema} (read-msg ROYALTY_SPEC))
+    (let* ( (spec:object{royalty-schema} (read-msg ROYALTY_SPEC))
             (fungible:module{fungible-v2} (at 'fungible spec))
             (creator:string (at 'creator spec))
             (creator-guard:guard (at 'creator-guard spec))
@@ -115,8 +112,7 @@
       , 'creator:= creator:string
       , 'royalty-rate:= royalty-rate:decimal
       }
-      (let* ( (quote-policy:module{marmalade.fungible-quote-policy-interface-v1} (marmalade.policy-manager.get-concrete-policy QUOTE_POLICY))
-              (quote:object{quote-schema} (quote-policy::get-quote sale-id))
+      (let* ( (quote:object{quote-schema} (get-quote-info sale-id))
               (spec:object{quote-spec} (at 'spec quote))
               (price:decimal (at 'price spec))
               (sale-price:decimal (* amount price))

@@ -63,7 +63,6 @@
     spec:object{quote-spec}
     seller-guard:guard
     quote-guards:[guard]
-    status:integer
   )
 
   (defschema fungible-account
@@ -92,10 +91,6 @@
     @event
     true
   )
-
-  ; ;;ledger already blocks withdrawn sale
-  ; (defconst QUOTE-STATUS-OPEN 0)
-  ; (defconst QUOTE-STATUS-WITHDRAWN 1)
 
   (deftable quotes:{quote-schema})
 
@@ -193,9 +188,12 @@
       ;; quote exists
       (with-capability (OFFER sale-id)
         (let* ( (quote:object{quote-msg} (read-msg QUOTE-MSG-KEY))
+                (quote-spec (at 'spec quote))
                 (seller-guard:guard (at 'seller-guard quote))
                 (quote-guards:[guard] (at 'quote-guards quote)))
-        (add-quote sale-id (at 'id token) seller-guard quote-guards (at 'spec quote))))
+          (add-quote sale-id (at 'id token) seller-guard quote-guards quote-spec)
+        )
+      )
       ;; quote does not exist
       true
     )
@@ -313,7 +311,7 @@
        "id": token-id
      , "seller-guard":seller-guard
      , "quote-guards": quote-guards
-     , "quote": quote
+     , "spec": quote
     })
     (emit-event (QUOTE sale-id token-id quote))
     (emit-event (QUOTE-GUARDS sale-id token-id seller-guard quote-guards))
@@ -352,11 +350,10 @@
   )
 
   (defun validate-quote:bool (quote-spec:object{quote-spec})
-    (let* ( (spec:object{quote-spec} (read-msg QUOTE-MSG-KEY))
-            (fungible:module{fungible-v2} (at 'fungible spec) )
-            (seller-account:object{fungible-account} (at 'seller-account spec))
-            (amount:decimal (at 'amount spec))
-            (price:decimal (at 'price spec))
+    (let* ( (fungible:module{fungible-v2} (at 'fungible quote-spec) )
+            (seller-account:object{fungible-account} (at 'seller-account quote-spec))
+            (amount:decimal (at 'amount quote-spec))
+            (price:decimal (at 'price quote-spec))
             (sale-price:decimal (* amount price)) )
       (validate-fungible-account fungible seller-account)
       (fungible::enforce-unit sale-price)

@@ -40,7 +40,7 @@
   (defconst QUOTE-MSG-KEY "quote"
     @doc "Payload field for quote spec")
 
-  (defconst UPDATED-QUOTE-MSG-KEY "updated-quote"
+  (defconst UPDATE-QUOTE-PRICE-MSG-KEY "update_quote_price"
     @doc "Payload field for quote spec")
 
   (defschema quote-msg
@@ -81,7 +81,7 @@
     true
   )
 
-  (defcap QUOTE-GUARDS:bool
+  (defcap QUOTE_GUARDS:bool
     ( sale-id:string
       token-id:string
       seller-guard:guard
@@ -94,7 +94,7 @@
 
   (deftable quotes:{quote-schema})
 
-  (defcap UPDATE-QUOTE:bool (sale-id:string)
+  (defcap UPDATE_QUOTE:bool (sale-id:string)
     (with-read quotes sale-id {
       "quote-guards":=quote-guards
       }
@@ -103,7 +103,7 @@
     true
   )
 
-  (defcap UPDATE-QUOTE-GUARD:bool (sale-id:string)
+  (defcap UPDATE_QUOTE_GUARD:bool (sale-id:string)
     (with-read quotes {
       "seller-guard":= guard
       }
@@ -210,7 +210,7 @@
     (let ((policies:[module{kip.token-policy-v2}]  (at 'policies token)))
       (map-withdraw token seller amount sale-id policies)))
 
-  (defun enforce-buy:bool
+  (defun enforce-buy:[bool]
     ( token:object{token-info}
       seller:string
       buyer:string
@@ -225,9 +225,9 @@
         (if (exists-quote sale-id)
           ;; quote is used
           [    ;; update-quote msg exists
-              (if (exists-msg-object UPDATED-QUOTE-MSG-KEY)
+              (if (exists-msg-decimal UPDATE-QUOTE-PRICE-MSG-KEY)
                 ;; updated quote is provided
-                  (update-quote sale-id (read-msg UPDATED-QUOTE-MSG-KEY))
+                  (update-quote-price sale-id (read-decimal UPDATE-QUOTE-PRICE-MSG-KEY))
                 ;; quote is not updated
                 true
               )
@@ -261,16 +261,17 @@
        ;; transfer fungible to escrow account
        (fungible::transfer-create buyer (at 'account escrow-account) (at 'guard escrow-account) sale-price)
 
-       ;; Run policies::enforce-buy
-       (map-buy token seller buyer buyer-guard amount sale-id policies)
 
-       ;; Transfer Escrow account to seller
+
        (with-capability (QUOTE_ESCROW sale-id)
+         ;; Run policies::enforce-buy
+         (map-buy token seller buyer buyer-guard amount sale-id policies)
+         ;; Transfer Escrow account to seller
          (let (
                (balance:decimal (fungible::get-balance (at 'account escrow-account)))
              )
-             (install-capability (fungible::TRANSFER (at 'account escrow-account) seller balance))
-             (fungible::transfer-create (at 'account escrow-account) (at 'account seller-account) (at 'guard seller-account) balance)
+             (install-capability (fungible::TRANSFER (at 'account escrow-account) (at 'account seller-account) balance))
+             (fungible::transfer (at 'account escrow-account) (at 'account seller-account) balance)
          )
        )
        true
@@ -291,7 +292,7 @@
 ;; Sale/Escrow Functions
 
   (defun update-quote-guards:bool (sale-id:string guards:[guard])
-    (with-capability (UPDATE-QUOTE-GUARD sale-id)
+    (with-capability (UPDATE_QUOTE_GUARD sale-id)
       (with-read quotes {
           "id":=token-id
          ,"seller-guard":= seller-guard
@@ -300,7 +301,7 @@
           "quote-guards": guards
         })
         true
-    (emit-event (QUOTE-GUARDS sale-id token-id seller-guard guards))))
+    (emit-event (QUOTE_GUARDS sale-id token-id seller-guard guards))))
   )
 
   (defun add-quote:bool (sale-id:string token-id:string seller-guard:guard quote-guards:[guard] quote:object{quote-spec})
@@ -314,21 +315,35 @@
      , "spec": quote
     })
     (emit-event (QUOTE sale-id token-id quote))
-    (emit-event (QUOTE-GUARDS sale-id token-id seller-guard quote-guards))
+    (emit-event (QUOTE_GUARDS sale-id token-id seller-guard quote-guards))
     true
   )
 
-  (defun update-quote:bool (sale-id:string quote:object{quote-spec})
+  (defun update-quote-price:bool (sale-id:string price:decimal)
     (require-capability (BUY sale-id))
-    (with-capability (UPDATE-QUOTE)
-      (update quotes {
-        "spec": quote
-      }))
-    true
+    (with-capability (UPDATE_QUOTE sale-id)
+      (with-read quotes sale-id {
+          "spec":= quote-spec
+        }
+        (bind quote-spec {
+            "fungible":= fungible
+           ,"amount":= amount
+           ,"seller-account":= fungible-account
+          }
+          (update quotes sale-id {
+            "spec": {
+                "fungible": fungible
+              , "amount": amount
+              , "price": price
+              , "seller-account": fungible-account
+              }
+            }))
+      ))
+      true
   )
 
   (defun get-quote-info:object{quote-schema} (sale-id:string)
-    @doc "Get Quote information"
+   @doc "Get Quote information"
     (read quotes sale-id)
   )
 
@@ -396,14 +411,19 @@
     (at 'ledger ledger)
   )
 
+  (defun exists-msg-decimal:bool (msg:string)
+    @doc "Checks env-data field and see if the msg is a decimal"
+    (= (typeof  (try false (read-decimal msg))) "decimal")
+  )
+
   (defun exists-msg-object:bool (msg:string)
-    @doc "Checks env-data field and see if the msg is an object"
-    (= (typeof (try false (read-msg msg))) "object:*")
+    @doc "Checks env-data field and see if the msg is a object"
+    (= (take 6 (typeof  (try false  (read-msg msg)))) "object")
   )
 
   (defun exists-quote:bool (sale-id:string)
     @doc "Looks up quote table for quote"
-    (= (typeof (try false (get-quote-info sale-id))) "object:*")
+    (= (take 6 (typeof (try false (get-quote-info sale-id)))) "object")
   )
 
   ;;utility functions to map policies

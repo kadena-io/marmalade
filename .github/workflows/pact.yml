@@ -52,12 +52,6 @@ jobs:
           cat out.log
           r=`tail -1 out.log | grep "Load successful"`
           if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi
-      - name: Test concrete fungible-quote-policy
-        run: |
-          bin/pact -t pact/concrete-policies/fungible-quote-policy/fungible-quote-policy-v1.repl > out.log 2>&1
-          cat out.log
-          r=`tail -1 out.log | grep "Load successful"`
-          if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi
 
       - name: Test concrete non-fungible-policy
         run: |

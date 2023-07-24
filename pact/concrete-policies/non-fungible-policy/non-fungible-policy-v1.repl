@@ -2,15 +2,14 @@
 (load "../../policy-manager/policy-manager.repl")
 
 (begin-tx)
-  (use marmalade.policy-manager [QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
+  (use marmalade.policy-manager [ NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
   (use marmalade.util-v1 [concrete-policy-bool])
 
   (module util GOV
     (defcap GOV () true)
 
     (defconst DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY:object{concrete-policy-bool}
-      { 'quote-policy: false
-       ,'non-fungible-policy: true
+      { 'non-fungible-policy: true
        ,'royalty-policy: false
        ,'collection-policy:false
        ,'guard-policy: true

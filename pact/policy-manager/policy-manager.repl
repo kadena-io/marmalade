@@ -25,6 +25,8 @@
   (load "../kip/poly-fungible-v3.pact")
   (define-namespace 'util (sig-keyset) (sig-keyset))
   (load "../util/fungible-util.pact")
+  (load "../util/guards1.pact")
+
 (commit-tx)
 
 (begin-tx)
@@ -45,6 +47,7 @@
    , 'marmalade-ns-admin: ["marmalade-admin"]
    , 'ns: "marmalade"
    , 'upgrade: false })
+  (load "../quote-manager/quote-manager.pact")
   (load "../policy-manager/policy-manager.pact")
   (load "../ledger.pact")
   (load "../marmalade-util/util-v1.pact")
@@ -292,9 +295,9 @@
     (format "{}" [[
       {"name": "marmalade.ledger.OFFER","params": [(read-msg 'token-id) "k:account" 1.0 "2023-07-22T11:26:35Z"]}
       {"name": "marmalade.ledger.SALE","params": [(read-msg 'token-id) "k:account" 1.0 "2023-07-22T11:26:35Z" "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"]}
-      {"name": "marmalade.policy-manager.QUOTE","params": ["C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg" (read-msg 'token-id)
+      {"name": "marmalade.quote-manager.QUOTE","params": ["C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg" (read-msg 'token-id)
         {"amount": 1.0,"fungible": marmalade.abc,"price": 2.0,"seller-account": {"account": "k:account","guard": (read-keyset 'seller-guard) }}]}
-      {"name": "marmalade.policy-manager.QUOTE_GUARDS","params": ["C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg" (read-msg 'token-id) (read-keyset 'seller-guard) []]}
+      {"name": "marmalade.quote-manager.QUOTE_GUARDS","params": ["C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg" (read-msg 'token-id) (read-keyset 'seller-guard) []]}
       {"name": "marmalade.ledger.ACCOUNT_GUARD","params": [(read-msg 'token-id) "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE" (create-capability-pact-guard (SALE_PRIVATE "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"))]}
       {"name": "marmalade.ledger.TRANSFER","params": [(read-msg 'token-id) "k:account" "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE" 1.0]}
       {"name": "marmalade.ledger.RECONCILE","params": [(read-msg 'token-id) 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE","current": 1.0,"previous": 0.0}]}]])
@@ -305,10 +308,6 @@
     "buyer": "k:buyer"
   ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
   ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
-  ; ,"marketplace-fee": {
-  ;   "marketplace-account":"k:market"
-  ;   ,"mk-fee-percentage": 0.05
-  ;   }
   })
 
   (marmalade.abc.create-account "k:buyer" (read-keyset 'buyer-guard))
@@ -318,7 +317,7 @@
   [{'key:'buyer
     ,'caps: [
       (marmalade.ledger.BUY (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } ) "k:account" "k:buyer" 1.0 (time "2023-07-22T11:26:35Z") "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg")
-      (marmalade.abc.TRANSFER "k:buyer" "c:A2ZV26b7mo4xXNBvkwvG8jeeLPyKUc3mGDrjo9rv9WI" 2.0)
+      (marmalade.abc.TRANSFER "k:buyer" "c:9hyuSMD9jVoKi_RQwSM7_QNR6iwsXhbRdGO39eMToSE" 2.0)
     ]}])
 
   (env-hash (hash "offer-0"))
@@ -427,21 +426,6 @@
   (marmalade.abc.create-account "k:bidder" (read-keyset 'bidder-guard))
   (marmalade.abc.fund "k:bidder" 25.0)
 
-  ; (env-sigs
-  ; [{'key:'bidder
-  ;   ,'caps: [
-  ;      (marmalade.abc.TRANSFER "k:bidder" "c:o3Z6_-VcmBlRuOM-KuTEdIBiivHJGxQCnBVH_7qhdB0" 5.0)
-  ;   ]}])
-  ;
-  ; (expect "Place Bid succeeds"
-  ;   true
-  ;   (marmalade.fungible-quote-policy-v1.place-bid (read-msg 'token-id) "k:bidder" (read-keyset 'bidder-guard) 1.0 5.0 (read-msg 'sale-id))
-  ; )
-  ;
-  ; (expect "Buyer account has 20.0 tokens left"
-  ;   20.0
-  ;   (marmalade.abc.get-balance "k:bidder"))
-
   (env-data {
     "token-id": (create-token-id {
       'uri: "test-quote-royalty-uri",
@@ -457,32 +441,33 @@
     ,"buyer": "k:bidder"
     ,"buyer-guard": {"keys": ["bidder"], "pred": "keys-all"}
     ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
-    ,"updated_quote_price": 20.0
+    ,"update_quote_price": 20.0
   })
 
   (env-sigs [
     { 'key: 'bidder
     ,'caps: [
         (marmalade.ledger.BUY (read-msg 'token-id) "k:account" "k:bidder"  1.0 (time  "2023-07-22T11:26:35Z") (read-msg 'sale-id))
-        (marmalade.abc.TRANSFER "k:bidder" "c:SpnULer9l8D86__3n8cue97IsZmZdjBwu7vbMfIiAAc" 20.0)
+        (marmalade.abc.TRANSFER "k:bidder" "c:FIEkD6IB2pXIa6o4yeYjqLVTniF2Zx2V1QCb-5mBTyQ" 20.0)
       ]
     },
     { 'key: 'market
     ,'caps: [
-      (marmalade.policy-manager.UPDATE_QUOTE (read-msg 'sale-id))
+      (marmalade.quote-manager.UPDATE_QUOTE (read-msg 'sale-id))
       ]
-    }])
+    }
+    ])
 
-  (expect "Accept bid and continue buy succeeds"
+ (expect "Accept bid and continue buy succeeds"
       true
       (continue-pact 1 false (read-msg 'sale-id)))
 
-  (expect "Seller account has increased with 5 tokens minus royalty fees"
-    9.5
+  (expect "Seller account has increased with 20 tokens minus royalty fees"
+    19.0
     (marmalade.abc.get-balance "k:account"))
 
-  (expect "Creator account has received royalties"
-      0.5
+  (expect "Creator account has received 5% royalties"
+    1.0
       (marmalade.abc.get-balance "k:creator"))
 
 (rollback-tx)

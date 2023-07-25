@@ -8,7 +8,8 @@
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
   (use marmalade.policy-manager)
-  (use marmalade.policy-manager [quote-spec quote-schema])
+  (use marmalade.quote-manager)
+  (use marmalade.quote-manager [quote-spec quote-schema])
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
 

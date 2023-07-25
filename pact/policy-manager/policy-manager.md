@@ -8,20 +8,12 @@ This module includes the following key components:
 
 **Ledger Schema**: The `ledger` schema contains information about the ledger the policy manager manages for. It consists of `ledger`, `ledger-guard`, and `concrete-policy-manager` field.
 
-**concrete-policy-manager Schema**: The `policies-list` schema provides a structure for storing three separate lists of policies: concrete, immutable, and adjustable. This allows for a clear separation of policies that can be modified and those that cannot be modified.
-
 ## Policies List Schema
 
 Includes the following fields:
 
 - `concrete-policies`: A list of concrete policies.
   A Concrete policy can be viewed as a default policy provided by the marmalade team. Its a standardised set of policies to get token creators started.
-
-<!-- * `immutable-policies`: A list of immutable policies.
-  Immutable policies are policies that cannot be rotated
-
-- `adjustable-policies`: A list of adjustable policies.
-  Adjustable policies are policies that can be rotated -->
 
 ## Policy Functions
 

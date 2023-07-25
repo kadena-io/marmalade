@@ -120,7 +120,7 @@
               (escrow-account:string (at 'account (get-escrow-account sale-id)))
               (royalty-payout:decimal
                  (floor (* sale-price royalty-rate) (fungible::precision))))
-        (enforce (= (at 'id quote) (at 'id token)) "incorrect sale token")
+        (enforce (= (at 'token-id quote) (at 'id token)) "incorrect sale token")
         (if
           (> royalty-payout 0.0)
           [ (install-capability (fungible::TRANSFER escrow-account creator royalty-payout))

@@ -304,7 +304,6 @@
       (enforce (!= sender receiver)
         "sender cannot be the receiver of a transfer")
       (enforce-valid-transfer sender receiver (precision id) amount)
-
       (with-capability (TRANSFER id sender receiver amount)
         (enforce-transfer-policy id sender receiver amount)
         (let

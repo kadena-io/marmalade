@@ -8,7 +8,8 @@
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
   (use marmalade.policy-manager)
-  (use marmalade.policy-manager [quote-spec quote-schema])
+  (use marmalade.quote-manager)
+  (use marmalade.quote-manager [quote-spec quote-schema])
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
 
@@ -119,7 +120,7 @@
               (escrow-account:string (at 'account (get-escrow-account sale-id)))
               (royalty-payout:decimal
                  (floor (* sale-price royalty-rate) (fungible::precision))))
-        (enforce (= (at 'id quote) (at 'id token)) "incorrect sale token")
+        (enforce (= (at 'token-id quote) (at 'id token)) "incorrect sale token")
         (if
           (> royalty-payout 0.0)
           [ (install-capability (fungible::TRANSFER escrow-account creator royalty-payout))

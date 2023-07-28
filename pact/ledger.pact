@@ -22,9 +22,15 @@
 
   (defschema token-schema
     id:string
-    manifest:object{manifest}
+    uri:string
     precision:integer
     supply:decimal
+    policy:module{kip.token-policy-v1}
+  )
+
+  (defschema token-details
+    uri:string
+    precision:integer
     policy:module{kip.token-policy-v1}
   )
 
@@ -156,14 +162,14 @@
       { 'policy := policy:module{kip.token-policy-v1}
       , 'supply := supply
       , 'precision := precision
-      , 'manifest := manifest
+      , 'uri := uri
       }
       { 'policy: policy
       , 'token:
         { 'id: id
         , 'supply: supply
         , 'precision: precision
-        , 'manifest: manifest
+        , 'uri: uri
         } } )
   )
 
@@ -190,15 +196,14 @@
       s)
   )
 
-  (defun create-token-id:string (manifest:object{manifest})
-    (enforce-verify-manifest manifest)
-    (format "t:{}" [(at 'hash manifest)])
+  (defun create-token-id:string (token-details:object{token-details})
+    (format "t:{}" [(hash token-details)])
   )
 
   (defun create-token:bool
     ( id:string
       precision:integer
-      manifest:object{manifest}
+      uri:string
       policy:module{kip.token-policy-v1}
     )
     (enforce-verify-manifest manifest)

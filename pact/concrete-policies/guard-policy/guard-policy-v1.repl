@@ -1,0 +1,67 @@
+;;load policy manager, ledger
+(load "../../policy-manager/policy-manager.repl")
+
+(begin-tx)
+(use marmalade.policy-manager [NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
+
+(commit-tx)
+
+
+(begin-tx "Create token without mint guard")
+  (use marmalade.ledger)
+  (use marmalade.util-v1)
+(env-data {
+   "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: (create-policies DEFAULT) } )
+  ,"account": "k:account"
+  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
+})
+
+(env-sigs [
+  { 'key: 'account
+   ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
+  }])
+
+(expect "create token succeeds without mint-guard"
+ true
+ (create-token (read-msg 'token-id) 0 "test-default-guard" (create-policies DEFAULT) ))
+
+(expect "Mint token succeeds without mint-guard"
+  true
+  (mint (read-msg 'token-id) (read-msg 'account) (read-keyset 'account-guard ) 1.0))
+
+(rollback-tx)
+
+
+(begin-tx "Create token without operator guard fails")
+  (use marmalade.ledger)
+  (use marmalade.util-v1)
+(env-data {
+   "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: (create-policies DEFAULT) } )
+  ,"account": "k:account"
+  ,"mint-guard": {"keys": ["mint"], "pred": "keys-all"}
+  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
+})
+
+(expect "create token succeeds with mint-guard"
+ true
+ (create-token (read-msg 'token-id) 0 "test-default-guard" (create-policies DEFAULT) ))
+
+ (env-sigs [
+   { 'key: 'mint-false
+    ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
+   }])
+
+(expect-failure "Mint token fails without mint-guard"
+  "Keyset failure"
+  (mint (read-msg 'token-id) (read-msg 'account) (read-keyset 'account-guard ) 1.0))
+
+(env-sigs [
+  { 'key: 'mint
+   ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
+  }])
+
+(expect "Mint token fails without mint-guard"
+  true
+  (mint (read-msg 'token-id) (read-msg 'account) (read-keyset 'account-guard ) 1.0))
+
+(rollback-tx)

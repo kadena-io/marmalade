@@ -1,0 +1,143 @@
+;;load policy manager, ledger
+(load "../policy-manager/policy-manager.repl")
+
+(begin-tx "Accept bid and payout royalties")
+  (use marmalade.ledger)
+  (use marmalade.policy-manager)
+  (use marmalade.util-v1)
+
+  (env-hash (hash "accept-offer-with-royalties"))
+
+  (env-data {
+    "seller-guard": {"keys": ["account"], "pred": "keys-all"},
+    "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
+  })
+  (marmalade.abc.create-account "k:account" (read-keyset 'seller-guard))
+  (marmalade.abc.create-account "k:creator" (read-keyset 'creator-guard))
+
+  (env-data {
+    "token-id": (create-token-id {
+      'uri: "test-quote-royalty-uri",
+      'precision: 0,
+      'policies: (create-policies {
+         'non-fungible-policy: false
+        ,'royalty-policy: true
+        ,'collection-policy: false
+        ,'guard-policy: false
+      })
+    }),
+    "quote": {
+      "spec": {
+        "seller-account": {
+            "account": "k:account"
+           ,"guard": {"keys": ["account"], "pred": "keys-all"}
+          }
+        ,"fungible": marmalade.abc
+        ,"price": 10.0
+        ,"amount": 1.0
+        }
+      ,"seller-guard": {"keys": ["account"], "pred": "keys-all"}
+      ,"quote-guards": [{"keys": ["market"], "pred": "keys-all"}]
+    },
+    "royalty_spec": {
+      "fungible": marmalade.abc
+      ,"creator": "k:creator"
+      ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
+      ,"royalty-rate": 0.05
+    },
+    "seller-guard": {"keys": ["account"], "pred": "keys-all"}
+  })
+
+  (expect "create a token with quote-policy and royalty-policy"
+    true
+    (create-token (read-msg 'token-id) 0 "test-quote-royalty-uri" (create-policies {
+      'non-fungible-policy: false
+      ,'royalty-policy: true
+      ,'collection-policy: false
+      ,'guard-policy: false
+    })))
+
+  (env-sigs [
+    { 'key: 'seller
+    ,'caps: [
+    (marmalade.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
+  }])
+
+  (expect "mint 1.0 amount "
+     true
+     (mint (read-msg 'token-id) "k:account" (read-keyset 'seller-guard ) 1.0))
+
+  (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
+  (env-sigs [
+    { 'key: 'account
+    ,'caps: [
+    (marmalade.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
+    }])
+
+  (expect "Start offer succeeds"
+    true
+    (sale (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z")))
+
+  (env-data {
+    "token-id": (create-token-id {
+      'uri: "test-quote-royalty-uri",
+      'precision: 0,
+      'policies: (create-policies {
+        'non-fungible-policy: false
+        ,'royalty-policy: true
+        ,'collection-policy: false
+        ,'guard-policy: false
+      })
+    })
+    ,"bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
+    ,"sale-id": "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
+  })
+
+  (marmalade.abc.create-account "k:bidder" (read-keyset 'bidder-guard))
+  (marmalade.abc.fund "k:bidder" 25.0)
+
+  (env-data {
+    "token-id": (create-token-id {
+      'uri: "test-quote-royalty-uri",
+      'precision: 0,
+      'policies: (create-policies {
+         'non-fungible-policy: false
+        ,'royalty-policy: true
+        ,'collection-policy: false
+        ,'guard-policy: false
+      })
+    })
+    ,"sale-id": "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
+    ,"buyer": "k:bidder"
+    ,"buyer-guard": {"keys": ["bidder"], "pred": "keys-all"}
+    ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
+    ,"update_quote_price": 20.0
+  })
+
+  (env-sigs [
+    { 'key: 'bidder
+    ,'caps: [
+        (marmalade.ledger.BUY (read-msg 'token-id) "k:account" "k:bidder"  1.0 (time  "2023-07-22T11:26:35Z") (read-msg 'sale-id))
+        (marmalade.abc.TRANSFER "k:bidder" "c:FIEkD6IB2pXIa6o4yeYjqLVTniF2Zx2V1QCb-5mBTyQ" 20.0)
+      ]
+    },
+    { 'key: 'market
+    ,'caps: [
+      (marmalade.quote-manager.UPDATE_QUOTE (read-msg 'sale-id))
+      ]
+    }
+    ])
+
+ (expect "Accept bid and continue buy succeeds"
+      true
+      (continue-pact 1 false (read-msg 'sale-id)))
+
+  (expect "Seller account has increased with 20 tokens minus royalty fees"
+    19.0
+    (marmalade.abc.get-balance "k:account"))
+
+  (expect "Creator account has received 5% royalties"
+    1.0
+      (marmalade.abc.get-balance "k:creator"))
+
+(rollback-tx)

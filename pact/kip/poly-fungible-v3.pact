@@ -2,7 +2,7 @@
 
 (namespace 'kip)
 
-(interface poly-fungible-v2
+(interface poly-fungible-v3
 
   (defschema account-details
     @doc
@@ -69,7 +69,7 @@
     @event
   )
 
-  (defcap TOKEN:bool (id:string precision:integer supply:decimal policy:module{kip.token-policy-v1})
+  (defcap TOKEN:bool (id:string precision:integer supply:decimal policies:[module{kip.token-policy-v2}] uri:string)
     @doc " Emitted when token ID is created."
     @event
   )
@@ -104,6 +104,92 @@
       " Enforce that AMOUNT meets minimum precision allowed for ID."
   )
 
+  (defun mint:bool
+    ( id:string
+      account:string
+      guard:guard
+      amount:decimal
+    )
+    @doc
+      " Mint AMOUNT of ID to ACCOUNT with GUARD."
+    @model
+      [ (property (!= id ""))
+        (property (!= account ""))
+        (property (>= amount 0.0))
+      ]
+  )
+
+  (defun burn:bool
+    ( id:string
+      account:string
+      amount:decimal
+    )
+    @doc
+      " Burn AMOUNT of ID from ACCOUNT."
+    @model
+      [ (property (!= id ""))
+        (property (!= account ""))
+        (property (>= amount 0.0))
+      ]
+  )
+
+  (defun offer:bool
+    ( id:string
+      seller:string
+      amount:decimal
+    )
+    @doc "Initiate sale with by SELLER by escrowing AMOUNT of TOKEN until TIMEOUT."
+    @model
+      [ (property (!= id ""))
+        (property (!= seller ""))
+        (property (>= amount 0.0))
+      ]
+  )
+
+  (defun withdraw:bool
+    ( id:string
+      seller:string
+      amount:decimal
+    )
+    @doc "Withdraw offer by SELLER of AMOUNT of TOKEN"
+    @model
+      [ (property (!= id ""))
+        (property (!= seller ""))
+        (property (>= amount 0.0))
+      ]
+  )
+
+  (defun buy:bool
+    ( id:string
+      seller:string
+      buyer:string
+      buyer-guard:guard
+      amount:decimal
+      sale-id:string
+    )
+    @doc "Complete sale with transfer."
+    @model
+      [ (property (!= id ""))
+        (property (!= seller ""))
+        (property (!= buyer ""))
+        (property (>= amount 0.0))
+      ]
+  )
+
+  (defun create-token:bool
+    ( id:string
+      precision:integer
+      uri:string
+      policies:[module{kip.token-policy-v2}]
+    )
+    @doc "Create a new token with ID, PRECISION, URI, and POLICY."
+    @model
+      [ (property (!= id ""))
+        (property (>= precision 0))
+        (property (!= uri ""))
+      ]
+  )
+
   (defun create-account:bool
     ( id:string
       account:string
@@ -131,19 +217,6 @@
     )
     @doc
       " Get details of ACCOUNT under ID. Fails if account does not exist."
-  )
-
-  (defun rotate:bool
-    ( id:string
-      account:string
-      new-guard:guard )
-    @doc
-      " Rotate guard for ACCOUNT for ID to NEW-GUARD, validating against existing guard."
-    @model
-      [ (property (!= id ""))
-        (property (!= account ""))
-      ]
-
   )
 
   (defun transfer:bool
@@ -211,9 +284,9 @@
       " Give total available quantity of ID. If not supported, return 0."
   )
 
-  (defun get-manifest:object{kip.token-manifest.manifest} (id:string)
+  (defun get-uri:string (id:string)
     @doc
-      " Give manifest for ID."
+      " Give uri for ID."
   )
 
   ;;
@@ -221,25 +294,25 @@
   ;;
 
   (defcap SALE:bool
-    (id:string seller:string amount:decimal timeout:integer sale-id:string)
+    (id:string seller:string amount:decimal timeout:time sale-id:string)
     @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
     @event
   )
 
   (defcap OFFER:bool
-    (id:string seller:string amount:decimal timeout:integer)
+    (id:string seller:string amount:decimal timeout:time)
     @doc "Managed cap for SELLER offering AMOUNT of token ID until TIMEOUT."
     @managed
   )
 
   (defcap WITHDRAW:bool
-    (id:string seller:string amount:decimal timeout:integer sale-id:string)
+    (id:string seller:string amount:decimal timeout:time sale-id:string)
     @doc "Withdraws offer SALE from SELLER of AMOUNT of token ID after TIMEOUT."
     @event
   )
 
   (defcap BUY:bool
-    (id:string seller:string buyer:string amount:decimal timeout:integer sale-id:string)
+    (id:string seller:string buyer:string amount:decimal timeout:time sale-id:string)
     @doc "Completes sale OFFER to BUYER."
     @managed
   )
@@ -248,7 +321,7 @@
     ( id:string
       seller:string
       amount:decimal
-      timeout:integer
+      timeout:time
     )
     @doc " Offer->buy escrow pact of AMOUNT of token ID by SELLER with TIMEOUT in blocks. \
          \ Step 1 is offer with withdraw rollback after timeout. \

@@ -10,8 +10,7 @@
 
   (deftable ledger:{entry})
 
-  (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+  (defcap GOVERNANCE () true)
 
   (defcap DEBIT (sender:string)
     (enforce-guard (at 'guard (read ledger sender))))

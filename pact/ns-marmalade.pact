@@ -1,9 +1,10 @@
-(define-keyset 'marmalade-admin)
-(ns.write-registry (read-msg 'ns) (keyset-ref-guard 'marmalade-admin) true)
-(define-namespace
-  (read-msg 'ns)
-  (keyset-ref-guard 'marmalade-admin )
-  (keyset-ref-guard 'marmalade-admin )
-)
-(namespace (read-msg 'ns))
-(enforce-keyset 'marmalade-admin)
+(let ((admin-ks (read-keyset 'marmalade-admin)))
+  (ns.write-registry (read-msg 'ns) admin-ks true)
+  (define-namespace
+    (read-msg 'ns)
+    admin-ks
+    admin-ks)
+
+  (namespace (read-msg 'ns))
+  (define-keyset (+ (read-msg 'ns) ".marmalade-admin")
+                 admin-ks))

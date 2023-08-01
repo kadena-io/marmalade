@@ -5,7 +5,7 @@
   @doc "Concrete policy to support royalty payouts in a specified fungible during sale."
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+    (enforce-keyset "marmalade.marmalade-admin"))
 
   (use marmalade.policy-manager)
   (use marmalade.quote-manager)

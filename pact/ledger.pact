@@ -40,7 +40,7 @@
   ;;
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin)))
+    (enforce-keyset "marmalade.marmalade-admin"))
 
   ;;
   ;; poly-fungible-v3 caps

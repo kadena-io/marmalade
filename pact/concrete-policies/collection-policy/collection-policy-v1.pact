@@ -6,7 +6,7 @@
   @doc "Collection token policy."
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin)))
+    (enforce-keyset "marmalade.marmalade-admin"))
 
   (implements kip.token-policy-v2)
 

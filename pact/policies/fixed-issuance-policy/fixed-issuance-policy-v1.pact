@@ -5,7 +5,7 @@
   @doc "Policy for minting with a fixed issuance"
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+    (enforce-keyset "marmalade.marmalade-admin"))
 
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])

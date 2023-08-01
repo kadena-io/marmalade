@@ -3,7 +3,7 @@
 (module policy-manager GOVERNANCE
 
   (defcap GOVERNANCE ()
-    (enforce-guard 'marmalade-admin ))
+    (enforce-keyset "marmalade.marmalade-admin"))
 
   (use kip.token-policy-v2 [token-info])
   (use marmalade.quote-manager)

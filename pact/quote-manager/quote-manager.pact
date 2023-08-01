@@ -7,7 +7,7 @@
   (use util.guards1)
 
   (defcap GOVERNANCE ()
-    (enforce-guard 'marmalade-admin ))
+    (enforce-keyset "marmalade.marmalade-admin"))
 
   ;; Saves Policy Manager Guard information
   (defschema policy-manager

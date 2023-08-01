@@ -9,7 +9,7 @@
   (use kip.token-policy-v2 [token-info])
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+    (enforce-keyset "marmalade.marmalade-admin"))
 
   (defschema manifest-spec
     manifest:object{manifest}

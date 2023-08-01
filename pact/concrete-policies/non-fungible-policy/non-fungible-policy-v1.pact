@@ -5,7 +5,7 @@
   @doc "Concrete policy for issuing an nft with a fixed supply of 1"
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+    (enforce-keyset "marmalade.marmalade-admin"))
 
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])

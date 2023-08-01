@@ -13,7 +13,7 @@
   )
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+    (enforce-keyset "marmalade.marmalade-admin"))
 
   (defconst DEFAULT:object{concrete-policy-bool}
     { 'non-fungible-policy: true

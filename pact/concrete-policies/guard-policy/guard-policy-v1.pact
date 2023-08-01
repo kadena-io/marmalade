@@ -4,7 +4,7 @@
 (module guard-policy-v1 GOVERNANCE
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+    (enforce-keyset "marmalade.marmalade-admin"))
 
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])

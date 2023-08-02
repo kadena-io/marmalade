@@ -20,6 +20,16 @@
     true
   )
 
+  (defcap ESCROW (sale-id:string)
+    @doc "Capability to be used as escrow's capability guard"
+    true
+  )
+
+  (defun get-escrow-account:object{fungible-account} (sale-id:string)
+    { 'account: (create-principal (create-capability-guard (ESCROW sale-id)))
+    , 'guard: (create-capability-guard (ESCROW sale-id))
+    })
+
   (defun policy-manager-guard:guard ()
     (create-capability-guard (POLICY_MANAGER))
   )
@@ -222,7 +232,59 @@
     (enforce (= sale (pact-id)) "Invalid pact/sale id")
   )
 
-  ;;utility functions to map policies
+  (defun map-escrowed-buy:bool
+    ( sale-id:string
+      token:object{token-info}
+      seller:string
+      buyer:string
+      buyer-guard:guard
+      amount:decimal
+      policies:[module{kip.token-policy-v2}]
+    )
+    (let* (
+           (escrow-account:object{fungible-account} (get-escrow-account sale-id))
+           (quote:object{quote-schema} (get-quote-info sale-id))
+           (spec:object{quote-spec} (at 'spec quote))
+           (fungible:module{fungible-v2} (at 'fungible spec))
+           (seller-account:object{fungible-account} (at 'seller-account spec))
+           (price:decimal (at 'price spec))
+           (sale-price:decimal (floor (* price amount) (fungible::precision)))
+      )
+       ;; transfer fungible to escrow account
+       (fungible::transfer-create buyer (at 'account escrow-account) (at 'guard escrow-account) sale-price)
+
+       (with-capability (ESCROW sale-id)
+         ;; Run policies::enforce-buy
+         (map-buy token seller buyer buyer-guard amount sale-id policies)
+         ;; Transfer Escrow account to seller
+         (let (
+               (balance:decimal (fungible::get-balance (at 'account escrow-account)))
+             )
+             (install-capability (fungible::TRANSFER (at 'account escrow-account) (at 'account seller-account) balance))
+             (fungible::transfer (at 'account escrow-account) (at 'account seller-account) balance)
+         )
+       )
+       true
+    )
+  )
+
+  ;;utility functions
+
+  (defun exists-quote:bool (sale-id:string)
+    @doc "Looks up quote table for quote"
+    (= (take 6 (typeof (try false (get-quote-info sale-id)))) "object")
+  )
+
+  (defun exists-msg-decimal:bool (msg:string)
+    @doc "Checks env-data field and see if the msg is a decimal"
+    (= (typeof  (try false (read-decimal msg))) "decimal")
+  )
+
+  (defun exists-msg-object:bool (msg:string)
+    @doc "Checks env-data field and see if the msg is a object"
+    (= (take 6 (typeof  (try false  (read-msg msg)))) "object")
+  )
+  
  (defun token-init (token:object{token-info} policy:module{kip.token-policy-v2})
   (policy::enforce-init token))
 

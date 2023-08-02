@@ -9,6 +9,12 @@
   (use marmalade.quote-manager)
   (use marmalade.quote-manager [quote-spec quote-msg])
 
+  (defconst QUOTE-MSG-KEY "quote"
+    @doc "Payload field for quote spec")
+
+  (defconst UPDATE-QUOTE-PRICE-MSG-KEY "update_quote_price"
+    @doc "Payload field for quote spec")
+
   (defcap POLICY_MANAGER:bool ()
     @doc "Ledger module guard for policies to be able to validate access to policy operations."
     true
@@ -150,7 +156,12 @@
     (enforce-ledger)
     (enforce-sale-pact sale-id)
     (with-capability (POLICY_MANAGER)
-      (optional-add-quote sale-id (at 'id token))
+      ;;Check if quote-msg exists
+      (if (exists-msg-object QUOTE-MSG-KEY)
+        ;;true - insert quote message
+        (add-quote sale-id (at 'id token) (read-msg QUOTE-MSG-KEY))
+        ;;false - skip
+        true)
       (let ((policies:[module{kip.token-policy-v2}]  (at 'policies token)))
         (map-offer token seller amount sale-id policies))))
 
@@ -176,11 +187,16 @@
     (enforce-sale-pact sale-id)
     (with-capability (POLICY_MANAGER)
       (let ((policies:[module{kip.token-policy-v2}]  (at 'policies token)))
-        ;; Option - check if quote is saved at offer
+        ;; Checks if quote is saved at offer
         (if (exists-quote sale-id)
           ;; quote is used
-          [    ;; update-quote msg exists
-            (optional-update-quote-price sale-id)
+          [ ;; Checks if update-quote-price exists
+            (if (exists-msg-decimal UPDATE-QUOTE-PRICE-MSG-KEY)
+              ;;true updates the quotes with the new price
+              (update-quote-price sale-id (read-decimal UPDATE-QUOTE-PRICE-MSG-KEY))
+              ;;false - skip
+              true
+            )
             (map-escrowed-buy sale-id token seller buyer buyer-guard amount policies)
           ]
           ;; quote is not used

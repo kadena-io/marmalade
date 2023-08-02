@@ -65,12 +65,6 @@
     guard:guard
   )
 
-  (defconst QUOTE-MSG-KEY "quote"
-    @doc "Payload field for quote spec")
-
-  (defconst UPDATE-QUOTE-PRICE-MSG-KEY "update_quote_price"
-    @doc "Payload field for quote spec")
-
   (defcap QUOTE:bool
     ( sale-id:string
       token-id:string
@@ -150,63 +144,48 @@
     (emit-event (QUOTE_GUARDS sale-id token-id seller-guard quote-guards))))
   )
 
-  (defun optional-add-quote:bool (sale-id:string token-id:string)
+  (defun add-quote:bool (sale-id:string token-id:string quote-msg:object{quote-msg})
     @doc "Add quote if quote-msg exists in transaction data"
     (enforce-policy-manager)
-    ;;Check if quote-msg exists
-    (if (exists-msg-object QUOTE-MSG-KEY)
-      ;;true - insert quote message
-      (let* ( (quote-msg:object{quote-msg} (read-msg QUOTE-MSG-KEY))
-              (quote-spec:object{quote-spec} (at 'spec quote-msg))
-              (seller-guard:guard (at 'seller-guard quote-msg))
-              (quote-guards:[guard] (at 'quote-guards quote-msg)))
-          (validate-quote quote-spec)
-          (insert quotes sale-id {
-             "token-id": token-id
-           , "seller-guard":seller-guard
-           , "quote-guards": quote-guards
-           , "spec": quote-spec
-          })
-          (emit-event (QUOTE sale-id token-id quote-spec))
-          (emit-event (QUOTE_GUARDS sale-id token-id seller-guard quote-guards))
-          true
-        )
-      ;;false - skip
-      true
+    (let* ( (quote-spec:object{quote-spec} (at 'spec quote-msg))
+            (seller-guard:guard (at 'seller-guard quote-msg))
+            (quote-guards:[guard] (at 'quote-guards quote-msg)))
+        (validate-quote quote-spec)
+        (insert quotes sale-id {
+           "token-id": token-id
+         , "seller-guard":seller-guard
+         , "quote-guards": quote-guards
+         , "spec": quote-spec
+        })
+        (emit-event (QUOTE sale-id token-id quote-spec))
+        (emit-event (QUOTE_GUARDS sale-id token-id seller-guard quote-guards))
+       true
     )
   )
 
-  (defun optional-update-quote-price:bool (sale-id:string)
+  (defun update-quote-price:bool (sale-id:string price:decimal)
     @doc "Updates quote price if update-quote-price exists in transaction data and is signed by quote-guards"
     (enforce-policy-manager)
-    ;; Checks if update-quote-price exists
-    (if (exists-msg-decimal UPDATE-QUOTE-PRICE-MSG-KEY)
-      ;;true updates the quotes with the new price
-      (let* ( (price:decimal (read-decimal UPDATE-QUOTE-PRICE-MSG-KEY)))
-        (with-capability (UPDATE_QUOTE sale-id)
-          (with-read quotes sale-id {
-              "spec":= quote-spec
-            }
-            (bind quote-spec {
-                "fungible":= fungible
-               ,"amount":= amount
-               ,"seller-account":= fungible-account
+    (with-capability (UPDATE_QUOTE sale-id)
+      (with-read quotes sale-id {
+          "spec":= quote-spec
+        }
+        (bind quote-spec {
+            "fungible":= fungible
+           ,"amount":= amount
+           ,"seller-account":= fungible-account
+          }
+          (update quotes sale-id {
+            "spec": {
+                "fungible": fungible
+              , "amount": amount
+              , "price": price
+              , "seller-account": fungible-account
               }
-              (update quotes sale-id {
-                "spec": {
-                    "fungible": fungible
-                  , "amount": amount
-                  , "price": price
-                  , "seller-account": fungible-account
-                  }
-                }))
-          )
-          (emit-event (QUOTE_PRICE_UPDATE sale-id price)))
-        true
+            }))
       )
-      ;;false - skip
-      true
-    )
+      (emit-event (QUOTE_PRICE_UPDATE sale-id price)))
+    true
   )
 
   (defun get-quote-info:object{quote-schema} (sale-id:string)

@@ -46,7 +46,7 @@
   (defschema quote-spec
     @doc "Quote spec of the sale"
     fungible:module{fungible-v2}
-    seller-account:object{fungible-account}
+    seller-fungible-account:object{fungible-account}
     price:decimal
     amount:decimal
   )
@@ -162,14 +162,14 @@
         (bind quote-spec {
             "fungible":= fungible
            ,"amount":= amount
-           ,"seller-account":= fungible-account
+           ,"seller-fungible-account":= fungible-account
           }
           (update quotes sale-id {
             "spec": {
                 "fungible": fungible
               , "amount": amount
               , "price": price
-              , "seller-account": fungible-account
+              , "seller-fungible-account": fungible-account
               }
             }))
       )
@@ -183,20 +183,20 @@
   )
 
   ;; Validate functions
-  (defun validate-fungible-account (fungible:module{fungible-v2} seller-account:object{fungible-account})
-    (let ((seller-details (fungible::details (at 'account seller-account))))
+  (defun validate-fungible-account (fungible:module{fungible-v2} account:object{fungible-account})
+    (let ((seller-details (fungible::details (at 'account account))))
       (enforce (=
-        (at 'guard seller-details) (at 'guard seller-account))
-            "Seller guard does not match"))
+        (at 'guard seller-details) (at 'guard account))
+            "Account guard does not match"))
   )
 
   (defun validate-quote:bool (quote-spec:object{quote-spec})
     (let* ( (fungible:module{fungible-v2} (at 'fungible quote-spec) )
-            (seller-account:object{fungible-account} (at 'seller-account quote-spec))
+            (seller-fungible-account:object{fungible-account} (at 'seller-fungible-account quote-spec))
             (amount:decimal (at 'amount quote-spec))
             (price:decimal (at 'price quote-spec))
             (sale-price:decimal (* amount price)) )
-      (validate-fungible-account fungible seller-account)
+      (validate-fungible-account fungible seller-fungible-account)
       (fungible::enforce-unit sale-price)
       (enforce (< 0.0 price) "Offer price must be positive")
       true)

@@ -7,13 +7,16 @@
 
   (use kip.token-policy-v2 [token-info])
   (use marmalade.quote-manager)
-  (use marmalade.quote-manager [quote-spec quote-msg])
+  (use marmalade.quote-manager [quote-spec quote-msg fungible-account])
 
   (defconst QUOTE-MSG-KEY "quote"
     @doc "Payload field for quote spec")
 
   (defconst UPDATE-QUOTE-PRICE-MSG-KEY "update_quote_price"
     @doc "Payload field for quote spec")
+
+  (defconst BUYER-FUNGIBLE-ACCOUNT-MSG-KEY "buyer_fungible_account"
+    @doc "Payload field for buyer's fungible account")
 
   (defcap POLICY_MANAGER:bool ()
     @doc "Ledger module guard for policies to be able to validate access to policy operations."
@@ -246,12 +249,13 @@
            (quote:object{quote-schema} (get-quote-info sale-id))
            (spec:object{quote-spec} (at 'spec quote))
            (fungible:module{fungible-v2} (at 'fungible spec))
-           (seller-account:object{fungible-account} (at 'seller-account spec))
+           (buyer-fungible-account-name:string (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY))
+           (seller-fungible-account:object{fungible-account} (at 'seller-fungible-account spec))
            (price:decimal (at 'price spec))
            (sale-price:decimal (floor (* price amount) (fungible::precision)))
       )
        ;; transfer fungible to escrow account
-       (fungible::transfer-create buyer (at 'account escrow-account) (at 'guard escrow-account) sale-price)
+       (fungible::transfer-create buyer-fungible-account-name (at 'account escrow-account) (at 'guard escrow-account) sale-price)
 
        (with-capability (ESCROW sale-id)
          ;; Run policies::enforce-buy
@@ -260,8 +264,8 @@
          (let (
                (balance:decimal (fungible::get-balance (at 'account escrow-account)))
              )
-             (install-capability (fungible::TRANSFER (at 'account escrow-account) (at 'account seller-account) balance))
-             (fungible::transfer (at 'account escrow-account) (at 'account seller-account) balance)
+             (install-capability (fungible::TRANSFER (at 'account escrow-account) (at 'account seller-fungible-account) balance))
+             (fungible::transfer (at 'account escrow-account) (at 'account seller-fungible-account) balance)
          )
        )
        true
@@ -284,7 +288,7 @@
     @doc "Checks env-data field and see if the msg is a object"
     (= (take 6 (typeof  (try false  (read-msg msg)))) "object")
   )
-  
+
  (defun token-init (token:object{token-info} policy:module{kip.token-policy-v2})
   (policy::enforce-init token))
 

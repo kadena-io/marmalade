@@ -91,7 +91,7 @@
        "fungible": marmalade.abc
        ,"price": 2.0
        ,"amount": 1.0
-       ,"seller-account": {
+       ,"seller-fungible-account": {
            "account": "k:account"
           ,"guard": {"keys": ["account"], "pred": "keys-all"}
          }
@@ -116,6 +116,7 @@
 
 (env-data {
   "buyer": "k:buyer"
+ ,"buyer_fungible_account": "k:buyer"
  ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
  })
 

@@ -28,7 +28,7 @@
     }),
     "quote": {
       "spec": {
-        "seller-account": {
+        "seller-fungible-account": {
             "account": "k:account"
            ,"guard": {"keys": ["account"], "pred": "keys-all"}
           }
@@ -112,6 +112,7 @@
     ,"buyer-guard": {"keys": ["bidder"], "pred": "keys-all"}
     ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
     ,"update_quote_price": 20.0
+    ,"buyer_fungible_account": "k:bidder"
   })
 
   (env-sigs [

@@ -118,7 +118,7 @@
     { 'key: 'bidder
     ,'caps: [
         (marmalade.ledger.BUY (read-msg 'token-id) "k:account" "k:bidder"  1.0 (time  "2023-07-22T11:26:35Z") (read-msg 'sale-id))
-        (marmalade.abc.TRANSFER "k:bidder" "c:FIEkD6IB2pXIa6o4yeYjqLVTniF2Zx2V1QCb-5mBTyQ" 20.0)
+        (marmalade.abc.TRANSFER "k:bidder" "c:M6m2sH9QPTyjaNUsJH4ONNcOMqf7hs-sHeLKBtrZ7mw" 20.0)
       ]
     },
     { 'key: 'market

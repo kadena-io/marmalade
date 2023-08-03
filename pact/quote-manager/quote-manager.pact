@@ -65,12 +65,6 @@
     guard:guard
   )
 
-  (defconst QUOTE-MSG-KEY "quote"
-    @doc "Payload field for quote spec")
-
-  (defconst UPDATE-QUOTE-PRICE-MSG-KEY "update_quote_price"
-    @doc "Payload field for quote spec")
-
   (defcap QUOTE:bool
     ( sale-id:string
       token-id:string
@@ -123,17 +117,6 @@
     true
   )
 
-  (defcap QUOTE_ESCROW (sale-id:string)
-    @doc "Capability to be used as escrow's capability guard"
-    true
-  )
-
-  (defun get-escrow-account:object{fungible-account} (sale-id:string)
-    { 'account: (create-principal (create-capability-guard (QUOTE_ESCROW sale-id)))
-    , 'guard: (create-capability-guard (QUOTE_ESCROW sale-id))
-    })
-
-
 ;; Quote storage functions
 
   (defun update-quote-guards:bool (sale-id:string quote-guards:[guard])
@@ -150,63 +133,48 @@
     (emit-event (QUOTE_GUARDS sale-id token-id seller-guard quote-guards))))
   )
 
-  (defun optional-add-quote:bool (sale-id:string token-id:string)
+  (defun add-quote:bool (sale-id:string token-id:string quote-msg:object{quote-msg})
     @doc "Add quote if quote-msg exists in transaction data"
     (enforce-policy-manager)
-    ;;Check if quote-msg exists
-    (if (exists-msg-object QUOTE-MSG-KEY)
-      ;;true - insert quote message
-      (let* ( (quote-msg:object{quote-msg} (read-msg QUOTE-MSG-KEY))
-              (quote-spec:object{quote-spec} (at 'spec quote-msg))
-              (seller-guard:guard (at 'seller-guard quote-msg))
-              (quote-guards:[guard] (at 'quote-guards quote-msg)))
-          (validate-quote quote-spec)
-          (insert quotes sale-id {
-             "token-id": token-id
-           , "seller-guard":seller-guard
-           , "quote-guards": quote-guards
-           , "spec": quote-spec
-          })
-          (emit-event (QUOTE sale-id token-id quote-spec))
-          (emit-event (QUOTE_GUARDS sale-id token-id seller-guard quote-guards))
-          true
-        )
-      ;;false - skip
-      true
+    (let* ( (quote-spec:object{quote-spec} (at 'spec quote-msg))
+            (seller-guard:guard (at 'seller-guard quote-msg))
+            (quote-guards:[guard] (at 'quote-guards quote-msg)))
+        (validate-quote quote-spec)
+        (insert quotes sale-id {
+           "token-id": token-id
+         , "seller-guard":seller-guard
+         , "quote-guards": quote-guards
+         , "spec": quote-spec
+        })
+        (emit-event (QUOTE sale-id token-id quote-spec))
+        (emit-event (QUOTE_GUARDS sale-id token-id seller-guard quote-guards))
+       true
     )
   )
 
-  (defun optional-update-quote-price:bool (sale-id:string)
+  (defun update-quote-price:bool (sale-id:string price:decimal)
     @doc "Updates quote price if update-quote-price exists in transaction data and is signed by quote-guards"
     (enforce-policy-manager)
-    ;; Checks if update-quote-price exists
-    (if (exists-msg-decimal UPDATE-QUOTE-PRICE-MSG-KEY)
-      ;;true updates the quotes with the new price
-      (let* ( (price:decimal (read-decimal UPDATE-QUOTE-PRICE-MSG-KEY)))
-        (with-capability (UPDATE_QUOTE sale-id)
-          (with-read quotes sale-id {
-              "spec":= quote-spec
-            }
-            (bind quote-spec {
-                "fungible":= fungible
-               ,"amount":= amount
-               ,"seller-account":= fungible-account
+    (with-capability (UPDATE_QUOTE sale-id)
+      (with-read quotes sale-id {
+          "spec":= quote-spec
+        }
+        (bind quote-spec {
+            "fungible":= fungible
+           ,"amount":= amount
+           ,"seller-account":= fungible-account
+          }
+          (update quotes sale-id {
+            "spec": {
+                "fungible": fungible
+              , "amount": amount
+              , "price": price
+              , "seller-account": fungible-account
               }
-              (update quotes sale-id {
-                "spec": {
-                    "fungible": fungible
-                  , "amount": amount
-                  , "price": price
-                  , "seller-account": fungible-account
-                  }
-                }))
-          )
-          (emit-event (QUOTE_PRICE_UPDATE sale-id price)))
-        true
+            }))
       )
-      ;;false - skip
-      true
-    )
+      (emit-event (QUOTE_PRICE_UPDATE sale-id price)))
+    true
   )
 
   (defun get-quote-info:object{quote-schema} (sale-id:string)
@@ -232,65 +200,6 @@
       (fungible::enforce-unit sale-price)
       (enforce (< 0.0 price) "Offer price must be positive")
       true)
-  )
-
-  (defun map-escrowed-buy:bool
-    ( sale-id:string
-      token:object{token-info}
-      seller:string
-      buyer:string
-      buyer-guard:guard
-      amount:decimal
-      policies:[module{kip.token-policy-v2}]
-    )
-    (let* (
-           (escrow-account:object{fungible-account} (get-escrow-account sale-id))
-           (quote:object{quote-schema} (get-quote-info sale-id))
-           (spec:object{quote-spec} (at 'spec quote))
-           (fungible:module{fungible-v2} (at 'fungible spec))
-           (seller-account:object{fungible-account} (at 'seller-account spec))
-           (price:decimal (at 'price spec))
-           (sale-price:decimal (floor (* price amount) (fungible::precision)))
-      )
-       ;; transfer fungible to escrow account
-       (fungible::transfer-create buyer (at 'account escrow-account) (at 'guard escrow-account) sale-price)
-
-       (with-capability (QUOTE_ESCROW sale-id)
-         ;; Run policies::enforce-buy
-         (map-buy token seller buyer buyer-guard amount sale-id policies)
-         ;; Transfer Escrow account to seller
-         (let (
-               (balance:decimal (fungible::get-balance (at 'account escrow-account)))
-             )
-             (install-capability (fungible::TRANSFER (at 'account escrow-account) (at 'account seller-account) balance))
-             (fungible::transfer (at 'account escrow-account) (at 'account seller-account) balance)
-         )
-       )
-       true
-    )
-  )
-
-
-  ;;Utility functions
-  (defun token-buy (token:object{token-info} seller:string buyer:string buyer-guard:guard amount:decimal sale-id:string policy:module{kip.token-policy-v2})
-   (policy::enforce-buy token seller buyer buyer-guard amount sale-id))
-
-  (defun map-buy:[bool] (token:object{token-info} seller:string buyer:string buyer-guard:guard amount:decimal sale-id:string policy-list:[module{kip.token-policy-v2}])
-   (map (token-buy token seller buyer buyer-guard amount sale-id) policy-list))
-
-  (defun exists-quote:bool (sale-id:string)
-    @doc "Looks up quote table for quote"
-    (= (take 6 (typeof (try false (get-quote-info sale-id)))) "object")
-  )
-
-  (defun exists-msg-decimal:bool (msg:string)
-    @doc "Checks env-data field and see if the msg is a decimal"
-    (= (typeof  (try false (read-decimal msg))) "decimal")
-  )
-
-  (defun exists-msg-object:bool (msg:string)
-    @doc "Checks env-data field and see if the msg is a object"
-    (= (take 6 (typeof  (try false  (read-msg msg)))) "object")
   )
 )
 

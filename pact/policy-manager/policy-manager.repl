@@ -314,7 +314,7 @@
   [{'key:'buyer
     ,'caps: [
       (marmalade.ledger.BUY (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } ) "k:account" "k:buyer" 1.0 (time "2023-07-22T11:26:35Z") "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg")
-      (marmalade.abc.TRANSFER "k:buyer" "c:9hyuSMD9jVoKi_RQwSM7_QNR6iwsXhbRdGO39eMToSE" 2.0)
+      (marmalade.abc.TRANSFER "k:buyer" "c:rgckjytlTnv0dAkBHpvxeZWnrmUtnsegdi_KFwJ75PA" 2.0)
     ]}])
 
   (env-hash (hash "offer-0"))

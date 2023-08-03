@@ -126,7 +126,7 @@
  [{'key:'buyer
   ,'caps: [
     (marmalade.ledger.BUY (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ) "k:account" "k:buyer"  1.0 (time  "2023-07-22T11:26:35Z") "0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM")
-    (marmalade.abc.TRANSFER "k:buyer" "c:AsVo7qKgAsW4V4ju2x1-U3sALOSBBPjI8UV4UJ3zhpo" 2.0)
+    (marmalade.abc.TRANSFER "k:buyer" "c:fxI0Y77myZacaggonS_TaF8YxH_cGKFoSLMgZVQAUfc" 2.0)
    ]}])
 
 (env-hash (hash "offer-royalty-0"))

@@ -28,7 +28,7 @@
   )
 
   (defun enforce-ledger:bool ()
-     (enforce-guard (marmalade.ledger.ledger-guard))
+     (enforce-guard (marmalade-v2.ledger.ledger-guard))
   )
 
   (defun get-manifest:object{manifest} (token-id:string)
@@ -68,16 +68,16 @@
       guard:guard
       amount:decimal
     )
-    (enforce-ledger)
-    true)
+    true
+  )
 
   (defun enforce-burn:bool
     ( token:object{token-info}
       account:string
       amount:decimal
     )
-    (enforce-ledger)
-    true)
+    true
+  )
 
   (defun enforce-offer:bool
     ( token:object{token-info}
@@ -85,8 +85,8 @@
       amount:decimal
       sale-id:string
     )
-    (enforce-ledger)
-    true)
+    true
+  )
 
   (defun enforce-buy:bool
     ( token:object{token-info}
@@ -95,8 +95,8 @@
       buyer-guard:guard
       amount:decimal
       sale-id:string )
-    (enforce-ledger)
-    true)
+    true
+  )
 
 
   (defun enforce-transfer:bool
@@ -105,8 +105,8 @@
       guard:guard
       receiver:string
       amount:decimal )
-    (enforce-ledger)
-    true)
+    true
+  )
 
 
   (defun enforce-withdraw:bool
@@ -114,8 +114,8 @@
       seller:string
       amount:decimal
       sale-id:string )
-    (enforce-ledger)
-    true)
+    true
+  )
 
   (defun enforce-crosschain:bool
     ( token:object{token-info}
@@ -124,7 +124,6 @@
       receiver:string
       target-chain:string
       amount:decimal )
-    (enforce-ledger)
     (enforce false "Transfer prohibited")
   )
 )

@@ -2,8 +2,8 @@
 
 (module util-v1 GOVERNANCE
   (use kip.token-policy-v2)
-  (use marmalade.policy-manager )
-  (use marmalade.policy-manager [CONCRETE_POLICY_LIST NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
+  (use marmalade-v2.policy-manager )
+  (use marmalade-v2.policy-manager [CONCRETE_POLICY_LIST NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
 
   (defschema concrete-policy-bool
     non-fungible-policy:bool
@@ -13,7 +13,7 @@
   )
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+    (enforce-guard "marmalade-v2.marmalade-admin"))
 
   (defconst DEFAULT:object{concrete-policy-bool}
     { 'non-fungible-policy: true

@@ -5,13 +5,12 @@
   @doc "Policy for minting with a fixed issuance"
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+    (enforce-guard "marmalade-v2.marmalade-admin"))
 
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
 
   (defschema supply-schema
-    mint-guard:guard
     max-supply:decimal
     min-amount:decimal
   )
@@ -23,22 +22,22 @@
   )
 
   (defun enforce-ledger:bool ()
-     (enforce-guard (marmalade.ledger.ledger-guard))
+     (enforce-guard (marmalade-v2.ledger.ledger-guard))
   )
 
   (defun enforce-init:bool
     ( token:object{token-info}
     )
+    @doc ""
     (enforce-ledger)
-    (let* ( (mint-guard:guard (read-keyset 'fip-mint-guard ))
+    (let* (
             (max-supply:decimal (read-decimal 'fip-max-supply ))
             (min-amount:decimal (read-decimal 'fip-min-amount ))
             )
     (enforce (>= min-amount 0.0) "Invalid min-amount")
     (enforce (>= max-supply 0.0) "Invalid max-supply")
     (insert supplies (at 'id token)
-      { 'mint-guard: mint-guard
-      , 'max-supply: max-supply
+      { 'max-supply: max-supply
       , 'min-amount: min-amount })
     true)
   )
@@ -51,11 +50,9 @@
     )
     (enforce-ledger)
     (bind (get-supply token)
-      { 'mint-guard:=mint-guard:guard
-      , 'min-amount:=min-amount:decimal
+      { 'min-amount:=min-amount:decimal
       , 'max-supply:=max-supply:decimal
       }
-      (enforce-guard mint-guard)
       (enforce (>= amount min-amount) "mint amount < min-amount")
       (enforce (<= (+ amount (at 'supply token)) max-supply) "Exceeds max supply")
   ))
@@ -65,7 +62,6 @@
       account:string
       amount:decimal
     )
-    (enforce-ledger)
     (enforce false "Burn prohibited")
   )
 
@@ -76,7 +72,7 @@
       sale-id:string
     )
     @doc "Capture quote spec for SALE of TOKEN from message"
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-buy:bool
@@ -86,7 +82,7 @@
       buyer-guard:guard
       amount:decimal
       sale-id:string )
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-withdraw:bool
@@ -94,9 +90,8 @@
       seller:string
       amount:decimal
       sale-id:string )
-    (enforce-ledger)
+    true
   )
-
 
   (defun enforce-transfer:bool
     ( token:object{token-info}
@@ -104,7 +99,7 @@
       guard:guard
       receiver:string
       amount:decimal )
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-crosschain:bool
@@ -114,7 +109,6 @@
       receiver:string
       target-chain:string
       amount:decimal )
-    (enforce-ledger)
     (enforce false "Transfer prohibited")
   )
 )

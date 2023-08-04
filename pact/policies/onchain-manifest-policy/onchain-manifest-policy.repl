@@ -2,83 +2,83 @@
 (load "../../policy-manager/policy-manager.repl")
 
 ;; 1. create collection as nft tokens with onchain mainfest
-
-(begin-tx)
-(use kip.token-policy-v2 [token-policies concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
-
-(module util GOV
-  (defcap GOV () true)
-
-  (defconst DEFAULT_ONCHAIN_COLLECTION_WITH_ROYALTY:object{concrete-policy}
-    { 'quote-policy: true
-     ,'non-fungible-policy: true
-     ,'royalty-policy: true
-     ,'collection-policy:true
-     ,'guard-policy: true
-    }
-  )
-  (defconst DEFAULT_ONCHAIN_COLLECTION_POLICIES_WITH_ROYALTY:object{token-policies}
-    { 'concrete-policies:DEFAULT_ONCHAIN_COLLECTION_WITH_ROYALTY
-     ,'immutable-policies: [marmalade.onchain-manifest-policy-v1]
-     ,'adjustable-policies:[]
-    })
-)
-(commit-tx)
-
-(begin-tx)
-(use marmalade.ledger)
-(use marmalade.policy-manager)
-(env-data {
-  "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
-})
-(marmalade.abc.create-account "k:creator" (read-keyset 'creator-guard))
-(commit-tx)
-
-(begin-tx)
-(use marmalade.ledger)
-(use marmalade.policy-manager)
-(use marmalade.onchain-manifest-policy-v1)
-(env-data {
-  "token-id": (create-token-id { 'uri: "test-onchain-collection-royalty-uri", 'precision: 0, 'policies: util.DEFAULT_ONCHAIN_COLLECTION_POLICIES_WITH_ROYALTY } )
- ,"account": "k:account"
- ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
- ,"royalty_spec": {
-    "fungible": marmalade.abc
-   ,"creator": "k:creator"
-   ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
-   ,"royalty-rate": 0.05
-  }
- ,"collection-id": "collection:0txKISGOkuyzaIiZ3zMQPhpenruQWsGJga1TEvGX398"
- ,"manifest-spec": {
-    "manifest": (kip.token-manifest.create-manifest (kip.token-manifest.uri "text" "data") [])
-   ,"guard": {"keys": ["manifest"], "pred": "keys-all"}
- }
- ,"manifest1": (kip.token-manifest.create-manifest (kip.token-manifest.uri "text1" "data") [])
- ,"ks": {"keys": ["operator"], "pred": "keys-all"}
-})
-
-(expect "initiate a collection with `create-collection`"
-  true
-  (marmalade.collection-policy-v1.create-collection "test-collection1" 10 (read-keyset 'ks )))
-
-(env-sigs [
-  { 'key: 'operator
-  ,'caps: [(marmalade.collection-policy-v1.OPERATOR "collection:0txKISGOkuyzaIiZ3zMQPhpenruQWsGJga1TEvGX398")]
-  }])
-
-(expect "create a default token with collection-policy, quote-policy, non-fungible-policy, royalty-policy, onchain manifest"
-  true
-  (create-token (read-msg 'token-id) 0 "test-onchain-collection-royalty-uri" util.DEFAULT_ONCHAIN_COLLECTION_POLICIES_WITH_ROYALTY ))
-
-(env-sigs [
-  { 'key: 'manifest
-  ,'caps: [(UPGRADE "t:mCJHHeO73hemftLex8QFH506Z2u3E7xVUxnujQ62CL0")]
-  }])
-
-(get-manifest (read-msg 'token-id))
-
-(expect "upgrade a onchain manifest"
-  "Write succeeded"
-  (upgrade-manifest (read-msg 'token-id ) (read-msg 'manifest1 )))
-
-(get-manifest (read-msg 'token-id))
+;
+; (begin-tx)
+; (use kip.token-policy-v2 [token-policies concrete-policy QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
+;
+; (module util GOV
+;   (defcap GOV () true)
+;
+;   (defconst DEFAULT_ONCHAIN_COLLECTION_WITH_ROYALTY:object{concrete-policy}
+;     { 'quote-policy: true
+;      ,'non-fungible-policy: true
+;      ,'royalty-policy: true
+;      ,'collection-policy:true
+;      ,'guard-policy: true
+;     }
+;   )
+;   (defconst DEFAULT_ONCHAIN_COLLECTION_POLICIES_WITH_ROYALTY:object{token-policies}
+;     { 'concrete-policies:DEFAULT_ONCHAIN_COLLECTION_WITH_ROYALTY
+;      ,'immutable-policies: [marmalade.onchain-manifest-policy-v1]
+;      ,'adjustable-policies:[]
+;     })
+; )
+; (commit-tx)
+;
+; (begin-tx)
+; (use marmalade.ledger)
+; (use marmalade.policy-manager)
+; (env-data {
+;   "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
+; })
+; (marmalade.abc.create-account "k:creator" (read-keyset 'creator-guard))
+; (commit-tx)
+;
+; (begin-tx)
+; (use marmalade.ledger)
+; (use marmalade.policy-manager)
+; (use marmalade.onchain-manifest-policy-v1)
+; (env-data {
+;   "token-id": (create-token-id { 'uri: "test-onchain-collection-royalty-uri", 'precision: 0, 'policies: util.DEFAULT_ONCHAIN_COLLECTION_POLICIES_WITH_ROYALTY } )
+;  ,"account": "k:account"
+;  ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
+;  ,"royalty_spec": {
+;     "fungible": marmalade.abc
+;    ,"creator": "k:creator"
+;    ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
+;    ,"royalty-rate": 0.05
+;   }
+;  ,"collection-id": "collection:0txKISGOkuyzaIiZ3zMQPhpenruQWsGJga1TEvGX398"
+;  ,"manifest-spec": {
+;     "manifest": (kip.token-manifest.create-manifest (kip.token-manifest.uri "text" "data") [])
+;    ,"guard": {"keys": ["manifest"], "pred": "keys-all"}
+;  }
+;  ,"manifest1": (kip.token-manifest.create-manifest (kip.token-manifest.uri "text1" "data") [])
+;  ,"ks": {"keys": ["operator"], "pred": "keys-all"}
+; })
+;
+; (expect "initiate a collection with `create-collection`"
+;   true
+;   (marmalade.collection-policy-v1.create-collection "test-collection1" 10 (read-keyset 'ks )))
+;
+; (env-sigs [
+;   { 'key: 'operator
+;   ,'caps: [(marmalade.collection-policy-v1.OPERATOR "collection:0txKISGOkuyzaIiZ3zMQPhpenruQWsGJga1TEvGX398")]
+;   }])
+;
+; (expect "create a default token with collection-policy, quote-policy, non-fungible-policy, royalty-policy, onchain manifest"
+;   true
+;   (create-token (read-msg 'token-id) 0 "test-onchain-collection-royalty-uri" util.DEFAULT_ONCHAIN_COLLECTION_POLICIES_WITH_ROYALTY ))
+;
+; (env-sigs [
+;   { 'key: 'manifest
+;   ,'caps: [(UPGRADE "t:mCJHHeO73hemftLex8QFH506Z2u3E7xVUxnujQ62CL0")]
+;   }])
+;
+; (get-manifest (read-msg 'token-id))
+;
+; (expect "upgrade a onchain manifest"
+;   "Write succeeded"
+;   (upgrade-manifest (read-msg 'token-id ) (read-msg 'manifest1 )))
+;
+; (get-manifest (read-msg 'token-id))

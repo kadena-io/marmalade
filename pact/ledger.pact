@@ -11,7 +11,7 @@
   (implements kip.poly-fungible-v3)
   (use kip.poly-fungible-v3 [account-details sender-balance-change receiver-balance-change])
   (use util.fungible-util)
-  (use marmalade.policy-manager)
+  (use marmalade-v2.policy-manager)
 
   ;;
   ;; Tables/Schemas
@@ -207,7 +207,7 @@
        (enforce-token-reserved id token-details)
       )
       ;; maps policy list and calls policy::enforce-init
-      (marmalade.policy-manager.enforce-init
+      (marmalade-v2.policy-manager.enforce-init
         { 'id: id, 'supply: 0.0, 'precision: precision, 'uri: uri,  'policies: policies})
 
       (insert tokens id {
@@ -240,8 +240,8 @@
 
   (defun enforce-uri-reserved:bool (uri:string)
     " Enforce reserved uri name protocols "
-    (if (= "marmalade" (take 9 uri))
-        (enforce false "Reserved protocol: marmalade")
+    (if (= "marmalade:" (take 10 uri))
+        (enforce false "Reserved protocol: marmalade:")
         true
     )
   )
@@ -269,8 +269,8 @@
       (enforce (!= sender receiver)
         "sender cannot be the receiver of a transfer")
       (enforce-valid-transfer sender receiver (precision id) amount)
+      (enforce-transfer-policy id sender receiver amount)
       (with-capability (TRANSFER id sender receiver amount)
-        (enforce-transfer-policy id sender receiver amount)
         (with-read ledger (key id receiver)
           { "guard" := g }
           (let
@@ -289,8 +289,7 @@
       receiver:string
       amount:decimal
     )
-    (let ((token (get-token-info id)))
-      (marmalade.policy-manager.enforce-transfer token sender (account-guard id sender) receiver amount))
+    (marmalade-v2.policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
   )
 
   (defun transfer-create:bool
@@ -304,8 +303,8 @@
       (enforce (!= sender receiver)
         "sender cannot be the receiver of a transfer")
       (enforce-valid-transfer sender receiver (precision id) amount)
+      (enforce-transfer-policy id sender receiver amount)
       (with-capability (TRANSFER id sender receiver amount)
-        (enforce-transfer-policy id sender receiver amount)
         (let
           (
             (sender (debit id sender amount))
@@ -323,8 +322,7 @@
     )
     (with-capability (LEDGER)
       (with-capability (MINT id account amount)
-        (let ((token (get-token-info id)))
-          (marmalade.policy-manager.enforce-mint token account guard amount))
+          (marmalade-v2.policy-manager.enforce-mint (get-token-info id) account guard amount)
         (let
           (
             (receiver (credit id account guard amount))
@@ -343,8 +341,7 @@
     )
     (with-capability (LEDGER)
       (with-capability (BURN id account amount)
-        (let ((token (get-token-info id)))
-          (marmalade.policy-manager.enforce-burn token account amount))
+        (marmalade-v2.policy-manager.enforce-burn (get-token-info id) account amount))
         (let
           (
             (sender (debit id account amount))
@@ -353,7 +350,7 @@
           )
           (emit-event (RECONCILE id amount sender receiver))
           (update-supply id (- amount))
-        )))
+        ))
   )
 
   (defun debit:object{sender-balance-change}
@@ -410,15 +407,15 @@
             , "id" : id
             , "account" : account
             })
-          (emit-event (ACCOUNT_GUARD id account guard))
-        ]
-        (update ledger (key id account)
-          { "balance" : new-bal
-          }))
+          (emit-event (ACCOUNT_GUARD id account guard))]
+        [ (update ledger (key id account)
+           { "balance" : new-bal }
+          )
+         ]
+        )
       {'account: account, 'previous: old-bal, 'current: new-bal}
       ))
     )
-
 
   (defun credit-account:object{receiver-balance-change}
     ( id:string
@@ -458,7 +455,8 @@
       receiver-guard:guard
       target-chain:string
       amount:decimal )
-    (step (format "{}" [(enforce false "cross chain not supported")]) false))
+    (step (format "{}" [(enforce false "cross chain not supported")]) false)
+  )
 
   ;;
   ;; ACCESSORS
@@ -470,7 +468,8 @@
   )
 
   (defun get-uri:string (id:string)
-    (at 'uri (read tokens id)))
+    (at 'uri (read tokens id))
+  )
 
   ;;
   ;; sale
@@ -498,9 +497,8 @@
   (defcap WITHDRAW:bool
     (id:string seller:string amount:decimal timeout:time sale-id:string)
     @doc "Withdraws offer SALE from SELLER of AMOUNT of token ID after timeout."
-    @event
+    @managed
     (enforce (not (sale-active timeout)) "WITHDRAW: still active")
-    (compose-capability (LEDGER))
     (compose-capability (DEBIT id (sale-account)))
     (compose-capability (CREDIT id seller))
     (compose-capability (SALE_PRIVATE sale-id))
@@ -511,7 +509,6 @@
     @doc "Completes sale OFFER to BUYER."
     @managed
     (enforce (sale-active timeout) "BUY: expired")
-    (compose-capability (LEDGER))
     (compose-capability (SALE_PRIVATE sale-id))
     (compose-capability (DEBIT id (sale-account)))
     (compose-capability (CREDIT id buyer))
@@ -526,16 +523,27 @@
       timeout:time
     )
     (step-with-rollback
-      (with-capability (SALE id seller amount timeout (pact-id))
-        (offer id seller amount))
-      (with-capability (WITHDRAW id seller amount timeout (pact-id))
-        (withdraw id seller amount)))
+      ;; Step 0: offer
+      (with-capability (LEDGER)
+        (marmalade-v2.policy-manager.enforce-offer (get-token-info id) seller amount (pact-id))
+        (with-capability (SALE id seller amount timeout (pact-id))
+          (offer id seller amount)))
+      ;;Step 0, rollback: withdraw
+      (with-capability (LEDGER)
+        (marmalade-v2.policy-manager.enforce-withdraw (get-token-info id) seller amount (pact-id))
+        (with-capability (WITHDRAW id seller amount timeout (pact-id))
+          (withdraw id seller amount)))
+    )
     (step
-      (let ( (buyer:string (read-msg "buyer"))
-             (buyer-guard:guard (read-msg "buyer-guard")) )
-        (with-capability (BUY id seller buyer amount timeout (pact-id))
-          (buy id seller buyer buyer-guard amount (pact-id))))))
-
+      ;; Step 1: buy
+      (with-capability (LEDGER)
+        (let ( (buyer:string (read-msg "buyer"))
+               (buyer-guard:guard (read-msg "buyer-guard")) )
+           (marmalade-v2.policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
+           (with-capability (BUY id seller buyer amount timeout (pact-id))
+             (buy id seller buyer buyer-guard amount (pact-id))
+           ))))
+  )
 
   (defun offer:bool
     ( id:string
@@ -543,9 +551,12 @@
       amount:decimal
     )
     @doc "Initiate sale with by SELLER by escrowing AMOUNT of TOKEN until TIMEOUT."
+    @model
+      [ (property (!= id ""))
+        (property (!= seller ""))
+        (property (>= amount 0.0))
+      ]
     (require-capability (SALE_PRIVATE (pact-id)))
-    (let ((token (get-token-info id)))
-      (marmalade.policy-manager.enforce-offer token seller amount (pact-id)))
     (let
       (
         (sender (debit id seller amount))
@@ -561,9 +572,12 @@
       amount:decimal
     )
     @doc "Withdraw offer by SELLER of AMOUNT of TOKEN"
+    @model
+      [ (property (!= id ""))
+        (property (!= seller ""))
+        (property (>= amount 0.0))
+      ]
     (require-capability (SALE_PRIVATE (pact-id)))
-    (let ((token (get-token-info id)))
-      (marmalade.policy-manager.enforce-withdraw token seller amount (pact-id)))
     (let
       (
         (sender (debit id (sale-account) amount))
@@ -572,7 +586,6 @@
       (emit-event (TRANSFER id (sale-account) seller amount))
       (emit-event (RECONCILE id amount sender receiver)))
   )
-
 
   (defun buy:bool
     ( id:string
@@ -583,21 +596,25 @@
       sale-id:string
     )
     @doc "Complete sale with transfer."
+    @model
+      [ (property (!= id ""))
+        (property (!= seller ""))
+        (property (!= buyer ""))
+        (property (>= amount 0.0))
+      ]
     (require-capability (SALE_PRIVATE (pact-id)))
-    (let ((token (get-token-info id)))
-      (marmalade.policy-manager.enforce-buy token seller buyer buyer-guard amount sale-id))
     (let
       (
         (sender (debit id (sale-account) amount))
         (receiver (credit id buyer buyer-guard amount))
       )
       (emit-event (TRANSFER id (sale-account) buyer amount))
-      (emit-event (RECONCILE id amount sender receiver)))
+      (emit-event (RECONCILE id amount sender receiver))
       true
-  )
+  ))
 
   (defun sale-active:bool (timeout:time)
-    @doc "Sale is active until TIMEOUT block height."
+    @doc "Sale is active until TIMEOUT time."
     (< (at 'block-time (chain-data)) timeout)
   )
 

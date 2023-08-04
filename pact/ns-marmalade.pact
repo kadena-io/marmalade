@@ -1,4 +1,4 @@
-(define-keyset 'marmalade-admin)
+(define-keyset "marmalade-admin")
 (ns.write-registry (read-msg 'ns) (keyset-ref-guard 'marmalade-admin) true)
 (define-namespace
   (read-msg 'ns)
@@ -6,4 +6,6 @@
   (keyset-ref-guard 'marmalade-admin )
 )
 (namespace (read-msg 'ns))
+(define-keyset "marmalade-v2.marmalade-admin")
+(enforce-keyset "marmalade-v2.marmalade-admin")
 (enforce-keyset 'marmalade-admin)

@@ -5,11 +5,11 @@
   @doc "Concrete policy to support royalty payouts in a specified fungible during sale."
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+    (enforce-guard "marmalade-v2.marmalade-admin"))
 
-  (use marmalade.policy-manager)
-  (use marmalade.quote-manager)
-  (use marmalade.quote-manager [quote-spec quote-schema])
+  (use marmalade-v2.policy-manager)
+  (use marmalade-v2.quote-manager)
+  (use marmalade-v2.quote-manager [quote-spec quote-schema])
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
 
@@ -36,13 +36,12 @@
       royalty-payout:decimal
       creator:string
     )
-    @doc "For event emission purposes"
     @event
     true
   )
 
   (defun enforce-ledger:bool ()
-     (enforce-guard (marmalade.ledger.ledger-guard))
+     (enforce-guard (marmalade-v2.ledger.ledger-guard))
   )
 
   (defun enforce-init:bool
@@ -77,7 +76,7 @@
       guard:guard
       amount:decimal
     )
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-burn:bool
@@ -85,7 +84,6 @@
       account:string
       amount:decimal
     )
-    (enforce-ledger)
     (enforce false "Burn prohibited")
   )
 
@@ -96,7 +94,7 @@
       sale-id:string
     )
     @doc "Capture quote spec for SALE of TOKEN from message"
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-buy:bool
@@ -137,7 +135,6 @@
       guard:guard
       receiver:string
       amount:decimal )
-    (enforce-ledger)
     (enforce false "Transfer prohibited")
   )
 
@@ -146,7 +143,7 @@
       seller:string
       amount:decimal
       sale-id:string )
-    (enforce-ledger)
+    true
   )
 )
 

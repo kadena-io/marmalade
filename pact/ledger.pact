@@ -289,8 +289,7 @@
       receiver:string
       amount:decimal
     )
-    (let ((token (get-token-info id)))
-      (marmalade-v2.policy-manager.enforce-transfer token sender (account-guard id sender) receiver amount))
+    (marmalade-v2.policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
   )
 
   (defun transfer-create:bool
@@ -323,8 +322,7 @@
     )
     (with-capability (LEDGER)
       (with-capability (MINT id account amount)
-        (let ((token (get-token-info id)))
-          (marmalade-v2.policy-manager.enforce-mint token account guard amount))
+          (marmalade-v2.policy-manager.enforce-mint (get-token-info id) account guard amount)
         (let
           (
             (receiver (credit id account guard amount))
@@ -343,8 +341,7 @@
     )
     (with-capability (LEDGER)
       (with-capability (BURN id account amount)
-        (let ((token (get-token-info id)))
-          (marmalade-v2.policy-manager.enforce-burn token account amount))
+        (marmalade-v2.policy-manager.enforce-burn (get-token-info id) account amount))
         (let
           (
             (sender (debit id account amount))
@@ -530,26 +527,25 @@
     (step-with-rollback
       ;; Step 0: offer
       (with-capability (LEDGER)
+        (marmalade-v2.policy-manager.enforce-offer (get-token-info id) seller amount (pact-id))
         (with-capability (SALE id seller amount timeout (pact-id))
-          (let ((token (get-token-info id)))
-            (marmalade-v2.policy-manager.enforce-offer token seller amount (pact-id)))
           (offer id seller amount)))
       ;;Step 0, rollback: withdraw
       (with-capability (LEDGER)
+        (marmalade-v2.policy-manager.enforce-withdraw (get-token-info id) seller amount (pact-id))
         (with-capability (WITHDRAW id seller amount timeout (pact-id))
-          (let ((token (get-token-info id)))
-            (marmalade-v2.policy-manager.enforce-withdraw (get-token-info id) seller amount (pact-id))
-            (withdraw id seller amount))))
+          (withdraw id seller amount)))
     )
     (step
       ;; Step 1: buy
       (with-capability (LEDGER)
         (let ( (buyer:string (read-msg "buyer"))
-               (buyer-guard:guard (read-msg "buyer-guard"))
-               (token (get-token-info id)) )
-           (marmalade-v2.policy-manager.enforce-buy token seller buyer buyer-guard amount (pact-id))
+               (buyer-guard:guard (read-msg "buyer-guard")) )
+           (marmalade-v2.policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
            (with-capability (BUY id seller buyer amount timeout (pact-id))
-            (buy id seller buyer buyer-guard amount (pact-id)))))))
+             (buy id seller buyer buyer-guard amount (pact-id))
+           ))))
+  )
 
   (defun offer:bool
     ( id:string
@@ -562,7 +558,7 @@
         (property (!= seller ""))
         (property (>= amount 0.0))
       ]
-    (require-capability (OFFER (pact-id)))
+    (require-capability (SALE_PRIVATE (pact-id)))
     (let
       (
         (sender (debit id seller amount))
@@ -583,7 +579,7 @@
         (property (!= seller ""))
         (property (>= amount 0.0))
       ]
-    (require-capability (WITHDRAW (pact-id)))
+    (require-capability (SALE_PRIVATE (pact-id)))
     (let
       (
         (sender (debit id (sale-account) amount))
@@ -608,7 +604,7 @@
         (property (!= buyer ""))
         (property (>= amount 0.0))
       ]
-    (require-capability (BUY (pact-id)))
+    (require-capability (SALE_PRIVATE (pact-id)))
     (let
       (
         (sender (debit id (sale-account) amount))

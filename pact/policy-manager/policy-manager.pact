@@ -3,11 +3,11 @@
 (module policy-manager GOVERNANCE
 
   (defcap GOVERNANCE ()
-    (enforce-guard 'marmalade-admin ))
+    (enforce-guard "marmalade-v2.marmalade-admin"))
 
   (use kip.token-policy-v2 [token-info])
-  (use marmalade.quote-manager)
-  (use marmalade.quote-manager [quote-spec quote-msg fungible-account])
+  (use marmalade-v2.quote-manager)
+  (use marmalade-v2.quote-manager [quote-spec quote-msg fungible-account])
 
   (defconst QUOTE-MSG-KEY "quote"
     @doc "Payload field for quote spec")

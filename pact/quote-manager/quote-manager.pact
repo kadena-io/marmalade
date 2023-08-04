@@ -7,7 +7,7 @@
   (use util.guards1)
 
   (defcap GOVERNANCE ()
-    (enforce-guard 'marmalade-admin ))
+    (enforce-guard "marmalade-v2.marmalade-admin"))
 
   ;; Saves Policy Manager Guard information
   (defschema policy-manager
@@ -15,7 +15,7 @@
   )
 
   (deftable policy-managers:{policy-manager}
-    @doc "Singleton table for policy-manager guard storage")
+    @doc "Singleton table for policy-manager guard storage"
   )
 
   (defun enforce-policy-manager:bool ()

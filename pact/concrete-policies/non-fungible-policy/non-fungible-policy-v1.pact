@@ -5,13 +5,13 @@
   @doc "Concrete policy for issuing an nft with a fixed supply of 1 and precision of 0"
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+  (enforce-guard "marmalade-v2.marmalade-admin"))
 
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
 
   (defun enforce-ledger:bool ()
-     (enforce-guard (marmalade.ledger.ledger-guard))
+  (enforce-guard (marmalade-v2.ledger.ledger-guard))
   )
 
   (defun enforce-init:bool

@@ -2,7 +2,7 @@ codeFile: ../../ns-marmalade.pact
 signers:
   - public: dfb16b13e4032a6878fd98506b22cb0d6e5932c541e656b7ee5d69d72e6eb76e
 data:
-  ns: "marmalade"
+  ns: "marmalade-v2"
   marmalade-ns-user:
     keys:
       - dfb16b13e4032a6878fd98506b22cb0d6e5932c541e656b7ee5d69d72e6eb76e
@@ -16,9 +16,9 @@ data:
       - 5d3dbd0c7e9902de1a868b3410462b034760264c910091f3e0d117397ab394e6
     pred: keys-any
 networkId: testnet04
-nonce: install namespace marmalade
+nonce: install namespace marmalade-v2
 publicMeta:
-  chainId: "0"
+  chainId: "1"
   sender: "dfb16b13e4032a6878fd98506b22cb0d6e5932c541e656b7ee5d69d72e6eb76e"
   gasLimit: 5000
   gasPrice: 0.0000001

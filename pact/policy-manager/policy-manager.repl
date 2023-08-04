@@ -15,7 +15,7 @@
   { 'marmalade-admin: ["marmalade-admin"]
   , 'marmalade-ns-user: ["marmalade-admin"]
   , 'marmalade-ns-admin: ["marmalade-admin"]
-  , 'ns: "marmalade"
+  , 'ns: "marmalade-v2"
   , 'upgrade: false })
 
   (load "../kip/manifest.pact")
@@ -32,7 +32,7 @@
    { 'marmalade-admin: ["marmalade-admin"]
    , 'marmalade-ns-user: ["marmalade-admin"]
    , 'marmalade-ns-admin: ["marmalade-admin"]
-   , 'ns: "marmalade"
+   , 'ns: "marmalade-v2"
    , 'upgrade: false })
    (env-sigs [
      { 'key: 'marmalade-admin
@@ -43,7 +43,7 @@
    { 'marmalade-admin: ["marmalade-admin"]
    , 'marmalade-ns-user: ["marmalade-admin"]
    , 'marmalade-ns-admin: ["marmalade-admin"]
-   , 'ns: "marmalade"
+   , 'ns: "marmalade-v2"
    , 'upgrade: false })
   (load "../quote-manager/quote-manager.pact")
   (load "../policy-manager/policy-manager.pact")
@@ -52,22 +52,14 @@
   (load "../test/abc.pact")
 (commit-tx)
 
-(typecheck "marmalade.policy-manager")
-(typecheck "marmalade.ledger")
+(typecheck "marmalade-v2.policy-manager")
+(typecheck "marmalade-v2.ledger")
 (begin-tx "load concrete-polices")
   (load "../concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact")
   (load "../concrete-policies/royalty-policy/royalty-policy-v1.pact")
   (load "../concrete-policies/collection-policy/collection-policy-v1.pact")
   (load "../concrete-policies/guard-policy/guard-policy-v1.pact")
-
-  (use marmalade.policy-manager [NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
-  (marmalade.policy-manager.init (marmalade.ledger.ledger-guard))
-  (marmalade.quote-manager.init (marmalade.policy-manager.policy-manager-guard))
-  (marmalade.policy-manager.write-concrete-policy NON_FUNGIBLE_POLICY marmalade.non-fungible-policy-v1)
-  (marmalade.policy-manager.write-concrete-policy ROYALTY_POLICY marmalade.royalty-policy-v1)
-  (marmalade.policy-manager.write-concrete-policy COLLECTION_POLICY marmalade.collection-policy-v1)
-  (marmalade.policy-manager.write-concrete-policy GUARD_POLICY marmalade.guard-policy-v1)
-
+  (load "./manager-init")
 (commit-tx)
 
 (begin-tx "load regular polices")
@@ -79,9 +71,9 @@
 
 (begin-tx)
 
-(use marmalade.ledger)
-(use marmalade.policy-manager)
-(use marmalade.util-v1)
+(use marmalade-v2.ledger)
+(use marmalade-v2.policy-manager)
+(use marmalade-v2.util-v1)
 
 (env-data {
   "default-token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } )
@@ -95,8 +87,8 @@
 
 (env-sigs [
   { 'key: 'account
-   ,'caps: [(marmalade.ledger.MINT (read-msg "default-token-id") "k:account" 1.0)
-            (marmalade.ledger.MINT (read-msg 'empty-token-id) "k:account" 1.0)
+   ,'caps: [(marmalade-v2.ledger.MINT (read-msg "default-token-id") "k:account" 1.0)
+            (marmalade-v2.ledger.MINT (read-msg 'empty-token-id) "k:account" 1.0)
    ]
    }])
 
@@ -142,11 +134,11 @@
    ,'caps: []
    }])
 (env-data {
-  "ns": "marmalade"
+  "ns": "marmalade-v2"
   })
   (namespace (read-msg 'ns))
-  (use marmalade.ledger)
-  (use marmalade.util-v1)
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.util-v1)
   (env-data {
     'token-id: (create-token-id { 'uri: "test-uri-3", 'precision: 0, 'policies: (create-policies DEFAULT)  } )
     })
@@ -166,7 +158,7 @@
     (use kip.token-policy-v2 [token-info])
 
     (defun enforce-ledger:bool ()
-       (enforce-guard (marmalade.ledger.ledger-guard))
+       (enforce-guard (marmalade-v2.ledger.ledger-guard))
     )
 
     (defun enforce-init:bool
@@ -231,12 +223,12 @@
     )
   )
 
-  (use marmalade.policy-manager)
-  (use marmalade.policy-manager [NON_FUNGIBLE_POLICY])
+  (use marmalade-v2.policy-manager)
+  (use marmalade-v2.policy-manager [NON_FUNGIBLE_POLICY])
 
   (expect "upgrade non-fungible-policy"
     true
-    (write-concrete-policy NON_FUNGIBLE_POLICY marmalade.non-fungible-policy-v1))
+    (write-concrete-policy NON_FUNGIBLE_POLICY marmalade-v2.non-fungible-policy-v1))
 
   (expect "check if stored policy matches with saved concrete-policy"
     true
@@ -248,19 +240,19 @@
 
 (begin-tx "start an offer")
   (env-hash (hash "offer-0"))
-  (use marmalade.ledger)
-  (use marmalade.policy-manager)
-  (use marmalade.util-v1)
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.policy-manager)
+  (use marmalade-v2.util-v1)
   (env-data {
     "seller-guard": {"keys": ["account"], "pred": "keys-all"}
   })
-  (marmalade.abc.create-account "k:account" (read-keyset 'seller-guard))
+  (marmalade-v2.abc.create-account "k:account" (read-keyset 'seller-guard))
 
   (env-data {
       "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } )
      ,"quote":{
         "spec": {
-          "fungible": marmalade.abc
+          "fungible": marmalade-v2.abc
           ,"price": 2.0
           ,"amount": 1.0
           ,"seller-fungible-account": {
@@ -278,7 +270,7 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-    (marmalade.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
+    (marmalade-v2.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
     }])
 
   (expect "start offer by running step 0 of sale"
@@ -292,14 +284,14 @@
 
   (expect "events"
     (format "{}" [[
-      {"name": "marmalade.ledger.OFFER","params": [(read-msg 'token-id) "k:account" 1.0 "2023-07-22T11:26:35Z"]}
-      {"name": "marmalade.ledger.SALE","params": [(read-msg 'token-id) "k:account" 1.0 "2023-07-22T11:26:35Z" "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"]}
-      {"name": "marmalade.quote-manager.QUOTE","params": ["C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg" (read-msg 'token-id)
-        {"amount": 1.0,"fungible": marmalade.abc,"price": 2.0,"seller-fungible-account": {"account": "k:account","guard": (read-keyset 'seller-guard) }}]}
-      {"name": "marmalade.quote-manager.QUOTE_GUARDS","params": ["C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg" (read-msg 'token-id) (read-keyset 'seller-guard) []]}
-      {"name": "marmalade.ledger.ACCOUNT_GUARD","params": [(read-msg 'token-id) "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE" (create-capability-pact-guard (SALE_PRIVATE "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"))]}
-      {"name": "marmalade.ledger.TRANSFER","params": [(read-msg 'token-id) "k:account" "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE" 1.0]}
-      {"name": "marmalade.ledger.RECONCILE","params": [(read-msg 'token-id) 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE","current": 1.0,"previous": 0.0}]}]])
+      {"name": "marmalade-v2.ledger.OFFER","params": [(read-msg 'token-id) "k:account" 1.0 "2023-07-22T11:26:35Z"]}
+      {"name": "marmalade-v2.ledger.SALE","params": [(read-msg 'token-id) "k:account" 1.0 "2023-07-22T11:26:35Z" "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"]}
+      {"name": "marmalade-v2.quote-manager.QUOTE","params": ["C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg" (read-msg 'token-id)
+        {"amount": 1.0,"fungible": marmalade-v2.abc,"price": 2.0,"seller-fungible-account": {"account": "k:account","guard": (read-keyset 'seller-guard) }}]}
+      {"name": "marmalade-v2.quote-manager.QUOTE_GUARDS","params": ["C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg" (read-msg 'token-id) (read-keyset 'seller-guard) []]}
+      {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": [(read-msg 'token-id) "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE" (create-capability-pact-guard (SALE_PRIVATE "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"))]}
+      {"name": "marmalade-v2.ledger.TRANSFER","params": [(read-msg 'token-id) "k:account" "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE" 1.0]}
+      {"name": "marmalade-v2.ledger.RECONCILE","params": [(read-msg 'token-id) 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "c:kojW5oDBdlmFg0jVWz_mdj1DxlL8OgeH-1OILa1YzzE","current": 1.0,"previous": 0.0}]}]])
     (format "{}" [(map (remove "module-hash")  (env-events true))])
   )
 
@@ -310,14 +302,14 @@
    ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
   })
 
-  (marmalade.abc.create-account "k:buyer" (read-keyset 'buyer-guard))
-  (marmalade.abc.fund "k:buyer" 2.0)
-  (marmalade.abc.create-account "k:market" (read-keyset 'market-guard))
+  (marmalade-v2.abc.create-account "k:buyer" (read-keyset 'buyer-guard))
+  (marmalade-v2.abc.fund "k:buyer" 2.0)
+  (marmalade-v2.abc.create-account "k:market" (read-keyset 'market-guard))
   (env-sigs
   [{'key:'buyer
     ,'caps: [
-      (marmalade.ledger.BUY (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } ) "k:account" "k:buyer" 1.0 (time "2023-07-22T11:26:35Z") "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg")
-      (marmalade.abc.TRANSFER "k:buyer" "c:rgckjytlTnv0dAkBHpvxeZWnrmUtnsegdi_KFwJ75PA" 2.0)
+      (marmalade-v2.ledger.BUY (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } ) "k:account" "k:buyer" 1.0 (time "2023-07-22T11:26:35Z") "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg")
+      (marmalade-v2.abc.TRANSFER "k:buyer" "c:rgckjytlTnv0dAkBHpvxeZWnrmUtnsegdi_KFwJ75PA" 2.0)
     ]}])
 
   (env-hash (hash "offer-0"))

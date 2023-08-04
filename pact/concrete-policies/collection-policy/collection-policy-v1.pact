@@ -6,7 +6,7 @@
   @doc "Collection token policy."
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin)))
+    (enforce-guard "marmalade-v2.marmalade-admin"))
 
   (implements kip.token-policy-v2)
 
@@ -45,7 +45,7 @@
     true)
 
   (defun enforce-ledger:bool ()
-    (enforce-guard (marmalade.ledger.ledger-guard))
+    (enforce-guard (marmalade-v2.ledger.ledger-guard))
     true
   )
 

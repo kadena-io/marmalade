@@ -11,7 +11,7 @@
   (implements kip.poly-fungible-v3)
   (use kip.poly-fungible-v3 [account-details sender-balance-change receiver-balance-change])
   (use util.fungible-util)
-  (use marmalade.policy-manager)
+  (use marmalade-v2.policy-manager)
 
   ;;
   ;; Tables/Schemas
@@ -207,7 +207,7 @@
        (enforce-token-reserved id token-details)
       )
       ;; maps policy list and calls policy::enforce-init
-      (marmalade.policy-manager.enforce-init
+      (marmalade-v2.policy-manager.enforce-init
         { 'id: id, 'supply: 0.0, 'precision: precision, 'uri: uri,  'policies: policies})
 
       (insert tokens id {
@@ -290,7 +290,7 @@
       amount:decimal
     )
     (let ((token (get-token-info id)))
-      (marmalade.policy-manager.enforce-transfer token sender (account-guard id sender) receiver amount))
+      (marmalade-v2.policy-manager.enforce-transfer token sender (account-guard id sender) receiver amount))
   )
 
   (defun transfer-create:bool
@@ -324,7 +324,7 @@
     (with-capability (LEDGER)
       (with-capability (MINT id account amount)
         (let ((token (get-token-info id)))
-          (marmalade.policy-manager.enforce-mint token account guard amount))
+          (marmalade-v2.policy-manager.enforce-mint token account guard amount))
         (let
           (
             (receiver (credit id account guard amount))
@@ -344,7 +344,7 @@
     (with-capability (LEDGER)
       (with-capability (BURN id account amount)
         (let ((token (get-token-info id)))
-          (marmalade.policy-manager.enforce-burn token account amount))
+          (marmalade-v2.policy-manager.enforce-burn token account amount))
         (let
           (
             (sender (debit id account amount))
@@ -532,13 +532,13 @@
       (with-capability (LEDGER)
         (with-capability (SALE id seller amount timeout (pact-id))
           (let ((token (get-token-info id)))
-            (marmalade.policy-manager.enforce-offer token seller amount (pact-id)))
+            (marmalade-v2.policy-manager.enforce-offer token seller amount (pact-id)))
           (offer id seller amount)))
       ;;Step 0, rollback: withdraw
       (with-capability (LEDGER)
         (with-capability (WITHDRAW id seller amount timeout (pact-id))
           (let ((token (get-token-info id)))
-            (marmalade.policy-manager.enforce-withdraw (get-token-info id) seller amount (pact-id))
+            (marmalade-v2.policy-manager.enforce-withdraw (get-token-info id) seller amount (pact-id))
             (withdraw id seller amount))))
     )
     (step
@@ -547,7 +547,7 @@
         (let ( (buyer:string (read-msg "buyer"))
                (buyer-guard:guard (read-msg "buyer-guard"))
                (token (get-token-info id)) )
-           (marmalade.policy-manager.enforce-buy token seller buyer buyer-guard amount (pact-id))
+           (marmalade-v2.policy-manager.enforce-buy token seller buyer buyer-guard amount (pact-id))
            (with-capability (BUY id seller buyer amount timeout (pact-id))
             (buy id seller buyer buyer-guard amount (pact-id)))))))
 

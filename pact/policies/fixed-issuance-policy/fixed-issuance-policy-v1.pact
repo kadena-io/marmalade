@@ -5,7 +5,7 @@
   @doc "Policy for minting with a fixed issuance"
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+    (enforce-guard "marmalade-v2.marmalade-admin"))
 
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
@@ -23,22 +23,22 @@
   )
 
   (defun enforce-ledger:bool ()
-     (enforce-guard (marmalade.ledger.ledger-guard))
+     (enforce-guard (marmalade-v2.ledger.ledger-guard))
   )
 
   (defun enforce-init:bool
     ( token:object{token-info}
     )
+    @doc ""
     (enforce-ledger)
-    (let* ( (mint-guard:guard (read-keyset 'fip-mint-guard ))
+    (let* (
             (max-supply:decimal (read-decimal 'fip-max-supply ))
             (min-amount:decimal (read-decimal 'fip-min-amount ))
             )
     (enforce (>= min-amount 0.0) "Invalid min-amount")
     (enforce (>= max-supply 0.0) "Invalid max-supply")
     (insert supplies (at 'id token)
-      { 'mint-guard: mint-guard
-      , 'max-supply: max-supply
+      { 'max-supply: max-supply
       , 'min-amount: min-amount })
     true)
   )
@@ -51,11 +51,9 @@
     )
     (enforce-ledger)
     (bind (get-supply token)
-      { 'mint-guard:=mint-guard:guard
-      , 'min-amount:=min-amount:decimal
+      { 'min-amount:=min-amount:decimal
       , 'max-supply:=max-supply:decimal
       }
-      (enforce-guard mint-guard)
       (enforce (>= amount min-amount) "mint amount < min-amount")
       (enforce (<= (+ amount (at 'supply token)) max-supply) "Exceeds max supply")
   ))
@@ -95,7 +93,6 @@
       sale-id:string )
     true
   )
-
 
   (defun enforce-transfer:bool
     ( token:object{token-info}

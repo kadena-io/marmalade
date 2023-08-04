@@ -11,7 +11,6 @@
   (use kip.token-policy-v2 [token-info])
 
   (defschema supply-schema
-    mint-guard:guard
     max-supply:decimal
     min-amount:decimal
   )

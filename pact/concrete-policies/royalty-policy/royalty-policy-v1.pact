@@ -7,9 +7,9 @@
   (defcap GOVERNANCE ()
     (enforce-guard "marmalade-v2.marmalade-admin"))
 
-  (use marmalade.policy-manager)
-  (use marmalade.quote-manager)
-  (use marmalade.quote-manager [quote-spec quote-schema])
+  (use marmalade-v2.policy-manager)
+  (use marmalade-v2.quote-manager)
+  (use marmalade-v2.quote-manager [quote-spec quote-schema])
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
 

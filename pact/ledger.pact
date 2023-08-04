@@ -350,7 +350,7 @@
           )
           (emit-event (RECONCILE id amount sender receiver))
           (update-supply id (- amount))
-        )))
+        ))
   )
 
   (defun debit:object{sender-balance-change}

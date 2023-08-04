@@ -88,7 +88,8 @@
 
 (env-sigs [
   { 'key: 'account
-   ,'caps: [(marmalade-v2.ledger.MINT (read-msg "default-token-id") "k:account" 1.0)
+   ,'caps: [(marmalade-v2.ledger.MINT (read-msg "default-token-id") "k:account" 1.0) 
+            (marmalade-v2.guard-policy-v1.MINT (read-msg "default-token-id") "k:account" 1.0)
             (marmalade-v2.ledger.MINT (read-msg 'empty-token-id) "k:account" 1.0)
    ]
    }])

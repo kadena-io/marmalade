@@ -1,4 +1,4 @@
-(use marmalade-v2.policy-manager [QUOTE_POLICY NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
+(use marmalade-v2.policy-manager [NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
 
 (marmalade-v2.policy-manager.init (marmalade-v2.ledger.ledger-guard))
 (marmalade-v2.quote-manager.init (marmalade-v2.policy-manager.policy-manager-guard))

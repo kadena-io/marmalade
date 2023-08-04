@@ -279,7 +279,7 @@
 
   (defun exists-msg-quote:bool (msg:string)
     @doc "Checks env-data field and see if the msg is a object"
-    (try false (let ((o:object{quote-spec} (read-msg msg))) true))
+    (try false (let ((o:object{quote-msg} (read-msg msg))) true))
   )
 
  (defun token-init (token:object{token-info} policy:module{kip.token-policy-v2})

@@ -1,26 +1,26 @@
 ;;load policy manager, ledger
 (load "../../policy-manager/policy-manager.repl")
-(typecheck "marmalade.royalty-policy-v1")
+(typecheck "marmalade-v2.royalty-policy-v1")
 
 (begin-tx)
-(use marmalade.policy-manager [concrete-policy concrete-policy])
-(use marmalade.ledger)
+(use marmalade-v2.policy-manager [concrete-policy concrete-policy])
+(use marmalade-v2.ledger)
 
 (env-data {
   "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
 })
-(marmalade.abc.create-account "k:creator" (read-keyset 'creator-guard))
+(marmalade-v2.abc.create-account "k:creator" (read-keyset 'creator-guard))
 (commit-tx)
 (begin-tx)
-(use marmalade.ledger)
-(use marmalade.util-v1)
+(use marmalade-v2.ledger)
+(use marmalade-v2.util-v1)
 
 (env-data {
   "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} )
  ,"account": "account"
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
-    "fungible": marmalade.abc
+    "fungible": marmalade-v2.abc
    ,"creator": "k:creator"
    ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
    ,"royalty-rate": -0.000001
@@ -32,9 +32,9 @@
 (commit-tx)
 
 (begin-tx)
-(use marmalade.ledger)
+(use marmalade-v2.ledger)
 
-(use marmalade.util-v1)
+(use marmalade-v2.util-v1)
 
 (expect-failure "create-token with negative royalty rate fails"
   "Invalid royalty rate"
@@ -42,16 +42,16 @@
 (rollback-tx)
 
 (begin-tx)
-(use marmalade.ledger)
+(use marmalade-v2.ledger)
 
-(use marmalade.util-v1)
+(use marmalade-v2.util-v1)
 
 (env-data {
   "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } )
  ,"account": "k:account"
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
-    "fungible": marmalade.abc
+    "fungible": marmalade-v2.abc
    ,"creator": "k:creator"
    ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
    ,"royalty-rate": 0.05
@@ -64,7 +64,7 @@
 
 (env-sigs [
   { 'key: 'account
-  ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
+  ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
   }])
 
 (expect "mint a default token with quote-policy, non-fungible-policy"
@@ -75,21 +75,21 @@
 (begin-tx "start an offer")
 
 (env-hash (hash "offer-royalty-0"))
-(use marmalade.ledger)
+(use marmalade-v2.ledger)
 
-(use marmalade.util-v1)
+(use marmalade-v2.util-v1)
 
 (env-data {
   "seller-guard": {"keys": ["account"], "pred": "keys-all"}
 })
-(marmalade.abc.create-account "k:account" (read-keyset 'seller-guard))
+(marmalade-v2.abc.create-account "k:account" (read-keyset 'seller-guard))
 
 (env-data {
   "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } )
 
   ,"quote":{
      "spec": {
-       "fungible": marmalade.abc
+       "fungible": marmalade-v2.abc
        ,"price": 2.0
        ,"amount": 1.0
        ,"seller-fungible-account": {
@@ -106,7 +106,7 @@
 (env-sigs [
   { 'key: 'account
    ,'caps: [
-   (marmalade.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
+   (marmalade-v2.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
    }])
 
 (expect "stat offer by running step 0 of sale"
@@ -121,14 +121,14 @@
  ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
  })
 
-(marmalade.abc.create-account "k:buyer" (read-keyset 'buyer-guard))
-(marmalade.abc.fund "k:buyer" 2.0)
+(marmalade-v2.abc.create-account "k:buyer" (read-keyset 'buyer-guard))
+(marmalade-v2.abc.fund "k:buyer" 2.0)
 
 (env-sigs
  [{'key:'buyer
   ,'caps: [
-    (marmalade.ledger.BUY (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ) "k:account" "k:buyer"  1.0 (time  "2023-07-22T11:26:35Z") "0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM")
-    (marmalade.abc.TRANSFER "k:buyer" "c:fxI0Y77myZacaggonS_TaF8YxH_cGKFoSLMgZVQAUfc" 2.0)
+    (marmalade-v2.ledger.BUY (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ) "k:account" "k:buyer"  1.0 (time  "2023-07-22T11:26:35Z") "0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM")
+    (marmalade-v2.abc.TRANSFER "k:buyer" "c:xx_lmWaqaLkqO3RzZnabF_tpKB11EeagaLUJwM0T_6c" 2.0)
    ]}])
 
 (env-hash (hash "offer-royalty-0"))

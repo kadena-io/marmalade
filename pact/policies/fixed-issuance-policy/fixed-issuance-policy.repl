@@ -1,4 +1,4 @@
 ;;load policy manager, ledger
 (load "../../policy-manager/policy-manager.repl")
 
-(typecheck "marmalade.fixed-issuance-policy-v1")
+(typecheck "marmalade-v2.fixed-issuance-policy-v1")

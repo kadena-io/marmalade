@@ -63,8 +63,8 @@
          ,"size": 0
          ,"operator-guard": operator-guard
         })
+        (emit-event (COLLECTION collection-id collection-name collection-size))
       )
-      (emit-event (COLLECTION collection-id collection-name collection-size))
       true
   )
 

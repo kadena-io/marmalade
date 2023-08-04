@@ -68,7 +68,6 @@
       guard:guard
       amount:decimal
     )
-    (enforce-ledger)
     true)
 
   (defun enforce-burn:bool
@@ -76,7 +75,6 @@
       account:string
       amount:decimal
     )
-    (enforce-ledger)
     true)
 
   (defun enforce-offer:bool
@@ -85,7 +83,6 @@
       amount:decimal
       sale-id:string
     )
-    (enforce-ledger)
     true)
 
   (defun enforce-buy:bool
@@ -95,7 +92,6 @@
       buyer-guard:guard
       amount:decimal
       sale-id:string )
-    (enforce-ledger)
     true)
 
 
@@ -105,7 +101,6 @@
       guard:guard
       receiver:string
       amount:decimal )
-    (enforce-ledger)
     true)
 
 
@@ -114,7 +109,6 @@
       seller:string
       amount:decimal
       sale-id:string )
-    (enforce-ledger)
     true)
 
   (defun enforce-crosschain:bool
@@ -124,7 +118,6 @@
       receiver:string
       target-chain:string
       amount:decimal )
-    (enforce-ledger)
     (enforce false "Transfer prohibited")
   )
 )

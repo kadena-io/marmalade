@@ -529,24 +529,27 @@
     )
     (step-with-rollback
       ;; Step 0: offer
-      (with-capability (SALE id seller amount timeout (pact-id))
-        (let ((token (get-token-info id)))
-          (marmalade.policy-manager.enforce-offer token seller amount (pact-id)))
-        (offer id seller amount))
+      (with-capability (LEDGER)
+        (with-capability (SALE id seller amount timeout (pact-id))
+          (let ((token (get-token-info id)))
+            (marmalade.policy-manager.enforce-offer token seller amount (pact-id)))
+          (offer id seller amount)))
       ;;Step 0, rollback: withdraw
-      (with-capability (WITHDRAW id seller amount timeout (pact-id))
-        (let ((token (get-token-info id)))
-          (marmalade.policy-manager.enforce-withdraw token seller amount (pact-id))
-          (withdraw id seller amount)))
+      (with-capability (LEDGER)
+        (with-capability (WITHDRAW id seller amount timeout (pact-id))
+          (let ((token (get-token-info id)))
+            (marmalade.policy-manager.enforce-withdraw (get-token-info id) seller amount (pact-id))
+            (withdraw id seller amount))))
     )
     (step
       ;; Step 1: buy
-      (let ( (buyer:string (read-msg "buyer"))
-             (buyer-guard:guard (read-msg "buyer-guard"))
-             (token (get-token-info id)) )
-         (marmalade.policy-manager.enforce-buy token seller buyer buyer-guard amount sale-id))
-         (with-capability (BUY id seller buyer amount timeout (pact-id))
-          (buy id seller buyer buyer-guard amount (pact-id)))))
+      (with-capability (LEDGER)
+        (let ( (buyer:string (read-msg "buyer"))
+               (buyer-guard:guard (read-msg "buyer-guard"))
+               (token (get-token-info id)) )
+           (marmalade.policy-manager.enforce-buy token seller buyer buyer-guard amount (pact-id))
+           (with-capability (BUY id seller buyer amount timeout (pact-id))
+            (buy id seller buyer buyer-guard amount (pact-id)))))))
 
   (defun offer:bool
     ( id:string

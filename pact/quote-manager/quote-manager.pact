@@ -15,7 +15,8 @@
   )
 
   (deftable policy-managers:{policy-manager}
-    @doc "Designed to save one policy-manager guard in a single row")
+    @doc "Singleton table for policy-manager guard storage")
+  )
 
   (defun enforce-policy-manager:bool ()
     @doc "Enforces that function is called from the saved policy-manager"
@@ -70,7 +71,6 @@
       token-id:string
       spec:object{quote-spec}
     )
-    @doc "For event emission purposes"
     @event
     true
   )
@@ -79,7 +79,6 @@
     ( sale-id:string
       price:decimal
     )
-    @doc "For event emission purposes"
     @event
     true
   )
@@ -90,15 +89,14 @@
       seller-guard:guard
       quote-guards:[guard]
     )
-    @doc "For event emission purposes"
     @event
     true
   )
 
   (deftable quotes:{quote-schema})
 
-  (defcap UPDATE_QUOTE:bool (sale-id:string)
-    @doc "Enforces quote-guad on update-quote"
+  (defcap UPDATE_QUOTE_PRICE:bool (sale-id:string)
+    @doc "Enforces quote-guards on update-quote-price"
     (with-read quotes sale-id {
       "quote-guards":=quote-guards
       }
@@ -156,7 +154,7 @@
     @doc "Updates quote price if update-quote-price exists in transaction data and is signed by quote-guards"
     (enforce-policy-manager)
     (enforce (> price 0.0) "price must be positive")
-    (with-capability (UPDATE_QUOTE sale-id)
+    (with-capability (UPDATE_QUOTE_PRICE sale-id)
       (with-read quotes sale-id {
           "spec":= quote-spec
         }

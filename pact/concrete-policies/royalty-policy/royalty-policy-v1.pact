@@ -36,7 +36,6 @@
       royalty-payout:decimal
       creator:string
     )
-    @doc "For event emission purposes"
     @event
     true
   )

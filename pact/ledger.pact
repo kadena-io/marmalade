@@ -321,8 +321,8 @@
       amount:decimal
     )
     (with-capability (LEDGER)
+      (marmalade-v2.policy-manager.enforce-mint (get-token-info id) account guard amount)
       (with-capability (MINT id account amount)
-          (marmalade-v2.policy-manager.enforce-mint (get-token-info id) account guard amount)
         (let
           (
             (receiver (credit id account guard amount))
@@ -340,8 +340,8 @@
       amount:decimal
     )
     (with-capability (LEDGER)
+      (marmalade-v2.policy-manager.enforce-burn (get-token-info id) account amount)
       (with-capability (BURN id account amount)
-        (marmalade-v2.policy-manager.enforce-burn (get-token-info id) account amount))
         (let
           (
             (sender (debit id account amount))
@@ -351,7 +351,7 @@
           (emit-event (RECONCILE id amount sender receiver))
           (update-supply id (- amount))
         ))
-  )
+  ))
 
   (defun debit:object{sender-balance-change}
     ( id:string

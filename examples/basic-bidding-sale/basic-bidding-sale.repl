@@ -1,0 +1,16 @@
+;;load policy manager, ledger
+(load "../../pact/policy-manager/policy-manager.repl")
+
+(begin-tx)
+  (env-sigs [
+    { 'key: 'basic-sale-admin
+    ,'caps: []
+    }])
+  (env-data
+  { 'basic-sale-admin: ["basic-sale-admin"]
+    , 'ns: "free"
+    , 'upgrade: false })
+
+  (load "basic-bidding-sale.pact")
+
+(commit-tx)

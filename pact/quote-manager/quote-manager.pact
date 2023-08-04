@@ -155,6 +155,7 @@
   (defun update-quote-price:bool (sale-id:string price:decimal)
     @doc "Updates quote price if update-quote-price exists in transaction data and is signed by quote-guards"
     (enforce-policy-manager)
+    (enforce (> price 0.0) "price must be positive")
     (with-capability (UPDATE_QUOTE sale-id)
       (with-read quotes sale-id {
           "spec":= quote-spec

@@ -240,8 +240,8 @@
 
   (defun enforce-uri-reserved:bool (uri:string)
     " Enforce reserved uri name protocols "
-    (if (= "marmalade" (take 9 uri))
-        (enforce false "Reserved protocol: marmalade")
+    (if (= "marmalade:" (take 10 uri))
+        (enforce false "Reserved protocol: marmalade:")
         true
     )
   )
@@ -269,8 +269,8 @@
       (enforce (!= sender receiver)
         "sender cannot be the receiver of a transfer")
       (enforce-valid-transfer sender receiver (precision id) amount)
+      (enforce-transfer-policy id sender receiver amount)
       (with-capability (TRANSFER id sender receiver amount)
-        (enforce-transfer-policy id sender receiver amount)
         (with-read ledger (key id receiver)
           { "guard" := g }
           (let
@@ -304,8 +304,8 @@
       (enforce (!= sender receiver)
         "sender cannot be the receiver of a transfer")
       (enforce-valid-transfer sender receiver (precision id) amount)
+      (enforce-transfer-policy id sender receiver amount)
       (with-capability (TRANSFER id sender receiver amount)
-        (enforce-transfer-policy id sender receiver amount)
         (let
           (
             (sender (debit id sender amount))
@@ -410,15 +410,15 @@
             , "id" : id
             , "account" : account
             })
-          (emit-event (ACCOUNT_GUARD id account guard))
-        ]
-        (update ledger (key id account)
-          { "balance" : new-bal
-          }))
+          (emit-event (ACCOUNT_GUARD id account guard))]
+        [ (update ledger (key id account)
+           { "balance" : new-bal }
+          )
+         ]
+        )
       {'account: account, 'previous: old-bal, 'current: new-bal}
       ))
     )
-
 
   (defun credit-account:object{receiver-balance-change}
     ( id:string
@@ -458,7 +458,8 @@
       receiver-guard:guard
       target-chain:string
       amount:decimal )
-    (step (format "{}" [(enforce false "cross chain not supported")]) false))
+    (step (format "{}" [(enforce false "cross chain not supported")]) false)
+  )
 
   ;;
   ;; ACCESSORS
@@ -470,7 +471,8 @@
   )
 
   (defun get-uri:string (id:string)
-    (at 'uri (read tokens id)))
+    (at 'uri (read tokens id))
+  )
 
   ;;
   ;; sale
@@ -498,7 +500,7 @@
   (defcap WITHDRAW:bool
     (id:string seller:string amount:decimal timeout:time sale-id:string)
     @doc "Withdraws offer SALE from SELLER of AMOUNT of token ID after timeout."
-    @event
+    @managed
     (enforce (not (sale-active timeout)) "WITHDRAW: still active")
     (compose-capability (LEDGER))
     (compose-capability (DEBIT id (sale-account)))
@@ -526,16 +528,25 @@
       timeout:time
     )
     (step-with-rollback
+      ;; Step 0: offer
       (with-capability (SALE id seller amount timeout (pact-id))
+        (let ((token (get-token-info id)))
+          (marmalade.policy-manager.enforce-offer token seller amount (pact-id)))
         (offer id seller amount))
+      ;;Step 0, rollback: withdraw
       (with-capability (WITHDRAW id seller amount timeout (pact-id))
-        (withdraw id seller amount)))
+        (let ((token (get-token-info id)))
+          (marmalade.policy-manager.enforce-withdraw token seller amount (pact-id))
+          (withdraw id seller amount)))
+    )
     (step
+      ;; Step 1: buy
       (let ( (buyer:string (read-msg "buyer"))
-             (buyer-guard:guard (read-msg "buyer-guard")) )
-        (with-capability (BUY id seller buyer amount timeout (pact-id))
-          (buy id seller buyer buyer-guard amount (pact-id))))))
-
+             (buyer-guard:guard (read-msg "buyer-guard"))
+             (token (get-token-info id)) )
+         (marmalade.policy-manager.enforce-buy token seller buyer buyer-guard amount sale-id))
+         (with-capability (BUY id seller buyer amount timeout (pact-id))
+          (buy id seller buyer buyer-guard amount (pact-id)))))
 
   (defun offer:bool
     ( id:string
@@ -543,9 +554,12 @@
       amount:decimal
     )
     @doc "Initiate sale with by SELLER by escrowing AMOUNT of TOKEN until TIMEOUT."
-    (require-capability (SALE_PRIVATE (pact-id)))
-    (let ((token (get-token-info id)))
-      (marmalade.policy-manager.enforce-offer token seller amount (pact-id)))
+    @model
+      [ (property (!= id ""))
+        (property (!= seller ""))
+        (property (>= amount 0.0))
+      ]
+    (require-capability (OFFER (pact-id)))
     (let
       (
         (sender (debit id seller amount))
@@ -561,9 +575,12 @@
       amount:decimal
     )
     @doc "Withdraw offer by SELLER of AMOUNT of TOKEN"
-    (require-capability (SALE_PRIVATE (pact-id)))
-    (let ((token (get-token-info id)))
-      (marmalade.policy-manager.enforce-withdraw token seller amount (pact-id)))
+    @model
+      [ (property (!= id ""))
+        (property (!= seller ""))
+        (property (>= amount 0.0))
+      ]
+    (require-capability (WITHDRAW (pact-id)))
     (let
       (
         (sender (debit id (sale-account) amount))
@@ -572,7 +589,6 @@
       (emit-event (TRANSFER id (sale-account) seller amount))
       (emit-event (RECONCILE id amount sender receiver)))
   )
-
 
   (defun buy:bool
     ( id:string
@@ -583,21 +599,25 @@
       sale-id:string
     )
     @doc "Complete sale with transfer."
-    (require-capability (SALE_PRIVATE (pact-id)))
-    (let ((token (get-token-info id)))
-      (marmalade.policy-manager.enforce-buy token seller buyer buyer-guard amount sale-id))
+    @model
+      [ (property (!= id ""))
+        (property (!= seller ""))
+        (property (!= buyer ""))
+        (property (>= amount 0.0))
+      ]
+    (require-capability (BUY (pact-id)))
     (let
       (
         (sender (debit id (sale-account) amount))
         (receiver (credit id buyer buyer-guard amount))
       )
       (emit-event (TRANSFER id (sale-account) buyer amount))
-      (emit-event (RECONCILE id amount sender receiver)))
+      (emit-event (RECONCILE id amount sender receiver))
       true
-  )
+  ))
 
   (defun sale-active:bool (timeout:time)
-    @doc "Sale is active until TIMEOUT block height."
+    @doc "Sale is active until TIMEOUT time."
     (< (at 'block-time (chain-data)) timeout)
   )
 

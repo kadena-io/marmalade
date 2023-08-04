@@ -276,17 +276,17 @@
 
   (defun exists-quote:bool (sale-id:string)
     @doc "Looks up quote table for quote"
-    (= (take 6 (typeof (try false (get-quote-info sale-id)))) "object")
+    (!= "" (try "" (at 'token-id (get-quote-info sale-id))))
   )
 
   (defun exists-msg-decimal:bool (msg:string)
     @doc "Checks env-data field and see if the msg is a decimal"
-    (= (typeof  (try false (read-decimal msg))) "decimal")
+    (!= -1.0 (try -1.0 (read-decimal msg)))
   )
 
   (defun exists-msg-object:bool (msg:string)
     @doc "Checks env-data field and see if the msg is a object"
-    (= (take 6 (typeof  (try false  (read-msg msg)))) "object")
+    (= (take 6 (typeof  (try "" (at 'token-id (read-msg msg))))) "object")
   )
 
  (defun token-init (token:object{token-info} policy:module{kip.token-policy-v2})

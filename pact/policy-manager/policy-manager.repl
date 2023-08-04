@@ -52,6 +52,8 @@
   (load "../test/abc.pact")
 (commit-tx)
 
+(typecheck "marmalade.policy-manager")
+(typecheck "marmalade.ledger")
 (begin-tx "load concrete-polices")
   (load "../concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact")
   (load "../concrete-policies/royalty-policy/royalty-policy-v1.pact")
@@ -83,7 +85,7 @@
 
 (env-data {
   "default-token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } )
- ,"reserved-token-id": (create-token-id { 'uri: "marmalade-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } )
+ ,"reserved-token-id": (create-token-id { 'uri: "marmalade:uri", 'precision: 0, 'policies: (create-policies DEFAULT) } )
  ,"empty-token-id": (create-token-id { 'uri: "test-uri-1", 'precision: 0, 'policies: (create-policies EMPTY) } )
  ,"wrong-token-protocol-id": "t:wrong"
  ,"wrong-token-id": "wrong"
@@ -99,8 +101,8 @@
    }])
 
 (expect-failure "create a token with uri starting with marmalade fails"
-  "Reserved protocol: marmalade"
-  (create-token (read-msg 'reserved-token-id) 0 "marmalade-uri" (create-policies DEFAULT) ))
+  "Reserved protocol: marmalade:"
+  (create-token (read-msg 'reserved-token-id) 0 "marmalade:uri" (create-policies DEFAULT) ))
 
 (expect-failure "create a token with unmatching token-id"
   "Token protocol violation"

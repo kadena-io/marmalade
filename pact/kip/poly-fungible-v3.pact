@@ -133,49 +133,6 @@
       ]
   )
 
-  (defun offer:bool
-    ( id:string
-      seller:string
-      amount:decimal
-    )
-    @doc "Initiate sale with by SELLER by escrowing AMOUNT of TOKEN until TIMEOUT."
-    @model
-      [ (property (!= id ""))
-        (property (!= seller ""))
-        (property (>= amount 0.0))
-      ]
-  )
-
-  (defun withdraw:bool
-    ( id:string
-      seller:string
-      amount:decimal
-    )
-    @doc "Withdraw offer by SELLER of AMOUNT of TOKEN"
-    @model
-      [ (property (!= id ""))
-        (property (!= seller ""))
-        (property (>= amount 0.0))
-      ]
-  )
-
-  (defun buy:bool
-    ( id:string
-      seller:string
-      buyer:string
-      buyer-guard:guard
-      amount:decimal
-      sale-id:string
-    )
-    @doc "Complete sale with transfer."
-    @model
-      [ (property (!= id ""))
-        (property (!= seller ""))
-        (property (!= buyer ""))
-        (property (>= amount 0.0))
-      ]
-  )
-
   (defun create-token:bool
     ( id:string
       precision:integer
@@ -297,24 +254,6 @@
     (id:string seller:string amount:decimal timeout:time sale-id:string)
     @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
     @event
-  )
-
-  (defcap OFFER:bool
-    (id:string seller:string amount:decimal timeout:time)
-    @doc "Managed cap for SELLER offering AMOUNT of token ID until TIMEOUT."
-    @managed
-  )
-
-  (defcap WITHDRAW:bool
-    (id:string seller:string amount:decimal timeout:time sale-id:string)
-    @doc "Withdraws offer SALE from SELLER of AMOUNT of token ID after TIMEOUT."
-    @event
-  )
-
-  (defcap BUY:bool
-    (id:string seller:string buyer:string amount:decimal timeout:time sale-id:string)
-    @doc "Completes sale OFFER to BUYER."
-    @managed
   )
 
   (defpact sale:bool

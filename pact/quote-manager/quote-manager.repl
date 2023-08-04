@@ -1,5 +1,6 @@
 ;;load policy manager, ledger
 (load "../policy-manager/policy-manager.repl")
+(typecheck "marmalade.quote-manager")
 
 (begin-tx "Accept bid and payout royalties")
   (use marmalade.ledger)

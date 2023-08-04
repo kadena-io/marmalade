@@ -55,16 +55,15 @@
       )
       (enforce (>= collection-size 0) "Collection size must be positive")
       (let ((collection-id:string (create-collection-id collection-name) ))
-        (with-capability (COLLECTION collection-id collection-name collection-size)
-          (insert collections collection-id {
-           "id": collection-id
-           ,"name": collection-name
-           ,"max-size": collection-size
-           ,"size": 0
-           ,"operator-guard": operator-guard
-          })
-        )
+        (insert collections collection-id {
+         "id": collection-id
+         ,"name": collection-name
+         ,"max-size": collection-size
+         ,"size": 0
+         ,"operator-guard": operator-guard
+        })
       )
+      (emit-event (COLLECTION collection-id collection-name collection-size))
       true
   )
 
@@ -98,7 +97,6 @@
       guard:guard
       amount:decimal
     )
-    (enforce-ledger)
     true
   )
 
@@ -108,7 +106,7 @@
       account:string
       amount:decimal
     )
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-offer:bool
@@ -117,7 +115,7 @@
       amount:decimal
       sale-id:string
     )
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-buy:bool
@@ -128,7 +126,7 @@
       amount:decimal
       sale-id:string
     )
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-withdraw:bool
@@ -137,7 +135,7 @@
       amount:decimal
       sale-id:string
     )
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-transfer:bool
@@ -147,12 +145,12 @@
       receiver:string
       amount:decimal
     )
-    (enforce-ledger)
+    true
   )
 
   ;;UTILITY FUNCTIONS
 
-  (defun create-collection-id (collection-name:string)
+  (defun create-collection-id:string (collection-name:string)
     (format "collection:{}" [(hash collection-name)])
   )
 

@@ -29,6 +29,7 @@
   (deftable tokens:{token})
 
   (defcap OPERATOR (collection-id:string)
+    @doc "Capability to grant creation of a collection's token"
     (with-read collections collection-id {
       'operator-guard:= operator-guard:guard
       }

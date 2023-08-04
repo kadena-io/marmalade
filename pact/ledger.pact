@@ -514,9 +514,9 @@
     @managed
     (enforce (sale-active timeout) "BUY: expired")
     (compose-capability (LEDGER))
-    (compose-capability (SALE_PRIVATE sale-id))
     (compose-capability (DEBIT id (sale-account)))
     (compose-capability (CREDIT id buyer))
+    (compose-capability (SALE_PRIVATE sale-id))
   )
 
   (defcap SALE_PRIVATE:bool (sale-id:string) true)

@@ -77,7 +77,7 @@
       guard:guard
       amount:decimal
     )
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-burn:bool
@@ -85,7 +85,6 @@
       account:string
       amount:decimal
     )
-    (enforce-ledger)
     (enforce false "Burn prohibited")
   )
 
@@ -96,7 +95,7 @@
       sale-id:string
     )
     @doc "Capture quote spec for SALE of TOKEN from message"
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-buy:bool
@@ -137,7 +136,6 @@
       guard:guard
       receiver:string
       amount:decimal )
-    (enforce-ledger)
     (enforce false "Transfer prohibited")
   )
 
@@ -146,7 +144,7 @@
       seller:string
       amount:decimal
       sale-id:string )
-    (enforce-ledger)
+    true
   )
 )
 

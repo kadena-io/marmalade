@@ -15,7 +15,7 @@
   { 'marmalade-admin: ["marmalade-admin"]
   , 'marmalade-ns-user: ["marmalade-admin"]
   , 'marmalade-ns-admin: ["marmalade-admin"]
-  , 'ns: "marmalade-v2"
+  , 'ns: "kip"
   , 'upgrade: false })
 
   (load "../kip/manifest.pact")

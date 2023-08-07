@@ -1,4 +1,4 @@
-(namespace (read-msg 'ns))
+(namespace (read-string 'ns))
 
 (module util-v1 GOVERNANCE
   (use kip.token-policy-v2)

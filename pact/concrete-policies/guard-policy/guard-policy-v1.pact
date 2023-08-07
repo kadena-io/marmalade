@@ -1,5 +1,5 @@
 
-(namespace (read-msg 'ns))
+(namespace (read-string 'ns))
 
 (module guard-policy-v1 GOVERNANCE
 

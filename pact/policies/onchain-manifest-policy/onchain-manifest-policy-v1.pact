@@ -1,4 +1,4 @@
-(namespace (read-msg 'ns))
+(namespace (read-string 'ns))
 
 (module onchain-manifest-policy-v1 GOVERNANCE
 

@@ -95,8 +95,7 @@
   )
 
   (defun enforce-ledger:bool ()
-    (enforce-guard (marmalade-v2.ledger.ledger-guard))
-  )
+    (enforce-guard (ledger.ledger-guard)))
 
   (defun enforce-init:bool
     ( token:object{token-info}

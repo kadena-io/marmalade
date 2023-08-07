@@ -30,8 +30,7 @@
   )
 
   (defun enforce-ledger:bool ()
-     (enforce-guard (marmalade-v2.ledger.ledger-guard))
-  )
+    (enforce-guard (ledger.ledger-guard)))
 
   (defun get-manifest:object{manifest} (token-id:string)
     (with-read manifests token-id {

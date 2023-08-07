@@ -47,9 +47,7 @@
     true)
 
   (defun enforce-ledger:bool ()
-    (enforce-guard (marmalade-v2.ledger.ledger-guard))
-    true
-  )
+    (enforce-guard (ledger.ledger-guard)))
 
   (defun create-collection:bool
     ( collection-name:string

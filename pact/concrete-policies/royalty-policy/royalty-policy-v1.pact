@@ -9,9 +9,9 @@
   (defcap GOVERNANCE ()
     (enforce-keyset GOVERNANCE-KS))
 
-  (use marmalade-v2.policy-manager)
-  (use marmalade-v2.quote-manager)
-  (use marmalade-v2.quote-manager [quote-spec quote-schema])
+  (use policy-manager)
+  (use quote-manager)
+  (use quote-manager [quote-spec quote-schema])
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
 
@@ -43,8 +43,7 @@
   )
 
   (defun enforce-ledger:bool ()
-     (enforce-guard (marmalade-v2.ledger.ledger-guard))
-  )
+    (enforce-guard (ledger.ledger-guard)))
 
   (defun enforce-init:bool
     ( token:object{token-info}

@@ -8,8 +8,8 @@
     (enforce-keyset GOVERNANCE-KS))
 
   (use kip.token-policy-v2 [token-info])
-  (use marmalade-v2.quote-manager)
-  (use marmalade-v2.quote-manager [quote-spec quote-msg fungible-account])
+  (use quote-manager)
+  (use quote-manager [quote-spec quote-msg fungible-account])
 
   (defconst QUOTE-MSG-KEY "quote"
     @doc "Payload field for quote spec")

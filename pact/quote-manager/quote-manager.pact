@@ -120,14 +120,13 @@
   (defun update-quote-guards:bool (sale-id:string quote-guards:[guard])
     @doc "Updates quote-guards if signed by the seller guard"
     (with-capability (UPDATE_QUOTE_GUARD sale-id)
-      (with-read quotes {
+      (with-read quotes sale-id {
           "token-id":=token-id
          ,"seller-guard":= seller-guard
         }
-        (update quotes {
+        (update quotes sale-id {
           "quote-guards": quote-guards
         })
-        true
     (emit-event (QUOTE_GUARDS sale-id token-id seller-guard quote-guards))))
   )
 

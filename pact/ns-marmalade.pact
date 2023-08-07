@@ -6,6 +6,6 @@
   (keyset-ref-guard 'marmalade-admin )
 )
 (namespace (read-msg 'ns))
-(define-keyset "marmalade-v2.marmalade-admin")
-(enforce-keyset "marmalade-v2.marmalade-admin")
+(define-keyset  (+ (read-msg 'ns) ".marmalade-admin"))
+(enforce-keyset (+ (read-msg 'ns) ".marmalade-admin"))
 (enforce-keyset 'marmalade-admin)

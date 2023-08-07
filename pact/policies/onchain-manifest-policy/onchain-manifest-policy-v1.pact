@@ -8,8 +8,10 @@
   (use kip.token-manifest)
   (use kip.token-policy-v2 [token-info])
 
+  (defconst GOVERNANCE-KS:string (+ (read-string 'ns) ".marmalade-admin"))
+
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+    (enforce-keyset GOVERNANCE-KS))
 
   (defschema manifest-spec
     manifest:object{manifest}

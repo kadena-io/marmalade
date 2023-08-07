@@ -1,0 +1,9 @@
+network: testnet04
+chain: 1
+#marmalade_namespace: marmalade-v2
+#kip_namespace: kip
+marmalade_namespace: n_f65129665a8e0ccbba2e068797085cd85bb82aeb
+kip_namespace: n_f65129665a8e0ccbba2e068797085cd85bb82aeb
+is_upgrade: false
+sender: k:bf98930d4f1fcb8f3c4a5df1776dc26f8464c65d5486259fcc17baa861a866a6
+sender_key: bf98930d4f1fcb8f3c4a5df1776dc26f8464c65d5486259fcc17baa861a866a6

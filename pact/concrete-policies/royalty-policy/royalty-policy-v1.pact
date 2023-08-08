@@ -121,10 +121,10 @@
         (enforce (= (at 'token-id quote) (at 'id token)) "incorrect sale token")
         (if
           (> royalty-payout 0.0)
-          [ (install-capability (fungible::TRANSFER escrow-account creator royalty-payout))
+          (let ((_ ""))
+            (install-capability (fungible::TRANSFER escrow-account creator royalty-payout))
             (emit-event (ROYALTY sale-id (at 'id token) royalty-payout creator))
-            (fungible::transfer escrow-account creator royalty-payout)
-          ]
+            (fungible::transfer escrow-account creator royalty-payout))
           "No royalty"
           )))
         true)

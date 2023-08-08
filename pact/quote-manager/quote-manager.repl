@@ -120,12 +120,12 @@
     { 'key: 'bidder
     ,'caps: [
         (marmalade-v2.ledger.BUY (read-msg 'token-id) "k:account" "k:bidder"  1.0 (time  "2023-07-22T11:26:35Z") (read-msg 'sale-id))
-        (marmalade-v2.abc.TRANSFER "k:bidder" "c:M6m2sH9QPTyjaNUsJH4ONNcOMqf7hs-sHeLKBtrZ7mw" 20.0)
+        (marmalade-v2.abc.TRANSFER "k:bidder" "c:yk0ICQ5W7xvtcDUaXSOyBYD4nMKhm-GXdVxY1mC0PQs" 20.0)
       ]
     },
     { 'key: 'market
     ,'caps: [
-      (marmalade-v2.quote-manager.UPDATE_QUOTE (read-msg 'sale-id))
+      (marmalade-v2.quote-manager.UPDATE_QUOTE_PRICE (read-msg 'sale-id))
       ]
     }
     ])

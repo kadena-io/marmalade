@@ -248,6 +248,7 @@
            (sale-price:decimal (floor (* price amount) (fungible::precision)))
       )
        ;; transfer fungible to escrow account
+       (install-capability (fungible::TRANSFER buyer-fungible-account-name (at 'account escrow-account) sale-price))
        (fungible::transfer-create buyer-fungible-account-name (at 'account escrow-account) (at 'guard escrow-account) sale-price)
 
        (with-capability (ESCROW sale-id)

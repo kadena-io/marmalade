@@ -274,12 +274,14 @@
 
   (defun exists-msg-decimal:bool (msg:string)
     @doc "Checks env-data field and see if the msg is a decimal"
-    (try false (let ((d (read-decimal msg))) true))
+    (let  ((d:decimal (try -1.0 (read-decimal msg))))
+      (!= d -1.0))
   )
 
   (defun exists-msg-quote:bool (msg:string)
     @doc "Checks env-data field and see if the msg is a object"
-    (try false (let ((o (read-msg msg))) true))
+    (let ((o:object (try {} (read-msg msg))))
+      (!= o {}))
   )
 
  (defun token-init (token:object{token-info} policy:module{kip.token-policy-v2})

@@ -400,20 +400,14 @@
                (= old-bal -1.0))
              (old-bal:decimal (if is-new 0.0 old-bal))
              (new-bal:decimal  (+ old-bal amount)))
-      (if is-new
-        [ (insert ledger (key id account)
-            { "balance" : new-bal
-            , "guard"   : guard
-            , "id" : id
-            , "account" : account
-            })
-          (emit-event (ACCOUNT_GUARD id account guard))]
-        [ (update ledger (key id account)
-           { "balance" : new-bal }
-          )
-         ]
-        )
-      {'account: account, 'previous: old-bal, 'current: new-bal}
+        (write ledger (key id account)
+           { "balance" : new-bal
+           , "guard"   : guard
+           , "id" : id
+           , "account" : account
+           })
+        (if is-new (emit-event (ACCOUNT_GUARD id account guard)) true)
+        {'account: account, 'previous: old-bal, 'current: new-bal}
       ))
     )
 

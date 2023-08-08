@@ -46,10 +46,12 @@ kda send tx.json
 The deployment order must be respected to fulfill all modules dependencies.
 
 * In the KIP Namespace
+  
   1. token-policy-v2
   2. poly-fungible-v3
 
 * In the marmalade Namespace
+  
   3. quote-manager
   4. policy-manager
   5. ledger

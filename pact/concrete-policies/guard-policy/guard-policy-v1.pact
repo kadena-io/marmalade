@@ -4,7 +4,7 @@
 (module guard-policy-v1 GOVERNANCE
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+    (enforce-guard "marmalade-v2.marmalade-admin"))
 
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
@@ -29,6 +29,22 @@
   (defcap GUARDS:object{guards} (guards:object{guards})
     @event
     guards
+  )
+
+  (defcap MINT (token-id:string account:string amount:decimal)
+    (enforce-guard (get-mint-guard token-id))
+  )
+
+  (defcap BURN (token-id:string account:string amount:decimal)
+    (enforce-guard (get-burn-guard token-id))
+  )
+
+  (defcap SALE (token-id:string seller:string amount:decimal)
+    (enforce-guard (get-sale-guard token-id))
+  )
+
+  (defcap TRANSFER (token-id:string sender:string receiver:string amount:decimal)
+    (enforce-guard (get-transfer-guard token-id))
   )
 
   (defun success:bool ()
@@ -77,7 +93,7 @@
   )
 
   (defun enforce-ledger:bool ()
-    (enforce-guard (marmalade.ledger.ledger-guard))
+    (enforce-guard (marmalade-v2.ledger.ledger-guard))
   )
 
   (defun enforce-init:bool
@@ -102,7 +118,9 @@
       amount:decimal
     )
     (enforce-ledger)
-    (enforce-guard (at MINT_GUARD (get-guards token)))
+    (with-capability (MINT (at 'id token) account amount)
+      true
+    )
   )
 
   (defun enforce-burn:bool
@@ -111,11 +129,9 @@
       amount:decimal
     )
     (enforce-ledger)
-    (enforce-guard (at BURN_GUARD (get-guards token)))
-  )
-
-  (defcap CREATE_MINT ()
-    true
+    (with-capability (BURN (at 'id token) account amount)
+      true
+    )
   )
 
   (defun enforce-offer:bool
@@ -125,7 +141,9 @@
       sale-id:string )
     (enforce-ledger)
     (enforce-sale-pact sale-id)
-    (enforce-guard (at SALE_GUARD (get-guards token)))
+    (with-capability (SALE (at 'id token) seller amount)
+      true
+    )
   )
 
   (defun enforce-buy:bool
@@ -137,7 +155,9 @@
       sale-id:string )
     (enforce-ledger)
     (enforce-sale-pact sale-id)
-    (enforce-guard (at SALE_GUARD (get-guards token)))
+    (with-capability (SALE (at 'id token) seller amount)
+      true
+    )
   )
 
   (defun enforce-withdraw:bool
@@ -147,12 +167,9 @@
       sale-id:string )
     (enforce-ledger)
     (enforce-sale-pact sale-id)
-    (enforce-guard (at SALE_GUARD (get-guards token)))
-  )
-
-  (defun enforce-sale-pact:bool (sale-id:string)
-    "Enforces that SALE is id for currently executing pact"
-    (enforce (= sale-id (pact-id)) "Invalid pact/sale id")
+    (with-capability (SALE (at 'id token) seller amount)
+      true
+    )
   )
 
   (defun enforce-transfer:bool
@@ -162,10 +179,19 @@
       receiver:string
       amount:decimal )
     (enforce-ledger)
-    (enforce-guard (at TRANSFER_GUARD (get-guards token)))
+    (with-capability (TRANSFER (at 'id token) sender receiver amount)
+      true
+    )
   )
+
+  (defun enforce-sale-pact:bool (sale-id:string)
+    "Enforces that SALE is id for currently executing pact"
+    (enforce (= sale-id (pact-id)) "Invalid pact/sale id")
+  )
+
 )
 
-(if (read-msg 'upgrade)
+(if (read-msg 'upgrade )
   ["upgrade complete"]
-  [ (create-table policy-guards) ])
+  [ (create-table policy-guards) ]
+  )

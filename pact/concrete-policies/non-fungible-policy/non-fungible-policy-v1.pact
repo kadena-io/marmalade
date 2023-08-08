@@ -2,22 +2,23 @@
 
 (module non-fungible-policy-v1 GOVERNANCE
 
-  @doc "Concrete policy for issuing an nft with a fixed supply of 1"
+  @doc "Concrete policy for issuing an nft with a fixed supply of 1 and precision of 0"
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+    (enforce-guard "marmalade-v2.marmalade-admin"))
 
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
 
   (defun enforce-ledger:bool ()
-     (enforce-guard (marmalade.ledger.ledger-guard))
+  (enforce-guard (marmalade-v2.ledger.ledger-guard))
   )
 
   (defun enforce-init:bool
     ( token:object{token-info}
     )
     (enforce-ledger)
+    (enforce (= 0 (at 'precision token)) "Precision must be 0")
     true
   )
 
@@ -37,7 +38,6 @@
       account:string
       amount:decimal
     )
-    (enforce-ledger)
     (enforce false "Burn prohibited")
   )
 
@@ -48,7 +48,7 @@
       sale-id:string
     )
     @doc "Capture quote spec for SALE of TOKEN from message"
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-buy:bool
@@ -58,7 +58,7 @@
       buyer-guard:guard
       amount:decimal
       sale-id:string )
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-transfer:bool
@@ -67,7 +67,7 @@
       guard:guard
       receiver:string
       amount:decimal )
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-withdraw:bool

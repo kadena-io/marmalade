@@ -6,7 +6,7 @@
   @doc "Collection token policy."
 
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin)))
+    (enforce-guard "marmalade-v2.marmalade-admin"))
 
   (implements kip.token-policy-v2)
 
@@ -29,6 +29,7 @@
   (deftable tokens:{token})
 
   (defcap OPERATOR (collection-id:string)
+    @doc "Capability to grant creation of a collection's token"
     (with-read collections collection-id {
       'operator-guard:= operator-guard:guard
       }
@@ -44,7 +45,7 @@
     true)
 
   (defun enforce-ledger:bool ()
-    (enforce-guard (marmalade.ledger.ledger-guard))
+    (enforce-guard (marmalade-v2.ledger.ledger-guard))
     true
   )
 
@@ -55,15 +56,14 @@
       )
       (enforce (>= collection-size 0) "Collection size must be positive")
       (let ((collection-id:string (create-collection-id collection-name) ))
-        (with-capability (COLLECTION collection-id collection-name collection-size)
-          (insert collections collection-id {
-           "id": collection-id
-           ,"name": collection-name
-           ,"max-size": collection-size
-           ,"size": 0
-           ,"operator-guard": operator-guard
-          })
-        )
+        (insert collections collection-id {
+         "id": collection-id
+         ,"name": collection-name
+         ,"max-size": collection-size
+         ,"size": 0
+         ,"operator-guard": operator-guard
+        })
+        (emit-event (COLLECTION collection-id collection-name collection-size))
       )
       true
   )
@@ -98,7 +98,6 @@
       guard:guard
       amount:decimal
     )
-    (enforce-ledger)
     true
   )
 
@@ -108,7 +107,7 @@
       account:string
       amount:decimal
     )
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-offer:bool
@@ -117,7 +116,7 @@
       amount:decimal
       sale-id:string
     )
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-buy:bool
@@ -128,7 +127,7 @@
       amount:decimal
       sale-id:string
     )
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-withdraw:bool
@@ -137,7 +136,7 @@
       amount:decimal
       sale-id:string
     )
-    (enforce-ledger)
+    true
   )
 
   (defun enforce-transfer:bool
@@ -147,12 +146,12 @@
       receiver:string
       amount:decimal
     )
-    (enforce-ledger)
+    true
   )
 
   ;;UTILITY FUNCTIONS
 
-  (defun create-collection-id (collection-name:string)
+  (defun create-collection-id:string (collection-name:string)
     (format "collection:{}" [(hash collection-name)])
   )
 

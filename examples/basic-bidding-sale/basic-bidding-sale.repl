@@ -12,5 +12,203 @@
     , 'upgrade: false })
 
   (load "basic-bidding-sale.pact")
+(commit-tx)
 
+(begin-tx "Create token")
+  (use marmalade.ledger)
+  (use marmalade.policy-manager)
+  (env-data {
+    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
+    ,"account": "k:account"
+  })
+
+  (expect "create a default token without any policies"
+    true
+    (create-token (read-msg 'token-id) 0 "test-uri" [] ))
+
+  (env-sigs [
+    { 'key: 'random
+    ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id ) "k:account" 2.0)]
+    }])
+
+  (env-data {
+    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
+  ,"account": "k:account"
+  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
+  })
+
+  (expect "mint 2.0 amount"
+    true
+    (mint (read-msg 'token-id )  (read-msg 'account ) (read-keyset 'account-guard ) 2.0))
+
+  (expect "total supply of the token is 2.0"
+    2.0
+    (total-supply (read-msg 'token-id )))
+
+(commit-tx)
+
+(begin-tx "Offer for sale fails")
+  (env-hash (hash "offer-0"))
+  (use marmalade.ledger)
+
+  (env-data {
+    "seller-guard": {"keys": ["account"], "pred": "keys-all"}
+  })
+
+  (env-data {
+    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
+    ,"quote": {
+      "spec": {
+        "seller-fungible-account": {
+            "account": "k:account"
+          ,"guard": {"keys": ["account"], "pred": "keys-all"}
+          }
+        ,"fungible": marmalade.abc
+        ,"price": 200.0
+        ,"amount": 1.0
+      }
+    ,"seller-guard": {"keys": ["account"], "pred": "keys-all"}
+    ,"quote-guards": [{"keys": ["account"], "pred": "keys-all"}]
+    }
+  })
+
+  (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
+  (env-sigs [
+    { 'key: 'account-wrong
+    ,'caps: [
+    (marmalade.ledger.OFFER (read-msg 'token-id ) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
+    }])
+
+  (expect-failure "offer fails because of keyset failure"
+    "Keyset failure (keys-all): [account]"
+    (sale (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z")))
+(rollback-tx)
+
+(begin-tx "Offer for sale succeeds")
+
+  (env-hash (hash "offer-1"))
+  (use marmalade.ledger)
+
+  (env-data {
+    "seller-guard": {"keys": ["account"], "pred": "keys-all"}
+  })
+  (marmalade.abc.create-account "k:account" (read-keyset 'seller-guard))
+  (marmalade.abc.fund "k:account" 2.0)
+
+  (env-data {
+    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
+    ,"quote": {
+      "spec": {
+        "seller-fungible-account": {
+            "account": "k:account"
+          ,"guard": {"keys": ["account"], "pred": "keys-all"}
+          }
+        ,"fungible": marmalade.abc
+        ,"price": 200.0
+        ,"amount": 1.0
+      }
+    ,"seller-guard": {"keys": ["account"], "pred": "keys-all"}
+    ,"quote-guards": [{"keys": ["account"], "pred": "keys-all"}]
+    }
+  })
+
+  (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
+  (env-sigs [
+    { 'key: 'account
+    ,'caps: [
+    (marmalade.ledger.OFFER (read-msg 'token-id ) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
+    }])
+
+  (expect "Start offer succeeds"
+    true
+    (sale (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z")))
+
+  ;  (expect "events"
+  ;    (format "{}" [[
+  ;      ]])
+  ;    (format "{}" [(map (remove "module-hash")  (env-events true))])
+  ;  )
+(commit-tx)
+
+(begin-tx "Place bid")
+  (env-hash (hash "offer-bidding-0"))
+  (use marmalade.ledger)
+  (use free.basic-sale)
+
+  (env-data {
+    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
+    ,"sale-id": "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk"
+    ,"bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
+  })
+
+  (marmalade.abc.create-account "k:bidder" (read-keyset 'bidder-guard))
+  (marmalade.abc.fund "k:bidder" 250.0)
+
+  (env-sigs
+  [{'key:'bidder
+    ,'caps: [
+       (marmalade.abc.TRANSFER "k:bidder" "c:pCkKuvi6lht3nnqI4Hdwz2yDbE60XugQrsHXbTveZI0" 150.0)
+    ]}])
+
+  (expect "Place Bid succeeds"
+    true
+    (place-bid (read-msg 'token-id) "k:bidder" (read-keyset 'bidder-guard) 1.0 150.0 (read-msg 'sale-id))
+  )
+
+  (expect "Buyer account has 100.0 tokens left"
+    100.0
+    (marmalade.abc.get-balance "k:bidder"))
+(commit-tx)
+
+(begin-tx "Withdraw bid")
+  (env-hash (hash "withdraw-bidding-0"))
+  (use marmalade.ledger)
+  (use free.basic-sale)
+
+  (env-data {
+    "bid-id": (get-bid-id "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk" "k:bidder")
+    ,"sale-id": "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk"
+    ,"bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
+  })
+
+  (env-sigs
+  [{'key:'bidder
+    ,'caps: [
+      (BUYER (read-msg 'bid-id))
+    ]}])
+
+  (expect "Withdraw Bid succeeds"
+    true
+    (withdraw-bid (read-msg 'bid-id) (read-msg 'sale-id))
+  )
+
+  (expect "Buyer account has 250.0 tokens"
+    250.0
+    (marmalade.abc.get-balance "k:bidder"))
+(rollback-tx)
+
+(begin-tx "Allow marketplace to update quote (put token up for sale on marketplace)")
+  (env-hash (hash "update-quote-guards-0"))
+  ;  (use marmalade.ledger)
+  (use marmalade.quote-manager)
+  (use free.basic-sale)
+
+  (env-data {
+    "market-guard": {"keys": ["market"], "pred": "keys-all"}
+    ,"seller-guard": {"keys": ["account"], "pred": "keys-all"}
+    ,"sale-id": "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk"
+  })
+
+  (marmalade.abc.create-account "k:market" (read-keyset 'market-guard))
+
+  (env-sigs
+  [{'key:'account
+    ,'caps: [
+      (UPDATE_QUOTE_GUARD (read-msg 'sale-id))
+    ]}])
+
+  (expect "Updating quote guards succeeds"
+    true
+    (update-quote-guards (read-msg "sale-id") [(read-msg "market-guard")])
+  )
 (commit-tx)

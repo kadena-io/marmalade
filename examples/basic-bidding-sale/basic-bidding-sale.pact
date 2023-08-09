@@ -88,6 +88,13 @@
     (format "{}-{}" [sale-id buyer])
   )
 
+  ; ledger.sale has to have happened before this can be called
+  (defun offer-for-auction:bool (sale-id:string)
+    (with-capability (SELLER sale-id)
+      (marmalade.quote-manager.add-quote-guard sale-id (create-capability-guard (BID_PRIVATE bid-id)))
+    )
+  )
+
   (defun place-bid:bool
     ( token-id:string
       buyer:string
@@ -182,10 +189,9 @@
         ; Set bid status to accepted
         (update bids bid-id { 'status: BID-STATUS-ACCEPTED })
 
-        ; Transfer amount to policy-manager's escrow account
         (with-capability (BID_PRIVATE bid-id)
-          (install-capability (fungible::TRANSFER (bid-escrow-account bid-id) (at 'account escrow-account) sale-price))
-          (fungible::transfer-create (bid-escrow-account bid-id) (at 'account escrow-account) (at 'guard escrow-account) sale-price)
+          ; Set quote in qoute-manager and transfer funds
+          (marmalade.quote-manager.reserve-sale sale-id price buyer buyer-guard (bid-escrow-account bid-id))
         )
         (emit-event (BID-ACCEPTED bid-id sale-id token-id amount price buyer buyer-guard))
       )

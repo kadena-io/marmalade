@@ -58,6 +58,7 @@
     spec:object{quote-spec}
     seller-guard:guard
     quote-guards:[guard]
+    reserved:string
   )
 
   (defschema fungible-account
@@ -78,6 +79,7 @@
   (defcap QUOTE_PRICE_UPDATE:bool
     ( sale-id:string
       price:decimal
+      buyer:string
     )
     @event
     true
@@ -107,7 +109,7 @@
 
   (defcap UPDATE_QUOTE_GUARD:bool (sale-id:string)
     @doc "Enforces seller-guard on update-quote-guard"
-    (with-read quotes {
+    (with-read quotes sale-id {
       "seller-guard":= guard
       }
       (enforce-guard guard)
@@ -116,18 +118,36 @@
   )
 
 ;; Quote storage functions
-
-  (defun update-quote-guards:bool (sale-id:string quote-guards:[guard])
-    @doc "Updates quote-guards if signed by the seller guard"
+  (defun remove-quote-guard:bool (sale-id:string guard:guard)
+    @doc "Removes a quote-guard if signed by the seller guard"
     (with-capability (UPDATE_QUOTE_GUARD sale-id)
       (with-read quotes sale-id {
           "token-id":=token-id
          ,"seller-guard":= seller-guard
+         ,"quote-guards":= quote-guards
         }
-        (update quotes sale-id {
-          "quote-guards": quote-guards
-        })
-    (emit-event (QUOTE_GUARDS sale-id token-id seller-guard quote-guards))))
+
+        (let ((updated-guards (filter (!= guard) quote-guards)))
+          (update quotes sale-id {
+            "quote-guards": updated-guards
+          })
+        (emit-event (QUOTE_GUARDS sale-id token-id seller-guard updated-guards)))))
+  )
+
+  (defun add-quote-guard:bool (sale-id:string guard:guard)
+    @doc "Adds a quote-guard if signed by the seller guard"
+    (with-capability (UPDATE_QUOTE_GUARD sale-id)
+      (with-read quotes sale-id {
+          "token-id":=token-id
+         ,"seller-guard":= seller-guard
+         ,"quote-guards":= quote-guards
+        }
+
+        (let ((updated-guards (+ quote-guards guard)))
+          (update quotes sale-id {
+            "quote-guards": updated-guards
+          })
+        (emit-event (QUOTE_GUARDS sale-id token-id seller-guard updated-guards)))))
   )
 
   (defun add-quote:bool (sale-id:string token-id:string quote-msg:object{quote-msg})
@@ -149,10 +169,9 @@
     )
   )
 
-  (defun update-quote-price:bool (sale-id:string price:decimal)
-    @doc "Updates quote price if update-quote-price exists in transaction data and is signed by quote-guards"
+  (defun update-quote-price:bool (sale-id:string price:decimal buyer:string)
+    @doc "Updates the quote price and sets the designated buyer"
     (enforce-policy-manager)
-    (enforce (> price 0.0) "price must be positive")
     (with-capability (UPDATE_QUOTE_PRICE sale-id)
       (with-read quotes sale-id {
           "spec":= quote-spec
@@ -168,10 +187,11 @@
               , "amount": amount
               , "price": price
               , "seller-fungible-account": fungible-account
+              , "reserved": buyer
               }
             }))
       )
-      (emit-event (QUOTE_PRICE_UPDATE sale-id price)))
+      (emit-event (QUOTE_PRICE_UPDATE sale-id price buyer)))
     true
   )
 
@@ -196,7 +216,7 @@
             (sale-price:decimal (* amount price)) )
       (validate-fungible-account fungible seller-fungible-account)
       (fungible::enforce-unit sale-price)
-      (enforce (< 0.0 price) "Offer price must be positive")
+      (enforce (>= price 0.0) "Offer price must be positive or zero")
       true)
   )
 )

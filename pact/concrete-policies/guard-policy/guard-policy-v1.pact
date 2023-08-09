@@ -18,10 +18,10 @@
 
   (deftable policy-guards:{guards})
 
-  (defconst MINT_GUARD:string "mint-guard")
-  (defconst BURN_GUARD:string "burn-guard")
-  (defconst SALE_GUARD:string "sale-guard")
-  (defconst TRANSFER_GUARD:string "transfer-guard")
+  (defconst MINT-GUARD-MSG-KEY:string "mint-guard")
+  (defconst BURN-GUARD-MSG-KEY:string "burn-guard")
+  (defconst SALE-GUARD-MSG-KEY:string "sale-guard")
+  (defconst TRANSFER-GUARD-MSG-KEY:string "transfer-guard")
 
   (defconst GUARD_SUCCESS:guard (create-user-guard (success)))
   (defconst GUARD_FAILURE:guard (create-user-guard (failure)))
@@ -101,10 +101,10 @@
     )
     (enforce-ledger)
     (let ((guards:object{guards}
-      { 'mint-guard: (try GUARD_SUCCESS (read-msg MINT_GUARD) ) ;; type error becomes successful guard
-      , 'burn-guard: (try GUARD_SUCCESS (read-msg BURN_GUARD) )
-      , 'sale-guard: (try GUARD_SUCCESS (read-msg SALE_GUARD) )
-      , 'transfer-guard: (try GUARD_SUCCESS (read-msg TRANSFER_GUARD) ) } ))
+      { 'mint-guard: (try GUARD_SUCCESS (read-msg MINT-GUARD-MSG-KEY) ) ;; type error becomes successful guard
+      , 'burn-guard: (try GUARD_SUCCESS (read-msg BURN-GUARD-MSG-KEY) )
+      , 'sale-guard: (try GUARD_SUCCESS (read-msg SALE-GUARD-MSG-KEY) )
+      , 'transfer-guard: (try GUARD_SUCCESS (read-msg TRANSFER-GUARD-MSG-KEY) ) } ))
     (insert policy-guards (at 'id token)
       guards)
     (emit-event (GUARDS guards)) )

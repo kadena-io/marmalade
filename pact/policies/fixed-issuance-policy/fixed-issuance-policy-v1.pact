@@ -10,9 +10,12 @@
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
 
+  (defconst FIXED-ISSUANCE-SPEC:string "fix_issuance_spec")
+
   (defschema supply-schema
     max-supply:decimal
     min-amount:decimal
+    precision:integer
   )
 
   (deftable supplies:{supply-schema})
@@ -31,15 +34,15 @@
     @doc ""
     (enforce-ledger)
     (let* (
-            (max-supply:decimal (read-decimal 'fip-max-supply ))
-            (min-amount:decimal (read-decimal 'fip-min-amount ))
+            (fixed-issuance-spec:object{supply-schema} (read-msg FIXED-ISSUANCE-SPEC))
             )
-    (enforce (>= min-amount 0.0) "Invalid min-amount")
-    (enforce (>= max-supply 0.0) "Invalid max-supply")
-    (insert supplies (at 'id token)
-      { 'max-supply: max-supply
-      , 'min-amount: min-amount })
-    true)
+      (enforce (>= (at 'min-amount fixed-issuance-spec) 0.0) "Invalid min-amount")
+      (enforce (>= (at 'max-supply fixed-issuance-spec) 0.0) "Invalid max-supply")
+      (enforce (= (at 'precision fixed-issuance-spec) (at 'precision token)) "Invalid Precision")
+      (insert supplies (at 'id token)
+        { 'max-supply: (at 'max-supply fixed-issuance-spec)
+        , 'min-amount: (at 'min-amount fixed-issuance-spec) }))
+    true
   )
 
   (defun enforce-mint:bool

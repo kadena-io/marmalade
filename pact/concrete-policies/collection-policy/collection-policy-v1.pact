@@ -28,6 +28,8 @@
   (deftable collections:{collection})
   (deftable tokens:{token})
 
+  (defconst COLLECTION-ID-MSG-KEY:string "collection_id")
+
   (defcap OPERATOR (collection-id:string)
     @doc "Capability to grant creation of a collection's token"
     (with-read collections collection-id {
@@ -69,9 +71,11 @@
   )
 
   (defun enforce-init:bool (token:object{token-info})
+    @doc "collection-id"
+
     (enforce-ledger)
     (let* ( (token-id:string  (at 'id token))
-            (collection-id:string (read-msg "collection-id")) )
+            (collection-id:string (read-msg COLLECTION-ID-MSG-KEY)) )
     ;;Enforce operator guard
     (with-capability (OPERATOR collection-id)
       (with-read collections collection-id {

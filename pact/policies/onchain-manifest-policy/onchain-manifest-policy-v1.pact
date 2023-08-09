@@ -11,6 +11,8 @@
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
+  (defconst MANIFEST-SPEC-MSG-KEY:string "manifest_spec")
+
   (defschema manifest-spec
     manifest:object{manifest}
     guard:guard
@@ -54,7 +56,7 @@
     ( token:object{token-info}
     )
     (enforce-ledger)
-    (let ( (manifest:object{manifest-spec} (read-msg 'manifest-spec )) )
+    (let ( (manifest:object{manifest-spec} (read-msg MANIFEST-SPEC-MSG-KEY )) )
       (enforce-verify-manifest (at 'manifest manifest))
       (insert manifests (at 'id token) manifest)
     )

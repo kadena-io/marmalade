@@ -9,13 +9,13 @@
   (use marmalade-v2.quote-manager)
   (use marmalade-v2.quote-manager [quote-spec quote-msg fungible-account])
 
-  (defconst QUOTE-MSG-KEY "quote"
+  (defconst QUOTE-MSG-KEY:string "quote"
     @doc "Payload field for quote spec")
 
-  (defconst UPDATE-QUOTE-PRICE-MSG-KEY "update_quote_price"
+  (defconst UPDATE-QUOTE-PRICE-MSG-KEY:string "update_quote_price"
     @doc "Payload field for quote spec")
 
-  (defconst BUYER-FUNGIBLE-ACCOUNT-MSG-KEY "buyer_fungible_account"
+  (defconst BUYER-FUNGIBLE-ACCOUNT-MSG-KEY:string "buyer_fungible_account"
     @doc "Payload field for buyer's fungible account")
 
   (defcap POLICY_MANAGER:bool ()

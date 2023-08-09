@@ -23,7 +23,7 @@
 
   (deftable royalties:{royalty-schema})
 
-  (defconst ROYALTY_SPEC "royalty_spec"
+  (defconst ROYALTY-SPEC-MSG-KEY "royalty_spec"
     @doc "Payload field for token spec")
 
   (defun get-royalty:object{royalty-schema} (token:object{token-info})
@@ -48,7 +48,7 @@
     ( token:object{token-info}
     )
     (enforce-ledger)
-    (let* ( (spec:object{royalty-schema} (read-msg ROYALTY_SPEC))
+    (let* ( (spec:object{royalty-schema} (read-msg ROYALTY-SPEC-MSG-KEY))
             (fungible:module{fungible-v2} (at 'fungible spec))
             (creator:string (at 'creator spec))
             (creator-guard:guard (at 'creator-guard spec))

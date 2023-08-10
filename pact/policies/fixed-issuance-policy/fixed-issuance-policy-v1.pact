@@ -31,7 +31,10 @@
   (defun enforce-init:bool
     ( token:object{token-info}
     )
-    @doc ""
+    @doc "The function is run at `create-token` step of marmalade.ledger.      \
+    \ Required msg-data keys:                                                  \
+    \ * fixed_issuance_spec:object{supply-schema} - registers minimum mint     \
+    \ amount, max-supply, and precision information of the created token"
     (enforce-ledger)
     (let* (
             (fixed-issuance-spec:object{supply-schema} (read-msg FIXED-ISSUANCE-SPEC))

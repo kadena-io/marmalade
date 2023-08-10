@@ -56,6 +56,11 @@
       collection-size:integer
       operator-guard:guard
       )
+      @doc "Executed directly from the policy, required to succeed before `create-token` \
+      \ step for collection tokens.                                                      \
+      \ Required msg-data keys:                                                          \
+      \ * collection_id:string - registers the token to a collection and emits           \
+      \ TOKEN_COLLECTION event for discovery"
       (enforce (>= collection-size 0) "Collection size must be positive")
       (let ((collection-id:string (create-collection-id collection-name) ))
         (insert collections collection-id {
@@ -71,8 +76,10 @@
   )
 
   (defun enforce-init:bool (token:object{token-info})
-    @doc "collection-id"
-
+    @doc "Executed at `create-token` step of marmalade.ledger.                 \
+    \ Required msg-data keys:                                                  \
+    \ * collection_id:string - registers the token to a collection and emits   \
+    \ TOKEN_COLLECTION event for discovery"
     (enforce-ledger)
     (let* ( (token-id:string  (at 'id token))
             (collection-id:string (read-msg COLLECTION-ID-MSG-KEY)) )

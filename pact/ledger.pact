@@ -510,7 +510,7 @@
 
   (defcap SALE_PRIVATE:bool (sale-id:string) true)
 
-  (defpact sale:bool
+  (defpact sale:string
     ( id:string
       seller:string
       amount:decimal
@@ -521,12 +521,14 @@
       (with-capability (LEDGER)
         (marmalade-v2.policy-manager.enforce-offer (get-token-info id) seller amount (pact-id))
         (with-capability (SALE id seller amount timeout (pact-id))
-          (offer id seller amount)))
+          (offer id seller amount))
+          (pact-id))
       ;;Step 0, rollback: withdraw
       (with-capability (LEDGER)
         (marmalade-v2.policy-manager.enforce-withdraw (get-token-info id) seller amount (pact-id))
         (with-capability (WITHDRAW id seller amount timeout (pact-id))
-          (withdraw id seller amount)))
+          (withdraw id seller amount))
+          (pact-id))
     )
     (step
       ;; Step 1: buy
@@ -536,7 +538,8 @@
            (marmalade-v2.policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
            (with-capability (BUY id seller buyer amount timeout (pact-id))
              (buy id seller buyer buyer-guard amount (pact-id))
-           ))))
+           ))
+           (pact-id)))
   )
 
   (defun offer:bool

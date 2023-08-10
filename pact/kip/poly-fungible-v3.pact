@@ -256,7 +256,7 @@
     @event
   )
 
-  (defpact sale:bool
+  (defpact sale:string
     ( id:string
       seller:string
       amount:decimal

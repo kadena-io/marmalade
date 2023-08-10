@@ -163,6 +163,10 @@
       seller:string
       amount:decimal
       sale-id:string )
+    @doc " Executed at `offer` step of marmalade.ledger.                             \
+    \ Required msg-data keys:                                                        \
+    \ * (optional) quote:object{quote-msg} - sale is registered as a quoted fungible \
+    \ sale if present. If absent, sale proceeds without quotes."
     (enforce-ledger)
     (enforce-sale-pact sale-id)
     (with-capability (POLICY_MANAGER)
@@ -179,6 +183,7 @@
       seller:string
       amount:decimal
       sale-id:string )
+    @doc " Executed at `withdraw` step of marmalade.ledger."
     (enforce-ledger)
     (enforce-sale-pact sale-id)
     (with-capability (POLICY_MANAGER)
@@ -191,6 +196,11 @@
       buyer-guard:guard
       amount:decimal
       sale-id:string )
+      @doc " Executed at `buy` step of marmalade.ledger.                                 \
+      \ Required msg-data keys:                                                          \
+      \ * (optional) buyer_fungible_account:string - The fungible account of the buyer   \
+      \ which transfers the fungible to the escrow account. Only required if the sale is \
+      \ a quoted sale. "
     (enforce-ledger)
     (enforce-sale-pact sale-id)
     (with-capability (POLICY_MANAGER)

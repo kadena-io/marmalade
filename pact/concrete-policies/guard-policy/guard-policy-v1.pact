@@ -18,10 +18,10 @@
 
   (deftable policy-guards:{guards})
 
-  (defconst MINT-GUARD-MSG-KEY:string "mint-guard")
-  (defconst BURN-GUARD-MSG-KEY:string "burn-guard")
-  (defconst SALE-GUARD-MSG-KEY:string "sale-guard")
-  (defconst TRANSFER-GUARD-MSG-KEY:string "transfer-guard")
+  (defconst MINT-GUARD-MSG-KEY:string "mint_guard")
+  (defconst BURN-GUARD-MSG-KEY:string "burn_guard")
+  (defconst SALE-GUARD-MSG-KEY:string "sale_guard")
+  (defconst TRANSFER-GUARD-MSG-KEY:string "transfer_guard")
 
   (defconst GUARD_SUCCESS:guard (create-user-guard (success)))
   (defconst GUARD_FAILURE:guard (create-user-guard (failure)))
@@ -58,9 +58,9 @@
 
   (defun get-mint-guard:guard (token-id:string)
     (with-read policy-guards token-id {
-      'mint-guard:= mint-g
+      'mint-guard:= mint-guard
     }
-    mint-g
+    mint-guard
     )
   )
 
@@ -99,6 +99,14 @@
   (defun enforce-init:bool
     ( token:object{token-info}
     )
+    @doc "Executed at `create-token` step of marmalade.ledger. Registers  guards for \
+    \ 'mint', 'burn', 'sale', 'transfer' operations of the created token.            \
+    \ Required msg-data keys:                                                        \
+    \ * (optional) mint_guard:string -  mint-guard and adds success guard if absent. \
+    \ * (optional) burn_guard:string -  burn-guard and adds success guard if absent. \
+    \ * (optional) sale_guard:string -  sale-guard and adds success guard if absent. \
+    \ * (optional) transfer_guard:string -  transfer-guard and adds success guard if absent. \
+    \ the created token"
     (enforce-ledger)
     (let ((guards:object{guards}
       { 'mint-guard: (try GUARD_SUCCESS (read-msg MINT-GUARD-MSG-KEY) ) ;; type error becomes successful guard

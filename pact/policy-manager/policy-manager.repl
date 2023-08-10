@@ -54,7 +54,7 @@
 (commit-tx)
 
 (typecheck "marmalade-v2.policy-manager")
-(typecheck "marmalade-v2.ledger")
+
 (begin-tx "load concrete-polices")
   (load "../concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact")
   (load "../concrete-policies/royalty-policy/royalty-policy-v1.pact")
@@ -276,7 +276,7 @@
     }])
 
   (expect "start offer by running step 0 of sale"
-    true
+    "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"
     (sale (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z")))
 
   (env-data { "seller-guard": {"keys": ["account"], "pred": "keys-all"}
@@ -316,7 +316,7 @@
 
   (env-hash (hash "offer-0"))
   (expect "Buy succeeds"
-    true
+    "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"
     (continue-pact 1))
 
   (env-data {

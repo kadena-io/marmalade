@@ -24,7 +24,7 @@
   (deftable royalties:{royalty-schema})
 
   (defconst ROYALTY-SPEC-MSG-KEY "royalty_spec"
-    @doc "Payload field for token spec")
+    @doc "Payload field for royalty spec")
 
   (defun get-royalty:object{royalty-schema} (token:object{token-info})
     (read royalties (at 'id token))
@@ -47,6 +47,10 @@
   (defun enforce-init:bool
     ( token:object{token-info}
     )
+    @doc "Executed at `create-token` step of marmalade.ledger.      \
+    \ Required msg-data keys:                                                  \
+    \ * royalty_spec:object{royalty-schema} - registers royalty information of \
+    \ the created token"
     (enforce-ledger)
     (let* ( (spec:object{royalty-schema} (read-msg ROYALTY-SPEC-MSG-KEY))
             (fungible:module{fungible-v2} (at 'fungible spec))

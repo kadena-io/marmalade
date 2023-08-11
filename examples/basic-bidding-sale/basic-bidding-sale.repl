@@ -1,7 +1,7 @@
 ;;load policy manager, ledger
 (load "../../pact/policy-manager/policy-manager.repl")
 
-(begin-tx)
+(begin-tx "Load contract and dependencies")
   (env-sigs [
     { 'key: 'basic-sale-admin
     ,'caps: []
@@ -15,8 +15,8 @@
 (commit-tx)
 
 (begin-tx "Create token")
-  (use marmalade.ledger)
-  (use marmalade.policy-manager)
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.policy-manager)
   (env-data {
     "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
     ,"account": "k:account"
@@ -28,7 +28,7 @@
 
   (env-sigs [
     { 'key: 'random
-    ,'caps: [(marmalade.ledger.MINT (read-msg 'token-id ) "k:account" 2.0)]
+    ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token-id ) "k:account" 2.0)]
     }])
 
   (env-data {
@@ -36,6 +36,9 @@
   ,"account": "k:account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
   })
+
+  (marmalade-v2.abc.create-account "k:account" (read-keyset 'account-guard))
+  (marmalade-v2.abc.fund "k:account" 2.0)
 
   (expect "mint 2.0 amount"
     true
@@ -49,7 +52,7 @@
 
 (begin-tx "Offer for sale fails")
   (env-hash (hash "offer-0"))
-  (use marmalade.ledger)
+  (use marmalade-v2.ledger)
 
   (env-data {
     "seller-guard": {"keys": ["account"], "pred": "keys-all"}
@@ -63,7 +66,7 @@
             "account": "k:account"
           ,"guard": {"keys": ["account"], "pred": "keys-all"}
           }
-        ,"fungible": marmalade.abc
+        ,"fungible": marmalade-v2.abc
         ,"price": 200.0
         ,"amount": 1.0
       }
@@ -76,7 +79,7 @@
   (env-sigs [
     { 'key: 'account-wrong
     ,'caps: [
-    (marmalade.ledger.OFFER (read-msg 'token-id ) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
+    (marmalade-v2.ledger.OFFER (read-msg 'token-id ) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
     }])
 
   (expect-failure "offer fails because of keyset failure"
@@ -87,13 +90,11 @@
 (begin-tx "Offer for sale succeeds")
 
   (env-hash (hash "offer-1"))
-  (use marmalade.ledger)
+  (use marmalade-v2.ledger)
 
   (env-data {
     "seller-guard": {"keys": ["account"], "pred": "keys-all"}
   })
-  (marmalade.abc.create-account "k:account" (read-keyset 'seller-guard))
-  (marmalade.abc.fund "k:account" 2.0)
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
@@ -103,7 +104,7 @@
             "account": "k:account"
           ,"guard": {"keys": ["account"], "pred": "keys-all"}
           }
-        ,"fungible": marmalade.abc
+        ,"fungible": marmalade-v2.abc
         ,"price": 200.0
         ,"amount": 1.0
       }
@@ -116,24 +117,19 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-    (marmalade.ledger.OFFER (read-msg 'token-id ) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
+    (marmalade-v2.ledger.OFFER (read-msg 'token-id ) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
     }])
 
   (expect "Start offer succeeds"
     true
     (sale (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z")))
 
-  ;  (expect "events"
-  ;    (format "{}" [[
-  ;      ]])
-  ;    (format "{}" [(map (remove "module-hash")  (env-events true))])
-  ;  )
 (commit-tx)
 
 (begin-tx "Place bid")
   (env-hash (hash "offer-bidding-0"))
-  (use marmalade.ledger)
-  (use free.basic-sale)
+  (use marmalade-v2.ledger)
+  (use free.basic-bidding-sale)
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
@@ -141,13 +137,13 @@
     ,"bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
   })
 
-  (marmalade.abc.create-account "k:bidder" (read-keyset 'bidder-guard))
-  (marmalade.abc.fund "k:bidder" 250.0)
+  (marmalade-v2.abc.create-account "k:bidder" (read-keyset 'bidder-guard))
+  (marmalade-v2.abc.fund "k:bidder" 250.0)
 
   (env-sigs
   [{'key:'bidder
     ,'caps: [
-       (marmalade.abc.TRANSFER "k:bidder" "c:pCkKuvi6lht3nnqI4Hdwz2yDbE60XugQrsHXbTveZI0" 150.0)
+       (marmalade-v2.abc.TRANSFER "k:bidder" "c:nCEkWbyh80ghGYVluN4aDYJWk2Rctyu_lpHxEDGjUoI" 150.0)
     ]}])
 
   (expect "Place Bid succeeds"
@@ -157,13 +153,13 @@
 
   (expect "Buyer account has 100.0 tokens left"
     100.0
-    (marmalade.abc.get-balance "k:bidder"))
+    (marmalade-v2.abc.get-balance "k:bidder"))
 (commit-tx)
 
 (begin-tx "Withdraw bid")
   (env-hash (hash "withdraw-bidding-0"))
-  (use marmalade.ledger)
-  (use free.basic-sale)
+  (use marmalade-v2.ledger)
+  (use free.basic-bidding-sale)
 
   (env-data {
     "bid-id": (get-bid-id "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk" "k:bidder")
@@ -184,31 +180,33 @@
 
   (expect "Buyer account has 250.0 tokens"
     250.0
-    (marmalade.abc.get-balance "k:bidder"))
+    (marmalade-v2.abc.get-balance "k:bidder"))
 (rollback-tx)
 
-(begin-tx "Allow marketplace to update quote (put token up for sale on marketplace)")
-  (env-hash (hash "update-quote-guards-0"))
-  ;  (use marmalade.ledger)
-  (use marmalade.quote-manager)
-  (use free.basic-sale)
+(begin-tx "Accept bid")
+  (env-hash (hash "accept-bid-0"))
+  (use marmalade-v2.quote-manager)
+  (use free.basic-bidding-sale)
 
   (env-data {
-    "market-guard": {"keys": ["market"], "pred": "keys-all"}
+    "bid-id": (get-bid-id "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk" "k:bidder")
+    ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
     ,"seller-guard": {"keys": ["account"], "pred": "keys-all"}
     ,"sale-id": "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk"
   })
 
-  (marmalade.abc.create-account "k:market" (read-keyset 'market-guard))
+  (marmalade-v2.abc.create-account "k:market" (read-keyset 'market-guard))
 
   (env-sigs
   [{'key:'account
     ,'caps: [
       (UPDATE_QUOTE_GUARD (read-msg 'sale-id))
-    ]}])
+      (SELLER (read-msg 'sale-id))
+    ]}
+  ])
 
-  (expect "Updating quote guards succeeds"
+  (expect "Accepting bid succeeds"
     true
-    (update-quote-guards (read-msg "sale-id") [(read-msg "market-guard")])
+    (accept-bid (read-msg "bid-id") (read-msg "sale-id"))
   )
 (commit-tx)

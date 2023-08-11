@@ -254,7 +254,7 @@
     sale-id:string
     price:decimal
     buyer:string
-    buyer-guard:string
+    buyer-guard:guard
     quote-account:string
     )
     @doc "Reserves the token for buyer and transfers funds"
@@ -262,8 +262,10 @@
     (enforce (> price 0.0) "price must be positive")
     (enforce-reserved buyer buyer-guard)
 
-    ; Update the quote in the quote-manager
-    (update-quote-price sale-id price buyer)
+    (with-capability (POLICY_MANAGER)
+      ; Update the quote in the quote-manager
+      (update-quote-price sale-id price buyer)
+    )
 
     (let* (
       (escrow-account:object{fungible-account} (get-escrow-account sale-id))
@@ -293,12 +295,12 @@
     (let* (
            (escrow-account:object{fungible-account} (get-escrow-account sale-id))
            (quote:object{quote-schema} (get-quote-info sale-id))
+           (reserved-buyer:string (at 'reserved quote))
            (spec:object{quote-spec} (at 'spec quote))
            (fungible:module{fungible-v2} (at 'fungible spec))
            (buyer-fungible-account-name:string (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY))
            (seller-fungible-account:object{fungible-account} (at 'seller-fungible-account spec))
            (price:decimal (at 'price spec))
-           (reserved-buyer:string (at 'reserved spec))
            (sale-price:decimal (floor (* price amount) (fungible::precision)))
       )
 

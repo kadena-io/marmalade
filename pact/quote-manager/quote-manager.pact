@@ -162,6 +162,7 @@
          , "seller-guard":seller-guard
          , "quote-guards": quote-guards
          , "spec": quote-spec
+         , "reserved": ""
         })
         (emit-event (QUOTE sale-id token-id quote-spec))
         (emit-event (QUOTE_GUARDS sale-id token-id seller-guard quote-guards))
@@ -187,8 +188,8 @@
               , "amount": amount
               , "price": price
               , "seller-fungible-account": fungible-account
-              , "reserved": buyer
-              }
+            }
+            , "reserved": buyer
             }))
       )
       (emit-event (QUOTE_PRICE_UPDATE sale-id price buyer)))

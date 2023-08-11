@@ -28,6 +28,18 @@
 (commit-tx)
 
 (begin-tx)
+(module util GOVERNANCE
+  (defcap GOVERNANCE ()
+    false)
+
+  (defun to-timestamp:decimal (in:time)
+    "Computes an Unix timestamp of the input date"
+    (diff-time in (time "1970-01-01T00:00:00Z"))
+  )
+)
+(commit-tx)
+
+(begin-tx)
   (env-data
    { 'marmalade-admin: ["marmalade-admin"]
    , "marmalade-v2.marmalade-admin": ["marmalade-admin"]
@@ -272,12 +284,12 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-    (marmalade-v2.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
+    (marmalade-v2.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")))]
     }])
 
   (expect "start offer by running step 0 of sale"
     true
-    (sale (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z")))
+    (sale (read-msg 'token-id) "k:account" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z"))))
 
   (env-data { "seller-guard": {"keys": ["account"], "pred": "keys-all"}
             , "token-id" : (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } )
@@ -289,8 +301,8 @@
       {"name": "marmalade-v2.quote-manager.QUOTE","params": ["C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg" (read-msg 'token-id)
         {"amount": 1.0,"fungible": marmalade-v2.abc,"price": 2.0,"seller-fungible-account": {"account": "k:account","guard": (read-keyset 'seller-guard) }}]}
       {"name": "marmalade-v2.quote-manager.QUOTE_GUARDS","params": ["C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg" (read-msg 'token-id) (read-keyset 'seller-guard) []]}
-      {"name": "marmalade-v2.ledger.OFFER","params": [(read-msg 'token-id) "k:account" 1.0 "2023-07-22T11:26:35Z"]}
-      {"name": "marmalade-v2.ledger.SALE","params": [(read-msg 'token-id) "k:account" 1.0 "2023-07-22T11:26:35Z" "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"]}
+      {"name": "marmalade-v2.ledger.OFFER","params": [(read-msg 'token-id) "k:account" 1.0 1690025195.0]}
+      {"name": "marmalade-v2.ledger.SALE","params": [(read-msg 'token-id) "k:account" 1.0 1690025195.0 "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"]}
       {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": [(read-msg 'token-id) "c:WT_MPlkws_-GywvQmomGZwGsCJAcIWqrMSA9ie82FRc" (create-capability-pact-guard (SALE_PRIVATE "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"))]}
       {"name": "marmalade-v2.ledger.TRANSFER","params": [(read-msg 'token-id) "k:account" "c:WT_MPlkws_-GywvQmomGZwGsCJAcIWqrMSA9ie82FRc" 1.0]}
       {"name": "marmalade-v2.ledger.RECONCILE","params": [(read-msg 'token-id) 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "c:WT_MPlkws_-GywvQmomGZwGsCJAcIWqrMSA9ie82FRc","current": 1.0,"previous": 0.0}]}]])
@@ -310,7 +322,7 @@
   (env-sigs
   [{'key:'buyer
     ,'caps: [
-      (marmalade-v2.ledger.BUY (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } ) "k:account" "k:buyer" 1.0 (time "2023-07-22T11:26:35Z") "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg")
+      (marmalade-v2.ledger.BUY (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } ) "k:account" "k:buyer" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")) "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg")
       (marmalade-v2.abc.TRANSFER "k:buyer" "c:DzKUkpHP-1-4XUGw1R7WLfXoWtoyICfk6hV437b_IEY" 2.0)
     ]}])
 

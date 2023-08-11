@@ -28,15 +28,15 @@
 (commit-tx)
 
 (begin-tx)
-(module util GOVERNANCE
-  (defcap GOVERNANCE ()
-    false)
+  (module util GOVERNANCE
+    (defcap GOVERNANCE ()
+      false)
 
-  (defun to-timestamp:decimal (in:time)
-    "Computes an Unix timestamp of the input date"
-    (diff-time in (time "1970-01-01T00:00:00Z"))
+    (defun to-timestamp:decimal (input:time)
+      "Computes an Unix timestamp of the input date"
+      (diff-time input (time "1970-01-01T00:00:00Z"))
+    )
   )
-)
 (commit-tx)
 
 (begin-tx)

@@ -40,7 +40,7 @@
     (create-capability-guard (POLICY_MANAGER))
   )
 
-  ;; Saves ledger guard information
+  ; Saves ledger guard information
   (defschema ledger
     ledger-guard:guard
   )
@@ -67,7 +67,7 @@
     true
   )
 
-  ;; Saves Concrete policy information
+  ; Saves Concrete policy information
   (defschema concrete-policy
     policy:module{kip.token-policy-v2}
   )
@@ -104,7 +104,7 @@
       policy)
   )
 
-  ;; Capbilities to guard internal functions
+  ; Capbilities to guard internal functions
 
   (defcap OFFER:bool
     ( sale-id:string
@@ -128,7 +128,7 @@
   )
 
 
-  ;; Map list of policy functions
+  ; Map list of policy functions
 
   (defun enforce-init:[bool]
     (token:object{token-info})
@@ -169,11 +169,21 @@
     (enforce-ledger)
     (enforce-sale-pact sale-id)
     (with-capability (POLICY_MANAGER)
-      ;;Check if quote-msg exists
+      ; Check if quote-msg exists
       (if (exists-msg-quote QUOTE-MSG-KEY)
-        ;;true - insert quote message
-        (add-quote sale-id (at 'id token) (read-msg QUOTE-MSG-KEY))
-        ;;false - skip
+        ; true - insert quote message and create escrow account in fungible
+        [
+          (let* (
+            (quote:object{quote-msg} (read-msg QUOTE-MSG-KEY))
+            (quote-spec:object{quote-spec} (at 'spec quote))
+            (fungible:module{fungible-v2} (at 'fungible quote-spec))
+            (escrow-account:object{fungible-account} (get-escrow-account sale-id))
+          )
+            (add-quote sale-id (at 'id token) quote)
+            (fungible::create-account (at 'account escrow-account) (at 'guard escrow-account))
+          )
+        ]
+        ; false - skip
         true)
         (map-offer token seller amount sale-id (at 'policies token))))
 
@@ -195,7 +205,7 @@
           (map-withdraw token seller amount sale-id (at 'policies token))
         )
       ]
-      ;; quote is not used
+      ; quote is not used
       (map-withdraw token seller amount sale-id (at 'policies token))
     )))
 
@@ -209,23 +219,23 @@
     (enforce-ledger)
     (enforce-sale-pact sale-id)
     (with-capability (POLICY_MANAGER)
-        ;; Checks if quote is saved at offer
+        ; Checks if quote is saved at offer
         (if (exists-quote sale-id)
-          ;; quote is used
+          ; quote is used
           [
             (let* (
               (quote (get-quote-info sale-id))
               (spec:object{quote-spec} (at 'spec quote))
               (price:decimal (at 'price spec)))
 
-              ;; Checks if price is final
+              ; Checks if price is final
               (enforce (> price 0.0) "Price must be finalized before buy")
               (with-capability (MAP_ESCROWED_BUY)
                 (map-escrowed-buy sale-id token seller buyer buyer-guard amount (at 'policies token))
               )
             )
           ]
-          ;; quote is not used
+          ; quote is not used
           (map-buy token seller buyer buyer-guard amount sale-id (at 'policies token))
         )
   ))
@@ -241,7 +251,7 @@
       (map-transfer token sender guard receiver amount (at 'policies token))))
 
 
-;; Sale/Escrow Functions
+  ; Sale/Escrow Functions
   (defcap SALE_RESERVED:bool
     ( sale-id:string
       price:decimal
@@ -320,9 +330,9 @@
        )
 
        (with-capability (ESCROW sale-id)
-         ;; Run policies::enforce-buy
+         ; Run policies::enforce-buy
          (map-buy token seller buyer buyer-guard amount sale-id policies)
-         ;; Transfer Escrow account to seller
+         ; Transfer Escrow account to seller
          (let (
                (balance:decimal (fungible::get-balance (at 'account escrow-account)))
              )
@@ -334,7 +344,7 @@
     )
   )
 
-  ;;utility functions
+  ; Utility functions
 
   (defun exists-quote:bool (sale-id:string)
     @doc "Looks up quote table for quote"

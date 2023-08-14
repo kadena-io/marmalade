@@ -37,7 +37,7 @@
 (env-data {
    "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: (create-policies DEFAULT) } )
   ,"account": "k:account"
-  ,"mint-guard": {"keys": ["mint"], "pred": "keys-all"}
+  ,"mint_guard": {"keys": ["mint"], "pred": "keys-all"}
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
 })
 

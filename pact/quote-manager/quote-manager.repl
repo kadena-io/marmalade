@@ -72,12 +72,12 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-    (marmalade-v2.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
+    (marmalade-v2.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")))]
     }])
 
   (expect "Offer token for sale"
-    true
-    (sale (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z")))
+    "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
+    (sale (read-msg 'token-id) "k:account" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z"))))
 
   (env-data {
     "bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
@@ -106,7 +106,7 @@
   (env-sigs [
     { 'key: 'bidder
     ,'caps: [
-        (marmalade-v2.ledger.BUY (read-msg 'token-id) "k:account" "k:bidder"  1.0 (time  "2023-07-22T11:26:35Z") (read-msg 'sale-id))
+        (marmalade-v2.ledger.BUY (read-msg 'token-id) "k:account" "k:bidder"  1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")) (read-msg 'sale-id))
         (marmalade-v2.abc.TRANSFER "k:bidder" "c:yk0ICQ5W7xvtcDUaXSOyBYD4nMKhm-GXdVxY1mC0PQs" 20.0)
       ]
     },
@@ -122,7 +122,7 @@
    (reserve-sale (read-msg 'sale-id) 20.0 (read-msg 'buyer) (read-keyset 'buyer-guard) (read-msg 'buyer)))
 
  (expect "continue buy succeeds"
-      true
+      "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
       (continue-pact 1 false (read-msg 'sale-id)))
 
   (expect "Seller account has increased with 20 tokens minus royalty fees"

@@ -2,7 +2,7 @@
 (load "../policy-manager/policy-manager.repl")
 (typecheck "marmalade-v2.quote-manager")
 
-(begin-tx "Accept bid and payout royalties")
+(begin-tx "Sell token and payout royalties")
   (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.util-v1)
@@ -49,7 +49,7 @@
     "seller-guard": {"keys": ["account"], "pred": "keys-all"}
   })
 
-  (expect "create a token with quote-policy and royalty-policy"
+  (expect "create a token with royalty-policy"
     true
     (create-token (read-msg 'token-id) 0 "test-quote-royalty-uri" (create-policies {
       'non-fungible-policy: false
@@ -72,26 +72,15 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-    (marmalade-v2.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z") )]
+    (marmalade-v2.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")))]
     }])
 
-  (expect "Start offer succeeds"
-    true
-    (sale (read-msg 'token-id) "k:account" 1.0 (time "2023-07-22T11:26:35Z")))
+  (expect "Offer token for sale"
+    "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
+    (sale (read-msg 'token-id) "k:account" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z"))))
 
   (env-data {
-    "token-id": (create-token-id {
-      'uri: "test-quote-royalty-uri",
-      'precision: 0,
-      'policies: (create-policies {
-        'non-fungible-policy: false
-        ,'royalty-policy: true
-        ,'collection-policy: false
-        ,'guard-policy: false
-      })
-    })
-    ,"bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
-    ,"sale-id": "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
+    "bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
   })
 
   (marmalade-v2.abc.create-account "k:bidder" (read-keyset 'bidder-guard))
@@ -111,15 +100,13 @@
     ,"sale-id": "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
     ,"buyer": "k:bidder"
     ,"buyer-guard": {"keys": ["bidder"], "pred": "keys-all"}
-    ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
-    ,"update_quote_price": 20.0
     ,"buyer_fungible_account": "k:bidder"
   })
 
   (env-sigs [
     { 'key: 'bidder
     ,'caps: [
-        (marmalade-v2.ledger.BUY (read-msg 'token-id) "k:account" "k:bidder"  1.0 (time  "2023-07-22T11:26:35Z") (read-msg 'sale-id))
+        (marmalade-v2.ledger.BUY (read-msg 'token-id) "k:account" "k:bidder"  1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")) (read-msg 'sale-id))
         (marmalade-v2.abc.TRANSFER "k:bidder" "c:yk0ICQ5W7xvtcDUaXSOyBYD4nMKhm-GXdVxY1mC0PQs" 20.0)
       ]
     },
@@ -130,8 +117,12 @@
     }
     ])
 
- (expect "Accept bid and continue buy succeeds"
-      true
+ (expect "Update the quote and reserve sale for the bidder"
+   true
+   (reserve-sale (read-msg 'sale-id) 20.0 (read-msg 'buyer) (read-keyset 'buyer-guard) (read-msg 'buyer)))
+
+ (expect "continue buy succeeds"
+      "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
       (continue-pact 1 false (read-msg 'sale-id)))
 
   (expect "Seller account has increased with 20 tokens minus royalty fees"

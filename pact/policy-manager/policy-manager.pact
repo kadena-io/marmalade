@@ -292,6 +292,9 @@
       amount:decimal
       policies:[module{kip.token-policy-v2}]
     )
+    (enforce-ledger)
+    (enforce-sale-pact sale-id)
+
     (let* (
            (escrow-account:object{fungible-account} (get-escrow-account sale-id))
            (quote:object{quote-schema} (get-quote-info sale-id))

@@ -121,7 +121,7 @@
     }])
 
   (expect "Start offer succeeds"
-    true
+    "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk"
     (sale (read-msg 'token-id) "k:account" 1.0 0.0))
 
 (commit-tx)

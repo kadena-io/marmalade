@@ -11,6 +11,8 @@
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
 
+  (defconst MANIFEST-SPEC-MSG-KEY:string "manifest_spec")
+
   (defschema manifest-spec
     manifest:object{manifest}
     guard:guard
@@ -53,8 +55,12 @@
   (defun enforce-init:bool
     ( token:object{token-info}
     )
+    @doc "Exected at `create-token` step of marmalade.ledger.                  \
+    \ Required msg-data keys:                                                  \
+    \ * manifest_spec:object{manifest-spec} - registers the manifest object of \
+    \ the token and the guard that manages the upgrade of the manifest on chain"
     (enforce-ledger)
-    (let ( (manifest:object{manifest-spec} (read-msg 'manifest-spec )) )
+    (let ( (manifest:object{manifest-spec} (read-msg MANIFEST-SPEC-MSG-KEY )) )
       (enforce-verify-manifest (at 'manifest manifest))
       (insert manifests (at 'id token) manifest)
     )

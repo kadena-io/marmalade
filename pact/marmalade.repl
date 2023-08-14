@@ -1,1 +1,2 @@
 (load "./policy-manager/policy-manager.repl")
+(typecheck "marmalade-v2.ledger")

@@ -26,6 +26,11 @@
     true
   )
 
+  (defcap MAP_ESCROWED_BUY:bool ()
+    @doc "Capability to grant internal access to the map_escrowed_buy function"
+    true
+  )
+
   (defun get-escrow-account:object{fungible-account} (sale-id:string)
     { 'account: (create-principal (create-capability-guard (ESCROW sale-id)))
     , 'guard: (create-capability-guard (ESCROW sale-id))
@@ -213,9 +218,11 @@
               (spec:object{quote-spec} (at 'spec quote))
               (price:decimal (at 'price spec)))
 
-              ;; Checs if price is final
+              ;; Checks if price is final
               (enforce (> price 0.0) "Price must be finalized before buy")
-              (map-escrowed-buy sale-id token seller buyer buyer-guard amount (at 'policies token))
+              (with-capability (MAP_ESCROWED_BUY)
+                (map-escrowed-buy sale-id token seller buyer buyer-guard amount (at 'policies token))
+              )
             )
           ]
           ;; quote is not used
@@ -292,9 +299,7 @@
       amount:decimal
       policies:[module{kip.token-policy-v2}]
     )
-    (enforce-ledger)
-    (enforce-sale-pact sale-id)
-
+    (require-capability (MAP_ESCROWED_BUY))
     (let* (
            (escrow-account:object{fungible-account} (get-escrow-account sale-id))
            (quote:object{quote-schema} (get-quote-info sale-id))

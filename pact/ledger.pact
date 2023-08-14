@@ -470,7 +470,7 @@
   ;;
 
   (defcap SALE:bool
-    (id:string seller:string amount:decimal timeout:time sale-id:string)
+    (id:string seller:string amount:decimal timeout:decimal sale-id:string)
     @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
     @event
     (enforce (> amount 0.0) "Amount must be positive")
@@ -480,7 +480,7 @@
   )
 
   (defcap OFFER:bool
-    (id:string seller:string amount:decimal timeout:time)
+    (id:string seller:string amount:decimal timeout:decimal)
     @doc "Managed cap for SELLER offering AMOUNT of token ID until TIMEOUT."
     @managed
     (enforce (sale-active timeout) "SALE: invalid timeout")
@@ -489,17 +489,20 @@
   )
 
   (defcap WITHDRAW:bool
-    (id:string seller:string amount:decimal timeout:time sale-id:string)
+    (id:string seller:string amount:decimal timeout:decimal sale-id:string)
     @doc "Withdraws offer SALE from SELLER of AMOUNT of token ID after timeout."
     @managed
-    (enforce (not (sale-active timeout)) "WITHDRAW: still active")
+    (enforce-one [
+      (enforce (= 0.0 timeout) "No timeout set")
+      (enforce (not (sale-active timeout)) "WITHDRAW: still active")
+    ])
     (compose-capability (DEBIT id (sale-account)))
     (compose-capability (CREDIT id seller))
     (compose-capability (SALE_PRIVATE sale-id))
   )
 
   (defcap BUY:bool
-    (id:string seller:string buyer:string amount:decimal timeout:time sale-id:string)
+    (id:string seller:string buyer:string amount:decimal timeout:decimal sale-id:string)
     @doc "Completes sale OFFER to BUYER."
     @managed
     (enforce (sale-active timeout) "BUY: expired")
@@ -514,7 +517,7 @@
     ( id:string
       seller:string
       amount:decimal
-      timeout:time
+      timeout:decimal
     )
     (step-with-rollback
       ;; Step 0: offer
@@ -607,9 +610,12 @@
       true
   ))
 
-  (defun sale-active:bool (timeout:time)
+  (defun sale-active:bool (timeout:decimal)
     @doc "Sale is active until TIMEOUT time."
-    (< (at 'block-time (chain-data)) timeout)
+    (if (= 0.0 timeout)
+      true
+      (< (at 'block-time (chain-data)) (add-time (time "1970-01-01T00:00:00Z") timeout))
+    )
   )
 
   (defun sale-account:string ()

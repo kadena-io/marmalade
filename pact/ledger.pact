@@ -493,7 +493,7 @@
     @doc "Withdraws offer SALE from SELLER of AMOUNT of token ID after timeout."
     @managed
     (enforce-one [
-      (enforce (= 0 timeout) "No timeout set")
+      (enforce (= 0.0 timeout) "No timeout set")
       (enforce (not (sale-active timeout)) "WITHDRAW: still active")
     ])
     (compose-capability (DEBIT id (sale-account)))

@@ -189,9 +189,10 @@
       s)
   )
 
-  (defun create-token-id:string (token-details:object{token-details})
+  (defun create-token-id:string (token-details:object{token-details}
+                                 creation-guard:guard)
     (format "t:{}"
-      [(hash [token-details (at 'chain-id (chain-data))])])
+      [(hash (+ {'cg:creation-guard} token-details))])
   )
 
   (defun create-token:bool
@@ -199,12 +200,13 @@
       precision:integer
       uri:string
       policies:[module{kip.token-policy-v2}]
+      creation-guard:guard
     )
     (with-capability (LEDGER)
       ;; enforces token and uri protocols
       (enforce-uri-reserved uri)
       (let ((token-details { 'uri: uri, 'precision: precision, 'policies: (sort policies) }))
-       (enforce-token-reserved id token-details)
+       (enforce-token-reserved id token-details creation-guard)
       )
       ;; maps policy list and calls policy::enforce-init
       (marmalade-v2.policy-manager.enforce-init
@@ -227,13 +229,15 @@
     (let ((pfx (take 2 token-id)))
       (if (= ":" (take -1 pfx)) (take 1 pfx) "")))
 
-  (defun enforce-token-reserved:bool (token-id:string token-details:object{token-details})
+  (defun enforce-token-reserved:bool (token-id:string token-details:object{token-details}
+                                      creation-guard:guard)
     @doc "Enforce reserved token-id name protocols."
+    (enforce-guard creation-guard)
     (let ((r (check-reserved token-id)))
       (if (= "t" r)
         (enforce
           (= token-id
-             (create-token-id token-details))
+             (create-token-id token-details creation-guard))
           "Token protocol violation")
         (enforce false
           (format "Unrecognized reserved protocol: {}" [r]) ))))

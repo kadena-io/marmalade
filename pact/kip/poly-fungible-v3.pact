@@ -69,11 +69,6 @@
     @event
   )
 
-  (defcap TOKEN:bool (id:string precision:integer supply:decimal policies:[module{kip.token-policy-v2}] uri:string)
-    @doc " Emitted when token ID is created."
-    @event
-  )
-
   (defcap ACCOUNT_GUARD:bool (id:string account:string guard:guard)
     @doc " Emitted when ACCOUNT guard is updated."
     @event
@@ -130,20 +125,6 @@
       [ (property (!= id ""))
         (property (!= account ""))
         (property (>= amount 0.0))
-      ]
-  )
-
-  (defun create-token:bool
-    ( id:string
-      precision:integer
-      uri:string
-      policies:[module{kip.token-policy-v2}]
-    )
-    @doc "Create a new token with ID, PRECISION, URI, and POLICY."
-    @model
-      [ (property (!= id ""))
-        (property (>= precision 0))
-        (property (!= uri ""))
       ]
   )
 

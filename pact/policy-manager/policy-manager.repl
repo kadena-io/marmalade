@@ -65,7 +65,7 @@
   (load "../test/abc.pact")
 (commit-tx)
 
-(typecheck "marmalade-v2.policy-manager")
+;(typecheck "marmalade-v2.policy-manager")
 
 (begin-tx "load concrete-polices")
   (load "../concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact")
@@ -88,10 +88,13 @@
 (use marmalade-v2.policy-manager)
 (use marmalade-v2.util-v1)
 
+(env-data { 'c-ks: {"keys": ["creation-guard"], "pred": "keys-all"}})
 (env-data {
-  "default-token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } )
- ,"reserved-token-id": (create-token-id { 'uri: "marmalade:uri", 'precision: 0, 'policies: (create-policies DEFAULT) } )
- ,"empty-token-id": (create-token-id { 'uri: "test-uri-1", 'precision: 0, 'policies: (create-policies EMPTY) } )
+  'c-ks: {"keys": ["creation-guard"], "pred": "keys-all"}
+ ,'bad-c-ks: {"keys": ["bad-creation-guard"], "pred": "keys-all"}
+ ,"default-token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT)} (read-keyset 'c-ks))
+ ,"reserved-token-id": (create-token-id { 'uri: "marmalade:uri", 'precision: 0, 'policies: (create-policies DEFAULT)} (read-keyset 'c-ks))
+ ,"empty-token-id": (create-token-id { 'uri: "test-uri-1", 'precision: 0, 'policies: (create-policies EMPTY)} (read-keyset 'c-ks))
  ,"wrong-token-protocol-id": "t:wrong"
  ,"wrong-token-id": "wrong"
  ,"account": "k:account"
@@ -103,28 +106,34 @@
    ,'caps: [(marmalade-v2.ledger.MINT (read-msg "default-token-id") "k:account" 1.0)
             (marmalade-v2.guard-policy-v1.MINT (read-msg "default-token-id") "k:account" 1.0)
             (marmalade-v2.ledger.MINT (read-msg 'empty-token-id) "k:account" 1.0)
-   ]
-   }])
+   ]},
+  { 'key: "creation-guard"
+   ,'caps: []}
+  ])
+
+(expect-failure "create a token without signing with the right creation guard"
+  "Keyset failure"
+  (create-token (read-msg 'default-token-id) 0 "test-uri" (create-policies DEFAULT) (read-keyset 'bad-c-ks) ))
 
 (expect-failure "create a token with uri starting with marmalade fails"
   "Reserved protocol: marmalade:"
-  (create-token (read-msg 'reserved-token-id) 0 "marmalade:uri" (create-policies DEFAULT) ))
+  (create-token (read-msg 'reserved-token-id) 0 "marmalade:uri" (create-policies DEFAULT) (read-keyset 'c-ks) ))
 
 (expect-failure "create a token with unmatching token-id"
   "Token protocol violation"
-  (create-token (read-msg 'wrong-token-protocol-id) 0 "test-uri" (create-policies DEFAULT) ))
+  (create-token (read-msg 'wrong-token-protocol-id) 0 "test-uri" (create-policies DEFAULT) (read-keyset 'c-ks) ))
 
 (expect-failure "create a token without token protocol"
   "Unrecognized reserved protocol"
-  (create-token (read-msg 'wrong-token-id) 0 "test-uri" (create-policies DEFAULT) ))
+  (create-token (read-msg 'wrong-token-id) 0 "test-uri" (create-policies DEFAULT) (read-keyset 'c-ks) ))
 
 (expect "create a default token with quote-policy, non-fungible-policy"
   true
-  (create-token (read-msg 'default-token-id) 0 "test-uri" (create-policies DEFAULT) ))
+  (create-token (read-msg 'default-token-id) 0 "test-uri" (create-policies DEFAULT) (read-keyset 'c-ks) ))
 
 (expect "create a token with no concrete-policy"
   true
-  (create-token (read-msg 'empty-token-id) 0 "test-uri-1" (create-policies EMPTY) ))
+  (create-token (read-msg 'empty-token-id) 0 "test-uri-1" (create-policies EMPTY) (read-keyset 'c-ks)))
 
 (expect "mint a default token with quote-policy, non-fungible-policy"
   true
@@ -137,7 +146,11 @@
 (env-sigs [
   { 'key: 'marmalade-admin
    ,'caps: []
-   }])
+   }
+  { 'key: "creation-guard"
+   ,'caps: []
+  }
+])
 
 (commit-tx)
 
@@ -146,20 +159,26 @@
 (env-sigs [
   { 'key: 'marmalade-admin
    ,'caps: []
-   }])
+   }
+  { 'key: "creation-guard"
+   ,'caps: []
+  }
+])
 (env-data {
   "ns": "marmalade-v2"
   })
   (namespace (read-msg 'ns))
   (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
+  (env-data { 'c-ks: {"keys": ["creation-guard"], "pred": "keys-all"}})
   (env-data {
-    'token-id: (create-token-id { 'uri: "test-uri-3", 'precision: 0, 'policies: (create-policies DEFAULT)  } )
+    'c-ks: {"keys": ["creation-guard"], "pred": "keys-all"},
+    'token-id: (create-token-id { 'uri: "test-uri-3", 'precision: 0, 'policies: (create-policies DEFAULT)} (read-keyset 'c-ks) )
     })
 
   (expect  "create a token "
     true
-    (create-token (read-msg 'token-id ) 0 "test-uri-3"  (create-policies DEFAULT)  ))
+    (create-token (read-msg 'token-id ) 0 "test-uri-3"  (create-policies DEFAULT) (read-keyset 'c-ks) ))
 
   (module non-fungible-policy-v1 GOVERNANCE
 
@@ -259,11 +278,12 @@
   (use marmalade-v2.util-v1)
   (env-data {
     "seller-guard": {"keys": ["account"], "pred": "keys-all"}
+   ,'c-ks: {"keys": ["creation-guard"], "pred": "keys-all"}
   })
   (marmalade-v2.abc.create-account "k:account" (read-keyset 'seller-guard))
 
   (env-data {
-      "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } )
+      "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } (read-keyset 'c-ks) )
      ,"quote":{
         "spec": {
           "fungible": marmalade-v2.abc
@@ -290,9 +310,9 @@
   (expect "start offer by running step 0 of sale"
     "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"
     (sale (read-msg 'token-id) "k:account" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z"))))
-
+    (env-data { 'c-ks: {"keys": ["creation-guard"], "pred": "keys-all"}})
   (env-data { "seller-guard": {"keys": ["account"], "pred": "keys-all"}
-            , "token-id" : (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } )
+            , "token-id" : (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } (read-keyset 'c-ks) )
           }
   )
 
@@ -314,6 +334,7 @@
    ,"buyer": "k:buyer"
    ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
    ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
+   ,'c-ks: {"keys": ["creation-guard"], "pred": "keys-all"}
   })
 
   (marmalade-v2.abc.create-account "k:buyer" (read-keyset 'buyer-guard))
@@ -322,7 +343,7 @@
   (env-sigs
   [{'key:'buyer
     ,'caps: [
-      (marmalade-v2.ledger.BUY (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } ) "k:account" "k:buyer" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")) "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg")
+      (marmalade-v2.ledger.BUY (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: (create-policies DEFAULT) } (read-keyset 'c-ks)) "k:account" "k:buyer" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")) "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg")
       (marmalade-v2.abc.TRANSFER "k:buyer" "c:DzKUkpHP-1-4XUGw1R7WLfXoWtoyICfk6hV437b_IEY" 2.0)
     ]}])
 

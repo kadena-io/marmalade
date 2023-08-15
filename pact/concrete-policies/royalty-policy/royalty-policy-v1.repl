@@ -3,6 +3,14 @@
 (typecheck "marmalade-v2.royalty-policy-v1")
 
 (begin-tx)
+(module g-utils G
+  (defcap G() true)
+  (defun always-true:bool () true)
+  (defconst ALWAYS-TRUE:guard (create-user-guard (always-true)))
+)
+(commit-tx)
+
+(begin-tx)
 (use marmalade-v2.policy-manager [concrete-policy concrete-policy])
 (use marmalade-v2.ledger)
 
@@ -16,7 +24,7 @@
 (use marmalade-v2.util-v1)
 
 (env-data {
-  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} )
+  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} g-utils.ALWAYS-TRUE)
  ,"account": "account"
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
@@ -50,7 +58,7 @@
 
 (expect-failure "create-token with negative royalty rate fails"
   "Invalid royalty rate"
-  (create-token (read-msg 'token-id) 0 "test-royalty-uri" (create-policies DEFAULT_ROYALTY) ))
+  (create-token (read-msg 'token-id) 0 "test-royalty-uri" (create-policies DEFAULT_ROYALTY) g-utils.ALWAYS-TRUE))
 (rollback-tx)
 
 (begin-tx)
@@ -59,7 +67,7 @@
 (use marmalade-v2.util-v1)
 
 (env-data {
-  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } )
+  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } g-utils.ALWAYS-TRUE)
  ,"account": "k:account"
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
@@ -72,7 +80,7 @@
 
 (expect "create a default token with quote-policy, non-fungible-policy"
   true
-  (create-token (read-msg 'token-id) 0 "test-royalty-uri" (create-policies DEFAULT_ROYALTY) ))
+  (create-token (read-msg 'token-id) 0 "test-royalty-uri" (create-policies DEFAULT_ROYALTY) g-utils.ALWAYS-TRUE))
 
 (env-sigs [
   { 'key: 'account
@@ -97,7 +105,7 @@
 (marmalade-v2.abc.create-account "k:account" (read-keyset 'seller-guard))
 
 (env-data {
-  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } )
+  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } g-utils.ALWAYS-TRUE)
 
   ,"quote":{
      "spec": {
@@ -139,7 +147,7 @@
 (env-sigs
  [{'key:'buyer
   ,'caps: [
-    (marmalade-v2.ledger.BUY (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ) "k:account" "k:buyer"  1.0 (util.to-timestamp (time  "2023-07-22T11:26:35Z")) "0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM")
+    (marmalade-v2.ledger.BUY (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } g-utils.ALWAYS-TRUE) "k:account" "k:buyer"  1.0 (util.to-timestamp (time  "2023-07-22T11:26:35Z")) "0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM")
     (marmalade-v2.abc.TRANSFER "k:buyer" "c:xx_lmWaqaLkqO3RzZnabF_tpKB11EeagaLUJwM0T_6c" 2.0)
    ]}])
 

@@ -3,6 +3,14 @@
 (typecheck "marmalade-v2.non-fungible-policy-v1")
 
 (begin-tx)
+(module g-utils G
+  (defcap G() true)
+  (defun always-true:bool () true)
+  (defconst ALWAYS-TRUE:guard (create-user-guard (always-true)))
+)
+(commit-tx)
+
+(begin-tx)
   (use marmalade-v2.policy-manager [ NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
   (use marmalade-v2.util-v1 [concrete-policy-bool])
 
@@ -32,7 +40,7 @@
   (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-non-fungible-uri", 'precision: 0, 'policies: (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) } )
+    "token-id": (create-token-id { 'uri: "test-non-fungible-uri", 'precision: 0, 'policies: (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) } g-utils.ALWAYS-TRUE)
     ,"account": "k:account"
     ,"nfp-mint-guard": {"keys": ["account"], "pred": "keys-all"}
     ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
@@ -43,7 +51,7 @@
 (begin-tx "Create a non-fungible token")
   (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
-  (create-token (read-msg "token-id") 0 "test-non-fungible-uri" (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) )
+  (create-token (read-msg "token-id") 0 "test-non-fungible-uri" (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) g-utils.ALWAYS-TRUE)
 (commit-tx)
 
 (begin-tx "Mint with a supply other then 1 fails ")

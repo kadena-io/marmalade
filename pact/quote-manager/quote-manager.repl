@@ -2,6 +2,14 @@
 (load "../policy-manager/policy-manager.repl")
 (typecheck "marmalade-v2.quote-manager")
 
+(begin-tx)
+(module g-utils G
+  (defcap G() true)
+  (defun always-true:bool () true)
+  (defconst ALWAYS-TRUE:guard (create-user-guard (always-true)))
+)
+(commit-tx)
+
 (begin-tx "Sell token and payout royalties")
   (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)
@@ -26,7 +34,7 @@
         ,'collection-policy: false
         ,'guard-policy: false
       })
-    }),
+    } g-utils.ALWAYS-TRUE),
     "quote": {
       "spec": {
         "seller-fungible-account": {
@@ -56,7 +64,7 @@
       ,'royalty-policy: true
       ,'collection-policy: false
       ,'guard-policy: false
-    })))
+    }) g-utils.ALWAYS-TRUE))
 
   (env-sigs [
     { 'key: 'seller
@@ -96,7 +104,7 @@
         ,'collection-policy: false
         ,'guard-policy: false
       })
-    })
+    } g-utils.ALWAYS-TRUE)
     ,"sale-id": "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
     ,"buyer": "k:bidder"
     ,"buyer-guard": {"keys": ["bidder"], "pred": "keys-all"}

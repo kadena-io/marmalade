@@ -1,6 +1,14 @@
 ;;load policy manager, ledger
 (load "../../pact/policy-manager/policy-manager.repl")
 
+(begin-tx)
+(module g-utils G
+  (defcap G() true)
+  (defun always-true:bool () true)
+  (defconst ALWAYS-TRUE:guard (create-user-guard (always-true)))
+)
+(commit-tx)
+
 (begin-tx "Load contract and dependencies")
   (env-sigs [
     { 'key: 'basic-sale-admin
@@ -18,13 +26,13 @@
   (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
+    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } g-utils.ALWAYS-TRUE)
     ,"account": "k:account"
   })
 
   (expect "create a default token without any policies"
     true
-    (create-token (read-msg 'token-id) 0 "test-uri" [] ))
+    (create-token (read-msg 'token-id) 0 "test-uri" [] g-utils.ALWAYS-TRUE))
 
   (env-sigs [
     { 'key: 'random
@@ -32,7 +40,7 @@
     }])
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
+    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } g-utils.ALWAYS-TRUE)
   ,"account": "k:account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
   })
@@ -59,7 +67,7 @@
   })
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
+    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } g-utils.ALWAYS-TRUE)
     ,"quote": {
       "spec": {
         "seller-fungible-account": {
@@ -97,7 +105,7 @@
   })
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
+    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } g-utils.ALWAYS-TRUE)
     ,"quote": {
       "spec": {
         "seller-fungible-account": {
@@ -132,7 +140,7 @@
   (use free.basic-bidding-sale)
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
+    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } g-utils.ALWAYS-TRUE)
     ,"sale-id": "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk"
     ,"bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
   })

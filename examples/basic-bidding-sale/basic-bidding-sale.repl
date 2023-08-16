@@ -71,7 +71,7 @@
         ,"amount": 1.0
       }
     ,"seller-guard": {"keys": ["account"], "pred": "keys-all"}
-    ,"quote-guards": [{"keys": ["account"], "pred": "keys-all"}]
+    ,"quote-guards": []
     }
   })
 
@@ -88,7 +88,6 @@
 (rollback-tx)
 
 (begin-tx "Offer for sale succeeds")
-
   (env-hash (hash "offer-1"))
   (use marmalade-v2.ledger)
 
@@ -109,7 +108,7 @@
         ,"amount": 1.0
       }
     ,"seller-guard": {"keys": ["account"], "pred": "keys-all"}
-    ,"quote-guards": [{"keys": ["account"], "pred": "keys-all"}]
+    ,"quote-guards": []
     }
   })
 
@@ -126,8 +125,33 @@
 
 (commit-tx)
 
+(begin-tx "Offer for bidding in basic bidding contract")
+  (env-hash (hash "offer-for-bidding-0"))
+  (use free.basic-bidding-sale)
+
+  (env-data {
+    "sale-id": "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk"
+    ,"bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
+  })
+
+  (expect-failure "offer for bidding fails because of keyset failure"
+    "Keyset failure"
+    (offer-for-bidding (read-string "sale-id")))
+
+    (env-sigs
+      [{'key:'account
+      ,'caps: [
+        (SELLER (read-string 'sale-id))
+      ]}
+    ])
+
+  (expect "offer for bidding succeeds"
+    true
+    (offer-for-bidding (read-string "sale-id")))
+(commit-tx)
+
 (begin-tx "Place bid")
-  (env-hash (hash "offer-bidding-0"))
+  (env-hash (hash "place-bid-0"))
   (use marmalade-v2.ledger)
   (use free.basic-bidding-sale)
 
@@ -190,23 +214,43 @@
 
   (env-data {
     "bid-id": (get-bid-id "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk" "k:bidder")
-    ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
-    ,"seller-guard": {"keys": ["account"], "pred": "keys-all"}
     ,"sale-id": "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk"
   })
 
-  (marmalade-v2.abc.create-account "k:market" (read-keyset 'market-guard))
-
   (env-sigs
-  [{'key:'account
-    ,'caps: [
-      (UPDATE_QUOTE_GUARD (read-msg 'sale-id))
-      (SELLER (read-msg 'sale-id))
-    ]}
+    [{'key:'account
+      ,'caps: []}
   ])
 
   (expect "Accepting bid succeeds"
     true
     (accept-bid (read-msg "bid-id") (read-msg "sale-id"))
   )
+(commit-tx)
+
+(begin-tx "Finalize sale")
+  (env-hash (hash "finalize-sale-0"))
+  (use marmalade-v2.quote-manager)
+  (use marmalade-v2.ledger)
+  (use free.basic-bidding-sale)
+
+  (env-data {
+    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
+    ,"buyer": "k:bidder"
+    ,"buyer-guard": {"keys": ["bidder"], "pred": "keys-all"}
+    ,"buyer_fungible_account": "k:bidder"
+    ,"sale-id": "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk"
+  })
+
+  (env-sigs [
+    { 'key: 'bidder
+    ,'caps: [
+        (marmalade-v2.ledger.BUY (read-msg 'token-id) "k:account" "k:bidder"  1.0 0.0 (read-msg 'sale-id))
+      ]
+    }
+    ])
+
+  (expect "continue buy succeeds"
+      "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk"
+      (continue-pact 1 false (read-msg 'sale-id)))
 (commit-tx)

@@ -91,8 +91,9 @@
     (format "{}-{}" [sale-id buyer])
   )
 
-  ; ledger.sale has to have happened before this can be called
-  (defun offer-for-auction:bool (sale-id:string)
+  ; Add this contract's guard to the quote manager in order to allow updating the
+  ; quote, ledger.sale has to have happened before this can be called
+  (defun offer-for-bidding:bool (sale-id:string)
     (with-capability (SELLER sale-id)
       (marmalade-v2.quote-manager.add-quote-guard sale-id (create-capability-guard (BASIC_BIDDING)))
     )
@@ -186,7 +187,7 @@
         (quote:object{quote-schema} (marmalade-v2.quote-manager.get-quote-info sale-id))
         (spec:object{quote-spec} (at 'spec quote))
         (seller-guard:guard (at 'seller-guard quote))
-        (fungible:module{fungible-v2} (at 'fungible spec))        
+        (fungible:module{fungible-v2} (at 'fungible spec))
         (sale-price:decimal (floor (* price amount) (fungible::precision))))
 
         ; Set bid status to accepted

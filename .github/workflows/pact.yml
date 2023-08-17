@@ -66,9 +66,17 @@ jobs:
           cat out.log
           r=`tail -1 out.log | grep "Load successful"`
           if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi
+
       - name: Test concrete guard-policy
         run: |
           bin/pact -t pact/concrete-policies/guard-policy/guard-policy-v1.repl > out.log 2>&1
+          cat out.log
+          r=`tail -1 out.log | grep "Load successful"`
+          if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi
+
+      - name: Test examples -Basic bidding sale
+        run: |
+          bin/pact -t examples/basic-bidding-sale/basic-bidding-sale.repl > out.log 2>&1
           cat out.log
           r=`tail -1 out.log | grep "Load successful"`
           if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi

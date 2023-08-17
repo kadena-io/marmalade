@@ -492,7 +492,7 @@
     (id:string seller:string amount:decimal timeout:decimal sale-id:string)
     @doc "Withdraws offer SALE from SELLER of AMOUNT of token ID after timeout."
     @managed
-    (enforce-one [
+    (enforce-one "WITHDRAW: still active" [
       (enforce (= 0.0 timeout) "No timeout set")
       (enforce (not (sale-active timeout)) "WITHDRAW: still active")
     ])

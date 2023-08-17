@@ -143,7 +143,7 @@
          ,"quote-guards":= quote-guards
         }
 
-        (let ((updated-guards (+ quote-guards guard)))
+        (let ((updated-guards (+ quote-guards [guard])))
           (update quotes sale-id {
             "quote-guards": updated-guards
           })

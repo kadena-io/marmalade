@@ -7,6 +7,7 @@
 
   (use kip.token-policy-v2 [token-info])
   (use util.fungible-util)
+  (use marmalade-v2.ledger-v1)
   (use marmalade-v2.quote-manager)
   (use marmalade-v2.quote-manager [quote-spec quote-msg fungible-account])
 
@@ -40,28 +41,28 @@
     (create-capability-guard (POLICY_MANAGER))
   )
 
-  ; Saves ledger guard information
+  ; Saves ledger guard interface
   (defschema ledger
-    ledger-guard:guard
+    ledger-implementation:module{ledger-v1}
   )
 
   (deftable ledgers:{ledger}
-    @doc "Singleton table for ledger guard storage")
+    @doc "Singleton table for ledger reference storage")
 
-  (defun enforce-ledger:bool ()
-    @doc "Enforces that function is called from the saved ledger"
+  (defun retrieve-ledger:module{ledger-v1} ()
+    @doc "Retrieves the ledger implementation"
     (with-read ledgers "" {
-      "ledger-guard":= ledger-guard
+      "ledger-implementation":= ledger
       }
-      (enforce-guard ledger-guard)
+      ledger
     )
   )
 
-  (defun init:bool(ledger-guard:guard)
-    @doc "Must be initiated with ledger information"
+  (defun init:bool(ledger:module{ledger-v1})
+    @doc "Must be initiated with ledger implementation"
     (with-capability (GOVERNANCE)
       (insert ledgers "" {
-        "ledger-guard": ledger-guard
+        "ledger-implementation": ledger
       })
     )
     true
@@ -132,7 +133,9 @@
 
   (defun enforce-init:[bool]
     (token:object{token-info})
-    (enforce-ledger)
+    (let ((ledger:module{ledger-v1} (retrieve-ledger)))
+      (require-capability (ledger::INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
+    )
     (with-capability (POLICY_MANAGER)
       (map-init token (at 'policies token))
     )
@@ -144,7 +147,9 @@
       guard:guard
       amount:decimal
     )
-    (enforce-ledger)
+    (let ((ledger:module{ledger-v1} (retrieve-ledger)))
+      (require-capability (ledger::MINT-CALL (at "id" token) account amount))
+    )
     (with-capability (POLICY_MANAGER)
       (map-mint token account guard amount (at 'policies token))
     )
@@ -155,7 +160,9 @@
       account:string
       amount:decimal
     )
-    (enforce-ledger)
+    (let ((ledger:module{ledger-v1} (retrieve-ledger)))
+      (require-capability (ledger::BURN-CALL (at "id" token) account amount))
+    )
     (with-capability (POLICY_MANAGER)
       (map-burn token account amount (at 'policies token))
     )
@@ -170,7 +177,9 @@
     \ Required msg-data keys:                                                        \
     \ * (optional) quote:object{quote-msg} - sale is registered as a quoted fungible \
     \ sale if present. If absent, sale proceeds without quotes."
-    (enforce-ledger)
+    (let ((ledger:module{ledger-v1} (retrieve-ledger)))
+      (require-capability (ledger::OFFER-CALL (at "id" token) seller amount sale-id))
+    )
     (enforce-sale-pact sale-id)
     (with-capability (POLICY_MANAGER)
       ; Check if quote-msg exists
@@ -197,7 +206,9 @@
       amount:decimal
       sale-id:string )
     @doc " Executed at `withdraw` step of marmalade.ledger."
-    (enforce-ledger)
+    (let ((ledger:module{ledger-v1} (retrieve-ledger)))
+      (require-capability (ledger::WITHDRAW-CALL (at "id" token) seller amount sale-id))
+    )
     (enforce-sale-pact sale-id)
     (with-capability (POLICY_MANAGER)
 
@@ -226,7 +237,9 @@
       \ * (optional) buyer_fungible_account:string - The fungible account of the buyer   \
       \ which transfers the fungible to the escrow account. Only required if the sale is \
       \ a quoted sale. "
-    (enforce-ledger)
+    (let ((ledger:module{ledger-v1} (retrieve-ledger)))
+      (require-capability (ledger::BUY-CALL (at "id" token) seller buyer amount sale-id))
+    )
     (enforce-sale-pact sale-id)
     (with-capability (POLICY_MANAGER)
         ; Checks if quote is saved at offer
@@ -256,7 +269,9 @@
       guard:guard
       receiver:string
       amount:decimal )
-    (enforce-ledger)
+    (let ((ledger:module{ledger-v1} (retrieve-ledger)))
+      (require-capability (ledger::TRANSFER-CALL (at "id" token) sender receiver amount))
+    )
     (with-capability (POLICY_MANAGER)
       (map-transfer token sender guard receiver amount (at 'policies token))))
 

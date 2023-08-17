@@ -11,7 +11,9 @@
   (use kip.token-policy-v2 [token-info])
 
   (defun enforce-ledger:bool ()
-  (enforce-guard (marmalade-v2.ledger.ledger-guard))
+    ;   TODO: require capability from policy manager
+    ;  (enforce-guard (marmalade-v2.ledger.ledger-guard))
+    true
   )
 
   (defun enforce-init:bool

@@ -8,6 +8,7 @@
           (> (length account) 2))
     ]
 
+  (implements marmalade-v2.ledger-v1)
   (implements kip.poly-fungible-v3)
   (use kip.poly-fungible-v3 [account-details sender-balance-change receiver-balance-change])
   (use util.fungible-util)
@@ -110,6 +111,38 @@
   )
 
   ;;
+  ;; ledger-v1 caps to be able to validate access to policy operations.
+  ;;
+
+  (defcap INIT-CALL:bool (id:string precision:integer uri:string)
+    true
+  )
+
+  (defcap TRANSFER-CALL:bool (id:string sender:string receiver:string amount:decimal)
+    true
+  )
+
+  (defcap MINT-CALL:bool (id:string account:string amount:decimal)
+    true
+  )
+
+  (defcap BURN-CALL:bool (id:string account:string amount:decimal)
+    true
+  )
+
+  (defcap OFFER-CALL:bool (id:string seller:string amount:decimal sale-id:string)
+    true
+  )
+
+  (defcap WITHDRAW-CALL:bool (id:string seller:string amount:decimal sale-id:string)
+    true
+  )
+
+  (defcap BUY-CALL:bool (id:string seller:string buyer:string amount:decimal sale-id:string)
+    true
+  )
+
+  ;;
   ;; Implementation caps
   ;;
 
@@ -127,7 +160,7 @@
     "private cap for update-supply"
     true)
 
-  (defcap MINT (id:string account:string amount:decimal)
+  (defcap MINT:bool (id:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
     (enforce (< 0.0 amount) "Amount must be positive")
     (compose-capability (CREDIT id account))
@@ -141,11 +174,13 @@
     (compose-capability (UPDATE_SUPPLY))
   )
 
+  ;  TODO: remove once quote-manager and policies no longer depend on this
   (defcap LEDGER:bool ()
     @doc "Ledger module guard for policies to be able to validate access to policy operations."
     true
   )
 
+  ;  TODO: remove once quote-manager and policies no longer depend on this
   (defun ledger-guard:guard ()
     (create-capability-guard (LEDGER))
   )
@@ -200,7 +235,7 @@
       uri:string
       policies:[module{kip.token-policy-v2}]
     )
-    (with-capability (LEDGER)
+    (with-capability (INIT-CALL id precision uri)
       ;; enforces token and uri protocols
       (enforce-uri-reserved uri)
       (let ((token-details { 'uri: uri, 'precision: precision, 'policies: (sort policies) }))
@@ -265,7 +300,7 @@
       receiver:string
       amount:decimal
     )
-    (with-capability (LEDGER)
+    (with-capability (TRANSFER-CALL id sender receiver amount)
       (enforce (!= sender receiver)
         "sender cannot be the receiver of a transfer")
       (enforce-valid-transfer sender receiver (precision id) amount)
@@ -299,7 +334,7 @@
       receiver-guard:guard
       amount:decimal
     )
-    (with-capability (LEDGER)
+    (with-capability (TRANSFER-CALL id sender receiver amount)
       (enforce (!= sender receiver)
         "sender cannot be the receiver of a transfer")
       (enforce-valid-transfer sender receiver (precision id) amount)
@@ -320,7 +355,7 @@
       guard:guard
       amount:decimal
     )
-    (with-capability (LEDGER)
+    (with-capability (MINT-CALL id account amount)
       (marmalade-v2.policy-manager.enforce-mint (get-token-info id) account guard amount)
       (with-capability (MINT id account amount)
         (let
@@ -339,7 +374,7 @@
       account:string
       amount:decimal
     )
-    (with-capability (LEDGER)
+    (with-capability (BURN-CALL id account amount)
       (marmalade-v2.policy-manager.enforce-burn (get-token-info id) account amount)
       (with-capability (BURN id account amount)
         (let
@@ -474,7 +509,6 @@
     @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
     @event
     (enforce (> amount 0.0) "Amount must be positive")
-    (compose-capability (LEDGER))
     (compose-capability (OFFER id seller amount timeout))
     (compose-capability (SALE_PRIVATE sale-id))
   )
@@ -521,13 +555,13 @@
     )
     (step-with-rollback
       ;; Step 0: offer
-      (with-capability (LEDGER)
+      (with-capability (OFFER-CALL id seller amount (pact-id))
         (marmalade-v2.policy-manager.enforce-offer (get-token-info id) seller amount (pact-id))
         (with-capability (SALE id seller amount timeout (pact-id))
           (offer id seller amount))
           (pact-id))
       ;;Step 0, rollback: withdraw
-      (with-capability (LEDGER)
+      (with-capability (WITHDRAW-CALL id seller amount (pact-id))
         (marmalade-v2.policy-manager.enforce-withdraw (get-token-info id) seller amount (pact-id))
         (with-capability (WITHDRAW id seller amount timeout (pact-id))
           (withdraw id seller amount))
@@ -535,14 +569,14 @@
     )
     (step
       ;; Step 1: buy
-      (with-capability (LEDGER)
-        (let ( (buyer:string (read-msg "buyer"))
-               (buyer-guard:guard (read-msg "buyer-guard")) )
-           (marmalade-v2.policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
-           (with-capability (BUY id seller buyer amount timeout (pact-id))
-             (buy id seller buyer buyer-guard amount (pact-id))
-           ))
-           (pact-id)))
+      (let ( (buyer:string (read-msg "buyer"))
+              (buyer-guard:guard (read-msg "buyer-guard")) )
+          (with-capability (BUY-CALL id seller buyer amount (pact-id))
+            (marmalade-v2.policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
+            (with-capability (BUY id seller buyer amount timeout (pact-id))
+              (buy id seller buyer buyer-guard amount (pact-id))
+            ))
+            (pact-id)))
   )
 
   (defun offer:bool

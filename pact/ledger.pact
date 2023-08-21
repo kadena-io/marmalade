@@ -235,24 +235,25 @@
       uri:string
       policies:[module{kip.token-policy-v2}]
     )
+    ;; enforces token and uri protocols
+    (enforce-uri-reserved uri)
+    (let ((token-details { 'uri: uri, 'precision: precision, 'policies: (sort policies) }))
+      (enforce-token-reserved id token-details)
+    )
     (with-capability (INIT-CALL id precision uri)
-      ;; enforces token and uri protocols
-      (enforce-uri-reserved uri)
-      (let ((token-details { 'uri: uri, 'precision: precision, 'policies: (sort policies) }))
-       (enforce-token-reserved id token-details)
-      )
       ;; maps policy list and calls policy::enforce-init
       (marmalade-v2.policy-manager.enforce-init
         { 'id: id, 'supply: 0.0, 'precision: precision, 'uri: uri,  'policies: policies})
+    )
 
-      (insert tokens id {
-        "id": id,
-        "uri": uri,
-        "precision": precision,
-        "supply": 0.0,
-        "policies": policies
-      })
-      (emit-event (TOKEN id precision 0.0 policies uri)))
+    (insert tokens id {
+      "id": id,
+      "uri": uri,
+      "precision": precision,
+      "supply": 0.0,
+      "policies": policies
+    })
+    (emit-event (TOKEN id precision 0.0 policies uri))
   )
 
   (defun check-reserved:string (token-id:string)
@@ -300,20 +301,18 @@
       receiver:string
       amount:decimal
     )
-    (with-capability (TRANSFER-CALL id sender receiver amount)
-      (enforce (!= sender receiver)
-        "sender cannot be the receiver of a transfer")
-      (enforce-valid-transfer sender receiver (precision id) amount)
-      (enforce-transfer-policy id sender receiver amount)
-      (with-capability (TRANSFER id sender receiver amount)
-        (with-read ledger (key id receiver)
-          { "guard" := g }
-          (let
-            ( (sender (debit id sender amount))
-              (receiver (credit id receiver g amount))
-            )
-            (emit-event (RECONCILE id amount sender receiver))
+    (enforce (!= sender receiver)
+      "sender cannot be the receiver of a transfer")
+    (enforce-valid-transfer sender receiver (precision id) amount)
+    (enforce-transfer-policy id sender receiver amount)
+    (with-capability (TRANSFER id sender receiver amount)
+      (with-read ledger (key id receiver)
+        { "guard" := g }
+        (let
+          ( (sender (debit id sender amount))
+            (receiver (credit id receiver g amount))
           )
+          (emit-event (RECONCILE id amount sender receiver))
         )
       ))
   )
@@ -324,7 +323,9 @@
       receiver:string
       amount:decimal
     )
-    (marmalade-v2.policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
+    (with-capability (TRANSFER-CALL id sender receiver amount)
+      (marmalade-v2.policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
+    )
   )
 
   (defun transfer-create:bool
@@ -334,19 +335,18 @@
       receiver-guard:guard
       amount:decimal
     )
-    (with-capability (TRANSFER-CALL id sender receiver amount)
-      (enforce (!= sender receiver)
-        "sender cannot be the receiver of a transfer")
-      (enforce-valid-transfer sender receiver (precision id) amount)
-      (enforce-transfer-policy id sender receiver amount)
-      (with-capability (TRANSFER id sender receiver amount)
-        (let
-          (
-            (sender (debit id sender amount))
-            (receiver (credit id receiver receiver-guard amount))
-          )
-          (emit-event (RECONCILE id amount sender receiver))
-        )))
+    (enforce (!= sender receiver)
+      "sender cannot be the receiver of a transfer")
+    (enforce-valid-transfer sender receiver (precision id) amount)
+    (enforce-transfer-policy id sender receiver amount)
+    (with-capability (TRANSFER id sender receiver amount)
+      (let
+        (
+          (sender (debit id sender amount))
+          (receiver (credit id receiver receiver-guard amount))
+        )
+        (emit-event (RECONCILE id amount sender receiver))
+      ))
   )
 
   (defun mint:bool
@@ -357,16 +357,17 @@
     )
     (with-capability (MINT-CALL id account amount)
       (marmalade-v2.policy-manager.enforce-mint (get-token-info id) account guard amount)
-      (with-capability (MINT id account amount)
-        (let
-          (
-            (receiver (credit id account guard amount))
-            (sender:object{sender-balance-change}
-              {'account: "", 'previous: 0.0, 'current: 0.0})
-          )
-          (emit-event (RECONCILE id amount sender receiver))
-          (update-supply id amount)
-        )))
+    )
+    (with-capability (MINT id account amount)
+      (let
+        (
+          (receiver (credit id account guard amount))
+          (sender:object{sender-balance-change}
+            {'account: "", 'previous: 0.0, 'current: 0.0})
+        )
+        (emit-event (RECONCILE id amount sender receiver))
+        (update-supply id amount)
+      ))
   )
 
   (defun burn:bool
@@ -376,17 +377,18 @@
     )
     (with-capability (BURN-CALL id account amount)
       (marmalade-v2.policy-manager.enforce-burn (get-token-info id) account amount)
-      (with-capability (BURN id account amount)
-        (let
-          (
-            (sender (debit id account amount))
-            (receiver:object{receiver-balance-change}
-              {'account: "", 'previous: 0.0, 'current: 0.0})
-          )
-          (emit-event (RECONCILE id amount sender receiver))
-          (update-supply id (- amount))
-        ))
-  ))
+    )
+    (with-capability (BURN id account amount)
+      (let
+        (
+          (sender (debit id account amount))
+          (receiver:object{receiver-balance-change}
+            {'account: "", 'previous: 0.0, 'current: 0.0})
+        )
+        (emit-event (RECONCILE id amount sender receiver))
+        (update-supply id (- amount))
+      ))
+  )
 
   (defun debit:object{sender-balance-change}
     ( id:string
@@ -555,17 +557,21 @@
     )
     (step-with-rollback
       ;; Step 0: offer
-      (with-capability (OFFER-CALL id seller amount (pact-id))
-        (marmalade-v2.policy-manager.enforce-offer (get-token-info id) seller amount (pact-id))
+      (let ((token-info (get-token-info id)))
+        (with-capability (OFFER-CALL id seller amount (pact-id))
+          (marmalade-v2.policy-manager.enforce-offer token-info seller amount (pact-id)))
         (with-capability (SALE id seller amount timeout (pact-id))
           (offer id seller amount))
-          (pact-id))
+        (pact-id)
+      )
       ;;Step 0, rollback: withdraw
-      (with-capability (WITHDRAW-CALL id seller amount (pact-id))
-        (marmalade-v2.policy-manager.enforce-withdraw (get-token-info id) seller amount (pact-id))
+      (let ((token-info (get-token-info id)))
+        (with-capability (WITHDRAW-CALL id seller amount (pact-id))
+          (marmalade-v2.policy-manager.enforce-withdraw token-info seller amount (pact-id)))
         (with-capability (WITHDRAW id seller amount timeout (pact-id))
           (withdraw id seller amount))
-          (pact-id))
+        (pact-id)
+      )
     )
     (step
       ;; Step 1: buy
@@ -573,10 +579,12 @@
               (buyer-guard:guard (read-msg "buyer-guard")) )
           (with-capability (BUY-CALL id seller buyer amount (pact-id))
             (marmalade-v2.policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
-            (with-capability (BUY id seller buyer amount timeout (pact-id))
-              (buy id seller buyer buyer-guard amount (pact-id))
-            ))
-            (pact-id)))
+          )
+          (with-capability (BUY id seller buyer amount timeout (pact-id))
+            (buy id seller buyer buyer-guard amount (pact-id))
+          )
+          (pact-id)
+    ))
   )
 
   (defun offer:bool

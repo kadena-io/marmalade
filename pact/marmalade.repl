@@ -124,7 +124,8 @@
   )
 
   (expect "create-token events"
-     (format "{}" [[{"name": "marmalade-v2.ledger.TOKEN","params": ["t:YxyMWZItsZ_bxQgq7PzzR8RaD_xDxi1zlIOqGRoler4" 0 0.0 [] "test-uri"]}]])
+     (format "{}" [[
+     {"name": "marmalade-v2.ledger.TOKEN","params": ["t:YxyMWZItsZ_bxQgq7PzzR8RaD_xDxi1zlIOqGRoler4" 0 0.0 [] "test-uri"]}]])
      (format "{}" [(map (remove "module-hash")  (env-events true))])
   )
 
@@ -179,7 +180,7 @@
 
 (commit-tx)
 
-(begin-tx "offer, withdraw")
+(begin-tx "offer, withdraw with timeout")
   (env-hash (hash "offer-0"))
   (use marmalade-v2.ledger)
   (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
@@ -256,8 +257,94 @@
      ,'caps: [(marmalade-v2.ledger.WITHDRAW (read-string "token-id") (read-string "account") 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")) (pact-id))]}
   ])
 
-  (expect-failure "withdraw fails without WITHDRAW capability in scope"
+  (expect "withdraw succeeds when WITHDRAW capability in scope, regardless of signer"
+    (pact-id)
     (continue-pact 0 true)
   )
 
-(commit-tx)
+  (expect "withdraw events"
+    [ {"name": "marmalade-v2.ledger.WITHDRAW","params": ["t:YxyMWZItsZ_bxQgq7PzzR8RaD_xDxi1zlIOqGRoler4" "k:account" 1.0 1690025195.0 "C1vw1eMf_DZV3oZjyinRIKrQV2rPMBMh3lydeduo8yg"]}
+      {"name": "marmalade-v2.ledger.TRANSFER","params": ["t:YxyMWZItsZ_bxQgq7PzzR8RaD_xDxi1zlIOqGRoler4" "c:WT_MPlkws_-GywvQmomGZwGsCJAcIWqrMSA9ie82FRc" "k:account" 1.0]}
+      {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:YxyMWZItsZ_bxQgq7PzzR8RaD_xDxi1zlIOqGRoler4" 1.0 {"account": "c:WT_MPlkws_-GywvQmomGZwGsCJAcIWqrMSA9ie82FRc","current": 0.0,"previous": 1.0} {"account": "k:account","current": 1.0,"previous": 0.0}]}]
+    (map (remove "module-hash")  (env-events true))
+  )
+
+(rollback-tx)
+
+(begin-tx "offer, withdraw with timeout")
+
+(env-hash (hash "offer-1"))
+(use marmalade-v2.ledger)
+(env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
+
+(env-sigs [
+  { 'key: 'account
+   ,'caps: [(marmalade-v2.ledger.OFFER (read-string "token-id") (read-string "account") 1.0 0.0)]}
+])
+
+(expect "offer succeeds"
+  (pact-id)
+  (sale (read-string "token-id") (read-string "account") 1.0 0.0)
+)
+
+(expect "Seller account is debited"
+  0.0
+  (get-balance (read-string "token-id") (read-string "account"))
+)
+
+(expect "Escrow account is debited"
+  1.0
+  (get-balance (read-string "token-id") "c:TCxrhvg6e_NUVqelF7bnXTT7aabA5qtKdKUXCUXo2_Q")
+)
+
+(expect "offer events"
+  [ {"name": "marmalade-v2.ledger.OFFER","params": [(read-string "token-id") (read-string "account") 1.0 0.0]}
+    {"name": "marmalade-v2.ledger.SALE","params": [(read-string "token-id") (read-string "account") 1.0 0.0 (pact-id)]}
+    {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": [(read-string "token-id") "c:TCxrhvg6e_NUVqelF7bnXTT7aabA5qtKdKUXCUXo2_Q" (create-capability-pact-guard (SALE_PRIVATE (pact-id)))]}
+    {"name": "marmalade-v2.ledger.TRANSFER","params": [(read-string "token-id") (read-string "account") "c:TCxrhvg6e_NUVqelF7bnXTT7aabA5qtKdKUXCUXo2_Q" 1.0]}
+    {"name": "marmalade-v2.ledger.RECONCILE","params": [(read-string "token-id") 1.0 {"account": (read-string "account"),"current": 0.0,"previous": 1.0} {"account": "c:TCxrhvg6e_NUVqelF7bnXTT7aabA5qtKdKUXCUXo2_Q","current": 1.0,"previous": 0.0}]}]
+  (map (remove "module-hash")  (env-events true))
+)
+
+(env-chain-data {"block-time": (time "2023-07-25T11:26:35Z")})
+
+(expect-failure "withdraw fails when called directly"
+  "require-capability: not granted: (marmalade-v2.ledger.SALE_PRIVATE"
+  (withdraw (read-string "token-id") (read-string "account") 1.0)
+)
+
+(expect-failure "withdraw fails without WITHDRAW capability in scope"
+  "Managed capability not installed: (marmalade-v2.ledger.WITHDRAW"
+  (continue-pact 0 true)
+)
+
+(env-sigs [
+  { 'key: 'any
+   ,'caps: [(marmalade-v2.ledger.WITHDRAW (read-string "token-id") (read-string "account") 1.0 0.0 (pact-id))]}
+])
+
+(expect-failure "withdraw fails when sig is not signed"
+  "Keyset failure (keys-all): "
+  (continue-pact 0 true)
+)
+
+(env-sigs [
+  { 'key: 'account
+   ,'caps: [(marmalade-v2.ledger.WITHDRAW (read-string "token-id") (read-string "account") 1.0 0.0 (pact-id))]}
+])
+
+(expect "withdraw succeeds"
+  (pact-id)
+  (continue-pact 0 true)
+)
+
+(expect "withdraw events"
+  [
+    {"name": "marmalade-v2.ledger.WITHDRAW","params": ["t:YxyMWZItsZ_bxQgq7PzzR8RaD_xDxi1zlIOqGRoler4" "k:account" 1.0 0.0 "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk"]}
+    {"name": "marmalade-v2.ledger.TRANSFER","params": ["t:YxyMWZItsZ_bxQgq7PzzR8RaD_xDxi1zlIOqGRoler4" "c:TCxrhvg6e_NUVqelF7bnXTT7aabA5qtKdKUXCUXo2_Q" "k:account" 1.0]}
+    {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:YxyMWZItsZ_bxQgq7PzzR8RaD_xDxi1zlIOqGRoler4" 1.0 {"account": "c:TCxrhvg6e_NUVqelF7bnXTT7aabA5qtKdKUXCUXo2_Q","current": 0.0,"previous": 1.0} {"account": "k:account","current": 1.0,"previous": 0.0}
+  ]}]
+  (map (remove "module-hash")  (env-events true))
+)
+
+(rollback-tx)

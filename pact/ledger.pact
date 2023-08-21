@@ -492,13 +492,19 @@
     (id:string seller:string amount:decimal timeout:decimal sale-id:string)
     @doc "Withdraws offer SALE from SELLER of AMOUNT of token ID after timeout."
     @managed
+    (compose-capability (SALE_PRIVATE sale-id))
     (enforce-one "WITHDRAW: still active" [
       (enforce (= 0.0 timeout) "No timeout set")
       (enforce (not (sale-active timeout)) "WITHDRAW: still active")
     ])
+    (if (= 0.0 timeout)
+      ;; check seller guard
+      (enforce-guard (at 'guard (details id seller)))
+      ;; skip
+      true
+    )
     (compose-capability (DEBIT id (sale-account)))
     (compose-capability (CREDIT id seller))
-    (compose-capability (SALE_PRIVATE sale-id))
   )
 
   (defcap BUY:bool

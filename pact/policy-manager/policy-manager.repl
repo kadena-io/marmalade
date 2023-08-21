@@ -27,6 +27,7 @@
 
 (commit-tx)
 
+;; todo: move this to a util lib
 (begin-tx)
   (module util GOVERNANCE
     (defcap GOVERNANCE ()
@@ -75,11 +76,10 @@
   (load "./manager-init.pact")
 (commit-tx)
 
-(begin-tx "load regular polices")
+(begin-tx "load regular policies")
   (load "../policies/fixed-issuance-policy/fixed-issuance-policy-v1.pact")
   (load "../policies/onchain-manifest-policy/onchain-manifest-policy-v1.pact")
   ; (load "../policies/migration-policy/migration-policy-v1.pact")
-
 (commit-tx)
 
 (begin-tx)

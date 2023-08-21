@@ -141,7 +141,7 @@
     (env-sigs
       [{'key:'account
       ,'caps: [
-        (SELLER (read-string 'sale-id))
+        (OFFER_FOR_BIDDING (read-string 'sale-id))
       ]}
     ])
 
@@ -219,7 +219,10 @@
 
   (env-sigs
     [{'key:'account
-      ,'caps: []}
+      ,'caps: [
+        (marmalade-v2.abc.TRANSFER "k:bidder" "c:Zw-SfWrx11dAMIhuNTLyVUNIPKL7Thsz1PBxhi0ZeGs" 200.0),
+        (ACCEPT_BID (read-string 'sale-id))
+      ]}
   ])
 
   (expect "Accepting bid succeeds"

@@ -202,14 +202,12 @@
     (with-capability (POLICY_MANAGER)
 
     (if (exists-quote sale-id)
-      [
-        (let* (
-          (quote (get-quote-info sale-id))
-          (reserved (at 'reserved quote)))
-          (enforce (= "" reserved) "Sale is reserved, unable to withdraw")
-          (let ((_ ""))(map-withdraw token seller amount sale-id (at 'policies token)) true)
-        )
-      ]
+      (let* (
+        (quote (get-quote-info sale-id))
+        (reserved (at 'reserved quote)))
+        (enforce (= "" reserved) "Sale is reserved, unable to withdraw")
+        (map-withdraw token seller amount sale-id (at 'policies token))
+      )
       ; quote is not used
       (map-withdraw token seller amount sale-id (at 'policies token))
     )))

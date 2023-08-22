@@ -162,7 +162,7 @@
 (env-sigs [
   { 'key: 'mint
    ,'caps: [(marmalade-v2.ledger.MINT (read-msg "token-id") "k:account" 1.0)
-            (marmalade-v2.guard-policy-v1.MINT (read-string "token-id") "k:account" 1.0)
+            ; (marmalade-v2.guard-policy-v1.MINT (read-string "token-id") "k:account" 1.0)
    ]
    }])
 
@@ -186,7 +186,25 @@
 (commit-tx)
 
 (begin-tx "Test enforce-burn")
-;;TODO
+(use marmalade-v2.ledger)
+(use marmalade-v2.policy-manager)
+(use marmalade-v2.util-v1)
+
+(env-sigs [
+  { 'key: 'account
+  ,'caps: [(marmalade-v2.ledger.BURN (read-msg "token-id") "k:account" 1.0)]
+  }])
+
+(expect-failure "enforce-burn cannot be called directly"
+ "Capability not acquired"
+ (enforce-burn (get-token-info "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U") (read-string 'account) 1.0)
+)
+
+(expect "enforce-burn cannot be called directly"
+  true
+  (burn "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" (read-string 'account) 1.0)
+)
+
 (rollback-tx)
 
 (begin-tx "Test enforce-offer, enforce-withdraw(fail), enforce-buy(succeed) without quote")

@@ -27,19 +27,6 @@
 
 (commit-tx)
 
-;; todo: move this to a util lib
-(begin-tx)
-  (module util GOVERNANCE
-    (defcap GOVERNANCE ()
-      false)
-
-    (defun to-timestamp:decimal (input:time)
-      "Computes an Unix timestamp of the input date"
-      (diff-time input (time "1970-01-01T00:00:00Z"))
-    )
-  )
-(commit-tx)
-
 (begin-tx)
   (env-data
    { 'marmalade-admin: ["marmalade-admin"]
@@ -178,6 +165,7 @@
 (begin-tx "offer, withdraw with timeout")
   (env-hash (hash "offer-0"))
   (use marmalade-v2.ledger)
+  (use marmalade-v2.util-v1)
   (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
 
   (env-data {
@@ -193,27 +181,27 @@
 
   (expect-failure "offer fails without OFFER capability in scope"
     "Managed capability not installed: (marmalade-v2.ledger.OFFER"
-    (sale (read-string "token-id") (read-string "account") 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")))
+    (sale (read-string "token-id") (read-string "account") 1.0 (to-timestamp (time "2023-07-22T11:26:35Z")))
   )
 
   (env-sigs [
     { 'key: 'any
-     ,'caps: [(marmalade-v2.ledger.OFFER (read-string "token-id") (read-string "account") 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")))]}
+     ,'caps: [(marmalade-v2.ledger.OFFER (read-string "token-id") (read-string "account") 1.0 (to-timestamp (time "2023-07-22T11:26:35Z")))]}
   ])
 
   (expect-failure "offer fails if OFFER capability is not signed by seller"
     "Keyset failure (keys-all): [account]"
-    (sale (read-string "token-id") (read-string "account") 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")))
+    (sale (read-string "token-id") (read-string "account") 1.0 (to-timestamp (time "2023-07-22T11:26:35Z")))
   )
 
   (env-sigs [
     { 'key: 'account
-     ,'caps: [(marmalade-v2.ledger.OFFER (read-string "token-id") (read-string "account") 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")))]}
+     ,'caps: [(marmalade-v2.ledger.OFFER (read-string "token-id") (read-string "account") 1.0 (to-timestamp (time "2023-07-22T11:26:35Z")))]}
   ])
 
   (expect "offer succeeds"
     (pact-id)
-    (sale (read-string "token-id") (read-string "account") 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")))
+    (sale (read-string "token-id") (read-string "account") 1.0 (to-timestamp (time "2023-07-22T11:26:35Z")))
   )
 
   (expect "Seller account is debited"
@@ -237,7 +225,7 @@
 
   (env-sigs [
     { 'key: 'any
-     ,'caps: [(marmalade-v2.ledger.WITHDRAW (read-string "token-id") (read-string "account") 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")) (pact-id))]}
+     ,'caps: [(marmalade-v2.ledger.WITHDRAW (read-string "token-id") (read-string "account") 1.0 (to-timestamp (time "2023-07-22T11:26:35Z")) (pact-id))]}
   ])
 
   (env-chain-data {"block-time": (time "2023-07-21T11:26:35Z")})
@@ -263,7 +251,7 @@
 
   (env-sigs [
     { 'key: 'any
-     ,'caps: [(marmalade-v2.ledger.WITHDRAW (read-string "token-id") (read-string "account") 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")) (pact-id))]}
+     ,'caps: [(marmalade-v2.ledger.WITHDRAW (read-string "token-id") (read-string "account") 1.0 (to-timestamp (time "2023-07-22T11:26:35Z")) (pact-id))]}
   ])
 
   (expect "withdraw succeeds when WITHDRAW capability in scope, regardless of signer"

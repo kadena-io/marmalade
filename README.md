@@ -22,7 +22,6 @@ Policy manager acts as a middleware between policies, and runs the `policy::enfo
 ```
   (defschema concrete-policy
     non-fungible-policy:bool
-    quote-policy:bool
     royalty-policy:bool
     collection-policy:bool
     guard-policy:bool
@@ -36,11 +35,10 @@ We provide 4 concrete policies, which will provide the most used functionalities
 
 - **Guard Policy**: Initiates a guard with each marmalade activities. The guards are optional, but mint guards are recommended to prevent foreign entity from minting the created tokens.
 - **Collection Policy**: Initiates a collection with pre-defined token lists
-- **Fungible Quote Policy**: Provides a sale of NFT with fungibles using escrow account
 - **Non-fungible Policy**: Defines the token supply to 1 and precision of 0, so the token becomes non-fungible
 - **Royalty-policy**: [dependent on `fungible-quote-policy`]: Defines creator account that will receive royalty whenever the token using `fungible-quote-policy` is sold.
 
-Marmalade users can mint tokens with above features by adding `true` or `false` next to the policy fields in `token-policies`. If projects would like to use customized logic in addition to what concrete policies offer, they can turn off the concrete policy and add additional policies to the `immutable-policies` , or `adjustable-policies` field.
+Marmalade users can mint tokens with above features by adding the policy to the policies field at token creation. If projects would like to use customized logic in addition to what concrete policies offer, they can also add their own policies to this same fieldfield.
 
 ## Marmalade Functions
 
@@ -51,7 +49,7 @@ A Token is created in marmalade via running `create-token`. Arguments include:
 - `id`: token-id, formatted in `t:{token-detail-hash}`. Should be created using `create-token-id`
 - `precision`: Number of decimals allowed for for the token amount. For one-off token, precision must be 0, and should be enforced in the policy's `enforce-init`.
 - `uri`: url to external JSON containing metadata
-- `policies`: policies contract with custom functions to execute at marmalade functions
+- `policies`: policies contracts with custom functions to execute at marmalade functions
 
 `policy-manager.enforce-init` calls `policy:enforce-init` in stored token-policies, and the function is executed in `ledger.create-token`.
 
@@ -122,13 +120,8 @@ Marmalade Policies allow customised rules for token operations.
 
 - [Collection Policy](./pact/concrete-policies/collection-policy/collection-policy-v1.pact) ([docs](./pact/concrete-policies/collection-policy/collection-policy-v1.md))
 - [Fungible Quote Policy](./pact/concrete-policies/fungible-quote-policy/fungible-quote-policy-v1.pact) ([docs](./pact/concrete-policies/fungible-quote-policy/fungible-quote-policy-v1.md))
-- [Non-Fungible Policy](./pact/concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact) ([docs](./pact/concrete-policies/non-fungible-policy/non-fungible-policy-v1.md))
 - [Royalty Policy](./pact/concrete-policies/royalty-policy/royalty-policy-v1.pact) ([docs](./pact/concrete-policies/royalty-policy/royalty-policy-v1.md))
 - [Guard Policy]("./pact/concrete-policies/guard-policy/guard-policy-v1.pact) ([docs](./pact/policies/guard-policy/guard-policy.md))
-
-#### Regular Policies:
-
-- [Fixed Issuance Policy]("./pact/policies/fixed-issuance-policy/fixed-issuance-policy.pact) ([docs](./pact/policies/fixed-issuance-policy/fixed-issuance-policy.md))
 
 ---
 
@@ -151,12 +144,13 @@ Has been replaced with:
 Token schema now has the following structure:
 
     (defschema token-schema
-    	id:string
-    	uri:string
-    	precision:integer
-    	supply:decimal
-    	policy:module{kip.token-policy-v2}
+      id:string
+      uri:string
+      precision:integer
+      supply:decimal
+      policies:[module{kip.token-policy-v2}]
     )
+
 
 - uri: A string representing the URI that points to an external JSON-Schema for the NFT.
 
@@ -400,7 +394,7 @@ When creating a token in the ledger, you should use the `create-token` function.
         ( id:string
           precision:integer
           uri:string
-          policies:object{token-policies}
+          policies:[module{kip.token-policy-v2}]
         )
         ...
     )

@@ -207,7 +207,7 @@
           (quote (get-quote-info sale-id))
           (reserved (at 'reserved quote)))
           (enforce (= "" reserved) "Sale is reserved, unable to withdraw")
-          (let ((_ true))(map-withdraw token seller amount sale-id (at 'policies token)) true)
+          (let ((_ ""))(map-withdraw token seller amount sale-id (at 'policies token)) true)
         )
       ]
       ; quote is not used

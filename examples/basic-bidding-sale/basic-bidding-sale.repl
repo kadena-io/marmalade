@@ -241,7 +241,6 @@
     "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } )
     ,"buyer": "k:bidder"
     ,"buyer-guard": {"keys": ["bidder"], "pred": "keys-all"}
-    ,"buyer_fungible_account": "k:bidder"
     ,"sale-id": "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk"
   })
 

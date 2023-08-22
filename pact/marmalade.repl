@@ -66,7 +66,7 @@
   (load "./test/abc.pact")
 (commit-tx)
 
-(typecheck "marmalade-v2.policy-manager")
+(typecheck "marmalade-v2.ledger")
 
 (begin-tx "load concrete-polices")
   (load "./concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact")
@@ -221,7 +221,7 @@
     (get-balance (read-string "token-id") (read-string "account"))
   )
 
-  (expect "Escrow account is debited"
+  (expect "Escrow account is credited"
     1.0
     (get-balance (read-string "token-id") "c:WT_MPlkws_-GywvQmomGZwGsCJAcIWqrMSA9ie82FRc")
   )
@@ -235,7 +235,21 @@
     (map (remove "module-hash")  (env-events true))
   )
 
+  (env-sigs [
+    { 'key: 'any
+     ,'caps: [(marmalade-v2.ledger.WITHDRAW (read-string "token-id") (read-string "account") 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")) (pact-id))]}
+  ])
+
+  (env-chain-data {"block-time": (time "2023-07-21T11:26:35Z")})
+
+  (expect-failure "withdraw fails before timeout has passed"
+    "WITHDRAW: still active"
+    (continue-pact 0 true)
+  )
+
   (env-chain-data {"block-time": (time "2023-07-23T11:26:35Z")})
+
+  (env-sigs [])
 
   (expect-failure "withdraw fails when called directly"
     "require-capability: not granted: (marmalade-v2.ledger.SALE_PRIVATE"
@@ -266,7 +280,7 @@
 
 (rollback-tx)
 
-(begin-tx "offer, withdraw with timeout")
+(begin-tx "offer, withdraw without timeout")
 
 (env-hash (hash "offer-1"))
 (use marmalade-v2.ledger)
@@ -287,7 +301,7 @@
   (get-balance (read-string "token-id") (read-string "account"))
 )
 
-(expect "Escrow account is debited"
+(expect "Escrow account is credited"
   1.0
   (get-balance (read-string "token-id") "c:TCxrhvg6e_NUVqelF7bnXTT7aabA5qtKdKUXCUXo2_Q")
 )

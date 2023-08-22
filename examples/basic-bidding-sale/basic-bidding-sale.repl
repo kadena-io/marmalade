@@ -18,13 +18,13 @@
   (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
+    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } )
     ,"account": "k:account"
   })
 
   (expect "create a default token without any policies"
     true
-    (create-token (read-msg 'token-id) 0 "test-uri" [] ))
+    (create-token (read-msg 'token-id) 0 "bidding-test-uri" [] ))
 
   (env-sigs [
     { 'key: 'random
@@ -32,7 +32,7 @@
     }])
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
+    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } )
   ,"account": "k:account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
   })
@@ -59,7 +59,7 @@
   })
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
+    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } )
     ,"quote": {
       "spec": {
         "seller-fungible-account": {
@@ -96,7 +96,7 @@
   })
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
+    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } )
     ,"quote": {
       "spec": {
         "seller-fungible-account": {
@@ -156,7 +156,7 @@
   (use free.basic-bidding-sale)
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
+    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } )
     ,"sale-id": "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk"
     ,"bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
   })
@@ -238,7 +238,7 @@
   (use free.basic-bidding-sale)
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-uri", 'precision: 0, 'policies: [] } )
+    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } )
     ,"buyer": "k:bidder"
     ,"buyer-guard": {"keys": ["bidder"], "pred": "keys-all"}
     ,"buyer_fungible_account": "k:bidder"

@@ -202,14 +202,12 @@
     (with-capability (POLICY_MANAGER)
 
     (if (exists-quote sale-id)
-      [
-        (let* (
-          (quote (get-quote-info sale-id))
-          (reserved (at 'reserved quote)))
-          (enforce (= "" reserved) "Sale is reserved, unable to withdraw")
-          (map-withdraw token seller amount sale-id (at 'policies token))
-        )
-      ]
+      (let* (
+        (quote (get-quote-info sale-id))
+        (reserved (at 'reserved quote)))
+        (enforce (= "" reserved) "Sale is reserved, unable to withdraw")
+        (map-withdraw token seller amount sale-id (at 'policies token))
+      )
       ; quote is not used
       (map-withdraw token seller amount sale-id (at 'policies token))
     )))
@@ -326,7 +324,6 @@
            (reserved-buyer:string (at 'reserved quote))
            (spec:object{quote-spec} (at 'spec quote))
            (fungible:module{fungible-v2} (at 'fungible spec))
-           (buyer-fungible-account-name:string (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY))
            (seller-fungible-account:object{fungible-account} (at 'seller-fungible-account spec))
            (price:decimal (at 'price spec))
            (sale-price:decimal (floor (* price amount) (fungible::precision)))
@@ -334,7 +331,7 @@
 
        (if (= reserved-buyer "")
         ; No reserved buyer, transfer from buyer to escrow
-        (fungible::transfer-create buyer-fungible-account-name (at 'account escrow-account) (at 'guard escrow-account) sale-price)
+        (fungible::transfer-create (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at 'account escrow-account) (at 'guard escrow-account) sale-price)
         ; Reserved buyer, escrow has already been funded
         (enforce (= reserved-buyer buyer) "Reserved buyer must be buyer")
        )

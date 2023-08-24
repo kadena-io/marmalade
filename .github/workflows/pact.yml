@@ -46,6 +46,20 @@ jobs:
           r=`tail -1 out.log | grep "Load successful"`
           if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi
 
+      - name: Test pact/policy-manager/policy-manager.repl
+        run: |
+          bin/pact -t pact/policy-manager/policy-manager.repl > out.log 2>&1
+          cat out.log
+          r=`tail -1 out.log | grep "Load successful"`
+          if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi
+
+      - name: Test pact/qutoe-manager/qutoe-manager.repl
+        run: |
+          bin/pact -t pact/quote-manager/quote-manager.repl > out.log 2>&1
+          cat out.log
+          r=`tail -1 out.log | grep "Load successful"`
+          if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi
+
       - name: Test concrete collection-policy
         run: |
           bin/pact -t pact/concrete-policies/collection-policy/collection-policy-v1.repl > out.log 2>&1

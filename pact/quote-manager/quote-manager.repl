@@ -52,7 +52,7 @@
       })))
 
     (env-sigs [
-      { 'key: 'seller
+      { 'key: 'any
       ,'caps: [
       (marmalade-v2.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
     }])

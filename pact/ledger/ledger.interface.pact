@@ -36,5 +36,4 @@
     @doc
       "Capability securing the modref call for enforce-buy"
   )
-
 )

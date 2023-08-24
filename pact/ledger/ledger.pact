@@ -174,17 +174,6 @@
     (compose-capability (UPDATE_SUPPLY))
   )
 
-  ;  TODO: remove once quote-manager and policies no longer depend on this
-  (defcap LEDGER:bool ()
-    @doc "Ledger module guard for policies to be able to validate access to policy operations."
-    true
-  )
-
-  ;  TODO: remove once quote-manager and policies no longer depend on this
-  (defun ledger-guard:guard ()
-    (create-capability-guard (LEDGER))
-  )
-
   ;  Transform token-schema object to token-info object
   (defun get-token-info:object{kip.token-policy-v2.token-info} (id:string)
     (with-read tokens id

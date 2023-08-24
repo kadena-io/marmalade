@@ -58,11 +58,11 @@
    , 'marmalade-ns-admin: ["marmalade-admin"]
    , 'ns: "marmalade-v2"
    , 'upgrade: false })
-  (load "../ledger.interface.pact")
+  (load "../ledger/ledger.interface.pact")
   (load "./policy-manager.interface.pact")
   (load "../quote-manager/quote-manager.pact")
   (load "../policy-manager/policy-manager.pact")
-  (load "../ledger.pact")
+  (load "../ledger/ledger.pact")
   (load "../marmalade-util/util-v1.pact")
   (load "../test/abc.pact")
 (commit-tx)

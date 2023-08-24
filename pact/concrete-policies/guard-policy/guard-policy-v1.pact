@@ -8,6 +8,7 @@
 
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
+  (use marmalade-v2.policy-manager)
 
   (defschema guards
     mint-guard:guard
@@ -92,12 +93,6 @@
     (read policy-guards (at 'id token))
   )
 
-  (defun enforce-ledger:bool ()
-    ;   TODO: require capability from policy manager
-    ;  (enforce-guard (marmalade-v2.ledger.ledger-guard))
-    true
-  )
-
   (defun enforce-init:bool
     ( token:object{token-info}
     )
@@ -109,7 +104,7 @@
     \ * (optional) sale_guard:string -  sale-guard and adds success guard if absent. \
     \ * (optional) transfer_guard:string -  transfer-guard and adds success guard if absent. \
     \ the created token"
-    (enforce-ledger)
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
     (let ((guards:object{guards}
       { 'mint-guard: (try GUARD_SUCCESS (read-msg MINT-GUARD-MSG-KEY) ) ;; type error becomes successful guard
       , 'burn-guard: (try GUARD_SUCCESS (read-msg BURN-GUARD-MSG-KEY) )
@@ -127,7 +122,7 @@
       guard:guard
       amount:decimal
     )
-    (enforce-ledger)
+    (require-capability (MINT-CALL (at "id" token) account amount))
     (with-capability (MINT (at 'id token) account amount)
       true
     )
@@ -138,7 +133,7 @@
       account:string
       amount:decimal
     )
-    (enforce-ledger)
+    (require-capability (BURN-CALL (at "id" token) account amount))
     (with-capability (BURN (at 'id token) account amount)
       true
     )
@@ -149,7 +144,7 @@
       seller:string
       amount:decimal
       sale-id:string )
-    (enforce-ledger)
+    (require-capability (OFFER-CALL (at "id" token) seller amount sale-id))
     (enforce-sale-pact sale-id)
     (with-capability (SALE (at 'id token) seller amount)
       true
@@ -163,7 +158,7 @@
       buyer-guard:guard
       amount:decimal
       sale-id:string )
-    (enforce-ledger)
+    (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id))
     (enforce-sale-pact sale-id)
     (with-capability (SALE (at 'id token) seller amount)
       true
@@ -175,7 +170,7 @@
       seller:string
       amount:decimal
       sale-id:string )
-    (enforce-ledger)
+    (require-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id))
     (enforce-sale-pact sale-id)
     (with-capability (SALE (at 'id token) seller amount)
       true
@@ -188,7 +183,7 @@
       guard:guard
       receiver:string
       amount:decimal )
-    (enforce-ledger)
+    (require-capability (TRANSFER-CALL (at "id" token) sender receiver amount))
     (with-capability (TRANSFER (at 'id token) sender receiver amount)
       true
     )
@@ -198,7 +193,6 @@
     "Enforces that SALE is id for currently executing pact"
     (enforce (= sale-id (pact-id)) "Invalid pact/sale id")
   )
-
 )
 
 (if (read-msg 'upgrade )

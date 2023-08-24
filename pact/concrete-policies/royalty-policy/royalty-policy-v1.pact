@@ -40,10 +40,6 @@
     true
   )
 
-  (defun enforce-ledger:bool ()
-     (enforce-guard (marmalade-v2.ledger.ledger-guard))
-  )
-
   (defun enforce-init:bool
     ( token:object{token-info}
     )
@@ -51,7 +47,7 @@
     \ Required msg-data keys:                                                  \
     \ * royalty_spec:object{royalty-schema} - registers royalty information of \
     \ the created token"
-    (enforce-ledger)
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
     (let* ( (spec:object{royalty-schema} (read-msg ROYALTY-SPEC-MSG-KEY))
             (fungible:module{fungible-v2} (at 'fungible spec))
             (creator:string (at 'creator spec))
@@ -108,7 +104,7 @@
       buyer-guard:guard
       amount:decimal
       sale-id:string )
-    (enforce-ledger)
+    (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id))
     (enforce-sale-pact sale-id)
     (bind (get-royalty token)
       { 'fungible := fungible:module{fungible-v2}

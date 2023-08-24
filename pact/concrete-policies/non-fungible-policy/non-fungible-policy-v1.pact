@@ -8,18 +8,13 @@
     (enforce-guard "marmalade-v2.marmalade-admin"))
 
   (implements kip.token-policy-v2)
+  (use marmalade-v2.policy-manager)
   (use kip.token-policy-v2 [token-info])
-
-  (defun enforce-ledger:bool ()
-    ;   TODO: require capability from policy manager
-    ;  (enforce-guard (marmalade-v2.ledger.ledger-guard))
-    true
-  )
 
   (defun enforce-init:bool
     ( token:object{token-info}
     )
-    (enforce-ledger)
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
     (enforce (= 0 (at 'precision token)) "Precision must be 0")
     true
   )
@@ -30,7 +25,7 @@
       guard:guard
       amount:decimal
     )
-    (enforce-ledger)
+    (require-capability (MINT-CALL (at "id" token) account amount))
     (enforce (= amount 1.0) "Mint can only be 1")
     (enforce (= (at 'supply token) 0.0) "Only one mint allowed")
   )
@@ -77,6 +72,6 @@
       seller:string
       amount:decimal
       sale-id:string )
-    (enforce-ledger)
+    true
   )
 )

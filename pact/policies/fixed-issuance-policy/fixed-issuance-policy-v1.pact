@@ -9,6 +9,7 @@
 
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
+  (use marmalade-v2.policy-manager)
 
   (defconst FIXED-ISSUANCE-SPEC:string "fix_issuance_spec")
 
@@ -24,10 +25,6 @@
     (read supplies (at 'id token))
   )
 
-  (defun enforce-ledger:bool ()
-     (enforce-guard (marmalade-v2.ledger.ledger-guard))
-  )
-
   (defun enforce-init:bool
     ( token:object{token-info}
     )
@@ -35,7 +32,7 @@
     \ Required msg-data keys:                                                  \
     \ * fixed_issuance_spec:object{supply-schema} - registers minimum mint     \
     \ amount, max-supply, and precision information of the created token"
-    (enforce-ledger)
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
     (let* (
             (fixed-issuance-spec:object{supply-schema} (read-msg FIXED-ISSUANCE-SPEC))
             )
@@ -52,7 +49,7 @@
       guard:guard
       amount:decimal
     )
-    (enforce-ledger)
+    (require-capability (MINT-CALL (at "id" token) account amount))
     (bind (get-supply token)
       { 'min-amount:=min-amount:decimal
       , 'max-supply:=max-supply:decimal

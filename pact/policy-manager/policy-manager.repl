@@ -59,6 +59,7 @@
    , 'ns: "marmalade-v2"
    , 'upgrade: false })
   (load "../ledger.interface.pact")
+  (load "./policy-manager.interface.pact")
   (load "../quote-manager/quote-manager.pact")
   (load "../policy-manager/policy-manager.pact")
   (load "../ledger.pact")
@@ -171,15 +172,12 @@
 
     (implements kip.token-policy-v2)
     (use kip.token-policy-v2 [token-info])
-
-    (defun enforce-ledger:bool ()
-       (enforce-guard (marmalade-v2.ledger.ledger-guard))
-    )
+    (use marmalade-v2.policy-manager)
 
     (defun enforce-init:bool
       ( token:object{token-info}
       )
-      (enforce-ledger)
+      (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
       true
     )
 
@@ -189,7 +187,7 @@
         guard:guard
         amount:decimal
       )
-      (enforce-ledger)
+      (require-capability (MINT-CALL (at "id" token) account amount))
     )
 
     (defun enforce-burn:bool
@@ -197,7 +195,7 @@
         account:string
         amount:decimal
       )
-      (enforce-ledger)
+      (require-capability (BURN-CALL (at "id" token) account amount))
     )
 
     (defun enforce-offer:bool
@@ -207,7 +205,7 @@
         sale-id:string
       )
       @doc "Capture quote spec for SALE of TOKEN from message"
-      (enforce-ledger)
+      (require-capability (OFFER-CALL (at "id" token) seller amount sale-id))
     )
 
     (defun enforce-buy:bool
@@ -217,7 +215,7 @@
         buyer-guard:guard
         amount:decimal
         sale-id:string )
-      (enforce-ledger)
+      (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id))
     )
 
     (defun enforce-transfer:bool
@@ -226,7 +224,7 @@
         guard:guard
         receiver:string
         amount:decimal )
-      (enforce-ledger)
+      (require-capability (TRANSFER-CALL (at "id" token) sender receiver amount))
     )
 
     (defun enforce-withdraw:bool
@@ -234,7 +232,7 @@
         seller:string
         amount:decimal
         sale-id:string )
-      (enforce-ledger)
+      (require-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id))
     )
   )
 

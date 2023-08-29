@@ -1,2 +1,65 @@
-(load "./policy-manager/policy-manager.repl")
-(typecheck "marmalade-v2.ledger")
+(begin-tx)
+  (env-data
+    { 'ns-admin-keyset: []
+    , 'ns-genesis-keyset:[]
+    , 'ns-operate-keyset:[] })
+  (load "./root/fungible-v2.pact")
+  (load "./root/fungible-xchain-v1.pact")
+  (load "./root/gas-payer-v1.pact")
+  (env-exec-config ["DisablePact44"])
+  (load "./root/ns.pact")
+  (define-namespace 'kip (sig-keyset) (sig-keyset))
+
+  (load "./kip/account-protocols-v1.pact")
+  (env-data
+  { 'marmalade-admin: ["marmalade-admin"]
+  , 'marmalade-ns-user: ["marmalade-admin"]
+  , 'marmalade-ns-admin: ["marmalade-admin"]
+  , 'ns: "marmalade-v2"
+  , 'upgrade: false })
+
+  (load "./kip/manifest.pact")
+  (load "./kip/token-policy-v2.pact")
+  (load "./kip/poly-fungible-v3.pact")
+  (define-namespace 'util (sig-keyset) (sig-keyset))
+  (load "./util/fungible-util.pact")
+  (load "./util/guards1.pact")
+
+(commit-tx)
+
+(begin-tx)
+  (env-data
+   { 'marmalade-admin: ["marmalade-admin"]
+   , "marmalade-v2.marmalade-admin": ["marmalade-admin"]
+   , 'marmalade-ns-user: ["marmalade-admin"]
+   , 'marmalade-ns-admin: ["marmalade-admin"]
+   , 'ns: "marmalade-v2"
+   , 'upgrade: false })
+   (env-sigs [
+     { 'key: 'marmalade-admin
+      ,'caps: []
+      }])
+  (load "./ns-marmalade.pact")
+  (env-data
+   { 'marmalade-admin: ["marmalade-admin"]
+   , 'marmalade-ns-user: ["marmalade-admin"]
+   , 'marmalade-ns-admin: ["marmalade-admin"]
+   , 'ns: "marmalade-v2"
+   , 'upgrade: false })
+  (load "./policy-manager/policy-manager.interface.pact")
+  (load "./ledger/ledger.interface.pact")
+  (load "./quote-manager/quote-manager.pact")
+
+  (load "./policy-manager/policy-manager.pact")
+  (load "./ledger/ledger.pact")
+  (load "./marmalade-util/util-v1.pact")
+  (load "./test/abc.pact")
+(commit-tx)
+
+(begin-tx "load concrete-polices")
+  (load "./concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact")
+  (load "./concrete-policies/royalty-policy/royalty-policy-v1.pact")
+  (load "./concrete-policies/collection-policy/collection-policy-v1.pact")
+  (load "./concrete-policies/guard-policy/guard-policy-v1.pact")
+  (load "./policy-manager/manager-init.pact")
+(commit-tx)

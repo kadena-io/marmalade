@@ -161,7 +161,7 @@
       ])
 
   (expect-failure "update-quote-price cannot be called directly"
-    "Capability not acquired"
+    "(require-capability (policy-ma...: Failure: require-capability: not granted: (marmalade-v2.policy-manager.UPDATE-QUOTE-PRICE-CALL"
     (update-quote-price (read-msg 'sale-id) 20.0 (read-msg 'buyer))
   )
 

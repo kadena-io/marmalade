@@ -293,7 +293,9 @@
     (enforce (!= sender receiver)
       "sender cannot be the receiver of a transfer")
     (enforce-valid-transfer sender receiver (precision id) amount)
-    (enforce-transfer-policy id sender receiver amount)
+    (with-capability (TRANSFER-CALL id sender receiver amount)
+      (marmalade-v2.policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
+    )
     (with-capability (TRANSFER id sender receiver amount)
       (with-read ledger (key id receiver)
         { "guard" := g }
@@ -306,17 +308,6 @@
       ))
   )
 
-  (defun enforce-transfer-policy
-    ( id:string
-      sender:string
-      receiver:string
-      amount:decimal
-    )
-    (with-capability (TRANSFER-CALL id sender receiver amount)
-      (marmalade-v2.policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
-    )
-  )
-
   (defun transfer-create:bool
     ( id:string
       sender:string
@@ -327,7 +318,9 @@
     (enforce (!= sender receiver)
       "sender cannot be the receiver of a transfer")
     (enforce-valid-transfer sender receiver (precision id) amount)
-    (enforce-transfer-policy id sender receiver amount)
+    (with-capability (TRANSFER-CALL id sender receiver amount)
+      (marmalade-v2.policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
+    )
     (with-capability (TRANSFER id sender receiver amount)
       (let
         (

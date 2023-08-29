@@ -151,10 +151,9 @@
     @doc "Add quote if quote-msg exists in transaction data"
     (let* ( (quote-spec:object{quote-spec} (at 'spec quote-msg))
             (seller-guard:guard (at 'seller-guard quote-msg))
-            (quote-guards:[guard] (at 'quote-guards quote-msg)))
-        (let ((policy-manager:module{policy-manager-v1} (retrieve-policy-manager)))
-          (require-capability (policy-manager::ADD-QUOTE-CALL sale-id token-id (at 'price quote-spec)))
-        )
+            (quote-guards:[guard] (at 'quote-guards quote-msg))
+            (policy-manager:module{policy-manager-v1} (retrieve-policy-manager)))
+        (require-capability (policy-manager::ADD-QUOTE-CALL sale-id token-id (at 'price quote-spec)))
         (validate-quote quote-spec)
         (insert quotes sale-id {
            "token-id": token-id

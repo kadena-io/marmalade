@@ -41,7 +41,7 @@
     ( token-id:string
       manifest:object{manifest}
     )
-    (with-capability (UPGRADE token-id )
+    (with-capability (UPGRADE token-id)
       (enforce-verify-manifest manifest)
       (update manifests token-id {
         "manifest": manifest
@@ -52,7 +52,7 @@
   (defun enforce-init:bool
     ( token:object{token-info}
     )
-    @doc "Exected at `create-token` step of marmalade.ledger.                  \
+    @doc "Executed at `create-token` step of marmalade.ledger.                  \
     \ Required msg-data keys:                                                  \
     \ * manifest_spec:object{manifest-spec} - registers the manifest object of \
     \ the token and the guard that manages the upgrade of the manifest on chain"
@@ -63,7 +63,6 @@
     )
     true
   )
-
 
   (defun enforce-mint:bool
     ( token:object{token-info}

@@ -58,7 +58,7 @@
       \ * collection_id:string - registers the token to a collection and emits           \
       \ TOKEN_COLLECTION event for discovery"
       (enforce (>= collection-size 0) "Collection size must be positive")
-      (let ((collection-id:string (create-collection-id collection-name) ))
+      (let ((collection-id:string (create-collection-id collection-name operator-guard) ))
         (insert collections collection-id {
          "id": collection-id
          ,"name": collection-name
@@ -66,7 +66,10 @@
          ,"size": 0
          ,"operator-guard": operator-guard
         })
-        (emit-event (COLLECTION collection-id collection-name collection-size))
+        ;  enforce operator guard and emit collection created event
+        (with-capability (OPERATOR collection-id)
+          (emit-event (COLLECTION collection-id collection-name collection-size))
+        )
       )
       true
   )
@@ -160,8 +163,8 @@
 
   ;;UTILITY FUNCTIONS
 
-  (defun create-collection-id:string (collection-name:string)
-    (format "collection:{}" [(hash collection-name)])
+  (defun create-collection-id:string (collection-name:string operator-guard:guard)
+    (format "collection:{}" [(hash [collection-name operator-guard])])
   )
 
   (defun get-collection:object{collection} (collection-id:string )

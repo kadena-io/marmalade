@@ -402,20 +402,14 @@
                (= old-bal -1.0))
              (old-bal:decimal (if is-new 0.0 old-bal))
              (new-bal:decimal  (+ old-bal amount)))
-      (if is-new
-        [ (insert ledger (key id account)
-            { "balance" : new-bal
-            , "guard"   : guard
-            , "id" : id
-            , "account" : account
-            })
-          (emit-event (ACCOUNT_GUARD id account guard))]
-        [ (update ledger (key id account)
-           { "balance" : new-bal }
-          )
-         ]
-        )
-      {'account: account, 'previous: old-bal, 'current: new-bal}
+        (write ledger (key id account)
+           { "balance" : new-bal
+           , "guard"   : guard
+           , "id" : id
+           , "account" : account
+           })
+        (if is-new (emit-event (ACCOUNT_GUARD id account guard)) true)
+        {'account: account, 'previous: old-bal, 'current: new-bal}
       ))
     )
 
@@ -478,7 +472,7 @@
   ;;
 
   (defcap SALE:bool
-    (id:string seller:string amount:decimal timeout:time sale-id:string)
+    (id:string seller:string amount:decimal timeout:decimal sale-id:string)
     @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
     @event
     (enforce (> amount 0.0) "Amount must be positive")
@@ -488,7 +482,7 @@
   )
 
   (defcap OFFER:bool
-    (id:string seller:string amount:decimal timeout:time)
+    (id:string seller:string amount:decimal timeout:decimal)
     @doc "Managed cap for SELLER offering AMOUNT of token ID until TIMEOUT."
     @managed
     (enforce (sale-active timeout) "SALE: invalid timeout")
@@ -497,17 +491,26 @@
   )
 
   (defcap WITHDRAW:bool
-    (id:string seller:string amount:decimal timeout:time sale-id:string)
+    (id:string seller:string amount:decimal timeout:decimal sale-id:string)
     @doc "Withdraws offer SALE from SELLER of AMOUNT of token ID after timeout."
     @managed
-    (enforce (not (sale-active timeout)) "WITHDRAW: still active")
+    (compose-capability (SALE_PRIVATE sale-id))
+    (enforce-one "WITHDRAW: still active" [
+      (enforce (= 0.0 timeout) "No timeout set")
+      (enforce (not (sale-active timeout)) "WITHDRAW: still active")
+    ])
+    (if (= 0.0 timeout)
+      ;; check seller guard
+      (enforce-guard (at 'guard (details id seller)))
+      ;; skip
+      true
+    )
     (compose-capability (DEBIT id (sale-account)))
     (compose-capability (CREDIT id seller))
-    (compose-capability (SALE_PRIVATE sale-id))
   )
 
   (defcap BUY:bool
-    (id:string seller:string buyer:string amount:decimal timeout:time sale-id:string)
+    (id:string seller:string buyer:string amount:decimal timeout:decimal sale-id:string)
     @doc "Completes sale OFFER to BUYER."
     @managed
     (enforce (sale-active timeout) "BUY: expired")
@@ -518,23 +521,25 @@
 
   (defcap SALE_PRIVATE:bool (sale-id:string) true)
 
-  (defpact sale:bool
+  (defpact sale:string
     ( id:string
       seller:string
       amount:decimal
-      timeout:time
+      timeout:decimal
     )
     (step-with-rollback
       ;; Step 0: offer
       (with-capability (LEDGER)
         (policy-manager.enforce-offer (get-token-info id) seller amount (pact-id))
         (with-capability (SALE id seller amount timeout (pact-id))
-          (offer id seller amount)))
+          (offer id seller amount))
+          (pact-id))
       ;;Step 0, rollback: withdraw
       (with-capability (LEDGER)
         (policy-manager.enforce-withdraw (get-token-info id) seller amount (pact-id))
         (with-capability (WITHDRAW id seller amount timeout (pact-id))
-          (withdraw id seller amount)))
+          (withdraw id seller amount))
+          (pact-id))
     )
     (step
       ;; Step 1: buy
@@ -544,7 +549,8 @@
            (policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
            (with-capability (BUY id seller buyer amount timeout (pact-id))
              (buy id seller buyer buyer-guard amount (pact-id))
-           ))))
+           ))
+           (pact-id)))
   )
 
   (defun offer:bool
@@ -615,9 +621,12 @@
       true
   ))
 
-  (defun sale-active:bool (timeout:time)
+  (defun sale-active:bool (timeout:decimal)
     @doc "Sale is active until TIMEOUT time."
-    (< (at 'block-time (chain-data)) timeout)
+    (if (= 0.0 timeout)
+      true
+      (< (at 'block-time (chain-data)) (add-time (time "1970-01-01T00:00:00Z") timeout))
+    )
   )
 
   (defun sale-account:string ()

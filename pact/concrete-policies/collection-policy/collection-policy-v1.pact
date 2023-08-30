@@ -30,6 +30,8 @@
   (deftable collections:{collection})
   (deftable tokens:{token})
 
+  (defconst COLLECTION-ID-MSG-KEY:string "collection_id")
+
   (defcap OPERATOR (collection-id:string)
     @doc "Capability to grant creation of a collection's token"
     (with-read collections collection-id {
@@ -54,6 +56,11 @@
       collection-size:integer
       operator-guard:guard
       )
+      @doc "Executed directly from the policy, required to succeed before `create-token` \
+      \ step for collection tokens.                                                      \
+      \ Required msg-data keys:                                                          \
+      \ * collection_id:string - registers the token to a collection and emits           \
+      \ TOKEN_COLLECTION event for discovery"
       (enforce (>= collection-size 0) "Collection size must be positive")
       (let ((collection-id:string (create-collection-id collection-name) ))
         (insert collections collection-id {
@@ -69,16 +76,22 @@
   )
 
   (defun enforce-init:bool (token:object{token-info})
+    @doc "Executed at `create-token` step of marmalade.ledger.                 \
+    \ Required msg-data keys:                                                  \
+    \ * collection_id:string - registers the token to a collection and emits   \
+    \ TOKEN_COLLECTION event for discovery"
     (enforce-ledger)
     (let* ( (token-id:string  (at 'id token))
-            (collection-id:string (read-msg "collection-id")) )
+            (collection-id:string (read-msg COLLECTION-ID-MSG-KEY)) )
     ;;Enforce operator guard
     (with-capability (OPERATOR collection-id)
       (with-read collections collection-id {
         "max-size":= max-size
        ,"size":= size
         }
-      (if (= 0 max-size) "No size limit" (enforce (> max-size size) "Exceeds collection size"))
+
+      ; max-size=0 means unlimited collection
+      (enforce (or? (= 0) (< size) max-size) "Exceeds collection size")
 
       (update collections collection-id {
         "size": (+ 1 size)

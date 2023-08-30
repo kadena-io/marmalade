@@ -28,7 +28,7 @@ jobs:
         run: |
           mkdir bin
           cd bin
-          wget https://github.com/kadena-io/pact/releases/download/v4.7.1/pact-4.7.1-linux-20.04.zip
+          wget https://github.com/kadena-io/pact/releases/download/v4.8/pact-4.8-linux-20.04.zip
           unzip "pact*.zip"
           chmod +x pact
           cd ..
@@ -42,6 +42,20 @@ jobs:
       - name: Test pact/marmalade.repl
         run: |
           bin/pact -t pact/marmalade.repl > out.log 2>&1
+          cat out.log
+          r=`tail -1 out.log | grep "Load successful"`
+          if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi
+
+      - name: Test pact/policy-manager/policy-manager.repl
+        run: |
+          bin/pact -t pact/policy-manager/policy-manager.repl > out.log 2>&1
+          cat out.log
+          r=`tail -1 out.log | grep "Load successful"`
+          if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi
+
+      - name: Test pact/quote-manager/quote-manager.repl
+        run: |
+          bin/pact -t pact/quote-manager/quote-manager.repl > out.log 2>&1
           cat out.log
           r=`tail -1 out.log | grep "Load successful"`
           if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi
@@ -66,9 +80,17 @@ jobs:
           cat out.log
           r=`tail -1 out.log | grep "Load successful"`
           if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi
+
       - name: Test concrete guard-policy
         run: |
           bin/pact -t pact/concrete-policies/guard-policy/guard-policy-v1.repl > out.log 2>&1
+          cat out.log
+          r=`tail -1 out.log | grep "Load successful"`
+          if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi
+
+      - name: Test examples -Basic bidding sale
+        run: |
+          bin/pact -t examples/basic-bidding-sale/basic-bidding-sale.repl > out.log 2>&1
           cat out.log
           r=`tail -1 out.log | grep "Load successful"`
           if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi

@@ -69,4 +69,9 @@
      ,'guard-policy: (contains (get-concrete-policy GUARD_POLICY) policies)
     }
   )
+  
+  (defun to-timestamp:decimal (input:time)
+    "Computes an Unix timestamp of the input date"
+    (diff-time input (time "1970-01-01T00:00:00Z"))
+  )
 )

@@ -27,7 +27,7 @@
     ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
     ,"royalty-rate": 0.05
     }
-  ,"collection-id": "collection:hSQGbcedpUX030HHNizv3KQokGwdGijDoG7ifTvWKe4"
+  ,"collection_id": "collection:hSQGbcedpUX030HHNizv3KQokGwdGijDoG7ifTvWKe4"
   ,"ks": {"keys": ["operator"], "pred": "keys-all"}
   })
 
@@ -87,12 +87,12 @@
       ,"max-size": 10
       ,"operator-guard": (read-keyset 'ks )
     }
-    (marmalade-v2.collection-policy-v1.get-collection (read-msg 'collection-id)))
+    (marmalade-v2.collection-policy-v1.get-collection (read-msg 'collection_id)))
 
   (expect "token should be part of collection"
     {
       "id": (read-msg 'token-id)
-      ,"collection-id": "collection:hSQGbcedpUX030HHNizv3KQokGwdGijDoG7ifTvWKe4"
+     ,"collection-id": "collection:hSQGbcedpUX030HHNizv3KQokGwdGijDoG7ifTvWKe4"
     }
     (marmalade-v2.collection-policy-v1.get-token (read-msg 'token-id))
   )
@@ -114,7 +114,7 @@
     ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
     ,"royalty-rate": 0.05
     }
-  ,"collection-id": "collection:k5h38RgwCGX84Sa6VDs0bP4jOs832n1KvQ-95VPg6k8"
+  ,"collection_id": "collection:k5h38RgwCGX84Sa6VDs0bP4jOs832n1KvQ-95VPg6k8"
   ,"ks": {"keys": ["operator"], "pred": "keys-all"}
   })
 
@@ -152,7 +152,7 @@
     ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
     ,"royalty-rate": 0.05
     }
-  ,"collection-id": "collection:k5h38RgwCGX84Sa6VDs0bP4jOs832n1KvQ-95VPg6k8"
+  ,"collection_id": "collection:k5h38RgwCGX84Sa6VDs0bP4jOs832n1KvQ-95VPg6k8"
   ,"ks": {"keys": ["operator"], "pred": "keys-all"}
   })
 

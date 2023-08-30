@@ -10,6 +10,7 @@
 
   (implements kip.token-policy-v2)
 
+  (use marmalade-v2.policy-manager)
   (use kip.token-policy-v2 [token-info])
 
   (defschema collection
@@ -46,11 +47,6 @@
     @event
     true)
 
-  (defun enforce-ledger:bool ()
-    (enforce-guard (marmalade-v2.ledger.ledger-guard))
-    true
-  )
-
   (defun create-collection:bool
     ( collection-name:string
       collection-size:integer
@@ -80,7 +76,7 @@
     \ Required msg-data keys:                                                  \
     \ * collection_id:string - registers the token to a collection and emits   \
     \ TOKEN_COLLECTION event for discovery"
-    (enforce-ledger)
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
     (let* ( (token-id:string  (at 'id token))
             (collection-id:string (read-msg COLLECTION-ID-MSG-KEY)) )
     ;;Enforce operator guard

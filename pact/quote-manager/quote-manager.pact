@@ -2,6 +2,7 @@
 
 (module quote-manager GOVERNANCE
 
+  (use marmalade-v2.policy-manager-v1)
   (use kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
   (use util.guards1)
@@ -9,29 +10,25 @@
   (defcap GOVERNANCE ()
     (enforce-guard "marmalade-v2.marmalade-admin"))
 
-  ;; Saves Policy Manager Guard information
+  ; Saves reference to policy-manager
   (defschema policy-manager
-    policy-manager-guard:guard
+    policy-manager-impl:module{policy-manager-v1}
   )
 
   (deftable policy-managers:{policy-manager}
-    @doc "Singleton table for policy-manager guard storage"
+    @doc "Singleton table for policy-manager reference storage"
   )
 
-  (defun enforce-policy-manager:bool ()
-    @doc "Enforces that function is called from the saved policy-manager"
-    (with-read policy-managers "" {
-      "policy-manager-guard":= policy-manager-guard
-      }
-      (enforce-guard policy-manager-guard)
-    )
+  (defun retrieve-policy-manager:module{policy-manager-v1} ()
+    @doc "Retrieves the ledger implementation"
+    (at 'policy-manager-impl (read policy-managers ""))
   )
 
-  (defun init:bool(policy-manager-guard:guard)
+  (defun init:bool(policy-manager:module{policy-manager-v1})
     @doc "Must be initiated with policy-manager information"
     (with-capability (GOVERNANCE)
       (insert policy-managers "" {
-        "policy-manager-guard": policy-manager-guard
+        "policy-manager-impl": policy-manager
       })
     )
     true
@@ -152,10 +149,11 @@
 
   (defun add-quote:bool (sale-id:string token-id:string quote-msg:object{quote-msg})
     @doc "Add quote if quote-msg exists in transaction data"
-    (enforce-policy-manager)
     (let* ( (quote-spec:object{quote-spec} (at 'spec quote-msg))
             (seller-guard:guard (at 'seller-guard quote-msg))
-            (quote-guards:[guard] (at 'quote-guards quote-msg)))
+            (quote-guards:[guard] (at 'quote-guards quote-msg))
+            (policy-manager:module{policy-manager-v1} (retrieve-policy-manager)))
+        (require-capability (policy-manager::ADD-QUOTE-CALL sale-id token-id (at 'price quote-spec)))
         (validate-quote quote-spec)
         (insert quotes sale-id {
            "token-id": token-id
@@ -172,7 +170,9 @@
 
   (defun update-quote-price:bool (sale-id:string price:decimal buyer:string)
     @doc "Updates the quote price and sets the designated buyer"
-    (enforce-policy-manager)
+    (let ((policy-manager:module{policy-manager-v1} (retrieve-policy-manager)))
+      (require-capability (policy-manager::UPDATE-QUOTE-PRICE-CALL sale-id price buyer))
+    )
     (with-capability (UPDATE_QUOTE_PRICE sale-id)
       (with-read quotes sale-id {
           "spec":= quote-spec

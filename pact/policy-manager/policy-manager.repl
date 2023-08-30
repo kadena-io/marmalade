@@ -30,15 +30,12 @@
 
       (implements kip.token-policy-v2)
       (use kip.token-policy-v2 [token-info])
-
-      (defun enforce-ledger:bool ()
-         (enforce-guard (marmalade-v2.ledger.ledger-guard))
-      )
+      (use marmalade-v2.policy-manager)
 
       (defun enforce-init:bool
         ( token:object{token-info}
         )
-        (enforce-ledger)
+        (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
         true
       )
 
@@ -48,7 +45,7 @@
           guard:guard
           amount:decimal
         )
-        (enforce-ledger)
+        (require-capability (MINT-CALL (at "id" token) account amount))
       )
 
       (defun enforce-burn:bool
@@ -56,7 +53,7 @@
           account:string
           amount:decimal
         )
-        (enforce-ledger)
+        (require-capability (BURN-CALL (at "id" token) account amount))
       )
 
       (defun enforce-offer:bool
@@ -66,7 +63,7 @@
           sale-id:string
         )
         @doc "Capture quote spec for SALE of TOKEN from message"
-        (enforce-ledger)
+        (require-capability (OFFER-CALL (at "id" token) seller amount sale-id))
       )
 
       (defun enforce-buy:bool
@@ -76,7 +73,7 @@
           buyer-guard:guard
           amount:decimal
           sale-id:string )
-        (enforce-ledger)
+        (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id))
       )
 
       (defun enforce-transfer:bool
@@ -85,7 +82,7 @@
           guard:guard
           receiver:string
           amount:decimal )
-        (enforce-ledger)
+        (require-capability (TRANSFER-CALL (at "id" token) sender receiver amount))
       )
 
       (defun enforce-withdraw:bool
@@ -93,7 +90,7 @@
           seller:string
           amount:decimal
           sale-id:string )
-        (enforce-ledger)
+        (require-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id))
       )
     )
 
@@ -125,7 +122,7 @@
     })
 
   (expect-failure "enforce-init cannot be called directly"
-    "Capability not acquired"
+    "require-capability (ledger::I...: Failure: require-capability: not granted: (marmalade-v2.ledger.INIT-CALL "
     (enforce-init {
       "id": (create-token-id { 'uri: "default-test-uri", 'precision: 0, 'policies: [] } )
      ,"supply": 0.0
@@ -159,15 +156,13 @@
     , "account-guard": {"keys": ["account"], "pred": "keys-all"}
     })
 
-(env-sigs [
-  { 'key: 'mint
-   ,'caps: [(marmalade-v2.ledger.MINT (read-msg "token-id") "k:account" 1.0)
-            ; (marmalade-v2.guard-policy-v1.MINT (read-string "token-id") "k:account" 1.0)
-   ]
-   }])
+  (env-sigs [
+    { 'key: 'mint
+     ,'caps: [(marmalade-v2.ledger.MINT (read-msg "token-id") "k:account" 1.0)
+    ]}])
 
    (expect-failure "enforce-mint cannot be called directly"
-     "Capability not acquired"
+     "(require-capability (ledger::M...: Failure: require-capability: not granted: (marmalade-v2.ledger.MINT-CALL "
      (enforce-mint (get-token-info "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U") (read-string 'account) (read-keyset 'account-guard ) 1.0)
    )
 
@@ -196,7 +191,7 @@
   }])
 
 (expect-failure "enforce-burn cannot be called directly"
- "Capability not acquired"
+ "(require-capability (ledger::B...: Failure: require-capability: not granted: (marmalade-v2.ledger.BURN-CALL"
  (enforce-burn (get-token-info "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U") (read-string 'account) 1.0)
 )
 
@@ -226,7 +221,7 @@
     }])
 
   (expect-failure "enforce-offer cannot be called directly"
-    "Capability not acquired"
+    "(require-capability (ledger::O...: Failure: require-capability: not granted: (marmalade-v2.ledger.OFFER-CALL"
     (enforce-offer (get-token-info (read-string "token-id")) (read-string 'seller) 1.0 "void-sale-id")
   )
 
@@ -258,7 +253,7 @@
   })
 
   (expect-failure "enforce-buy cannot be called directly"
-   "Capability not acquired"
+   "(require-capability (ledger::B...: Failure: require-capability: not granted: (marmalade-v2.ledger.BUY-CALL"
    (enforce-buy (get-token-info (read-string 'token-id )) (read-string 'seller ) (read-string 'buyer ) (read-keyset 'buyer-guard ) 1.0 (pact-id)))
 
   (expect "Buy succeeds"
@@ -324,7 +319,7 @@
     }])
 
   (expect-failure "enforce-withdraw cannot be called directly"
-    "Capability not acquired"
+    "(require-capability (ledger::W...: Failure: require-capability: not granted: (marmalade-v2.ledger.WITHDRAW-CALL"
     (enforce-withdraw (get-token-info (read-string 'token-id )) (read-string 'seller ) 1.0 (pact-id) ))
 
   (expect "Withdraw succeeds"
@@ -339,22 +334,25 @@
   )
 
   (env-sigs
-    [ {'key:'buyer
+    [{'key:'buyer-fungible
+      ,'caps: [
+        (marmalade-v2.abc.TRANSFER "k:buyer-fungible" "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" 2.0)
+      ]}
+    {'key:'buyer
       ,'caps: [
         (marmalade-v2.ledger.BUY "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0.0 (pact-id))
       ]}
   ])
 
   (env-data {
-    "token-id": "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U"
-   ,"seller": "k:account"
-   ,"buyer": "k:buyer"
+    "buyer": "k:buyer"
    ,"buyer-guard": {"keys": ['buyer], "pred": "keys-all"}
-  })
+   ,"buyer_fungible_account": "k:buyer-fungible"
+   })
 
-  (expect-failure "buy fails after offer is withdrawn"
-   "resumePact: pact completed: i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"
-   (continue-pact 1))
+  (expect-failure "Buy fails when called after withdraw"
+    "resumePact: pact completed: i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"
+    (continue-pact 1))
 
 (rollback-tx)
 

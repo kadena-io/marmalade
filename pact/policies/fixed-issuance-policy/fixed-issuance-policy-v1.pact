@@ -42,9 +42,7 @@
       (enforce (>= (at 'min-amount fixed-issuance-spec) 0.0) "Invalid min-amount")
       (enforce (>= (at 'max-supply fixed-issuance-spec) 0.0) "Invalid max-supply")
       (enforce (= (at 'precision fixed-issuance-spec) (at 'precision token)) "Invalid Precision")
-      (insert supplies (at 'id token)
-        { 'max-supply: (at 'max-supply fixed-issuance-spec)
-        , 'min-amount: (at 'min-amount fixed-issuance-spec) }))
+      (insert supplies (at 'id token) fixed-issuance-spec))
     true
   )
 

@@ -24,6 +24,14 @@
 
   (deftable bids:{bids-schema})
 
+  (defun enforce-seller-guard:bool (sale-id:string)
+    (let (
+      (quote:object{quote-schema} (marmalade-v2.quote-manager.get-quote-info sale-id)))
+
+      (enforce-guard (at 'seller-guard quote))
+    )
+  )
+
   (defcap BID:bool
     ( bid-id:string
       sale-id:string
@@ -68,13 +76,12 @@
     )
   )
 
-  (defcap SELLER:bool (sale-id:string)
-    @doc "Only accessible for seller"
-    (let (
-      (quote:object{quote-schema} (marmalade-v2.quote-manager.get-quote-info sale-id)))
+  (defcap OFFER_FOR_BIDDING:bool (sale-id:string)
+    (enforce-seller-guard sale-id)
+  )
 
-      (enforce-guard (at 'seller-guard quote))
-    )
+  (defcap ACCEPT_BID:bool (sale-id:string)
+    (enforce-seller-guard sale-id)
   )
 
   (defcap BASIC_BIDDING:bool ()
@@ -91,9 +98,10 @@
     (format "{}-{}" [sale-id buyer])
   )
 
-  ; ledger.sale has to have happened before this can be called
-  (defun offer-for-auction:bool (sale-id:string)
-    (with-capability (SELLER sale-id)
+  ; Add this contract's guard to the quote manager in order to allow updating the
+  ; quote, ledger.sale has to have happened before this can be called
+  (defun offer-for-bidding:bool (sale-id:string)
+    (with-capability (OFFER_FOR_BIDDING sale-id)
       (marmalade-v2.quote-manager.add-quote-guard sale-id (create-capability-guard (BASIC_BIDDING)))
     )
   )
@@ -169,7 +177,7 @@
       bid-id:string
       sale-id:string
     )
-    (with-capability (SELLER sale-id)
+    (with-capability (ACCEPT_BID sale-id)
     (with-read bids bid-id
       { 'token-id:= token-id,
         'buyer:= buyer,
@@ -186,7 +194,7 @@
         (quote:object{quote-schema} (marmalade-v2.quote-manager.get-quote-info sale-id))
         (spec:object{quote-spec} (at 'spec quote))
         (seller-guard:guard (at 'seller-guard quote))
-        (fungible:module{fungible-v2} (at 'fungible spec))        
+        (fungible:module{fungible-v2} (at 'fungible spec))
         (sale-price:decimal (floor (* price amount) (fungible::precision))))
 
         ; Set bid status to accepted

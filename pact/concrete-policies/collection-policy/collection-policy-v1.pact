@@ -39,9 +39,10 @@
       (enforce-guard operator-guard))
   )
 
-  (defcap COLLECTION:bool (collection-id:string collection-name:string collection-size:integer)
+  (defcap COLLECTION:bool (collection-id:string collection-name:string collection-size:integer operator-guard:guard)
     @event
-    true)
+    (enforce-guard operator-guard)
+  )
 
   (defcap TOKEN_COLLECTION:bool (token-id:string collection-id:string)
     @event
@@ -52,26 +53,20 @@
       collection-size:integer
       operator-guard:guard
       )
-      @doc "Executed directly from the policy, required to succeed before `create-token` \
-      \ step for collection tokens.                                                      \
-      \ Required msg-data keys:                                                          \
-      \ * collection_id:string - registers the token to a collection and emits           \
-      \ TOKEN_COLLECTION event for discovery"
+      @doc "Executed directly on the policy, required to succeed before `create-token` \
+      \ step for collection tokens and emits COLLECTION event for discovery"
       (enforce (>= collection-size 0) "Collection size must be positive")
       (let ((collection-id:string (create-collection-id collection-name operator-guard) ))
-        (insert collections collection-id {
-         "id": collection-id
-         ,"name": collection-name
-         ,"max-size": collection-size
-         ,"size": 0
-         ,"operator-guard": operator-guard
-        })
-        ;  enforce operator guard and emit collection created event
-        (with-capability (OPERATOR collection-id)
-          (emit-event (COLLECTION collection-id collection-name collection-size))
-        )
-      )
-      true
+        (with-capability (COLLECTION collection-id collection-name collection-size operator-guard)
+          (insert collections collection-id {
+          "id": collection-id
+          ,"name": collection-name
+          ,"max-size": collection-size
+          ,"size": 0
+          ,"operator-guard": operator-guard
+          })
+          true
+      ))
   )
 
   (defun enforce-init:bool (token:object{token-info})

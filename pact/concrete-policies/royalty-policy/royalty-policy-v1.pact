@@ -8,6 +8,7 @@
     (enforce-guard "marmalade-v2.marmalade-admin"))
 
   (use marmalade-v2.policy-manager)
+  (use marmalade-v2.policy-manager [QUOTE-MSG-KEY])
   (use marmalade-v2.quote-manager)
   (use marmalade-v2.quote-manager [quote-spec quote-schema])
   (implements kip.token-policy-v2)
@@ -94,7 +95,15 @@
       sale-id:string
     )
     @doc "Capture quote spec for SALE of TOKEN from message"
-    true
+    (enforce (exists-msg-quote QUOTE-MSG-KEY) "Offer is restricted to quoted sale")
+    (bind (get-royalty token)
+      { 'fungible := fungible:module{fungible-v2} }
+      (let* (
+          (quote:object{quote-msg} (read-msg QUOTE-MSG-KEY))
+          (quote-spec:object{quote-spec} (at 'spec quote)) )
+        (enforce (= fungible (at 'fungible quote-spec)) (format "Offer is restricted to sale using fungible: {}" [fungible]))
+      )
+    )
   )
 
   (defun enforce-buy:bool

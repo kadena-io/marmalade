@@ -54,7 +54,7 @@
   (load "./ledger/ledger.pact")
   (load "./marmalade-util/util-v1.pact")
   (load "./test/abc.pact")
-  (load "./test/xyz.pact")
+  (load "./test/def.pact")
 (commit-tx)
 
 (begin-tx "load concrete-polices")

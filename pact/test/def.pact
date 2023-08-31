@@ -1,5 +1,5 @@
 (namespace (read-msg 'ns))
-(module xyz GOVERNANCE
+(module def GOVERNANCE
 
   (implements fungible-v2)
   (use util.fungible-util)

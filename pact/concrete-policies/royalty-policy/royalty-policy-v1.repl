@@ -115,7 +115,7 @@
  ,"account": "k:account"
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
-    "fungible": marmalade-v2.xyz
+    "fungible": marmalade-v2.def
    ,"creator": "k:creator"
    ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
    ,"royalty-rate": 0.05
@@ -172,17 +172,75 @@
 
 (env-hash (hash "offer-royalty-0"))
 (use marmalade-v2.ledger)
-
 (use marmalade-v2.util-v1)
 
 (env-data {
   "seller-guard": {"keys": ["account"], "pred": "keys-all"}
 })
+
+(marmalade-v2.abc.create-account "k:account" (read-keyset 'seller-guard))
+(marmalade-v2.def.create-account "k:account" (read-keyset 'seller-guard))
+
+(env-data {
+  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } )
+  ,"quote":{
+     "spec": {
+       "fungible": marmalade-v2.def
+       ,"price": 2.0
+       ,"amount": 1.0
+       ,"seller-fungible-account": {
+           "account": "k:account"
+          ,"guard": {"keys": ["account"], "pred": "keys-all"}
+         }
+     }
+     ,"seller-guard": {"keys": ["account"], "pred": "keys-all"}
+     ,"quote-guards": []
+   }
+  })
+
+(env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
+(env-sigs [
+  { 'key: 'account
+   ,'caps: [
+   (marmalade-v2.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")) )]
+   }])
+
+(expect-failure "Offer fails when quote uses a different fungible from registered fungible"
+  "(enforce (= fungible (at 'fung...: Failure: Tx Failed: Offer is restricted to sale using fungible: marmalade-v2.abc"
+  (sale (read-msg 'token-id) "k:account" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z"))))
+
+(env-data {
+  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } )
+  ,"quote":{
+     "spec": {
+       "fungible": marmalade-v2.abc
+       ,"price": 2.0
+       ,"amount": 1.0
+       ,"seller-fungible-account": {
+           "account": "k:account"
+          ,"guard": {"keys": ["account"], "pred": "keys-all"}
+         }
+     }
+     ,"seller-guard": {"keys": ["account"], "pred": "keys-all"}
+     ,"quote-guards": []
+   }
+})
+(rollback-tx)
+
+(begin-tx)
+
+(env-hash (hash "offer-royalty-0"))
+(use marmalade-v2.ledger)
+(use marmalade-v2.util-v1)
+
+(env-data {
+  "seller-guard": {"keys": ["account"], "pred": "keys-all"}
+})
+
 (marmalade-v2.abc.create-account "k:account" (read-keyset 'seller-guard))
 
 (env-data {
   "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } )
-
   ,"quote":{
      "spec": {
        "fungible": marmalade-v2.abc
@@ -205,7 +263,7 @@
    (marmalade-v2.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")) )]
    }])
 
-(expect "stat offer by running step 0 of sale"
+(expect "start offer by running step 0 of sale"
   "0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM"
   (sale (read-msg 'token-id) "k:account" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z"))))
 

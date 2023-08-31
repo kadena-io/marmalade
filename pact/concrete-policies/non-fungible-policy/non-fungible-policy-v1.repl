@@ -28,6 +28,22 @@
   (marmalade-v2.abc.create-account "k:creator" (read-keyset 'creator-guard))
 (commit-tx)
 
+(begin-tx "Create a non-fungible token fails when precision is not 0")
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.util-v1)
+
+  (env-data {
+    "token-id": (create-token-id { 'uri: "test-non-fungible-uri", 'precision: 1, 'policies: (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) } )
+    ,"account": "k:account"
+    ,"nfp-mint-guard": {"keys": ["account"], "pred": "keys-all"}
+    ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
+  })
+
+(expect-failure  "Precision should be 0"
+  (create-token (read-msg "token-id") 0 "test-non-fungible-uri" (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY)))
+(rollback-tx)
+
+
 (begin-tx)
   (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
@@ -43,8 +59,9 @@
 (begin-tx "Create a non-fungible token")
   (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
-  (create-token (read-msg "token-id") 0 "test-non-fungible-uri" (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) )
+  (create-token (read-msg "token-id") 0 "test-non-fungible-uri" (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY))
 (commit-tx)
+
 
 (begin-tx "Mint with a supply other then 1 fails ")
 

@@ -13,6 +13,19 @@
   (marmalade-v2.abc.create-account "k:creator" (read-keyset 'creator-guard))
 (commit-tx)
 
+(begin-tx "Creating collection fails without operator guard")
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.policy-manager)
+  (use marmalade-v2.util-v1)
+  (env-data {
+    "ks": {"keys": ["operator"], "pred": "keys-all"}
+  })
+
+ (expect-failure "create collection fails if operator guard isn't present"
+    "Keyset failure"
+    (marmalade-v2.collection-policy-v1.create-collection "test-collection0" 10 (read-keyset 'ks )))
+(rollback-tx)
+
 (begin-tx "Creating collection")
   (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)
@@ -27,23 +40,30 @@
     ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
     ,"royalty-rate": 0.05
     }
-  ,"collection_id": "collection:hSQGbcedpUX030HHNizv3KQokGwdGijDoG7ifTvWKe4"
+  ,"collection_id": "collection:lUAvkHxqGSH22Z7zLMljdmHlFZ-DvfuVYdC0ioHCfqk"
   ,"ks": {"keys": ["operator"], "pred": "keys-all"}
   })
+
+  (expect "collection id generation based on name and operator"
+    "collection:lUAvkHxqGSH22Z7zLMljdmHlFZ-DvfuVYdC0ioHCfqk"
+    (marmalade-v2.collection-policy-v1.create-collection-id "test-collection0" (read-keyset 'ks )))
+
+  (env-sigs [
+    { 'key: 'operator
+    ,'caps: [(marmalade-v2.collection-policy-v1.COLLECTION "collection:lUAvkHxqGSH22Z7zLMljdmHlFZ-DvfuVYdC0ioHCfqk" "test-collection0" 10 (read-keyset 'ks ))]
+    }])
 
   (expect "initiate a collection with `create-collection`"
     true
     (marmalade-v2.collection-policy-v1.create-collection "test-collection0" 10 (read-keyset 'ks )))
-
-  (expect "collection id generation based on name"
-    "collection:hSQGbcedpUX030HHNizv3KQokGwdGijDoG7ifTvWKe4"
-    (marmalade-v2.collection-policy-v1.create-collection-id "test-collection0"))
 (commit-tx)
 
 (begin-tx "Create token without operator guard fails")
   (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.util-v1)
+
+  (env-sigs [])
 
  (expect-failure "create token fails if operator guard isn't present"
    "Keyset failure"
@@ -57,7 +77,7 @@
 
   (env-sigs [
     { 'key: 'operator
-    ,'caps: [(marmalade-v2.collection-policy-v1.OPERATOR "collection:hSQGbcedpUX030HHNizv3KQokGwdGijDoG7ifTvWKe4")]
+    ,'caps: [(marmalade-v2.collection-policy-v1.OPERATOR "collection:lUAvkHxqGSH22Z7zLMljdmHlFZ-DvfuVYdC0ioHCfqk")]
     }])
 
   (expect "create a default token with collection-policy, quote-policy, non-fungible-policy, royalty-policy"
@@ -81,7 +101,7 @@
 
   (expect "collection should be present and size should be updated"
     {
-      "id": "collection:hSQGbcedpUX030HHNizv3KQokGwdGijDoG7ifTvWKe4"
+      "id": "collection:lUAvkHxqGSH22Z7zLMljdmHlFZ-DvfuVYdC0ioHCfqk"
       ,"name": "test-collection0"
       ,"size": 1
       ,"max-size": 10
@@ -92,7 +112,7 @@
   (expect "token should be part of collection"
     {
       "id": (read-msg 'token-id)
-     ,"collection-id": "collection:hSQGbcedpUX030HHNizv3KQokGwdGijDoG7ifTvWKe4"
+     ,"collection-id": "collection:lUAvkHxqGSH22Z7zLMljdmHlFZ-DvfuVYdC0ioHCfqk"
     }
     (marmalade-v2.collection-policy-v1.get-token (read-msg 'token-id))
   )
@@ -114,18 +134,23 @@
     ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
     ,"royalty-rate": 0.05
     }
-  ,"collection_id": "collection:k5h38RgwCGX84Sa6VDs0bP4jOs832n1KvQ-95VPg6k8"
+  ,"collection_id": "collection:aHZrcOD_nHHHiEQgIhdfjcWfUKcD1dvsdG00tE4fAC8"
   ,"ks": {"keys": ["operator"], "pred": "keys-all"}
   })
+
+  (env-sigs [
+      { 'key: 'operator
+      ,'caps: [(marmalade-v2.collection-policy-v1.COLLECTION "collection:aHZrcOD_nHHHiEQgIhdfjcWfUKcD1dvsdG00tE4fAC8" "test-collection-size" 1 (read-keyset 'ks ))]
+      }])
 
   (expect "initiate a collection with `create-collection`"
     true
     (marmalade-v2.collection-policy-v1.create-collection "test-collection-size" 1 (read-keyset 'ks )))
 
   (env-sigs [
-      { 'key: 'operator
-      ,'caps: [(marmalade-v2.collection-policy-v1.OPERATOR "collection:k5h38RgwCGX84Sa6VDs0bP4jOs832n1KvQ-95VPg6k8")]
-      }])
+    { 'key: 'operator
+    ,'caps: [(marmalade-v2.collection-policy-v1.OPERATOR "collection:aHZrcOD_nHHHiEQgIhdfjcWfUKcD1dvsdG00tE4fAC8")]
+    }])
 
   (expect "create a default token with collection-policy, quote-policy, non-fungible-policy, royalty-policy"
     true
@@ -152,9 +177,14 @@
     ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
     ,"royalty-rate": 0.05
     }
-  ,"collection_id": "collection:k5h38RgwCGX84Sa6VDs0bP4jOs832n1KvQ-95VPg6k8"
+  ,"collection_id": "collection:aHZrcOD_nHHHiEQgIhdfjcWfUKcD1dvsdG00tE4fAC8"
   ,"ks": {"keys": ["operator"], "pred": "keys-all"}
   })
+
+  (env-sigs [
+      { 'key: 'operator
+      ,'caps: [(marmalade-v2.collection-policy-v1.OPERATOR "collection:aHZrcOD_nHHHiEQgIhdfjcWfUKcD1dvsdG00tE4fAC8")],'caps: [(marmalade-v2.collection-policy-v1.COLLECTION "collection:aHZrcOD_nHHHiEQgIhdfjcWfUKcD1dvsdG00tE4fAC8" "test-collection-size" 0 (read-keyset 'ks ))]
+      }])
 
   (expect "initiate a collection with `create-collection`"
     true
@@ -162,7 +192,7 @@
 
   (env-sigs [
       { 'key: 'operator
-      ,'caps: [(marmalade-v2.collection-policy-v1.OPERATOR "collection:k5h38RgwCGX84Sa6VDs0bP4jOs832n1KvQ-95VPg6k8")]
+      ,'caps: [(marmalade-v2.collection-policy-v1.OPERATOR "collection:aHZrcOD_nHHHiEQgIhdfjcWfUKcD1dvsdG00tE4fAC8")]
       }])
 
   (expect "create a default token with collection-policy, quote-policy, non-fungible-policy, royalty-policy"

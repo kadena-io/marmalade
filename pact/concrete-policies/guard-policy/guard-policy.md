@@ -10,6 +10,6 @@ The enforce-init function initializes the policy-guards table for a given token 
 
 The enforce-offer and enforce-buy functions enforce rules related to buying and selling tokens, including checking the sale-id against the currently executing pact.
 
-The enforce-transfer and enforce-crosschain functions enforce rules related to transferring tokens, including checking the sender, receiver, and amount of the transfer against the specified guards.
+The enforce-transfer function enforce rules related to transferring tokens, including checking the sender, receiver, and amount of the transfer against the specified guards.
 
 Finally, the code includes a conditional block that creates the policy-guards table if it does not already exist, or returns a message indicating that the upgrade is complete if the table does exist.

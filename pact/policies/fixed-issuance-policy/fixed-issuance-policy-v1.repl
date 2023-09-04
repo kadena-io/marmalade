@@ -21,55 +21,60 @@
 
 
     (env-data {
-        "token-id": (create-token-id { 'uri: "test-fixed-issuance-policy", 'precision: 0, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } )
-    ,"supply-schema": {
-            max-supply:2,
-            min-amount:1,
-            precision:0
-    }
-    })
+            "token-id": (create-token-id { 'uri: "test-fixed-issuance-policy", 'precision: 0, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } ),
+            "supply-schema": {
+                max-supply:2,
+                min-amount:1,
+                precision:0}
+        }
+    )
 
     (env-sigs [])
 
     (expect "create a token with fixed-issuance-policy"
         true
         (create-token (read-msg 'token-id) 0 "test-fixed-issuance-policy-v1" [marmalade-v2.fixed-issuance-policy-v1] ))
-    )
+
+
 
     (expect-failure "Precision is incorrect"
         "Invalid Precision"
         (create-token (read-msg 'token-id) 1 "test-fixed-issuance-policy-v1" [marmalade-v2.fixed-issuance-policy-v1] ))
-    )
     
-
+    
     (env-data {
-        "token-id": (create-token-id { 'uri: "test-fixed-issuance-policy", 'precision: 0, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } )
-    ,"supply-schema": {
-            max-supply:2,
-            min-amount:0,
-            precision:0
-    }
-    })
+            "token-id": (create-token-id { 'uri: "test-fixed-issuance-policy", 'precision: 0, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } ),
+            "supply-schema": {
+                max-supply:2,
+                min-amount:1,
+                precision:0
+            }
+        }
+    )
+
+    
 
     (expect-failure "max ammount is not valid"
         "Invalid min-amount"
-        (create-token (read-msg 'token-id) 1 "test-fixed-issuance-policy-v1" [marmalade-v2.fixed-issuance-policy-v1] )))
-    )
-
+        (create-token (read-msg 'token-id) 1 "test-fixed-issuance-policy-v1" [marmalade-v2.fixed-issuance-policy-v1] ))
+    
+    
     (env-data {
-        "token-id": (create-token-id { 'uri: "test-fixed-issuance-policy", 'precision: 0, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } )
-    ,"supply-schema": {
-            max-supply:0,
-            min-amount:1,
-            precision:0
-    }
-    })
-
-
+            "token-id": (create-token-id { 'uri: "test-fixed-issuance-policy", 'precision: 0, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } ),
+            "supply-schema": {
+                max-supply:0,
+                min-amount:1,
+                precision:0
+            }
+        }
+    )
+    
+    
     (expect-failure "Max ammount is not valid"
         "Invalid max-supply"
-        (create-token (read-msg 'token-id) 1 "test-fixed-issuance-policy-v1" [marmalade-v2.fixed-issuance-policy-v1] )))
-    )
+        (create-token (read-msg 'token-id) 1 "test-fixed-issuance-policy-v1" [marmalade-v2.fixed-issuance-policy-v1] ))
+        
+
 
 
 (commit-tx)

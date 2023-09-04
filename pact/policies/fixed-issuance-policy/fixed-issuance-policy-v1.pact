@@ -32,7 +32,7 @@
     \ Required msg-data keys:                                                  \
     \ * fixed_issuance_spec:object{supply-schema} - registers minimum mint     \
     \ amount, max-supply, and precision information of the created token"
-    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) fixed-issuance-policy-v1))
     (let* (
             (fixed-issuance-spec:object{supply-schema} (read-msg FIXED-ISSUANCE-SPEC))
             )
@@ -49,7 +49,7 @@
       guard:guard
       amount:decimal
     )
-    (require-capability (MINT-CALL (at "id" token) account amount))
+    (require-capability (MINT-CALL (at "id" token) account amount fixed-issuance-policy-v1))
     (bind (get-supply token)
       { 'min-amount:=min-amount:decimal
       , 'max-supply:=max-supply:decimal

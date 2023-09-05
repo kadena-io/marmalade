@@ -78,18 +78,11 @@
       NULL
     )
 
-  (defun crafted-burn:bool (account:string amount:decimal)
-    (marmalade-v2.ledger.burn "t:AgX_I3_rBJSe1-0ggcrxWo_uzDZfyQL8d4drl8jZ30k" "k:alice" 1.0)
-    NULL
-  )
-
   (defpact transfer-crosschain:string
     ( sender:string
       receiver:string
       receiver-guard:guard
       target-chain:string
-      amount:decimal )
-    (step (enforce false "cross chain not supported"))
-    )
+      amount:decimal ) NULL)
 
 )

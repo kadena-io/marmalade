@@ -119,7 +119,7 @@
 
   (defcap CONCRETE_POLICY:bool (policy-field:string policy:module{kip.token-policy-v2})
     @event
-    true
+    (enforce-guard "marmalade-v2.marmalade-admin")
   )
 
   (deftable concrete-policies:{concrete-policy})
@@ -133,12 +133,11 @@
 
   (defun write-concrete-policy:bool (policy-field:string policy:module{kip.token-policy-v2})
     (contains policy-field CONCRETE_POLICY_LIST)
-    (with-capability (GOVERNANCE)
+    (with-capability (CONCRETE_POLICY policy-field policy)
       (write concrete-policies policy-field {
         "policy": policy
         }
       )
-      (emit-event (CONCRETE_POLICY policy-field policy))
     true)
   )
 
@@ -327,7 +326,7 @@
 
 
   ; Sale/Escrow Functions
-  (defcap SALE_RESERVED:bool
+  (defcap RESERVE_SALE:bool
     ( sale-id:string
       price:decimal
       buyer:string
@@ -355,8 +354,10 @@
     (enforce-reserved buyer buyer-guard)
 
     (with-capability (UPDATE-QUOTE-PRICE-CALL sale-id price buyer)
-      ; Update the quote in the quote-manager
-      (update-quote-price sale-id price buyer)
+      (with-capability (RESERVE_SALE sale-id price buyer buyer-guard)
+        (install-capability (UPDATE_QUOTE_PRICE sale-id price buyer))
+        (update-quote-price sale-id price buyer)
+      )
     )
 
     (let* (
@@ -370,9 +371,8 @@
       ; Transfer buy-amount to escrow account
       (install-capability (fungible::TRANSFER quote-account (at 'account escrow-account) sale-price))
       (fungible::transfer-create quote-account (at 'account escrow-account) (at 'guard escrow-account) sale-price)
-
-      (emit-event (SALE_RESERVED sale-id price buyer buyer-guard))
     )
+    true
   )
 
   (defun map-escrowed-buy:bool

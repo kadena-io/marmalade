@@ -156,7 +156,7 @@
     (env-sigs [
       { 'key: 'market
       ,'caps: [
-        (marmalade-v2.quote-manager.UPDATE_QUOTE_PRICE (read-msg 'sale-id))
+          (marmalade-v2.policy-manager.RESERVE_SALE (read-msg 'sale-id) 20.0 (read-msg 'buyer) (read-keyset 'buyer-guard))
         ]}
       ])
 
@@ -168,7 +168,6 @@
   (expect-failure "Reserve sale fails when quote guard is empty, test update-quote-price"
     "None of the guards passed"
     (reserve-sale (read-msg 'sale-id) 20.0 (read-msg 'buyer) (read-keyset 'buyer-guard) (read-msg 'buyer)))
-
 
   (env-sigs [
     { 'key: 'any
@@ -222,7 +221,7 @@
       ]}
       { 'key: 'market
       ,'caps: [
-        (marmalade-v2.quote-manager.UPDATE_QUOTE_PRICE (read-msg 'sale-id))
+          (marmalade-v2.policy-manager.RESERVE_SALE (read-msg 'sale-id) 20.0 (read-msg 'buyer) (read-keyset 'buyer-guard))
         ]}
     ])
 

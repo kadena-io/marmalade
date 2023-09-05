@@ -44,31 +44,31 @@
   ;;
   ;; policy-manager-v1 caps to be able to validate access to quote-manager & policy operations.
   ;;
-  (defcap INIT-CALL:bool (id:string precision:integer uri:string)
+  (defcap INIT-CALL:bool (id:string precision:integer uri:string policy:module{kip.token-policy-v2})
     true
   )
 
-  (defcap TRANSFER-CALL:bool (id:string sender:string receiver:string amount:decimal)
+  (defcap TRANSFER-CALL:bool (id:string sender:string receiver:string amount:decimal policy:module{kip.token-policy-v2})
     true
   )
 
-  (defcap MINT-CALL:bool (id:string account:string amount:decimal)
+  (defcap MINT-CALL:bool (id:string account:string amount:decimal policy:module{kip.token-policy-v2})
     true
   )
 
-  (defcap BURN-CALL:bool (id:string account:string amount:decimal)
+  (defcap BURN-CALL:bool (id:string account:string amount:decimal policy:module{kip.token-policy-v2})
     true
   )
 
-  (defcap OFFER-CALL:bool (id:string seller:string amount:decimal sale-id:string)
+  (defcap OFFER-CALL:bool (id:string seller:string amount:decimal sale-id:string policy:module{kip.token-policy-v2})
     true
   )
 
-  (defcap WITHDRAW-CALL:bool (id:string seller:string amount:decimal sale-id:string)
+  (defcap WITHDRAW-CALL:bool (id:string seller:string amount:decimal sale-id:string policy:module{kip.token-policy-v2})
     true
   )
 
-  (defcap BUY-CALL:bool (id:string seller:string buyer:string amount:decimal sale-id:string)
+  (defcap BUY-CALL:bool (id:string seller:string buyer:string amount:decimal sale-id:string policy:module{kip.token-policy-v2})
     true
   )
 
@@ -179,9 +179,12 @@
     (let ((ledger:module{ledger-v1} (retrieve-ledger)))
       (require-capability (ledger::INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
     )
-    (with-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token))
-      (map-init token (at 'policies token))
-    )
+
+    (map (lambda (policy:module{kip.token-policy-v2})
+      (with-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) policy)
+        (policy::enforce-init token)
+      )
+    ) (at 'policies token))
   )
 
   (defun enforce-mint:[bool]
@@ -193,9 +196,11 @@
     (let ((ledger:module{ledger-v1} (retrieve-ledger)))
       (require-capability (ledger::MINT-CALL (at "id" token) account amount))
     )
-    (with-capability (MINT-CALL (at "id" token) account amount)
-      (map-mint token account guard amount (at 'policies token))
-    )
+    (map (lambda (policy:module{kip.token-policy-v2})
+      (with-capability (MINT-CALL (at "id" token) account amount policy)
+        (policy::enforce-mint token account guard amount)
+      )
+    ) (at 'policies token))
   )
 
   (defun enforce-burn:[bool]
@@ -206,9 +211,11 @@
     (let ((ledger:module{ledger-v1} (retrieve-ledger)))
       (require-capability (ledger::BURN-CALL (at "id" token) account amount))
     )
-    (with-capability (BURN-CALL (at "id" token) account amount)
-      (map-burn token account amount (at 'policies token))
-    )
+    (map (lambda (policy:module{kip.token-policy-v2})
+      (with-capability (BURN-CALL (at "id" token) account amount policy)
+        (policy::enforce-burn token account amount)
+      )
+    ) (at 'policies token))
   )
 
   (defun enforce-offer:[bool]
@@ -242,9 +249,11 @@
       ]
       ; false - skip
       true)
-    (with-capability (OFFER-CALL (at "id" token) seller amount sale-id)
-      (map-offer token seller amount sale-id (at 'policies token))
-    )
+    (map (lambda (policy:module{kip.token-policy-v2})
+      (with-capability (OFFER-CALL (at "id" token) seller amount sale-id policy)
+        (policy::enforce-offer token seller amount sale-id)
+      )
+    ) (at 'policies token))
   )
 
   (defun enforce-withdraw:[bool]
@@ -263,14 +272,17 @@
         (quote (get-quote-info sale-id))
         (reserved (at 'reserved quote)))
         (enforce (= "" reserved) "Sale is reserved, unable to withdraw")
-        (with-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id)
-          (map-withdraw token seller amount sale-id (at 'policies token))
+        (map (lambda (policy:module{kip.token-policy-v2})
+          (with-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id policy)
+            (policy::enforce-withdraw token seller amount sale-id)
+          )
+        ) (at 'policies token))
+      )
+      (map (lambda (policy:module{kip.token-policy-v2})
+        (with-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id policy)
+          (policy::enforce-withdraw token seller amount sale-id)
         )
-      )
-      (with-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id)
-        ; quote is not used
-        (map-withdraw token seller amount sale-id (at 'policies token))
-      )
+      ) (at 'policies token))
     ))
 
   (defun enforce-buy:[bool]
@@ -307,9 +319,12 @@
         )
       ]
       ; quote is not used
-      (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id)
-        (map-buy token seller buyer buyer-guard amount sale-id (at 'policies token))
-      ))
+      (map (lambda (policy:module{kip.token-policy-v2})
+        (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id policy)
+          (policy::enforce-buy token seller buyer buyer-guard amount sale-id)
+        )
+      ) (at 'policies token))
+    )
   )
 
   (defun enforce-transfer:[bool]
@@ -321,9 +336,12 @@
     (let ((ledger:module{ledger-v1} (retrieve-ledger)))
       (require-capability (ledger::TRANSFER-CALL (at "id" token) sender receiver amount))
     )
-    (with-capability (TRANSFER-CALL (at "id" token) sender receiver amount)
-      (map-transfer token sender guard receiver amount (at 'policies token))))
-
+    (map (lambda (policy:module{kip.token-policy-v2})
+      (with-capability (TRANSFER-CALL (at "id" token) sender receiver amount policy)
+        (policy::enforce-transfer token sender guard receiver amount)
+      )
+    ) (at 'policies token))
+  )
 
   ; Sale/Escrow Functions
   (defcap RESERVE_SALE:bool
@@ -405,8 +423,11 @@
 
        (with-capability (ESCROW sale-id)
          ; Run policies::enforce-buy
-         (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id)
-          (map-buy token seller buyer buyer-guard amount sale-id policies))
+         (map (lambda (policy:module{kip.token-policy-v2})
+            (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id policy)
+              (policy::enforce-buy token seller buyer buyer-guard amount sale-id)
+            )
+          ) (at 'policies token))
          ; Transfer Escrow account to seller
          (let (
                (balance:decimal (fungible::get-balance (at 'account escrow-account)))
@@ -437,49 +458,6 @@
     (let ((o:object (try {} (read-msg msg))))
       (!= o {}))
   )
-
- (defun token-init (token:object{token-info} policy:module{kip.token-policy-v2})
-  (policy::enforce-init token))
-
- (defun map-init (token:object{token-info} policy-list:[module{kip.token-policy-v2}])
-  (map (token-init token) policy-list))
-
- (defun token-mint (token:object{token-info} account:string guard:guard amount:decimal policy:module{kip.token-policy-v2})
-  (policy::enforce-mint token account guard amount))
-
- (defun map-mint (token:object{token-info} account:string guard:guard amount:decimal policy-list:[module{kip.token-policy-v2}])
-  (map (token-mint token account guard amount) policy-list))
-
- (defun token-burn (token:object{token-info} account:string amount:decimal policy:module{kip.token-policy-v2})
-  (policy::enforce-burn token account amount))
-
- (defun map-burn (token:object{token-info} account:string amount:decimal policy-list:[module{kip.token-policy-v2}])
-  (map (token-burn token account amount) policy-list))
-
- (defun token-offer (token:object{token-info} account:string amount:decimal sale-id:string policy:module{kip.token-policy-v2})
-  (policy::enforce-offer token account amount sale-id))
-
- (defun map-offer (token:object{token-info} account:string amount:decimal sale-id:string policy-list:[module{kip.token-policy-v2}])
-  (map (token-offer token account amount sale-id) policy-list))
-
-  (defun token-withdraw (token:object{token-info} account:string amount:decimal sale-id:string policy:module{kip.token-policy-v2})
-   (policy::enforce-withdraw token account amount sale-id))
-
-  (defun map-withdraw (token:object{token-info} account:string amount:decimal sale-id:string policy-list:[module{kip.token-policy-v2}])
-   (map (token-withdraw token account amount sale-id) policy-list))
-
- (defun token-buy (token:object{token-info} seller:string buyer:string buyer-guard:guard amount:decimal sale-id:string policy:module{kip.token-policy-v2})
-  (policy::enforce-buy token seller buyer buyer-guard amount sale-id))
-
-  (defun map-buy:[bool] (token:object{token-info} seller:string buyer:string buyer-guard:guard amount:decimal sale-id:string policy-list:[module{kip.token-policy-v2}])
-    (map (token-buy token seller buyer buyer-guard amount sale-id) policy-list)
-  )
-
- (defun token-transfer (token:object{token-info} sender:string guard:guard receiver:string amount:decimal policy:module{kip.token-policy-v2})
-  (policy::enforce-transfer  token sender guard receiver amount))
-
- (defun map-transfer (token:object{token-info} sender:string guard:guard receiver:string amount:decimal policy-list:[module{kip.token-policy-v2}])
-  (map (token-transfer  token sender guard receiver amount) policy-list))
 )
 
 (if (read-msg 'upgrade )

@@ -48,7 +48,7 @@
     \ Required msg-data keys:                                                  \
     \ * royalty_spec:object{royalty-schema} - registers royalty information of \
     \ the created token"
-    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) royalty-policy-v1))
     (let* ( (spec:object{royalty-schema} (read-msg ROYALTY-SPEC-MSG-KEY))
             (fungible:module{fungible-v2} (at 'fungible spec))
             (creator:string (at 'creator spec))
@@ -95,6 +95,7 @@
       sale-id:string
     )
     @doc "Capture quote spec for SALE of TOKEN from message"
+    (require-capability (OFFER-CALL (at "id" token) seller amount sale-id royalty-policy-v1))
     (enforce (exists-msg-quote QUOTE-MSG-KEY) "Offer is restricted to quoted sale")
     (bind (get-royalty token)
       { 'fungible := fungible:module{fungible-v2} }
@@ -113,7 +114,7 @@
       buyer-guard:guard
       amount:decimal
       sale-id:string )
-    (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id))
+    (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id royalty-policy-v1))
     (enforce-sale-pact sale-id)
     (bind (get-royalty token)
       { 'fungible := fungible:module{fungible-v2}

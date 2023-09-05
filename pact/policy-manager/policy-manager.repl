@@ -15,8 +15,6 @@
     ,'token-id: (create-token-id { 'uri: "test-uri-3", 'precision: 0, 'policies: (create-policies DEFAULT)  } )
     })
 
-    (namespace (read-msg 'ns))
-
     (expect  "create a token "
       true
       (create-token (read-msg 'token-id ) 0 "test-uri-3"  (create-policies DEFAULT) ))

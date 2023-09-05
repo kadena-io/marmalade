@@ -14,7 +14,7 @@
   (defun enforce-init:bool
     ( token:object{token-info}
     )
-    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) non-fungible-policy-v1))
     (enforce (= 0 (at 'precision token)) "Precision must be 0")
     true
   )
@@ -25,7 +25,7 @@
       guard:guard
       amount:decimal
     )
-    (require-capability (MINT-CALL (at "id" token) account amount))
+    (require-capability (MINT-CALL (at "id" token) account amount non-fungible-policy-v1))
     (enforce (= amount 1.0) "Mint can only be 1")
     (enforce (= (at 'supply token) 0.0) "Only one mint allowed")
   )

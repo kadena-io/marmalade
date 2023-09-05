@@ -118,16 +118,6 @@
       sale-id:string )
     true
   )
-
-  (defun enforce-crosschain:bool
-    ( token:object{token-info}
-      sender:string
-      guard:guard
-      receiver:string
-      target-chain:string
-      amount:decimal )
-    (enforce false "Transfer prohibited")
-  )
 )
 
 (if (read-msg 'upgrade)

@@ -104,7 +104,7 @@
     \ * (optional) sale_guard:string -  sale-guard and adds success guard if absent. \
     \ * (optional) transfer_guard:string -  transfer-guard and adds success guard if absent. \
     \ the created token"
-    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) guard-policy-v1))
     (let ((guards:object{guards}
       { 'mint-guard: (try GUARD_SUCCESS (read-msg MINT-GUARD-MSG-KEY) ) ;; type error becomes successful guard
       , 'burn-guard: (try GUARD_SUCCESS (read-msg BURN-GUARD-MSG-KEY) )
@@ -122,7 +122,7 @@
       guard:guard
       amount:decimal
     )
-    (require-capability (MINT-CALL (at "id" token) account amount))
+    (require-capability (MINT-CALL (at "id" token) account amount guard-policy-v1))
     (with-capability (MINT (at 'id token) account amount)
       true
     )
@@ -133,7 +133,7 @@
       account:string
       amount:decimal
     )
-    (require-capability (BURN-CALL (at "id" token) account amount))
+    (require-capability (BURN-CALL (at "id" token) account amount guard-policy-v1))
     (with-capability (BURN (at 'id token) account amount)
       true
     )
@@ -144,7 +144,7 @@
       seller:string
       amount:decimal
       sale-id:string )
-    (require-capability (OFFER-CALL (at "id" token) seller amount sale-id))
+    (require-capability (OFFER-CALL (at "id" token) seller amount sale-id guard-policy-v1))
     (enforce-sale-pact sale-id)
     (with-capability (SALE (at 'id token) seller amount)
       true
@@ -158,7 +158,7 @@
       buyer-guard:guard
       amount:decimal
       sale-id:string )
-    (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id))
+    (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id guard-policy-v1))
     (enforce-sale-pact sale-id)
     (with-capability (SALE (at 'id token) seller amount)
       true
@@ -170,7 +170,7 @@
       seller:string
       amount:decimal
       sale-id:string )
-    (require-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id))
+    (require-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id guard-policy-v1))
     (enforce-sale-pact sale-id)
     (with-capability (SALE (at 'id token) seller amount)
       true
@@ -183,7 +183,7 @@
       guard:guard
       receiver:string
       amount:decimal )
-    (require-capability (TRANSFER-CALL (at "id" token) sender receiver amount))
+    (require-capability (TRANSFER-CALL (at "id" token) sender receiver amount guard-policy-v1))
     (with-capability (TRANSFER (at 'id token) sender receiver amount)
       true
     )

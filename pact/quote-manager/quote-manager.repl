@@ -96,12 +96,12 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-      (marmalade-v2.ledger.OFFER "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" 1.0 0.0)
+      (marmalade-v2.ledger.OFFER "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" 1.0 0)
      ]}])
 
   (expect "Offer token for sale"
     "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
-    (sale (read-msg 'token-id) "k:account" 1.0 0.0))
+    (sale (read-msg 'token-id) "k:account" 1.0 0))
 
   (env-data {
     "account-guard": {"keys": ["account"], "pred": "keys-all"}
@@ -112,8 +112,8 @@
   (expect "Offer with quote events"
     [ {"name": "marmalade-v2.quote-manager.QUOTE","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" {"amount": 1.0,"fungible": marmalade-v2.abc,"price": 10.0,"seller-fungible-account": {"account": "k:account","guard": (read-keyset 'account-guard )}}]}
       {"name": "marmalade-v2.quote-manager.QUOTE_GUARDS","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" (read-keyset 'account-guard) [(read-keyset 'market-guard)]]}
-      {"name": "marmalade-v2.ledger.OFFER","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" 1.0 0.0]}
-      {"name": "marmalade-v2.ledger.SALE","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" 1.0 0.0 "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"]}
+      {"name": "marmalade-v2.ledger.OFFER","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" 1.0 0]}
+      {"name": "marmalade-v2.ledger.SALE","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" 1.0 0 "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"]}
       {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo" (account-guard (read-string "token-id") "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo")]}
       {"name": "marmalade-v2.ledger.TRANSFER","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo" 1.0]}
       {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo","current": 1.0,"previous": 0.0}]}]
@@ -233,7 +233,7 @@
   (env-sigs [
      { 'key: 'any
      ,'caps: [
-         (marmalade-v2.ledger.BUY "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" "k:buyer"  1.0 0.0 (read-string 'sale-id))
+         (marmalade-v2.ledger.BUY "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" "k:buyer"  1.0 0 (read-string 'sale-id))
        ]
      }
    ])

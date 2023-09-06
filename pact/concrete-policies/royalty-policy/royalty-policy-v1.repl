@@ -32,18 +32,6 @@
 (commit-tx)
 
 (begin-tx)
-  (module util GOVERNANCE
-    (defcap GOVERNANCE ()
-      false)
-
-    (defun to-timestamp:decimal (input:time)
-      "Computes an Unix timestamp of the input date"
-      (diff-time input (time "1970-01-01T00:00:00Z"))
-    )
-  )
-(commit-tx)
-
-(begin-tx)
 (use marmalade-v2.ledger)
 
 (use marmalade-v2.util-v1)
@@ -118,12 +106,12 @@
 (env-sigs [
   { 'key: 'account
    ,'caps: [
-   (marmalade-v2.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")) )]
+   (marmalade-v2.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (to-timestamp (time "2023-07-22T11:26:35Z")) )]
    }])
 
 (expect-failure "Offer fails when quote uses a different fungible from registered fungible"
   "(enforce (= fungible (at 'fung...: Failure: Tx Failed: Offer is restricted to sale using fungible: marmalade-v2.abc"
-  (sale (read-msg 'token-id) "k:account" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z"))))
+  (sale (read-msg 'token-id) "k:account" 1.0 (to-timestamp (time "2023-07-22T11:26:35Z"))))
 
 (env-data {
   "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } )
@@ -176,12 +164,12 @@
 (env-sigs [
   { 'key: 'account
    ,'caps: [
-   (marmalade-v2.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z")) )]
+   (marmalade-v2.ledger.OFFER (read-msg 'token-id) "k:account" 1.0 (to-timestamp (time "2023-07-22T11:26:35Z")) )]
    }])
 
 (expect "start offer by running step 0 of sale"
   "0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM"
-  (sale (read-msg 'token-id) "k:account" 1.0 (util.to-timestamp (time "2023-07-22T11:26:35Z"))))
+  (sale (read-msg 'token-id) "k:account" 1.0 (to-timestamp (time "2023-07-22T11:26:35Z"))))
 
 (env-data { "recipient-guard": {"keys": ["seller"], "pred": "keys-all"}})
 
@@ -197,7 +185,7 @@
 (env-sigs
  [{'key:'buyer
   ,'caps: [
-    (marmalade-v2.ledger.BUY (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ) "k:account" "k:buyer"  1.0 (util.to-timestamp (time  "2023-07-22T11:26:35Z")) "0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM")
+    (marmalade-v2.ledger.BUY (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ) "k:account" "k:buyer"  1.0 (to-timestamp (time  "2023-07-22T11:26:35Z")) "0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM")
     (marmalade-v2.abc.TRANSFER "k:buyer" "c:xx_lmWaqaLkqO3RzZnabF_tpKB11EeagaLUJwM0T_6c" 2.0)
    ]}])
 

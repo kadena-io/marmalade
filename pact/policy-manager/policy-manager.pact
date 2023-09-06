@@ -344,7 +344,7 @@
   )
 
   ; Sale/Escrow Functions
-  (defcap RESERVE_SALE:bool
+  (defcap RESERVE_SALE_AT_PRICE:bool
     ( sale-id:string
       price:decimal
       buyer:string
@@ -359,7 +359,7 @@
     (enforce (= sale (pact-id)) "Invalid pact/sale id")
   )
 
-  (defun reserve-sale:bool (
+  (defun reserve-sale-at-price:bool (
     sale-id:string
     price:decimal
     buyer:string
@@ -372,7 +372,7 @@
     (enforce-reserved buyer buyer-guard)
 
     (with-capability (UPDATE-QUOTE-PRICE-CALL sale-id price buyer)
-      (with-capability (RESERVE_SALE sale-id price buyer buyer-guard)
+      (with-capability (RESERVE_SALE_AT_PRICE sale-id price buyer buyer-guard)
         (install-capability (UPDATE_QUOTE_PRICE sale-id price buyer))
         (update-quote-price sale-id price buyer)
       )

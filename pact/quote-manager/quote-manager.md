@@ -18,10 +18,10 @@ Main functions of quote manager includes
 
 - `add-quote`: Takes in `sale-id`, `token-id`, and `quote-msg`. Adds the quote into the quotes table. This function is required to be called from the `policy-manager`.
 
-- `update-quote-price`: Takes in `sale-id` and `price`, `buyer`. Updates the `quote`'s price with the provided `price` argument. This function is guarded by one of the `quote-guards`, and is required to be called from the `policy-manager`. In the policy-manager, the function is called within `reserve-sale`.
+- `update-quote-price`: Takes in `sale-id` and `price`, `buyer`. Updates the `quote`'s price with the provided `price` argument. This function is guarded by one of the `quote-guards`, and is required to be called from the `policy-manager`. In the policy-manager, the function is called within `reserve-sale-at-price`.
   - Required Capability
     - Capbility: `(UPDATE_QUOTE_PRICE sale-id price buyer)`
-    - Signer: One of the `quote-guards`. Installed inside `policy-manager.RESERVE_SALE`.
+    - Signer: One of the `quote-guards`. Installed inside `policy-manager.RESERVE_SALE_AT_PRICE`.
 
 - `remove-quote-guard`: Removes a quote guard from the `quote-guards` list registered with the quotes in the quotes table.
   - Required Capability

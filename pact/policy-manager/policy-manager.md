@@ -25,17 +25,17 @@ This module includes the following key components:
 `enforce-buy`: Runs `policies::enforce-buy` at `marmalade-v2.ledger.buy` (step 1 of `marmalade-v2.ledger.sale`).
     There are 3 different conditions that the `enforce-buy` runs
     1. Sale was processed without quotes: the function doesn't do more than running policy functions.
-    2. Sale was reserved: Escrow account already collected fungibles, and so escrow account distributes the collected fungible from the `reserve-sale` to the seller and the required policies.
+    2. Sale was reserved: Escrow account already collected fungibles, and so escrow account distributes the collected fungible from the `reserve-sale-at-price` to the seller and the required policies.
     3. Sale was processed with quotes and not reserved:  `buyer-fungible-account` needs to transfer fungible to the escrow account, and the escrow account distributes to the seller and required policies.
   - Required Capability (if quoted, non-reserved)
-    - Capbility: `(fungible::TRANSFER buyer-fungible-account escrow-account sale-price)`
+    - Capability: `(fungible::TRANSFER buyer-fungible-account escrow-account sale-price)`
     - Signer: buyer-fungible-account
 
-`reserve-sale`: Updates the quote price and reserves the sale, and the marmalade buyer account information. Fungible payment is required. After this step, anyone can process `marmalade-v2.ledger.buy` step.
+`reserve-sale-at-price`: Updates the quote price and reserves the sale, and the marmalade buyer account information. Fungible payment is required. After this step, anyone can process `marmalade-v2.ledger.buy` step.
   - Required Capability
-    - Capbility: `(RESERVE_SALE sale-id price buyer buyer-guard)`
+    - Capability: `(RESERVE_SALE_AT_PRICE sale-id price buyer buyer-guard)`
     - Signer: One of the `quote-guards`
-    - Capbility: `(fungible::TRANSFER buyer-fungible-account escrow-account sale-price)`
+    - Capability: `(fungible::TRANSFER buyer-fungible-account escrow-account sale-price)`
     - Signer: buyer-fungible-account
 
 `map-escrowed-buy`: Helper function inside the `enforce-buy` to process quoted sales.
@@ -44,7 +44,7 @@ This module includes the following key components:
 
 `write-concrete-policy`: Registers concrete policy modref into the concrete-policies table.
   - Required Capability
-    - Capbility: `(CONCRETE_POLICY policy-field policy)`
+    - Capability: `(CONCRETE_POLICY policy-field policy)`
     - Signer: (keyset-ref-guard `marmalade-v2.marmalade-admin`)
 
 `get-concrete-policy`: Returns the modref of the concrete policy.

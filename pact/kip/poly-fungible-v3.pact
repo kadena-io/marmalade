@@ -251,7 +251,7 @@
   ;;
 
   (defcap SALE:bool
-    (id:string seller:string amount:decimal timeout:decimal sale-id:string)
+    (id:string seller:string amount:decimal timeout:integer sale-id:string)
     @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
     @event
   )
@@ -260,7 +260,7 @@
     ( id:string
       seller:string
       amount:decimal
-      timeout:decimal
+      timeout:integer
     )
     @doc " Offer->buy escrow pact of AMOUNT of token ID by SELLER with TIMEOUT in blocks. \
          \ Step 1 is offer with withdraw rollback after timeout. \

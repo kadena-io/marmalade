@@ -74,7 +74,7 @@
     \ Required msg-data keys:                                                  \
     \ * collection_id:string - registers the token to a collection and emits   \
     \ TOKEN_COLLECTION event for discovery"
-    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) collection-policy-v1))
     (let* ( (token-id:string  (at 'id token))
             (collection-id:string (read-msg COLLECTION-ID-MSG-KEY)) )
     ;;Enforce operator guard

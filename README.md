@@ -38,7 +38,7 @@ We provide 4 concrete policies, which will provide the most used functionalities
 - **Non-fungible Policy**: Defines the token supply to 1 and precision of 0, so the token becomes non-fungible
 - **Royalty-policy**: [dependent on `fungible-quote-policy`]: Defines creator account that will receive royalty whenever the token using `fungible-quote-policy` is sold.
 
-Marmalade users can mint tokens with above features by adding the policy to the policies field at token creation. If projects would like to use customized logic in addition to what concrete policies offer, they can also add their own policies to this same fieldfield.
+Marmalade users can mint tokens with above features by adding the policy to the policies field at token creation. If projects would like to use customized logic in addition to what concrete policies offer, they can also add their own policies to this same field.
 
 ## Marmalade Functions
 

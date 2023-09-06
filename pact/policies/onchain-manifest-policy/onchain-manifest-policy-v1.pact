@@ -7,6 +7,7 @@
 
   (use kip.token-manifest)
   (use kip.token-policy-v2 [token-info])
+  (use marmalade-v2.policy-manager)
 
   (defcap GOVERNANCE ()
     (enforce-guard (keyset-ref-guard 'marmalade-admin )))
@@ -27,10 +28,6 @@
       }
       (enforce-guard manifest-guard)
     )
-  )
-
-  (defun enforce-ledger:bool ()
-     (enforce-guard (marmalade-v2.ledger.ledger-guard))
   )
 
   (defun get-manifest:object{manifest} (token-id:string)
@@ -59,7 +56,7 @@
     \ Required msg-data keys:                                                  \
     \ * manifest_spec:object{manifest-spec} - registers the manifest object of \
     \ the token and the guard that manages the upgrade of the manifest on chain"
-    (enforce-ledger)
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
     (let ( (manifest:object{manifest-spec} (read-msg MANIFEST-SPEC-MSG-KEY )) )
       (enforce-verify-manifest (at 'manifest manifest))
       (insert manifests (at 'id token) manifest)
@@ -121,16 +118,6 @@
       amount:decimal
       sale-id:string )
     true
-  )
-
-  (defun enforce-crosschain:bool
-    ( token:object{token-info}
-      sender:string
-      guard:guard
-      receiver:string
-      target-chain:string
-      amount:decimal )
-    (enforce false "Transfer prohibited")
   )
 )
 

@@ -216,7 +216,7 @@
   (defun create-token-id:string (token-details:object{token-details}
                                  creation-guard:guard)
     (format "t:{}"
-      [(hash (+ {'cg:creation-guard} token-details))])
+      [(hash [token-details (at 'chain-id (chain-data)) creation-guard])])
   )
 
   (defun create-token:bool

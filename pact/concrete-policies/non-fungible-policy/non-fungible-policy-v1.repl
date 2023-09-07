@@ -3,16 +3,9 @@
 (typecheck "marmalade-v2.non-fungible-policy-v1")
 
 (begin-tx)
-(module g-utils G
-  (defcap G() true)
-  (defun always-true:bool () true)
-  (defconst ALWAYS-TRUE:guard (create-user-guard (always-true)))
-)
-(commit-tx)
-
-(begin-tx)
   (use marmalade-v2.policy-manager [ NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
   (use marmalade-v2.util-v1 [concrete-policy-bool])
+  (use mini-guard-utils)
 
   (module util GOV
     (defcap GOV () true)
@@ -30,6 +23,7 @@
 (begin-tx)
   (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
+  (use mini-guard-utils)
   (env-data {
     "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
   })
@@ -39,23 +33,25 @@
 (begin-tx "Create a non-fungible token fails when precision is not 0")
   (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
+  (use mini-guard-utils)
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-non-fungible-uri", 'precision: 1, 'policies: (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) } g-utils.ALWAYS-TRUE)
+    "token-id": (create-token-id { 'uri: "test-non-fungible-uri", 'precision: 1, 'policies: (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) } ALWAYS-TRUE)
     ,"account": "k:account"
     ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
   })
 
 (expect-failure  "Precision should be 0"
-  (create-token (read-msg "token-id") 0 "test-non-fungible-uri" (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) g-utils.ALWAYS-TRUE))
+  (create-token (read-msg "token-id") 0 "test-non-fungible-uri" (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) ALWAYS-TRUE))
 (rollback-tx)
 
 
 (begin-tx)
   (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
+  (use mini-guard-utils)
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-non-fungible-uri", 'precision: 0, 'policies: (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) } g-utils.ALWAYS-TRUE)
+    "token-id": (create-token-id { 'uri: "test-non-fungible-uri", 'precision: 0, 'policies: (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) } ALWAYS-TRUE)
     ,"account": "k:account"
     ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
   })
@@ -65,7 +61,8 @@
 (begin-tx "Create a non-fungible token")
   (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
-  (create-token (read-msg "token-id") 0 "test-non-fungible-uri" (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) g-utils.ALWAYS-TRUE)
+  (use mini-guard-utils)
+  (create-token (read-msg "token-id") 0 "test-non-fungible-uri" (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) ALWAYS-TRUE)
 (commit-tx)
 
 

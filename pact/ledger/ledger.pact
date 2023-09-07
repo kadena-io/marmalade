@@ -231,13 +231,12 @@
     (let ((token-details { 'uri: uri, 'precision: precision, 'policies: (sort policies) }))
       (enforce-token-reserved id token-details creation-guard)
     )
+    (with-capability (INIT-CALL id precision uri)
+      ;; maps policy list and calls policy::enforce-init
+      (marmalade-v2.policy-manager.enforce-init
+        { 'id: id, 'supply: 0.0, 'precision: precision, 'uri: uri,  'policies: policies})
+    )
     (with-capability (TOKEN id precision policies uri creation-guard)
-      (with-capability (INIT-CALL id precision uri)
-        ;; maps policy list and calls policy::enforce-init
-        (marmalade-v2.policy-manager.enforce-init
-          { 'id: id, 'supply: 0.0, 'precision: precision, 'uri: uri,  'policies: policies})
-      )
-
       (insert tokens id {
         "id": id,
         "uri": uri,

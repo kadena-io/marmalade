@@ -13,17 +13,11 @@
   (marmalade-v2.abc.create-account "k:creator" (read-keyset 'creator-guard))
 (commit-tx)
 
-(begin-tx)
-(module g-utils G
-  (defcap G() true)
-  (defun always-true:bool () true)
-  (defconst ALWAYS-TRUE:guard (create-user-guard (always-true)))
-)
-(commit-tx)
 (begin-tx "Creating collection fails without operator guard")
   (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.util-v1)
+  (use mini-guard-utils)
   (env-data {
     "ks": {"keys": ["operator"], "pred": "keys-all"}
   })
@@ -37,8 +31,9 @@
   (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.util-v1)
+  (use mini-guard-utils)
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-collection-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_COLLECTION_ROYALTY)} g-utils.ALWAYS-TRUE)
+    "token-id": (create-token-id { 'uri: "test-collection-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_COLLECTION_ROYALTY)} ALWAYS-TRUE)
   ,"account": "k:account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
   ,"royalty_spec": {
@@ -69,18 +64,20 @@
   (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.util-v1)
+  (use mini-guard-utils)
 
   (env-sigs [])
 
  (expect-failure "create token fails if operator guard isn't present"
    "Keyset failure"
-   (create-token (read-msg 'token-id) 0 "test-collection-royalty-uri" (create-policies DEFAULT_COLLECTION_ROYALTY) g-utils.ALWAYS-TRUE))
+   (create-token (read-msg 'token-id) 0 "test-collection-royalty-uri" (create-policies DEFAULT_COLLECTION_ROYALTY) ALWAYS-TRUE))
 (rollback-tx)
 
 (begin-tx "Create token")
   (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.util-v1)
+  (use mini-guard-utils)
 
   (env-sigs [
     { 'key: 'operator
@@ -89,7 +86,7 @@
 
   (expect "create a default token with collection-policy, quote-policy, non-fungible-policy, royalty-policy"
     true
-    (create-token (read-msg 'token-id) 0 "test-collection-royalty-uri" (create-policies DEFAULT_COLLECTION_ROYALTY) g-utils.ALWAYS-TRUE))
+    (create-token (read-msg 'token-id) 0 "test-collection-royalty-uri" (create-policies DEFAULT_COLLECTION_ROYALTY) ALWAYS-TRUE))
 
 (commit-tx)
 
@@ -129,10 +126,11 @@
   (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.util-v1)
+  (use mini-guard-utils)
 
   (env-data {
-    "token-id1": (create-token-id { 'uri: "test-collection-size-uri1", 'precision: 0, 'policies: (create-policies DEFAULT_COLLECTION_ROYALTY) } g-utils.ALWAYS-TRUE )
-  ,"token-id2": (create-token-id { 'uri: "test-collection-size-uri2", 'precision: 0, 'policies: (create-policies DEFAULT_COLLECTION_ROYALTY) } g-utils.ALWAYS-TRUE)
+    "token-id1": (create-token-id { 'uri: "test-collection-size-uri1", 'precision: 0, 'policies: (create-policies DEFAULT_COLLECTION_ROYALTY) } ALWAYS-TRUE )
+  ,"token-id2": (create-token-id { 'uri: "test-collection-size-uri2", 'precision: 0, 'policies: (create-policies DEFAULT_COLLECTION_ROYALTY) } ALWAYS-TRUE)
   ,"account": "k:account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
   ,"royalty_spec": {
@@ -161,21 +159,22 @@
 
   (expect "create a default token with collection-policy, quote-policy, non-fungible-policy, royalty-policy"
     true
-    (create-token (read-msg 'token-id1) 0 "test-collection-size-uri1" (create-policies DEFAULT_COLLECTION_ROYALTY) g-utils.ALWAYS-TRUE))
+    (create-token (read-msg 'token-id1) 0 "test-collection-size-uri1" (create-policies DEFAULT_COLLECTION_ROYALTY) ALWAYS-TRUE))
 
   (expect-failure "creating another token will exceed collection-size"
     "Exceeds collection size"
-    (create-token (read-msg 'token-id2) 0 "test-collection-size-uri2" (create-policies DEFAULT_COLLECTION_ROYALTY) g-utils.ALWAYS-TRUE))
+    (create-token (read-msg 'token-id2) 0 "test-collection-size-uri2" (create-policies DEFAULT_COLLECTION_ROYALTY) ALWAYS-TRUE))
 (rollback-tx)
 
 (begin-tx "Create collection with unlimited size and add two tokens")
   (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.util-v1)
+  (use mini-guard-utils)
 
   (env-data {
-    "token-id1": (create-token-id { 'uri: "test-collection-size-uri1", 'precision: 0, 'policies: (create-policies DEFAULT_COLLECTION_ROYALTY) } g-utils.ALWAYS-TRUE)
-  ,"token-id2": (create-token-id { 'uri: "test-collection-size-uri2", 'precision: 0, 'policies: (create-policies DEFAULT_COLLECTION_ROYALTY) } g-utils.ALWAYS-TRUE)
+    "token-id1": (create-token-id { 'uri: "test-collection-size-uri1", 'precision: 0, 'policies: (create-policies DEFAULT_COLLECTION_ROYALTY) } ALWAYS-TRUE)
+  ,"token-id2": (create-token-id { 'uri: "test-collection-size-uri2", 'precision: 0, 'policies: (create-policies DEFAULT_COLLECTION_ROYALTY) } ALWAYS-TRUE)
   ,"account": "k:account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
   ,"royalty_spec": {
@@ -204,9 +203,9 @@
 
   (expect "create a default token with collection-policy, quote-policy, non-fungible-policy, royalty-policy"
     true
-    (create-token (read-msg 'token-id1) 0 "test-collection-size-uri1" (create-policies DEFAULT_COLLECTION_ROYALTY) g-utils.ALWAYS-TRUE))
+    (create-token (read-msg 'token-id1) 0 "test-collection-size-uri1" (create-policies DEFAULT_COLLECTION_ROYALTY) ALWAYS-TRUE))
 
   (expect "create another token with collection-policy, quote-policy, non-fungible-policy, royalty-policy"
     true
-    (create-token (read-msg 'token-id2) 0 "test-collection-size-uri2" (create-policies DEFAULT_COLLECTION_ROYALTY) g-utils.ALWAYS-TRUE))
+    (create-token (read-msg 'token-id2) 0 "test-collection-size-uri2" (create-policies DEFAULT_COLLECTION_ROYALTY) ALWAYS-TRUE))
 (rollback-tx)

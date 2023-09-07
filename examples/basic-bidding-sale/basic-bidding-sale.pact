@@ -203,7 +203,7 @@
         (with-capability (BASIC_BIDDING)
         (with-capability (BID_PRIVATE bid-id)
           ; Set quote in qoute-manager and transfer funds
-          (marmalade-v2.policy-manager.reserve-sale sale-id price buyer buyer-guard (bid-escrow-account bid-id))
+          (marmalade-v2.policy-manager.reserve-sale-at-price sale-id price buyer buyer-guard (bid-escrow-account bid-id))
         ))
         (emit-event (BID-ACCEPTED bid-id sale-id token-id amount price buyer buyer-guard))
       )

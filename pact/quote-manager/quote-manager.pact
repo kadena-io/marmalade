@@ -94,7 +94,7 @@
 
   (deftable quotes:{quote-schema})
 
-  (defcap UPDATE_QUOTE_PRICE:bool (sale-id:string)
+  (defcap UPDATE_QUOTE_PRICE:bool (sale-id:string price:decimal buyer:string)
     @doc "Enforces quote-guards on update-quote-price"
     (with-read quotes sale-id {
       "quote-guards":=quote-guards
@@ -148,7 +148,7 @@
   )
 
   (defun add-quote:bool (sale-id:string token-id:string quote-msg:object{quote-msg})
-    @doc "Add quote if quote-msg exists in transaction data"
+    @doc "Add quote in transaction data"
     (let* ( (quote-spec:object{quote-spec} (at 'spec quote-msg))
             (seller-guard:guard (at 'seller-guard quote-msg))
             (quote-guards:[guard] (at 'quote-guards quote-msg))
@@ -173,7 +173,7 @@
     (let ((policy-manager:module{policy-manager-v1} (retrieve-policy-manager)))
       (require-capability (policy-manager::UPDATE-QUOTE-PRICE-CALL sale-id price buyer))
     )
-    (with-capability (UPDATE_QUOTE_PRICE sale-id)
+    (with-capability (UPDATE_QUOTE_PRICE sale-id price buyer)
       (with-read quotes sale-id {
           "spec":= quote-spec
         }
@@ -191,8 +191,7 @@
             }
             , "reserved": buyer
             }))
-      )
-      (emit-event (QUOTE_PRICE_UPDATE sale-id price buyer)))
+      ))
     true
   )
 

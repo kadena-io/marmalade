@@ -5,6 +5,7 @@
     , 'ns-operate-keyset:[] })
   (load "./root/fungible-v2.pact")
   (load "./root/fungible-xchain-v1.pact")
+  (load "./root/coin.pact")
   (load "./root/gas-payer-v1.pact")
   (env-exec-config ["DisablePact44"])
   (load "./root/ns.pact")

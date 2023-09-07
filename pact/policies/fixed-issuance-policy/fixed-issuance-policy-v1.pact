@@ -36,8 +36,8 @@
     (let* (
             (fixed-issuance-spec:object{supply-schema} (read-msg FIXED-ISSUANCE-SPEC))
             )
-      (enforce (>= (at 'min-amount fixed-issuance-spec) 0.0) "Invalid min-amount")
-      (enforce (>= (at 'max-supply fixed-issuance-spec) 0.0) "Invalid max-supply")
+      (enforce (> (at 'min-amount fixed-issuance-spec) 0.0) "Invalid min-amount")
+      (enforce (>= (at 'max-supply fixed-issuance-spec) 0.0) "Invalid max-supply")      
       (enforce (= (at 'precision fixed-issuance-spec) (at 'precision token)) "Invalid Precision")
       (insert supplies (at 'id token) fixed-issuance-spec))
     true

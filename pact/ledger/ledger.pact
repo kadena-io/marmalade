@@ -86,7 +86,7 @@
     @event true
   )
 
-  (defcap TOKEN:bool (id:string precision:integer supply:decimal policies:[module{kip.token-policy-v2}] uri:string)
+  (defcap TOKEN:bool (id:string precision:integer policies:[module{kip.token-policy-v2}] uri:string)
     @event
     true
   )
@@ -244,7 +244,7 @@
       "supply": 0.0,
       "policies": policies
     })
-    (emit-event (TOKEN id precision 0.0 policies uri))
+    (emit-event (TOKEN id precision policies uri))
   )
 
   (defun check-reserved:string (token-id:string)

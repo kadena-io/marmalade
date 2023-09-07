@@ -136,7 +136,7 @@
 
   (expect "create-token events"
      (format "{}" [[
-     {"name": "marmalade-v2.ledger.TOKEN","params": ["t:kLIufgbtfmnZoX5o_U02wFfmXkDU1EtqZJLVTesALWo" 0 0.0 [] "test-uri"]}]])
+     {"name": "marmalade-v2.ledger.TOKEN","params": ["t:kLIufgbtfmnZoX5o_U02wFfmXkDU1EtqZJLVTesALWo" 0 [] "test-uri"]}]])
      (format "{}" [(map (remove "module-hash")  (env-events true))])
   )
 

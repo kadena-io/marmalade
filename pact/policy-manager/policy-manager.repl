@@ -621,17 +621,20 @@
    ,"buyer-guard": {"keys": ['buyer], "pred": "keys-all"}
    })
 
-   (env-sigs
-     [{'key:"market"
-       ,'caps: [(marmalade-v2.quote-manager.UPDATE_QUOTE_PRICE (pact-id))]}
-     {'key:"market-fungible"
-       ,'caps: [(marmalade-v2.abc.DEBIT "k:market-fungible")]}
-   ])
+   (env-sigs [
+      { 'key: 'market
+      ,'caps: [
+          (marmalade-v2.policy-manager.RESERVE_SALE_AT_PRICE (pact-id) 1.0 (read-msg 'buyer) (read-keyset 'buyer-guard))
+        ]}
+      { 'key: 'market-fungible
+      ,'caps: [
+          (marmalade-v2.abc.TRANSFER "k:market-fungible" "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" 1.0)
+      ]}
+    ])
 
-  ;; REVIEW abc CAP
-  (expect "reserve-sale succeeds"
+  (expect "reserve-sale-at-price succeeds"
     true
-    (reserve-sale (pact-id) 1.0 (read-string 'buyer) (read-keyset 'buyer-guard ) "k:market-fungible"))
+    (reserve-sale-at-price (pact-id) 1.0 (read-string 'buyer) (read-keyset 'buyer-guard ) "k:market-fungible"))
 
   (env-sigs [
     { 'key: 'account
@@ -669,9 +672,8 @@
     (continue-pact 1))
 
   (expect "buy events"
-    [ {"name": "marmalade-v2.quote-manager.QUOTE_PRICE_UPDATE","params": ["i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY" 1.0 "k:buyer"]}
+    [ {"name": "marmalade-v2.policy-manager.RESERVE_SALE_AT_PRICE","params": ["i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY" 1.0 "k:buyer" (read-keyset 'buyer-guard)]}
       {"name": "marmalade-v2.abc.TRANSFER","params": ["k:market-fungible" "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" 1.0]}
-      {"name": "marmalade-v2.policy-manager.SALE_RESERVED","params": ["i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY" 1.0 "k:buyer" (read-keyset 'buyer-guard)]}
       {"name": "marmalade-v2.abc.TRANSFER","params": ["c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" "k:seller-fungible-account" 1.0]}
       {"name": "marmalade-v2.ledger.BUY","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0 "i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"]}
       {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:buyer" (read-keyset 'buyer-guard)]}

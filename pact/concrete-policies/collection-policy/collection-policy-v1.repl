@@ -10,7 +10,7 @@
   (env-data {
     "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
   })
-  (coin.create-account "k:creator" (read-keyset 'creator-guard))
+  (marmalade-v2.abc.create-account "k:creator" (read-keyset 'creator-guard))
 (commit-tx)
 
 (begin-tx "Creating collection fails without operator guard")
@@ -35,7 +35,7 @@
   ,"account": "k:account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
   ,"royalty_spec": {
-      "fungible": coin
+      "fungible": marmalade-v2.abc
     ,"creator": "k:creator"
     ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
     ,"royalty-rate": 0.05
@@ -129,7 +129,7 @@
   ,"account": "k:account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
   ,"royalty_spec": {
-      "fungible": coin
+      "fungible": marmalade-v2.abc
     ,"creator": "k:creator"
     ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
     ,"royalty-rate": 0.05
@@ -172,7 +172,7 @@
   ,"account": "k:account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
   ,"royalty_spec": {
-      "fungible": coin
+      "fungible": marmalade-v2.abc
     ,"creator": "k:creator"
     ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
     ,"royalty-rate": 0.05

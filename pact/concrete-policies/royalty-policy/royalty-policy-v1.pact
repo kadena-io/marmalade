@@ -56,7 +56,6 @@
             (royalty-rate:decimal (at 'royalty-rate spec))
             (creator-details:object (fungible::details creator ))
             )
-      (enforce (= fungible coin) "Royalty support is restricted to coin")
       (enforce (=
         (at 'guard creator-details) creator-guard)
         "Creator guard does not match")

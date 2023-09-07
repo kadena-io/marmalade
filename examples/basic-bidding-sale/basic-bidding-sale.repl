@@ -1,6 +1,7 @@
 ;;load policy manager, ledger
 (load "../../pact/policy-manager/policy-manager.repl")
 
+
 (begin-tx "Load contract and dependencies")
   (env-sigs [
     { 'key: 'basic-sale-admin
@@ -17,14 +18,15 @@
 (begin-tx "Create token")
   (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)
+  (use mini-guard-utils)
   (env-data {
-    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } )
+    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } ALWAYS-TRUE)
     ,"account": "k:account"
   })
 
   (expect "create a default token without any policies"
     true
-    (create-token (read-msg 'token-id) 0 "bidding-test-uri" [] ))
+    (create-token (read-msg 'token-id) 0 "bidding-test-uri" [] ALWAYS-TRUE))
 
   (env-sigs [
     { 'key: 'random
@@ -32,7 +34,7 @@
     }])
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } )
+    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } ALWAYS-TRUE)
   ,"account": "k:account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
   })
@@ -53,13 +55,14 @@
 (begin-tx "Offer for sale fails")
   (env-hash (hash "offer-0"))
   (use marmalade-v2.ledger)
+  (use mini-guard-utils)
 
   (env-data {
     "seller-guard": {"keys": ["account"], "pred": "keys-all"}
   })
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } )
+    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } ALWAYS-TRUE)
     ,"quote": {
       "spec": {
         "seller-fungible-account": {
@@ -90,13 +93,14 @@
 (begin-tx "Offer for sale succeeds")
   (env-hash (hash "offer-1"))
   (use marmalade-v2.ledger)
+  (use mini-guard-utils)
 
   (env-data {
     "seller-guard": {"keys": ["account"], "pred": "keys-all"}
   })
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } )
+    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } ALWAYS-TRUE)
     ,"quote": {
       "spec": {
         "seller-fungible-account": {
@@ -154,9 +158,10 @@
   (env-hash (hash "place-bid-0"))
   (use marmalade-v2.ledger)
   (use free.basic-bidding-sale)
+  (use mini-guard-utils)
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } )
+    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } ALWAYS-TRUE)
     ,"sale-id": "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk"
     ,"bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
   })
@@ -236,9 +241,10 @@
   (use marmalade-v2.quote-manager)
   (use marmalade-v2.ledger)
   (use free.basic-bidding-sale)
+  (use mini-guard-utils)
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } )
+    "token-id": (create-token-id { 'uri: "bidding-test-uri", 'precision: 0, 'policies: [] } ALWAYS-TRUE)
     ,"buyer": "k:bidder"
     ,"buyer-guard": {"keys": ["bidder"], "pred": "keys-all"}
     ,"sale-id": "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk"

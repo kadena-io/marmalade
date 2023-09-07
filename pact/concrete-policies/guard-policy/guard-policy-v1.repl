@@ -9,8 +9,9 @@
 (begin-tx "Create token without mint guard")
   (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
+  (use mini-guard-utils)
 (env-data {
-   "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: (create-policies DEFAULT) } )
+   "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: (create-policies DEFAULT) } ALWAYS-TRUE)
   ,"account": "k:account"
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
 })
@@ -22,7 +23,7 @@
 
 (expect "create token succeeds without mint-guard"
  true
- (create-token (read-msg 'token-id) 0 "test-default-guard" (create-policies DEFAULT) ))
+ (create-token (read-msg 'token-id) 0 "test-default-guard" (create-policies DEFAULT) ALWAYS-TRUE))
 
 (expect "Mint token succeeds without mint-guard"
   true
@@ -34,8 +35,9 @@
 (begin-tx "Create token without operator guard fails")
   (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
+  (use mini-guard-utils)
 (env-data {
-   "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: (create-policies DEFAULT) } )
+   "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: (create-policies DEFAULT) } ALWAYS-TRUE)
   ,"account": "k:account"
   ,"mint_guard": {"keys": ["mint"], "pred": "keys-all"}
   ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
@@ -43,7 +45,7 @@
 
 (expect "create token succeeds with mint-guard"
  true
- (create-token (read-msg 'token-id) 0 "test-default-guard" (create-policies DEFAULT) ))
+ (create-token (read-msg 'token-id) 0 "test-default-guard" (create-policies DEFAULT) ALWAYS-TRUE))
 
  (env-sigs [
    { 'key: 'mint-false

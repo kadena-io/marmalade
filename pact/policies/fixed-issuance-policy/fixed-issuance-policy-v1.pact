@@ -11,7 +11,7 @@
   (use kip.token-policy-v2 [token-info])
   (use marmalade-v2.policy-manager)
 
-  (defconst FIXED-ISSUANCE-SPEC:string "fix_issuance_spec")
+  (defconst FIXED-ISSUANCE-SPEC:string "fixed_issuance_spec")
 
   (defschema supply-schema
     max-supply:decimal
@@ -28,18 +28,25 @@
   (defun enforce-init:bool
     ( token:object{token-info}
     )
-    @doc "The function is run at `create-token` step of marmalade.ledger.      \
+    @doc "The function is run at `create-token` step of marmalade-v2.ledger.      \
     \ Required msg-data keys:                                                  \
     \ * fixed_issuance_spec:object{supply-schema} - registers minimum mint     \
     \ amount, max-supply, and precision information of the created token"
     (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) fixed-issuance-policy-v1))
     (let* (
             (fixed-issuance-spec:object{supply-schema} (read-msg FIXED-ISSUANCE-SPEC))
+            (min-amount:decimal (at 'min-amount fixed-issuance-spec))
+            (max-supply:decimal (at 'max-supply fixed-issuance-spec))
+            (precision:integer (at 'precision fixed-issuance-spec))
             )
-      (enforce (> (at 'min-amount fixed-issuance-spec) 0.0) "Invalid min-amount")
-      (enforce (>= (at 'max-supply fixed-issuance-spec) 0.0) "Invalid max-supply")      
-      (enforce (= (at 'precision fixed-issuance-spec) (at 'precision token)) "Invalid Precision")
-      (insert supplies (at 'id token) fixed-issuance-spec))
+      (enforce (= (at 'precision token) precision) "Invalid Precision")
+      (enforce (and (= (floor min-amount precision) min-amount) (> min-amount 0.0)) "Invalid min-amount")
+      (enforce (and (= (floor max-supply precision) max-supply) (>= max-supply 0.0)) "Invalid max-supply")
+      (insert supplies (at 'id token) {
+        "min-amount": min-amount
+       ,"max-supply": max-supply
+       ,"precision": precision
+        }))
     true
   )
 
@@ -72,7 +79,6 @@
       amount:decimal
       sale-id:string
     )
-    @doc "Capture quote spec for SALE of TOKEN from message"
     true
   )
 

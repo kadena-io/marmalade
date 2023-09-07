@@ -22,7 +22,7 @@
     (env-data {
             "token-id": (create-token-id { 'uri: "test-fixed-issuance-policy-v1-0", 'precision: 0, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } ),
             "token-id-wrong-precision": (create-token-id { 'uri: "test-fixed-issuance-policy-v1-0", 'precision: 1, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } ),
-            "fix_issuance_spec": {
+            "fixed_issuance_spec": {
                 'max-supply:2.0,
                 'min-amount:1.0,
                 'precision:0}
@@ -39,10 +39,9 @@
         "Invalid Precision"
         (create-token (read-msg 'token-id-wrong-precision) 1 "test-fixed-issuance-policy-v1-0" [marmalade-v2.fixed-issuance-policy-v1] ))
 
-
     (env-data {
             "token-id": (create-token-id { 'uri: "test-fixed-issuance-policy-v1-1", 'precision: 0, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } ),
-            "fix_issuance_spec": {
+            "fixed_issuance_spec": {
                 'max-supply:2.0,
                 'min-amount:0.0,
                 'precision:0
@@ -56,7 +55,7 @@
 
     (env-data {
             "token-id": (create-token-id { 'uri: "test-fixed-issuance-policy-v1-1", 'precision: 1, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } ),
-            "fix_issuance_spec": {
+            "fixed_issuance_spec": {
                 'max-supply:0.0,
                 'min-amount:1.0,
                 'precision:1

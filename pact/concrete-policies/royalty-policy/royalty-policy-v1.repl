@@ -14,48 +14,68 @@
 (marmalade-v2.abc.create-account "k:creator" (read-keyset 'creator-guard))
 (marmalade-v2.abc.create-account "k:badactor" (read-keyset 'bad-actor-guard))
 
+(coin.create-account "k:creator" (read-keyset 'creator-guard))
+(coin.create-account "k:badactor" (read-keyset 'bad-actor-guard))
+
+
 (commit-tx)
 (begin-tx)
 (use marmalade-v2.ledger)
 (use marmalade-v2.util-v1)
+(use mini-guard-utils)
 
 (env-data {
-  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} )
+  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
  ,"account": "account"
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
     "fungible": marmalade-v2.abc
    ,"creator": "k:creator"
    ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
-   ,"royalty-rate": -0.000001
+   ,"royalty-rate": 0.000001
   }
 })
 
-(env-keys ['marmalade-admin ])
 
-(commit-tx)
+(expect-failure "create-token with royalty_spec with fungible other than coin fails"
+  "Royalty support is restricted to coin"
+  (create-token (read-msg 'token-id) 0 "test-royalty-uri" (create-policies DEFAULT_ROYALTY) ALWAYS-TRUE))
 
-(begin-tx)
-(use marmalade-v2.ledger)
-
-(use marmalade-v2.util-v1)
-
-(expect-failure "create-token with negative royalty rate fails"
-  "Invalid royalty rate"
-  (create-token (read-msg 'token-id) 0 "test-royalty-uri" (create-policies DEFAULT_ROYALTY) ))
 (rollback-tx)
 
 (begin-tx)
 (use marmalade-v2.ledger)
-
 (use marmalade-v2.util-v1)
+(use mini-guard-utils)
 
 (env-data {
-  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } )
+  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
+ ,"account": "account"
+ ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
+ ,"royalty_spec": {
+    "fungible": coin
+   ,"creator": "k:creator"
+   ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
+   ,"royalty-rate": -0.000001
+  }
+})
+
+(expect-failure "create-token with negative royalty rate fails"
+  "Invalid royalty rate"
+  (create-token (read-msg 'token-id) 0 "test-royalty-uri" (create-policies DEFAULT_ROYALTY) ALWAYS-TRUE))
+(rollback-tx)
+
+(begin-tx)
+(use marmalade-v2.ledger)
+(use marmalade-v2.util-v1)
+(use mini-guard-utils)
+
+(env-data {
+  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ALWAYS-TRUE)
  ,"account": "k:account"
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
-    "fungible": marmalade-v2.abc
+    "fungible": coin
    ,"creator": "k:creator"
    ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
    ,"royalty-rate": 0.05
@@ -64,7 +84,7 @@
 
 (expect "create a default token with quote-policy, non-fungible-policy"
   true
-  (create-token (read-msg 'token-id) 0 "test-royalty-uri" (create-policies DEFAULT_ROYALTY) ))
+  (create-token (read-msg 'token-id) 0 "test-royalty-uri" (create-policies DEFAULT_ROYALTY) ALWAYS-TRUE))
 
 (env-sigs [
   { 'key: 'account
@@ -80,13 +100,14 @@
 (use marmalade-v2.ledger)
 
 (use marmalade-v2.util-v1)
+(use mini-guard-utils)
 
 (env-data {
-  "token-id": (create-token-id { 'uri: "test2-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } )
+  "token-id": (create-token-id { 'uri: "test2-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ALWAYS-TRUE)
  ,"account": "k:account"
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
-    "fungible": marmalade-v2.abc
+    "fungible": coin
    ,"creator": "k:badactor"
    ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
    ,"royalty-rate": 0.05
@@ -95,11 +116,11 @@
 
 (expect-failure "Creator guard does not match creator"
   "Creator guard does not match"
-  (create-token (read-msg 'token-id) 0 "test2-royalty-uri" (create-policies DEFAULT_ROYALTY) ))
+  (create-token (read-msg 'token-id) 0 "test2-royalty-uri" (create-policies DEFAULT_ROYALTY) ALWAYS-TRUE))
 
 
 (env-data {
-  "token-id": (create-token-id { 'uri: "test2-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } )
+  "token-id": (create-token-id { 'uri: "test2-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ALWAYS-TRUE)
  ,"account": "k:account"
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
@@ -112,20 +133,21 @@
 
 (expect-failure "Account does not exist on fungible"
   "row not found: k:creator"
-  (create-token (read-msg 'token-id) 0 "test2-royalty-uri" (create-policies DEFAULT_ROYALTY) ))
+  (create-token (read-msg 'token-id) 0 "test2-royalty-uri" (create-policies DEFAULT_ROYALTY) ALWAYS-TRUE))
 
 (commit-tx)
 
 (begin-tx "Royalty rates")
 (use marmalade-v2.ledger)
 (use marmalade-v2.util-v1)
+(use mini-guard-utils)
 
 (env-data {
-  "token-id": (create-token-id { 'uri: "test3-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } )
+  "token-id": (create-token-id { 'uri: "test3-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ALWAYS-TRUE)
  ,"account": "k:account"
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
-    "fungible": marmalade-v2.abc
+    "fungible": coin
    ,"creator": "k:creator"
    ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
    ,"royalty-rate": 1
@@ -135,14 +157,14 @@
 
 (expect-failure "Royalty rate should be decimal"
   "expected decimal, found integer"
-  (create-token (read-msg 'token-id) 0 "test3-royalty-uri" (create-policies DEFAULT_ROYALTY) ))
+  (create-token (read-msg 'token-id) 0 "test3-royalty-uri" (create-policies DEFAULT_ROYALTY) ALWAYS-TRUE))
 
 (env-data {
-  "token-id": (create-token-id { 'uri: "test3-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } )
+  "token-id": (create-token-id { 'uri: "test3-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ALWAYS-TRUE)
  ,"account": "k:account"
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {
-    "fungible": marmalade-v2.abc
+    "fungible": coin
    ,"creator": "k:creator"
    ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
    ,"royalty-rate": 2.0
@@ -151,7 +173,7 @@
 
 (expect-failure "Royalty rate be between 0.0 and 1.0"
   "Invalid royalty rate"
-  (create-token (read-msg 'token-id) 0 "test3-royalty-uri" (create-policies DEFAULT_ROYALTY) ))
+  (create-token (read-msg 'token-id) 0 "test3-royalty-uri" (create-policies DEFAULT_ROYALTY) ALWAYS-TRUE))
 
 
 (commit-tx)
@@ -161,16 +183,17 @@
 (env-hash (hash "offer-royalty-0"))
 (use marmalade-v2.ledger)
 (use marmalade-v2.util-v1)
+(use mini-guard-utils)
 
 (env-data {
   "seller-guard": {"keys": ["account"], "pred": "keys-all"}
 })
 
-(marmalade-v2.abc.create-account "k:account" (read-keyset 'seller-guard))
+(coin.create-account "k:account" (read-keyset 'seller-guard))
 (marmalade-v2.def.create-account "k:account" (read-keyset 'seller-guard))
 
 (env-data {
-  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } )
+  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ALWAYS-TRUE)
   ,"quote":{
      "spec": {
        "fungible": marmalade-v2.def
@@ -194,14 +217,14 @@
    }])
 
 (expect-failure "Offer fails when quote uses a different fungible from registered fungible"
-  "(enforce (= fungible (at 'fung...: Failure: Tx Failed: Offer is restricted to sale using fungible: marmalade-v2.abc"
+  "(enforce (= fungible (at 'fung...: Failure: Tx Failed: Offer is restricted to sale using fungible: coin"
   (sale (read-msg 'token-id) "k:account" 1.0 (to-timestamp (time "2023-07-22T11:26:35Z"))))
 
 (env-data {
-  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } )
+  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ALWAYS-TRUE)
   ,"quote":{
      "spec": {
-       "fungible": marmalade-v2.abc
+       "fungible": coin
        ,"price": 2.0
        ,"amount": 1.0
        ,"seller-fungible-account": {
@@ -220,18 +243,19 @@
 (env-hash (hash "offer-royalty-0"))
 (use marmalade-v2.ledger)
 (use marmalade-v2.util-v1)
+(use mini-guard-utils)
 
 (env-data {
   "seller-guard": {"keys": ["account"], "pred": "keys-all"}
 })
 
-(marmalade-v2.abc.create-account "k:account" (read-keyset 'seller-guard))
+(coin.create-account "k:account" (read-keyset 'seller-guard))
 
 (env-data {
-  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } )
+  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ALWAYS-TRUE)
   ,"quote":{
      "spec": {
-       "fungible": marmalade-v2.abc
+       "fungible": coin
        ,"price": 2.0
        ,"amount": 1.0
        ,"seller-fungible-account": {
@@ -263,23 +287,23 @@
  ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
  })
 
-(marmalade-v2.abc.create-account "k:buyer" (read-keyset 'buyer-guard))
-(marmalade-v2.abc.fund "k:buyer" 2.0)
+(test-capability (coin.COINBASE))
+(coin.coinbase "k:buyer" (read-keyset 'buyer-guard) 2.0)
 
 (env-sigs
  [{'key:'buyer
   ,'caps: [
-    (marmalade-v2.ledger.BUY (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ) "k:account" "k:buyer"  1.0 (to-timestamp (time  "2023-07-22T11:26:35Z")) "0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM")
-    (marmalade-v2.abc.TRANSFER "k:buyer" "c:xx_lmWaqaLkqO3RzZnabF_tpKB11EeagaLUJwM0T_6c" 2.0)
+    (marmalade-v2.ledger.BUY (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ALWAYS-TRUE) "k:account" "k:buyer"  1.0 (to-timestamp (time  "2023-07-22T11:26:35Z")) "0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM")
+    (coin.TRANSFER "k:buyer" "c:xx_lmWaqaLkqO3RzZnabF_tpKB11EeagaLUJwM0T_6c" 2.0)
    ]}])
 
  (expect
    "Expect k:buyer balance to be correct"
-   2.0 (marmalade-v2.abc.get-balance "k:buyer"))
+   2.0 (coin.get-balance "k:buyer"))
 
  (expect
    "Expect vault creator balance to be correct"
-   0.0 (marmalade-v2.abc.get-balance "k:creator"))
+   0.0 (coin.get-balance "k:creator"))
 
 (env-hash (hash "offer-royalty-0"))
 
@@ -289,11 +313,11 @@
 
 (expect
   "Expect k:buyer balance to be correct"
-  0.0 (marmalade-v2.abc.get-balance "k:buyer"))
+  0.0 (coin.get-balance "k:buyer"))
 
 (expect
   "Expect creator balance to be correct"
-  0.1 (marmalade-v2.abc.get-balance "k:creator"))
+  0.1 (coin.get-balance "k:creator"))
 
 
 (env-data {

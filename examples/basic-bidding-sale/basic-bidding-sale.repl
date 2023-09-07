@@ -79,12 +79,12 @@
   (env-sigs [
     { 'key: 'account-wrong
     ,'caps: [
-    (marmalade-v2.ledger.OFFER (read-msg 'token-id ) "k:account" 1.0 0.0)]
+    (marmalade-v2.ledger.OFFER (read-msg 'token-id ) "k:account" 1.0 0)]
     }])
 
   (expect-failure "offer fails because of keyset failure"
     "Keyset failure (keys-all): [account]"
-    (sale (read-msg 'token-id) "k:account" 1.0 0.0))
+    (sale (read-msg 'token-id) "k:account" 1.0 0))
 (rollback-tx)
 
 (begin-tx "Offer for sale succeeds")
@@ -116,12 +116,12 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-    (marmalade-v2.ledger.OFFER (read-msg 'token-id ) "k:account" 1.0 0.0)]
+    (marmalade-v2.ledger.OFFER (read-msg 'token-id ) "k:account" 1.0 0)]
     }])
 
   (expect "Start offer succeeds"
     "DKc5HEWcmP8iPWue2WvMcnjn_WnowmuHz5Ogukm2SWk"
-    (sale (read-msg 'token-id) "k:account" 1.0 0.0))
+    (sale (read-msg 'token-id) "k:account" 1.0 0))
 
 (commit-tx)
 
@@ -247,7 +247,7 @@
   (env-sigs [
     { 'key: 'any
     ,'caps: [
-        (marmalade-v2.ledger.BUY (read-msg 'token-id) "k:account" "k:bidder"  1.0 0.0 (read-msg 'sale-id))
+        (marmalade-v2.ledger.BUY (read-msg 'token-id) "k:account" "k:bidder"  1.0 0 (read-msg 'sale-id))
       ]
     }
     ])

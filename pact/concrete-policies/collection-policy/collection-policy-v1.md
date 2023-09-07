@@ -22,8 +22,13 @@ The functions within this collection policy are very straight forward.
 - `collection-name`: The name of the collection to be created.
 - `collection-size`: The maximum amount of tokens the collection can hold. If `collection-size` is set to 0, the collection can hold an unlimited amount of tokens.
 - `operator-guard`: The guard of the operator of the collection to be created.
-
+  - Required Capability:
+    - Capbility: `(COLLECTION collection-id collection-name collection-size operator-guard)`
+    - Signer: `operator-guard`
 **`enforce-init:`** Adds a new token to the collection while validating the collection's size. Als sets the guard of the account that is allowed to mint the token.
+  - Required Capability:
+    - Capbility: `(OPERATOR collection-id)`
+    - Signer: `operator-guard`
 **`enforce-mint`:** Validates if the account minting the token is allowed to do so.
 
 The other enforcements within the collection policy don't have any additional functionality implemented.

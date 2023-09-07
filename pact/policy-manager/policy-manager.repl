@@ -15,8 +15,6 @@
     ,'token-id: (create-token-id { 'uri: "test-uri-3", 'precision: 0, 'policies: (create-policies DEFAULT)  } )
     })
 
-    (namespace (read-msg 'ns))
-
     (expect  "create a token "
       true
       (create-token (read-msg 'token-id ) 0 "test-uri-3"  (create-policies DEFAULT) ))
@@ -217,7 +215,7 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-      (marmalade-v2.ledger.OFFER (read-string 'token-id) "k:account" 1.0 0.0)]
+      (marmalade-v2.ledger.OFFER (read-string 'token-id) "k:account" 1.0 0)]
     }])
 
   (expect-failure "enforce-offer cannot be called directly"
@@ -227,11 +225,11 @@
 
   (expect "start offer by running step 0 of sale"
     (pact-id)
-    (sale (read-msg 'token-id) "k:account" 1.0 0.0))
+    (sale (read-msg 'token-id) "k:account" 1.0 0))
 
 (expect "offer events"
-    [ {"name": "marmalade-v2.ledger.OFFER","params": [(read-string "token-id") "k:account" 1.0 0.0]}
-      {"name": "marmalade-v2.ledger.SALE","params": [(read-string "token-id") "k:account" 1.0 0.0 "y9iTTBsSq56yIgmJexCyOX3DSFVe0CwQs4K0jISRAdM"]}
+    [ {"name": "marmalade-v2.ledger.OFFER","params": [(read-string "token-id") "k:account" 1.0 0]}
+      {"name": "marmalade-v2.ledger.SALE","params": [(read-string "token-id") "k:account" 1.0 0 "y9iTTBsSq56yIgmJexCyOX3DSFVe0CwQs4K0jISRAdM"]}
       {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": [(read-string "token-id") "c:cNEu9OPDCB7tmnj-Z2cMxrRNbJAeGl_r3aO-L367oSs" (account-guard (read-string "token-id") "c:cNEu9OPDCB7tmnj-Z2cMxrRNbJAeGl_r3aO-L367oSs")]}
       {"name": "marmalade-v2.ledger.TRANSFER","params": [(read-string "token-id") "k:account" "c:cNEu9OPDCB7tmnj-Z2cMxrRNbJAeGl_r3aO-L367oSs" 1.0]}
       {"name": "marmalade-v2.ledger.RECONCILE","params": [(read-string "token-id") 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "c:cNEu9OPDCB7tmnj-Z2cMxrRNbJAeGl_r3aO-L367oSs","current": 1.0,"previous": 0.0}]}]
@@ -241,7 +239,7 @@
   (env-sigs
     [ {'key:'buyer
       ,'caps: [
-        (marmalade-v2.ledger.BUY "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0.0 (pact-id))
+        (marmalade-v2.ledger.BUY "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0 (pact-id))
       ]}
   ])
 
@@ -261,7 +259,7 @@
     (continue-pact 1))
 
   (expect "buy events"
-   [ {"name": "marmalade-v2.ledger.BUY","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0.0 "y9iTTBsSq56yIgmJexCyOX3DSFVe0CwQs4K0jISRAdM"]}
+   [ {"name": "marmalade-v2.ledger.BUY","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0 "y9iTTBsSq56yIgmJexCyOX3DSFVe0CwQs4K0jISRAdM"]}
      {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:buyer" (read-keyset 'buyer-guard)]}
      {"name": "marmalade-v2.ledger.TRANSFER","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "c:cNEu9OPDCB7tmnj-Z2cMxrRNbJAeGl_r3aO-L367oSs" "k:buyer" 1.0]}
      {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" 1.0 {"account": "c:cNEu9OPDCB7tmnj-Z2cMxrRNbJAeGl_r3aO-L367oSs","current": 0.0,"previous": 1.0} {"account": "k:buyer","current": 1.0,"previous": 0.0}]}]
@@ -271,7 +269,7 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-      (marmalade-v2.ledger.WITHDRAW (read-string 'token-id) "k:account" 1.0 0.0 (pact-id))]
+      (marmalade-v2.ledger.WITHDRAW (read-string 'token-id) "k:account" 1.0 0 (pact-id))]
     }])
 
   (expect-failure "Withdraw fails after buy is completed"
@@ -296,16 +294,16 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-      (marmalade-v2.ledger.OFFER (read-string 'token-id) "k:account" 1.0 0.0)]
+      (marmalade-v2.ledger.OFFER (read-string 'token-id) "k:account" 1.0 0)]
     }])
 
   (expect "start offer by running step 0 of sale"
     (pact-id)
-    (sale (read-msg 'token-id) "k:account" 1.0 0.0))
+    (sale (read-msg 'token-id) "k:account" 1.0 0))
 
 (expect "offer events"
-    [ {"name": "marmalade-v2.ledger.OFFER","params": [(read-string "token-id") "k:account" 1.0 0.0]}
-      {"name": "marmalade-v2.ledger.SALE","params": [(read-string "token-id") "k:account" 1.0 0.0 "i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"]}
+    [ {"name": "marmalade-v2.ledger.OFFER","params": [(read-string "token-id") "k:account" 1.0 0]}
+      {"name": "marmalade-v2.ledger.SALE","params": [(read-string "token-id") "k:account" 1.0 0 "i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"]}
       {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": [(read-string "token-id") "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q" (account-guard (read-string "token-id") "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q")]}
       {"name": "marmalade-v2.ledger.TRANSFER","params": [(read-string "token-id") "k:account" "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q" 1.0]}
       {"name": "marmalade-v2.ledger.RECONCILE","params": [(read-string "token-id") 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q","current": 1.0,"previous": 0.0}]}]
@@ -315,7 +313,7 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-      (marmalade-v2.ledger.WITHDRAW (read-string 'token-id) "k:account" 1.0 0.0 (pact-id))]
+      (marmalade-v2.ledger.WITHDRAW (read-string 'token-id) "k:account" 1.0 0 (pact-id))]
     }])
 
   (expect-failure "enforce-withdraw cannot be called directly"
@@ -327,7 +325,7 @@
     (continue-pact 0 true))
 
   (expect "withdraw events"
-   [ {"name": "marmalade-v2.ledger.WITHDRAW","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" 1.0 0.0 "i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"]}
+   [ {"name": "marmalade-v2.ledger.WITHDRAW","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" 1.0 0 "i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"]}
      {"name": "marmalade-v2.ledger.TRANSFER","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q" "k:account" 1.0]}
      {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" 1.0 {"account": "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q","current": 0.0,"previous": 1.0} {"account": "k:account","current": 1.0,"previous": 0.0}]}]
     (map (remove "module-hash")  (env-events true))
@@ -340,7 +338,7 @@
       ]}
     {'key:'buyer
       ,'caps: [
-        (marmalade-v2.ledger.BUY "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0.0 (pact-id))
+        (marmalade-v2.ledger.BUY "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0 (pact-id))
       ]}
   ])
 
@@ -405,18 +403,18 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-      (marmalade-v2.ledger.OFFER (read-string 'token-id) "k:account" 1.0 0.0)]
+      (marmalade-v2.ledger.OFFER (read-string 'token-id) "k:account" 1.0 0)]
     }])
 
   (expect "start offer with quote spec"
     (pact-id)
-    (sale (read-msg 'token-id) "k:account" 1.0 0.0))
+    (sale (read-msg 'token-id) "k:account" 1.0 0))
 
   (expect "offer events"
       [ {"name": "marmalade-v2.quote-manager.QUOTE","params": [(pact-id) (read-string 'token-id) (at 'spec (read-msg 'quote )) ]}
         {"name": "marmalade-v2.quote-manager.QUOTE_GUARDS","params": [(pact-id) (read-string 'token-id) (at 'seller-guard (read-msg 'quote )) []]}
-        {"name": "marmalade-v2.ledger.OFFER","params": [(read-string 'token-id) "k:account" 1.0 0.0]}
-        {"name": "marmalade-v2.ledger.SALE","params": [(read-string 'token-id) "k:account" 1.0 0.0 (pact-id)]}
+        {"name": "marmalade-v2.ledger.OFFER","params": [(read-string 'token-id) "k:account" 1.0 0]}
+        {"name": "marmalade-v2.ledger.SALE","params": [(read-string 'token-id) "k:account" 1.0 0 (pact-id)]}
         {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": [(read-string 'token-id) "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q" (account-guard (read-string "token-id") "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q")]}
         {"name": "marmalade-v2.ledger.TRANSFER","params": [(read-string 'token-id) "k:account" "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q" 1.0]}
         {"name": "marmalade-v2.ledger.RECONCILE","params": [(read-string 'token-id) 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q","current": 1.0,"previous": 0.0}]}
@@ -427,7 +425,7 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-      (marmalade-v2.ledger.WITHDRAW "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" 1.0 0.0 (pact-id))]
+      (marmalade-v2.ledger.WITHDRAW "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" 1.0 0 (pact-id))]
     }])
 
   (expect "Withdraw succeeds"
@@ -435,7 +433,7 @@
     (continue-pact 0 true))
 
     (expect "withdraw events"
-      [ {"name": "marmalade-v2.ledger.WITHDRAW","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" 1.0 0.0 "i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"]}
+      [ {"name": "marmalade-v2.ledger.WITHDRAW","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" 1.0 0 "i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"]}
         {"name": "marmalade-v2.ledger.TRANSFER","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q" "k:account" 1.0]}
         {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" 1.0 {"account": "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q","current": 0.0,"previous": 1.0} {"account": "k:account","current": 1.0,"previous": 0.0}]}]
       (map (remove "module-hash")  (env-events true))
@@ -448,7 +446,7 @@
       ]}
     {'key:'buyer
       ,'caps: [
-        (marmalade-v2.ledger.BUY "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0.0 (pact-id))
+        (marmalade-v2.ledger.BUY "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0 (pact-id))
       ]}
   ])
 
@@ -500,18 +498,18 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-      (marmalade-v2.ledger.OFFER (read-string 'token-id) "k:account" 1.0 0.0)]
+      (marmalade-v2.ledger.OFFER (read-string 'token-id) "k:account" 1.0 0)]
     }])
 
   (expect "start offer with quote spec"
     (pact-id)
-    (sale (read-msg 'token-id) "k:account" 1.0 0.0))
+    (sale (read-msg 'token-id) "k:account" 1.0 0))
 
   (expect "offer events"
       [ {"name": "marmalade-v2.quote-manager.QUOTE","params": [(pact-id) (read-string 'token-id) (at 'spec (read-msg 'quote )) ]}
         {"name": "marmalade-v2.quote-manager.QUOTE_GUARDS","params": [(pact-id) (read-string 'token-id) (at 'seller-guard (read-msg 'quote )) []]}
-        {"name": "marmalade-v2.ledger.OFFER","params": [(read-string 'token-id) "k:account" 1.0 0.0]}
-        {"name": "marmalade-v2.ledger.SALE","params": [(read-string 'token-id) "k:account" 1.0 0.0 (pact-id)]}
+        {"name": "marmalade-v2.ledger.OFFER","params": [(read-string 'token-id) "k:account" 1.0 0]}
+        {"name": "marmalade-v2.ledger.SALE","params": [(read-string 'token-id) "k:account" 1.0 0 (pact-id)]}
         {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": [(read-string 'token-id) "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q" (account-guard (read-string "token-id") "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q")]}
         {"name": "marmalade-v2.ledger.TRANSFER","params": [(read-string 'token-id) "k:account" "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q" 1.0]}
         {"name": "marmalade-v2.ledger.RECONCILE","params": [(read-string 'token-id) 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q","current": 1.0,"previous": 0.0}]}
@@ -532,7 +530,7 @@
        ]}
      {'key:'buyer
        ,'caps: [
-         (marmalade-v2.ledger.BUY "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0.0 (pact-id))
+         (marmalade-v2.ledger.BUY "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0 (pact-id))
        ]}
    ])
 
@@ -543,7 +541,7 @@
   (expect "buy events"
     [ {"name": "marmalade-v2.abc.TRANSFER","params": ["k:buyer-fungible" "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" 2.0]}
       {"name": "marmalade-v2.abc.TRANSFER","params": ["c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" "k:seller-fungible-account" 2.0]}
-      {"name": "marmalade-v2.ledger.BUY","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0.0 "i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"]}
+      {"name": "marmalade-v2.ledger.BUY","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0 "i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"]}
       {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:buyer" (read-keyset 'buyer-guard)]}
       {"name": "marmalade-v2.ledger.TRANSFER","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q" "k:buyer" 1.0]}
       {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" 1.0 {"account": "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q","current": 0.0,"previous": 1.0} {"account": "k:buyer","current": 1.0,"previous": 0.0}]}]
@@ -553,7 +551,7 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-      (marmalade-v2.ledger.WITHDRAW "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" 1.0 0.0 (pact-id))]
+      (marmalade-v2.ledger.WITHDRAW "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" 1.0 0 (pact-id))]
     }])
 
   (expect-failure "Withdraw fails after buy has completed"
@@ -599,18 +597,18 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-      (marmalade-v2.ledger.OFFER (read-string 'token-id) "k:account" 1.0 0.0)]
+      (marmalade-v2.ledger.OFFER (read-string 'token-id) "k:account" 1.0 0)]
     }])
 
   (expect "start offer with quote spec"
     (pact-id)
-    (sale (read-msg 'token-id) "k:account" 1.0 0.0))
+    (sale (read-msg 'token-id) "k:account" 1.0 0))
 
 (expect "offer events"
     [ {"name": "marmalade-v2.quote-manager.QUOTE","params": [(pact-id) (read-string 'token-id) (at 'spec (read-msg 'quote )) ]}
       {"name": "marmalade-v2.quote-manager.QUOTE_GUARDS","params": [(pact-id) (read-string 'token-id) (at 'seller-guard (read-msg 'quote ))  (at 'quote-guards (read-msg 'quote ))]}
-      {"name": "marmalade-v2.ledger.OFFER","params": [(read-string 'token-id) "k:account" 1.0 0.0]}
-      {"name": "marmalade-v2.ledger.SALE","params": [(read-string 'token-id) "k:account" 1.0 0.0 (pact-id)]}
+      {"name": "marmalade-v2.ledger.OFFER","params": [(read-string 'token-id) "k:account" 1.0 0]}
+      {"name": "marmalade-v2.ledger.SALE","params": [(read-string 'token-id) "k:account" 1.0 0 (pact-id)]}
       {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": [(read-string 'token-id) "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q" (account-guard (read-string "token-id") "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q")]}
       {"name": "marmalade-v2.ledger.TRANSFER","params": [(read-string 'token-id) "k:account" "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q" 1.0]}
       {"name": "marmalade-v2.ledger.RECONCILE","params": [(read-string 'token-id) 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q","current": 1.0,"previous": 0.0}]}
@@ -623,22 +621,25 @@
    ,"buyer-guard": {"keys": ['buyer], "pred": "keys-all"}
    })
 
-   (env-sigs
-     [{'key:"market"
-       ,'caps: [(marmalade-v2.quote-manager.UPDATE_QUOTE_PRICE (pact-id))]}
-     {'key:"market-fungible"
-       ,'caps: [(marmalade-v2.abc.DEBIT "k:market-fungible")]}
-   ])
+   (env-sigs [
+      { 'key: 'market
+      ,'caps: [
+          (marmalade-v2.policy-manager.RESERVE_SALE_AT_PRICE (pact-id) 1.0 (read-msg 'buyer) (read-keyset 'buyer-guard))
+        ]}
+      { 'key: 'market-fungible
+      ,'caps: [
+          (marmalade-v2.abc.TRANSFER "k:market-fungible" "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" 1.0)
+      ]}
+    ])
 
-  ;; REVIEW abc CAP
-  (expect "reserve-sale succeeds"
+  (expect "reserve-sale-at-price succeeds"
     true
-    (reserve-sale (pact-id) 1.0 (read-string 'buyer) (read-keyset 'buyer-guard ) "k:market-fungible"))
+    (reserve-sale-at-price (pact-id) 1.0 (read-string 'buyer) (read-keyset 'buyer-guard ) "k:market-fungible"))
 
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-      (marmalade-v2.ledger.WITHDRAW "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" 1.0 0.0 (pact-id))]
+      (marmalade-v2.ledger.WITHDRAW "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" 1.0 0 (pact-id))]
     }])
 
   (expect-failure "Withdraw fails when a sale is reserved"
@@ -648,7 +649,7 @@
   (env-sigs
     [ {'key:'buyer
       ,'caps: [
-        (marmalade-v2.ledger.BUY "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0.0 (pact-id))
+        (marmalade-v2.ledger.BUY "t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0 (pact-id))
       ]}
   ])
 
@@ -671,11 +672,10 @@
     (continue-pact 1))
 
   (expect "buy events"
-    [ {"name": "marmalade-v2.quote-manager.QUOTE_PRICE_UPDATE","params": ["i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY" 1.0 "k:buyer"]}
+    [ {"name": "marmalade-v2.policy-manager.RESERVE_SALE_AT_PRICE","params": ["i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY" 1.0 "k:buyer" (read-keyset 'buyer-guard)]}
       {"name": "marmalade-v2.abc.TRANSFER","params": ["k:market-fungible" "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" 1.0]}
-      {"name": "marmalade-v2.policy-manager.SALE_RESERVED","params": ["i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY" 1.0 "k:buyer" (read-keyset 'buyer-guard)]}
       {"name": "marmalade-v2.abc.TRANSFER","params": ["c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" "k:seller-fungible-account" 1.0]}
-      {"name": "marmalade-v2.ledger.BUY","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0.0 "i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"]}
+      {"name": "marmalade-v2.ledger.BUY","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:account" "k:buyer" 1.0 0 "i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"]}
       {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "k:buyer" (read-keyset 'buyer-guard)]}
       {"name": "marmalade-v2.ledger.TRANSFER","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q" "k:buyer" 1.0]}
       {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:44-d3yyIgC8RRe4Bzc3A9Wvcz2PdB89aHyx_rT3156U" 1.0 {"account": "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q","current": 0.0,"previous": 1.0} {"account": "k:buyer","current": 1.0,"previous": 0.0}]}]

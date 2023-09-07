@@ -43,4 +43,3 @@ This function enforces the policy related to transferring tokens from one accoun
 To define your own policies, simply create a new function with the name of the policy you want to implement and add your custom checks. Make sure the function returns a boolean value indicating whether or not the policy is enforced.
 
 Overall, the token-policy-v2 interface provides a powerful tool for defining policies that govern the behavior of tokens written in Pact on the kadena blockchain. By creating custom functions to enforce policies related to minting, burning, offering, buying, transferring, and cross-chain transfers of tokens, you can ensure that your marmalade token operates in a secure and reliable manner.
-

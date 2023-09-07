@@ -88,6 +88,13 @@ jobs:
           r=`tail -1 out.log | grep "Load successful"`
           if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi
 
+      - name: Test policies -Fixed Issuance Policy
+        run: |
+          bin/pact -t pact/policies/fixed-issuance-policy/fixed-issuance-policy-v1.repl > out.log 2>&1
+          cat out.log
+          r=`tail -1 out.log | grep "Load successful"`
+          if [ -n "$r" ]; then exit 0; else echo "Pact run failed."; exit 1; fi
+
       - name: Test policies -Onchain Manifest Policy
         run: |
           bin/pact -t pact/policies/onchain-manifest-policy/onchain-manifest-policy-v1.repl > out.log 2>&1

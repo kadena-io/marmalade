@@ -138,7 +138,7 @@
        0 "default-test-uri" [] ALWAYS-TRUE))
 
   (expect "create-token events"
-     [ {"name": "marmalade-v2.ledger.TOKEN","params": ["t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA" 0 [] "default-test-uri"]}]
+     [ {"name": "marmalade-v2.ledger.TOKEN","params": ["t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA" 0 [] "default-test-uri" ALWAYS-TRUE]}]
      (map (remove "module-hash")  (env-events true))
   )
 

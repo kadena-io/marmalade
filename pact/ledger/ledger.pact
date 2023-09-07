@@ -86,9 +86,9 @@
     @event true
   )
 
-  (defcap TOKEN:bool (id:string precision:integer policies:[module{kip.token-policy-v2}] uri:string)
+  (defcap TOKEN:bool (id:string precision:integer policies:[module{kip.token-policy-v2}] uri:string creation-guard:guard)
     @event
-    true
+    (enforce-guard creation-guard)
   )
 
   (defcap RECONCILE:bool
@@ -231,20 +231,22 @@
     (let ((token-details { 'uri: uri, 'precision: precision, 'policies: (sort policies) }))
       (enforce-token-reserved id token-details creation-guard)
     )
-    (with-capability (INIT-CALL id precision uri)
-      ;; maps policy list and calls policy::enforce-init
-      (marmalade-v2.policy-manager.enforce-init
-        { 'id: id, 'supply: 0.0, 'precision: precision, 'uri: uri,  'policies: policies})
-    )
+    (with-capability (TOKEN id precision policies uri creation-guard)
+      (with-capability (INIT-CALL id precision uri)
+        ;; maps policy list and calls policy::enforce-init
+        (marmalade-v2.policy-manager.enforce-init
+          { 'id: id, 'supply: 0.0, 'precision: precision, 'uri: uri,  'policies: policies})
+      )
 
-    (insert tokens id {
-      "id": id,
-      "uri": uri,
-      "precision": precision,
-      "supply": 0.0,
-      "policies": policies
-    })
-    (emit-event (TOKEN id precision policies uri))
+      (insert tokens id {
+        "id": id,
+        "uri": uri,
+        "precision": precision,
+        "supply": 0.0,
+        "policies": policies
+      })
+      true
+    )
   )
 
   (defun check-reserved:string (token-id:string)
@@ -257,7 +259,6 @@
   (defun enforce-token-reserved:bool (token-id:string token-details:object{token-details}
                                       creation-guard:guard)
     @doc "Enforce reserved token-id name protocols."
-    (enforce-guard creation-guard)
     (let ((r (check-reserved token-id)))
       (if (= "t" r)
         (enforce

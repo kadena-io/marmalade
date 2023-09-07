@@ -39,7 +39,7 @@
 
 (expect-failure "create-token with royalty_spec with fungible other than coin fails"
   "Royalty support is restricted to coin"
-  (create-token (read-msg 'token-id) 0 "test-royalty-uri" (create-policies DEFAULT_ROYALTY) ))
+  (create-token (read-msg 'token-id) 0 "test-royalty-uri" (create-policies DEFAULT_ROYALTY) ALWAYS-TRUE))
 
 (rollback-tx)
 
@@ -49,7 +49,7 @@
 (use mini-guard-utils)
 
 (env-data {
-  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} )
+  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
  ,"account": "account"
  ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
  ,"royalty_spec": {

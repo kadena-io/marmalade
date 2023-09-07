@@ -11,10 +11,11 @@
     "creator-guard": {"keys": ["creator"], "pred": "keys-all"},
     "bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
   })
-  (marmalade-v2.abc.create-account "k:account" (read-keyset 'seller-guard))
-  (marmalade-v2.abc.create-account "k:creator" (read-keyset 'creator-guard))
-  (marmalade-v2.abc.create-account "k:bidder" (read-keyset 'bidder-guard))
-  (marmalade-v2.abc.fund "k:bidder" 25.0)
+  (coin.create-account "k:account" (read-keyset 'seller-guard))
+  (coin.create-account "k:creator" (read-keyset 'creator-guard))
+  (coin.create-account "k:bidder" (read-keyset 'bidder-guard))
+  (test-capability (coin.COINBASE))
+  (coin.coinbase "k:bidder" (read-keyset 'bidder-guard) 25.0)
 (commit-tx)
 
 (begin-tx "Create add mint token with royalties")
@@ -33,7 +34,7 @@
         })
       })
      ,"royalty_spec": {
-        "fungible": marmalade-v2.abc
+        "fungible": coin
         ,"creator": "k:creator"
         ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
         ,"royalty-rate": 0.05
@@ -84,7 +85,7 @@
             "account": "k:account"
            ,"guard": {"keys": ["account"], "pred": "keys-all"}
           }
-        ,"fungible": marmalade-v2.abc
+        ,"fungible": coin
         ,"price": 10.0
         ,"amount": 1.0
         }
@@ -110,7 +111,7 @@
   })
 
   (expect "Offer with quote events"
-    [ {"name": "marmalade-v2.quote-manager.QUOTE","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" {"amount": 1.0,"fungible": marmalade-v2.abc,"price": 10.0,"seller-fungible-account": {"account": "k:account","guard": (read-keyset 'account-guard )}}]}
+    [ {"name": "marmalade-v2.quote-manager.QUOTE","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" {"amount": 1.0,"fungible": coin,"price": 10.0,"seller-fungible-account": {"account": "k:account","guard": (read-keyset 'account-guard )}}]}
       {"name": "marmalade-v2.quote-manager.QUOTE_GUARDS","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" (read-keyset 'account-guard) [(read-keyset 'market-guard)]]}
       {"name": "marmalade-v2.ledger.OFFER","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" 1.0 0]}
       {"name": "marmalade-v2.ledger.SALE","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" 1.0 0 "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"]}
@@ -217,7 +218,7 @@
    (env-sigs [
       { 'key: 'bidder
       ,'caps: [
-          (marmalade-v2.abc.TRANSFER "k:bidder" "c:yk0ICQ5W7xvtcDUaXSOyBYD4nMKhm-GXdVxY1mC0PQs" 20.0)
+          (coin.TRANSFER "k:bidder" "c:yk0ICQ5W7xvtcDUaXSOyBYD4nMKhm-GXdVxY1mC0PQs" 20.0)
       ]}
       { 'key: 'market
       ,'caps: [
@@ -261,10 +262,10 @@
 
   (expect "Seller account has increased with 20 tokens minus royalty fees"
     19.0
-    (marmalade-v2.abc.get-balance "k:account"))
+    (coin.get-balance "k:account"))
 
   (expect "Creator account has received 5% royalties"
     1.0
-    (marmalade-v2.abc.get-balance "k:creator"))
+    (coin.get-balance "k:creator"))
 
 (rollback-tx)

@@ -68,7 +68,7 @@ Creation steps:
 
 - Generate a unique `token-id` by calling `(ledger.create-token-id details creation-guard)`
 - Create the token by calling `(ledger.create-token ... creation-guard)`
-   * This transaction must be signed with the keyset `creation-guard` (unrestricted signature)
+   * This transaction must include the `TOKEN` capability signed with the keyset `creation-guard`
 
 
 ### Mint Token

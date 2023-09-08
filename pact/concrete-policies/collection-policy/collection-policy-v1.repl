@@ -3,10 +3,6 @@
 (typecheck "marmalade-v2.collection-policy-v1")
 
 (begin-tx)
-(use marmalade-v2.policy-manager [ NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY])
-(commit-tx)
-
-(begin-tx)
   (env-data {
     "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
   })

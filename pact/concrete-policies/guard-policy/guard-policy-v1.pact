@@ -143,8 +143,9 @@
     ( token:object{token-info}
       seller:string
       amount:decimal
+      timeout:integer
       sale-id:string )
-    (require-capability (OFFER-CALL (at "id" token) seller amount sale-id guard-policy-v1))
+    (require-capability (OFFER-CALL (at "id" token) seller amount sale-id timeout guard-policy-v1))
     (enforce-sale-pact sale-id)
     (with-capability (SALE (at 'id token) seller amount)
       true
@@ -157,8 +158,9 @@
       buyer:string
       buyer-guard:guard
       amount:decimal
+      timeout:integer
       sale-id:string )
-    (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id guard-policy-v1))
+    (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id timeout guard-policy-v1))
     (enforce-sale-pact sale-id)
     (with-capability (SALE (at 'id token) seller amount)
       true
@@ -169,8 +171,9 @@
     ( token:object{token-info}
       seller:string
       amount:decimal
+      timeout:integer
       sale-id:string )
-    (require-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id guard-policy-v1))
+    (require-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id timeout guard-policy-v1))
     (enforce-sale-pact sale-id)
     (with-capability (SALE (at 'id token) seller amount)
       true

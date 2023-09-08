@@ -22,17 +22,17 @@
       "Capability securing the modref call for enforce-burn"
   )
 
-  (defcap OFFER-CALL:bool (id:string seller:string amount:decimal sale-id:string)
+  (defcap OFFER-CALL:bool (id:string seller:string amount:decimal timeout:integer sale-id:string)
     @doc
       "Capability securing the modref call for enforce-offer"
   )
 
-  (defcap WITHDRAW-CALL:bool (id:string seller:string amount:decimal sale-id:string)
+  (defcap WITHDRAW-CALL:bool (id:string seller:string amount:decimal timeout:integer sale-id:string)
     @doc
       "Capability securing the modref call for enforce-withdraw"
   )
 
-  (defcap BUY-CALL:bool (id:string seller:string buyer:string amount:decimal sale-id:string)
+  (defcap BUY-CALL:bool (id:string seller:string buyer:string amount:decimal timeout:integer sale-id:string)
     @doc
       "Capability securing the modref call for enforce-buy"
   )

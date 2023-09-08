@@ -18,17 +18,12 @@
   (defconst BUYER-FUNGIBLE-ACCOUNT-MSG-KEY "buyer_fungible_account"
     @doc "Payload field for buyer's fungible account")
 
-  (defcap POLICY_MANAGER:bool ()
-    @doc "Ledger module guard for policies to be able to validate access to policy operations."
-    true
-  )
-
   (defcap ESCROW (sale-id:string)
     @doc "Capability to be used as escrow's capability guard"
     true
   )
 
-  (defcap MAP_ESCROWED_BUY:bool (
+  (defcap MAP-ESCROWED-BUY:bool (
     sale-id:string
     token:object{token-info}
     seller:string
@@ -114,7 +109,7 @@
     policy:module{kip.token-policy-v2}
   )
 
-  (defcap CONCRETE_POLICY:bool (policy-field:string policy:module{kip.token-policy-v2})
+  (defcap CONCRETE-POLICY:bool (policy-field:string policy:module{kip.token-policy-v2})
     @event
     (enforce-guard "marmalade-v2.marmalade-admin")
   )
@@ -130,7 +125,7 @@
 
   (defun write-concrete-policy:bool (policy-field:string policy:module{kip.token-policy-v2})
     (contains policy-field CONCRETE_POLICY_LIST)
-    (with-capability (CONCRETE_POLICY policy-field policy)
+    (with-capability (CONCRETE-POLICY policy-field policy)
       (write concrete-policies policy-field {
         "policy": policy
         }
@@ -313,7 +308,7 @@
 
           ; Checks if price is final
           (enforce (> price 0.0) "Price must be finalized before buy")
-          (with-capability (MAP_ESCROWED_BUY sale-id token seller buyer buyer-guard amount timeout (at 'policies token))
+          (with-capability (MAP-ESCROWED-BUY sale-id token seller buyer buyer-guard amount timeout (at 'policies token))
             (map-escrowed-buy sale-id token seller buyer buyer-guard amount timeout (at 'policies token))
           )
         )
@@ -344,7 +339,7 @@
   )
 
   ; Sale/Escrow Functions
-  (defcap RESERVE_SALE_AT_PRICE:bool
+  (defcap RESERVE-SALE-AT-PRICE:bool
     ( sale-id:string
       price:decimal
       buyer:string
@@ -372,8 +367,8 @@
     (enforce-reserved buyer buyer-guard)
 
     (with-capability (UPDATE-QUOTE-PRICE-CALL sale-id price buyer)
-      (with-capability (RESERVE_SALE_AT_PRICE sale-id price buyer buyer-guard)
-        (install-capability (UPDATE_QUOTE_PRICE sale-id price buyer))
+      (with-capability (RESERVE-SALE-AT-PRICE sale-id price buyer buyer-guard)
+        (install-capability (UPDATE-QUOTE-PRICE sale-id price buyer))
         (update-quote-price sale-id price buyer)
       )
     )
@@ -403,7 +398,7 @@
       timeout:integer
       policies:[module{kip.token-policy-v2}]
     )
-    (require-capability (MAP_ESCROWED_BUY sale-id token seller buyer buyer-guard amount timeout policies))
+    (require-capability (MAP-ESCROWED-BUY sale-id token seller buyer buyer-guard amount timeout policies))
     (let* (
            (escrow-account:object{fungible-account} (get-escrow-account sale-id))
            (quote:object{quote-schema} (get-quote-info sale-id))

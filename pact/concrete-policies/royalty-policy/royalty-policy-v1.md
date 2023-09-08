@@ -3,7 +3,7 @@
 
 This policy, `royalty-policy-v1`, is designed to support royalty payouts during the sale of non-fungible token. It implements the `kip.token-policy-v2` interface and extends the functionality provided by the base policy.
 
-  
+
 ## Specifications and Tables:
 
 **Policy functions**: Several functions that enforce specific rules for token-related actions.
@@ -11,7 +11,12 @@ This policy, `royalty-policy-v1`, is designed to support royalty payouts during 
 **Royalty Specification**: The `royalty-schema` is a schema designed to store information related to royalties for non-fungible tokens, such as the creator, creator guard, royalty rate, and associated fungible token.
 
 **Royalties Table**: A table, `royalties`, is created to store the royalty information for each non-fungible token (NFT), including the token ID and its associated royalty details. This table ensures proper handling of royalty payouts during token sales and maintains a record of royalty configurations for the NFTs managed under the policy.
-  
+
+
+**Capabilities**:
+ - `GOVERNANCE`: enforces access control of contract upgrade.
+ - `ROYALTY` @event: emits the token-id and registered royalty information at `enforce-init`
+ - `ROYALTY-PAYOUT` @event: emits royalty payout information `enforce-buy` if royalty was paid.
 
 ## Policy Functions
 
@@ -24,7 +29,7 @@ This policy, `royalty-policy-v1`, is designed to support royalty payouts during 
 
 To use the `royalty-policy-v1` , enable it by setting it to `true` within the concrete policies list.
 
- 
+
 ## Payload messages
 
 
@@ -35,10 +40,10 @@ The `enforce-init` function initialises a royalty for a fungible token and enfor
 
 The `fungible` field specifies the module that contains the fungible token. The `creator` field specifies the creator of the token. The `creator-guard` field specifies a guard that must be satisfied by the creator's details. The `royalty-rate` field specifies the percentage of the sale price that will be charged as a royalty. The `quote-policy` field specifies the policy module that contains the quote policy.
 
-  
+
 Once the `royalty-schema` object has been read from the message payload, the function extracts the relevant fields from it and performs several checks to ensure the validity of the royalty. It then inserts the royalty into the `royalties` database.
 
- 
+
 ## Events
 
 
@@ -56,9 +61,8 @@ Once the `royalty-schema` object has been read from the message payload, the fun
 
 
 #### `ROYALTY` Event
-  
-The ROYALTY event is emitted within the enforce-buy function whenever a sale is completed and a royalty payment is made to the creator of the token being sold. 
+
+The ROYALTY event is emitted within the enforce-buy function whenever a sale is completed and a royalty payment is made to the creator of the token being sold.
 
 This event is emitted using the following line of code:
 `(emit-event (ROYALTY sale-id (at 'id token) royalty-payout creator))`
-

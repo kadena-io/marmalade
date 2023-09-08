@@ -27,9 +27,10 @@
   (defconst GUARD_SUCCESS:guard (create-user-guard (success)))
   (defconst GUARD_FAILURE:guard (create-user-guard (failure)))
 
-  (defcap GUARDS:object{guards} (guards:object{guards})
+  (defcap GUARDS:bool (token-id:string guards:object{guards})
+    @doc "Emits event for discovery"
     @event
-    guards
+    true
   )
 
   (defcap MINT (token-id:string account:string amount:decimal)
@@ -112,7 +113,7 @@
       , 'transfer-guard: (try GUARD_SUCCESS (read-msg TRANSFER-GUARD-MSG-KEY) ) } ))
     (insert policy-guards (at 'id token)
       guards)
-    (emit-event (GUARDS guards)) )
+    (emit-event (GUARDS (at "id" token) guards)) )
     true
   )
 

@@ -73,16 +73,8 @@
     true
   )
 
-  (defcap QUOTE_PRICE_UPDATE:bool
-    ( sale-id:string
-      price:decimal
-      buyer:string
-    )
-    @event
-    true
-  )
 
-  (defcap QUOTE_GUARDS:bool
+  (defcap QUOTE-GUARDS:bool
     ( sale-id:string
       token-id:string
       seller-guard:guard
@@ -94,7 +86,7 @@
 
   (deftable quotes:{quote-schema})
 
-  (defcap UPDATE_QUOTE_PRICE:bool (sale-id:string price:decimal buyer:string)
+  (defcap UPDATE-QUOTE-PRICE:bool (sale-id:string price:decimal buyer:string)
     @doc "Enforces quote-guards on update-quote-price"
     (with-read quotes sale-id {
       "quote-guards":=quote-guards
@@ -104,7 +96,7 @@
     true
   )
 
-  (defcap UPDATE_QUOTE_GUARD:bool (sale-id:string)
+  (defcap UPDATE-QUOTE-GUARD:bool (sale-id:string)
     @doc "Enforces seller-guard on update-quote-guard"
     (with-read quotes sale-id {
       "seller-guard":= guard
@@ -117,7 +109,7 @@
 ;; Quote storage functions
   (defun remove-quote-guard:bool (sale-id:string guard:guard)
     @doc "Removes a quote-guard if signed by the seller guard"
-    (with-capability (UPDATE_QUOTE_GUARD sale-id)
+    (with-capability (UPDATE-QUOTE-GUARD sale-id)
       (with-read quotes sale-id {
           "token-id":=token-id
          ,"seller-guard":= seller-guard
@@ -128,12 +120,12 @@
           (update quotes sale-id {
             "quote-guards": updated-guards
           })
-        (emit-event (QUOTE_GUARDS sale-id token-id seller-guard updated-guards)))))
+        (emit-event (QUOTE-GUARDS sale-id token-id seller-guard updated-guards)))))
   )
 
   (defun add-quote-guard:bool (sale-id:string guard:guard)
     @doc "Adds a quote-guard if signed by the seller guard"
-    (with-capability (UPDATE_QUOTE_GUARD sale-id)
+    (with-capability (UPDATE-QUOTE-GUARD sale-id)
       (with-read quotes sale-id {
           "token-id":=token-id
          ,"seller-guard":= seller-guard
@@ -144,7 +136,7 @@
           (update quotes sale-id {
             "quote-guards": updated-guards
           })
-        (emit-event (QUOTE_GUARDS sale-id token-id seller-guard updated-guards)))))
+        (emit-event (QUOTE-GUARDS sale-id token-id seller-guard updated-guards)))))
   )
 
   (defun add-quote:bool (sale-id:string token-id:string quote-msg:object{quote-msg})
@@ -163,7 +155,7 @@
          , "reserved": ""
         })
         (emit-event (QUOTE sale-id token-id quote-spec))
-        (emit-event (QUOTE_GUARDS sale-id token-id seller-guard quote-guards))
+        (emit-event (QUOTE-GUARDS sale-id token-id seller-guard quote-guards))
        true
     )
   )
@@ -173,7 +165,7 @@
     (let ((policy-manager:module{policy-manager-v1} (retrieve-policy-manager)))
       (require-capability (policy-manager::UPDATE-QUOTE-PRICE-CALL sale-id price buyer))
     )
-    (with-capability (UPDATE_QUOTE_PRICE sale-id price buyer)
+    (with-capability (UPDATE-QUOTE-PRICE sale-id price buyer)
       (with-read quotes sale-id {
           "spec":= quote-spec
         }

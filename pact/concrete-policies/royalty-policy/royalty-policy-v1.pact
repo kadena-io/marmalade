@@ -93,10 +93,11 @@
     ( token:object{token-info}
       seller:string
       amount:decimal
+      timeout:integer
       sale-id:string
     )
     @doc "Capture quote spec for SALE of TOKEN from message"
-    (require-capability (OFFER-CALL (at "id" token) seller amount sale-id royalty-policy-v1))
+    (require-capability (OFFER-CALL (at "id" token) seller amount sale-id timeout royalty-policy-v1))
     (enforce (exists-msg-quote QUOTE-MSG-KEY) "Offer is restricted to quoted sale")
     (bind (get-royalty token)
       { 'fungible := fungible:module{fungible-v2} }
@@ -114,8 +115,9 @@
       buyer:string
       buyer-guard:guard
       amount:decimal
+      timeout:integer
       sale-id:string )
-    (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id royalty-policy-v1))
+    (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id timeout royalty-policy-v1))
     (enforce-sale-pact sale-id)
     (bind (get-royalty token)
       { 'fungible := fungible:module{fungible-v2}
@@ -140,6 +142,16 @@
           )))
         true)
 
+
+  (defun enforce-withdraw:bool
+    ( token:object{token-info}
+      seller:string
+      amount:decimal
+      timeout:integer
+      sale-id:string )
+    true
+  )
+
   (defun enforce-transfer:bool
     ( token:object{token-info}
       sender:string
@@ -149,13 +161,6 @@
     (enforce false "Transfer prohibited")
   )
 
-  (defun enforce-withdraw:bool
-    ( token:object{token-info}
-      seller:string
-      amount:decimal
-      sale-id:string )
-    true
-  )
 )
 
 

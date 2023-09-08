@@ -130,15 +130,15 @@
     true
   )
 
-  (defcap OFFER-CALL:bool (id:string seller:string amount:decimal sale-id:string)
+  (defcap OFFER-CALL:bool (id:string seller:string amount:decimal timeout:integer sale-id:string)
     true
   )
 
-  (defcap WITHDRAW-CALL:bool (id:string seller:string amount:decimal sale-id:string)
+  (defcap WITHDRAW-CALL:bool (id:string seller:string amount:decimal timeout:integer sale-id:string)
     true
   )
 
-  (defcap BUY-CALL:bool (id:string seller:string buyer:string amount:decimal sale-id:string)
+  (defcap BUY-CALL:bool (id:string seller:string buyer:string amount:decimal timeout:integer sale-id:string)
     true
   )
 
@@ -544,16 +544,16 @@
     (step-with-rollback
       ;; Step 0: offer
       (let ((token-info (get-token-info id)))
-        (with-capability (OFFER-CALL id seller amount (pact-id))
-          (marmalade-v2.policy-manager.enforce-offer token-info seller amount (pact-id)))
+        (with-capability (OFFER-CALL id seller amount timeout (pact-id))
+          (marmalade-v2.policy-manager.enforce-offer token-info seller amount timeout (pact-id)))
         (with-capability (SALE id seller amount timeout (pact-id))
           (offer id seller amount))
         (pact-id)
       )
       ;;Step 0, rollback: withdraw
       (let ((token-info (get-token-info id)))
-        (with-capability (WITHDRAW-CALL id seller amount (pact-id))
-          (marmalade-v2.policy-manager.enforce-withdraw token-info seller amount (pact-id)))
+        (with-capability (WITHDRAW-CALL id seller amount timeout (pact-id))
+          (marmalade-v2.policy-manager.enforce-withdraw token-info seller amount timeout (pact-id)))
         (with-capability (WITHDRAW id seller amount timeout (pact-id))
           (withdraw id seller amount))
         (pact-id)
@@ -563,8 +563,8 @@
       ;; Step 1: buy
       (let ( (buyer:string (read-msg "buyer"))
               (buyer-guard:guard (read-msg "buyer-guard")) )
-          (with-capability (BUY-CALL id seller buyer amount (pact-id))
-            (marmalade-v2.policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
+          (with-capability (BUY-CALL id seller buyer amount timeout (pact-id))
+            (marmalade-v2.policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount timeout (pact-id))
           )
           (with-capability (BUY id seller buyer amount timeout (pact-id))
             (buy id seller buyer buyer-guard amount (pact-id))

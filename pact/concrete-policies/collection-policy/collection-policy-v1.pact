@@ -121,6 +121,7 @@
     ( token:object{token-info}
       seller:string
       amount:decimal
+      timeout:integer
       sale-id:string
     )
     true
@@ -132,6 +133,7 @@
       buyer:string
       buyer-guard:guard
       amount:decimal
+      timeout:integer
       sale-id:string
     )
     true
@@ -141,6 +143,7 @@
     ( token:object{token-info}
       seller:string
       amount:decimal
+      timeout:integer
       sale-id:string
     )
     true

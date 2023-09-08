@@ -43,6 +43,7 @@
     ( token:object{token-info}
       seller:string
       amount:decimal
+      timeout:integer
       sale-id:string )
     @doc "Offer policy of sale SALE-ID by SELLER of AMOUNT of TOKEN."
   )
@@ -53,6 +54,7 @@
       buyer:string
       buyer-guard:guard
       amount:decimal
+      timeout:integer
       sale-id:string )
     @doc "Buy policy on SALE-ID by SELLER to BUYER AMOUNT of TOKEN."
   )
@@ -61,6 +63,7 @@
     ( token:object{token-info}
       seller:string
       amount:decimal
+      timeout:integer
       sale-id:string )
     @doc "Withdraw policy on SALE-ID by SELLER of AMOUNT of TOKEN"
   )

@@ -145,7 +145,7 @@
       amount:decimal
       timeout:integer
       sale-id:string )
-    (require-capability (OFFER-CALL (at "id" token) seller amount sale-id guard-policy-v1))
+    (require-capability (OFFER-CALL (at "id" token) seller amount sale-id timeout guard-policy-v1))
     (enforce-sale-pact sale-id)
     (with-capability (SALE (at 'id token) seller amount)
       true

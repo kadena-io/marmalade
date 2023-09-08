@@ -27,18 +27,25 @@
   (defconst ROYALTY-SPEC-MSG-KEY "royalty_spec"
     @doc "Payload field for royalty spec")
 
-  (defun get-royalty:object{royalty-schema} (token:object{token-info})
-    (read royalties (at 'id token))
+  (defcap ROYALTY:bool (token-id:string royalty_spec:object{royalty-schema})
+    @doc "Emits event with royalty information for discovery"
+    @event
+    true
   )
 
-  (defcap ROYALTY:bool
+  (defcap ROYALTY-PAYOUT:bool
     ( sale-id:string
       token-id:string
       royalty-payout:decimal
       creator:string
     )
+    @doc "Emits event with royalty payout information at sale's completion"
     @event
     true
+  )
+
+  (defun get-royalty:object{royalty-schema} (token:object{token-info})
+    (read royalties (at 'id token))
   )
 
   (defun enforce-init:bool
@@ -68,8 +75,8 @@
         , 'creator: creator
         , 'creator-guard: creator-guard
         , 'royalty-rate: royalty-rate
-        }))
-    true
+        })
+      (emit-event (ROYALTY (at 'id token) spec)))
   )
 
   (defun enforce-mint:bool
@@ -136,12 +143,11 @@
           (> royalty-payout 0.0)
           (let ((_ ""))
             (install-capability (fungible::TRANSFER escrow-account creator royalty-payout))
-            (emit-event (ROYALTY sale-id (at 'id token) royalty-payout creator))
+            (emit-event (ROYALTY-PAYOUT sale-id (at 'id token) royalty-payout creator))
             (fungible::transfer escrow-account creator royalty-payout))
           "No royalty"
           )))
         true)
-
 
   (defun enforce-withdraw:bool
     ( token:object{token-info}

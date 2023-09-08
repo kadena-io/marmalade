@@ -3,16 +3,16 @@
 
 The Collection Policy is a module that manages the creation and management of collections of tokens. It's a concrete policy that displays the simplicity of creating collections with Marmalade v2. In Marmalade v1 there was a collection policy that included a whitelist. This functionality is removed in v2, and will become a separate policy.  Its good to know that like all concrete policies the module implements the `kip.token-policy-v2` interface, which defines the standard interface that token policies must implement.
 
-
 ## Specification, tables, capabilities:
-
 
 **Schemas**: `collection` and `token` schemas that store information related to collections and the tokens within them.
 
 **Tables**: `collections` and `tokens` tables that store the collections and token information, respectively.
 
-**Capabilities**: `GOVERNANCE` and `OPERATOR` capabilities that enforce access control.
-
+**Capabilities**:
+ - `GOVERNANCE`: enforces access control of contract upgrade.
+ - `COLLECTION` @event: enforces access control of the collection creation and emits event for discovery
+ - `TOKEN-COLLECTION` @event: enforces access control of the token collection creation and emits event for discovery
 
 ## Policy Functions
 

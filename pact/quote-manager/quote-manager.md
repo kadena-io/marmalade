@@ -12,6 +12,13 @@ This module includes the following key components:
 
 **QUOTE-SPEC SCHEMA**: The `quote-spec` schema contains fungible information about the sale, and is part of `quote` schema. It consists of `fungible`, `seller-account`, `price`, `amount`.
 
+**Capabilities**
+  - `GOVERNANCE`
+  - `UPDATE-QUOTE-GUARD`
+  - `UPDATE-QUOTE-PRICE`
+  - `QUOTE` @event
+  - `QUOTE-GUARDS` @event
+
 ## Quote Manager Functions
 
 Main functions of quote manager includes

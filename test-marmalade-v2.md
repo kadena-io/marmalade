@@ -32,15 +32,10 @@ To enable smooth migration from Marmalade V1 into Marmalade V2, V2 contracts on 
 - `n_42174c7f0ec646f47ba227ffeb24714da378f4d1.fixed-issuance-policy-v1`
 - `n_42174c7f0ec646f47ba227ffeb24714da378f4d1.migration-policy-v1`
 
-## Util (WIP)
+## Util
 
 - `n_42174c7f0ec646f47ba227ffeb24714da378f4d1.util-v1`
 
 ## Docs
 
 - [V2 README](./README.md)
-- [Migration Guide](./migration.md)
-
-## Sample transaction
-
-- [Migrates testnet V1 token to test ledger](https://explorer.chainweb.com/testnet/tx/lGf-16UWHi5ydJ2FyjWIeVSOJ0z4aBNWW_B-KFp2R-4)

@@ -416,7 +416,7 @@
     (sale (read-msg 'token-id) "k:account" 1.0 0))
 
   (expect "offer events"
-      [ {"name": "marmalade-v2.quote-manager.QUOTE","params": [(pact-id) (read-string 'token-id) (at 'spec (read-msg 'quote )) ]}
+      [ {"name": "marmalade-v2.quote-manager.QUOTE","params": [(pact-id) (read-string 'token-id) 0 (at 'spec (read-msg 'quote )) ]}
         {"name": "marmalade-v2.quote-manager.QUOTE-GUARDS","params": [(pact-id) (read-string 'token-id) (at 'seller-guard (read-msg 'quote )) []]}
         {"name": "marmalade-v2.ledger.OFFER","params": [(read-string 'token-id) "k:account" 1.0 0]}
         {"name": "marmalade-v2.ledger.SALE","params": [(read-string 'token-id) "k:account" 1.0 0 (pact-id)]}
@@ -511,7 +511,7 @@
     (sale (read-msg 'token-id) "k:account" 1.0 0))
 
   (expect "offer events"
-      [ {"name": "marmalade-v2.quote-manager.QUOTE","params": [(pact-id) (read-string 'token-id) (at 'spec (read-msg 'quote )) ]}
+      [ {"name": "marmalade-v2.quote-manager.QUOTE","params": [(pact-id) (read-string 'token-id) 0 (at 'spec (read-msg 'quote )) ]}
         {"name": "marmalade-v2.quote-manager.QUOTE-GUARDS","params": [(pact-id) (read-string 'token-id) (at 'seller-guard (read-msg 'quote )) []]}
         {"name": "marmalade-v2.ledger.OFFER","params": [(read-string 'token-id) "k:account" 1.0 0]}
         {"name": "marmalade-v2.ledger.SALE","params": [(read-string 'token-id) "k:account" 1.0 0 (pact-id)]}
@@ -610,7 +610,7 @@
     (sale (read-msg 'token-id) "k:account" 1.0 0))
 
 (expect "offer events"
-    [ {"name": "marmalade-v2.quote-manager.QUOTE","params": [(pact-id) (read-string 'token-id) (at 'spec (read-msg 'quote )) ]}
+    [ {"name": "marmalade-v2.quote-manager.QUOTE","params": [(pact-id) (read-string 'token-id) 0 (at 'spec (read-msg 'quote )) ]}
       {"name": "marmalade-v2.quote-manager.QUOTE-GUARDS","params": [(pact-id) (read-string 'token-id) (at 'seller-guard (read-msg 'quote ))  (at 'quote-guards (read-msg 'quote ))]}
       {"name": "marmalade-v2.ledger.OFFER","params": [(read-string 'token-id) "k:account" 1.0 0]}
       {"name": "marmalade-v2.ledger.SALE","params": [(read-string 'token-id) "k:account" 1.0 0 (pact-id)]}

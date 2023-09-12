@@ -527,7 +527,7 @@
     (id:string seller:string buyer:string amount:decimal timeout:integer sale-id:string)
     @doc "Completes sale OFFER to BUYER."
     @managed
-    (enforce (sale-active timeout) "BUY: expired")
+    (enforce (or (sale-reserved sale-id) (sale-active timeout)) "BUY: expired")
     (compose-capability (SALE_PRIVATE sale-id))
     (compose-capability (DEBIT id (sale-account)))
     (compose-capability (CREDIT id buyer))
@@ -640,14 +640,6 @@
       (emit-event (RECONCILE id amount sender receiver))
       true
   ))
-
-  (defun sale-active:bool (timeout:integer)
-    @doc "Sale is active until TIMEOUT time."
-    (if (= 0 timeout)
-      true
-      (< (at 'block-time (chain-data)) (add-time (time "1970-01-01T00:00:00Z") timeout))
-    )
-  )
 
   (defun sale-account:string ()
     (create-principal (create-capability-pact-guard (SALE_PRIVATE (pact-id))))

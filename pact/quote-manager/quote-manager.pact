@@ -56,6 +56,7 @@
     seller-guard:guard
     quote-guards:[guard]
     reserved:string
+    timeout:integer
   )
 
   (defschema fungible-account
@@ -67,6 +68,7 @@
   (defcap QUOTE:bool
     ( sale-id:string
       token-id:string
+      timeout:integer
       spec:object{quote-spec}
     )
     @event
@@ -139,22 +141,23 @@
         (emit-event (QUOTE-GUARDS sale-id token-id seller-guard updated-guards)))))
   )
 
-  (defun add-quote:bool (sale-id:string token-id:string quote-msg:object{quote-msg})
+  (defun add-quote:bool (sale-id:string token-id:string timeout:integer quote-msg:object{quote-msg})
     @doc "Add quote in transaction data"
     (let* ( (quote-spec:object{quote-spec} (at 'spec quote-msg))
             (seller-guard:guard (at 'seller-guard quote-msg))
             (quote-guards:[guard] (at 'quote-guards quote-msg))
             (policy-manager:module{policy-manager-v1} (retrieve-policy-manager)))
-        (require-capability (policy-manager::ADD-QUOTE-CALL sale-id token-id (at 'price quote-spec)))
+        (require-capability (policy-manager::ADD-QUOTE-CALL sale-id token-id timeout (at 'price quote-spec)))
         (validate-quote quote-spec)
         (insert quotes sale-id {
            "token-id": token-id
          , "seller-guard":seller-guard
          , "quote-guards": quote-guards
          , "spec": quote-spec
+         , "timeout": timeout
          , "reserved": ""
         })
-        (emit-event (QUOTE sale-id token-id quote-spec))
+        (emit-event (QUOTE sale-id token-id timeout quote-spec))
         (emit-event (QUOTE-GUARDS sale-id token-id seller-guard quote-guards))
        true
     )

@@ -68,7 +68,7 @@
     true
   )
 
-  (defcap ADD-QUOTE-CALL:bool (sale-id:string token-id:string price:decimal)
+  (defcap ADD-QUOTE-CALL:bool (sale-id:string token-id:string timeout:integer price:decimal)
     true
   )
 
@@ -234,8 +234,8 @@
           (fungible:module{fungible-v2} (at 'fungible quote-spec))
           (escrow-account:object{fungible-account} (get-escrow-account sale-id))
         )
-          (with-capability (ADD-QUOTE-CALL sale-id (at 'id token) (at 'price quote-spec))
-            (add-quote sale-id (at 'id token) quote)
+          (with-capability (ADD-QUOTE-CALL sale-id (at 'id token) timeout (at 'price quote-spec))
+            (add-quote sale-id (at 'id token) timeout quote)
           )
           (fungible::create-account (at 'account escrow-account) (at 'guard escrow-account))
         )
@@ -260,6 +260,7 @@
       (require-capability (ledger::WITHDRAW-CALL (at "id" token) seller amount timeout sale-id))
     )
     (enforce-sale-pact sale-id)
+    (enforce-quote-active sale-id)
 
     (if (exists-quote sale-id)
       (let* (
@@ -364,6 +365,7 @@
     @doc "Reserves the token for buyer and transfers funds"
 
     (enforce (> price 0.0) "price must be positive")
+
     (enforce-reserved buyer buyer-guard)
 
     (with-capability (UPDATE-QUOTE-PRICE-CALL sale-id price buyer)
@@ -437,6 +439,39 @@
   )
 
   ; Utility functions
+
+  (defun sale-active:bool (timeout:integer)
+    @doc "Sale is active until TIMEOUT time."
+    (if (= 0 timeout)
+      true
+      (< (at 'block-time (chain-data)) (add-time (time "1970-01-01T00:00:00Z") timeout))
+    )
+  )
+
+  (defun enforce-quote-active:bool (sale-id:string)
+    @doc "Sale is active until TIMEOUT time."
+    (if (exists-quote sale-id)
+      (let* (
+        (quote (get-quote-info sale-id))
+        (timeout (at 'timeout quote))
+        )
+        (enforce (sale-active timeout) "QUOTE: Expired")
+      )
+      false
+    )
+  )
+
+  (defun sale-reserved:bool (sale-id:string)
+    @doc "Sale is reserved at a price for a buyer"
+    (if (exists-quote sale-id)
+      (let* (
+        (quote (get-quote-info sale-id))
+        (reserved (at 'reserved quote)))
+        (!= "" reserved) 
+      )
+      false
+    )
+  )
 
   (defun exists-quote:bool (sale-id:string)
     @doc "Looks up quote table for quote"

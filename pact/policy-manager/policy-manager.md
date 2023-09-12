@@ -3,7 +3,7 @@
 The Policy Manager is a module that maps that maps the function calls of individual policies of the token. With the upgrade of marmalade V2, token creators now can select multiple policies to program the tokens. These policies can include rules for creation, mints, transfers, burns, sales, and more, providing a flexible and customizable way to manage the behavior of tokens on the platform. The token policies is built using the `kip.token-policy-v2` interface, which defines the standard interface that token policies must implement.
 
 ## Policy Manager and Quotes
-![alt text](./images/sale_flow.png)
+![alt text](../../images/sale_flow.png)
 
 Another main feature that policy manager allows is having one standard for collecting and distributing the fungibles. Previously in marmalade v1, `fixed-quote-policy` was an example of handling the fungible transfers at sales.
 

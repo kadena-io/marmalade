@@ -329,7 +329,7 @@
    ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}})
 
   (expect "sale events"
-   [{"name": "marmalade-v2.quote-manager.QUOTE","params": ["0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM" "t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" {"amount": 1.0,"fungible": coin,"price": 2.0,"seller-fungible-account": {"account": "k:account","guard": (read-keyset 'seller-guard)}}]}
+   [{"name": "marmalade-v2.quote-manager.QUOTE","params": ["0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM" "t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" (to-timestamp (time "2023-07-22T11:26:35Z")) {"amount": 1.0,"fungible": coin,"price": 2.0,"seller-fungible-account": {"account": "k:account","guard": (read-keyset 'seller-guard)}}]}
     {"name": "marmalade-v2.quote-manager.QUOTE-GUARDS","params": ["0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM" "t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" (read-keyset 'seller-guard) []]}
     {"name": "marmalade-v2.ledger.OFFER","params": ["t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" "k:account" 1.0 1690025195]}
     {"name": "marmalade-v2.ledger.SALE","params": ["t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" "k:account" 1.0 1690025195 "0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM"]}

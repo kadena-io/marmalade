@@ -72,10 +72,14 @@
     true
   )
 
-  (defcap UPDATE-QUOTE-PRICE-CALL:bool (sale-id:string price:decimal buyer:string)
+  (defcap CLOSE-QUOTE-CALL:bool (sale-id:string)
     true
   )
 
+  (defcap UPDATE-QUOTE-PRICE-CALL:bool (sale-id:string price:decimal buyer:string)
+    true
+  )
+  
   (defun get-escrow-account:object{fungible-account} (sale-id:string)
     { 'account: (create-principal (create-capability-guard (ESCROW sale-id)))
     , 'guard: (create-capability-guard (ESCROW sale-id))
@@ -263,14 +267,14 @@
 
     (if (exists-quote sale-id)
       (let* (
-        (quote (get-quote-info sale-id))
-        (reserved (at 'reserved quote)))
-        (enforce (= "" reserved) "Sale is reserved, unable to withdraw")
+        (quote (get-quote-info sale-id)))
+        (enforce-quote-active sale-id)
         (map (lambda (policy:module{kip.token-policy-v2})
           (with-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id timeout policy)
             (policy::enforce-withdraw token seller amount timeout sale-id)
           )
         ) (at 'policies token))
+
       )
       (map (lambda (policy:module{kip.token-policy-v2})
         (with-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id timeout policy)
@@ -310,6 +314,9 @@
           (enforce (> price 0.0) "Price must be finalized before buy")
           (with-capability (MAP-ESCROWED-BUY sale-id token seller buyer buyer-guard amount timeout (at 'policies token))
             (map-escrowed-buy sale-id token seller buyer buyer-guard amount timeout (at 'policies token))
+          )
+          (with-capability (CLOSE-QUOTE-CALL sale-id)
+            (close-quote sale-id)
           )
         )
       ]
@@ -365,7 +372,7 @@
 
     (enforce (> price 0.0) "price must be positive")
     (enforce-reserved buyer buyer-guard)
-
+    (enforce-quote-active sale-id)
     (with-capability (UPDATE-QUOTE-PRICE-CALL sale-id price buyer)
       (with-capability (RESERVE-SALE-AT-PRICE sale-id price buyer buyer-guard)
         (install-capability (UPDATE-QUOTE-PRICE sale-id price buyer))

@@ -648,7 +648,7 @@
     }])
 
   (expect-failure "Withdraw fails when a sale is reserved"
-    "Sale is reserved, unable to withdraw"
+    "QUOTE: Inactive"
     (continue-pact 0 true))
 
   (env-sigs

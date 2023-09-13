@@ -113,7 +113,7 @@
   })
 
   (expect "Offer with quote events"
-    [ {"name": "marmalade-v2.quote-manager.QUOTE","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" {"amount": 1.0,"fungible": coin,"price": 10.0,"seller-fungible-account": {"account": "k:account","guard": (read-keyset 'account-guard )}}]}
+    [ {"name": "marmalade-v2.quote-manager.QUOTE","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" 0 {"amount": 1.0,"fungible": coin,"price": 10.0,"seller-fungible-account": {"account": "k:account","guard": (read-keyset 'account-guard )}}]}
       {"name": "marmalade-v2.quote-manager.QUOTE-GUARDS","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" (read-keyset 'account-guard) [(read-keyset 'market-guard)]]}
       {"name": "marmalade-v2.ledger.OFFER","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" 1.0 0]}
       {"name": "marmalade-v2.ledger.SALE","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" 1.0 0 "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"]}

@@ -527,7 +527,7 @@
     (id:string seller:string buyer:string amount:decimal timeout:integer sale-id:string)
     @doc "Completes sale OFFER to BUYER."
     @managed
-    (enforce (or (sale-reserved sale-id) (sale-active timeout)) "BUY: expired")
+    (enforce-sale-reserved-or-active sale-id timeout)
     (compose-capability (SALE_PRIVATE sale-id))
     (compose-capability (DEBIT id (sale-account)))
     (compose-capability (CREDIT id buyer))

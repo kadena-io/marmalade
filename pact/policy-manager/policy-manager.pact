@@ -260,7 +260,6 @@
       (require-capability (ledger::WITHDRAW-CALL (at "id" token) seller amount timeout sale-id))
     )
     (enforce-sale-pact sale-id)
-    (enforce-quote-active sale-id)
 
     (if (exists-quote sale-id)
       (let* (
@@ -365,7 +364,7 @@
     @doc "Reserves the token for buyer and transfers funds"
 
     (enforce (> price 0.0) "price must be positive")
-
+    (enforce-quote-active sale-id)
     (enforce-reserved buyer buyer-guard)
 
     (with-capability (UPDATE-QUOTE-PRICE-CALL sale-id price buyer)
@@ -448,6 +447,29 @@
     )
   )
 
+  (defun sale-reserved:bool (sale-id:string)
+    @doc "Sale is reserved at a price for a buyer"
+    (if (exists-quote sale-id)
+      (let* (
+        (quote (get-quote-info sale-id))
+        (reserved (at 'reserved quote)))
+        (!= "" reserved) 
+      )
+      false
+    )
+  )
+
+  (defun enforce-sale-reserved-or-active:bool (sale-id:string timeout:integer)
+    @doc "Sale is reserved or active"
+    (if (exists-quote sale-id)
+      (let* (
+        (quote (get-quote-info sale-id))
+        (reserved (at 'reserved quote)))
+      (enforce (or (!= "" reserved) (sale-active timeout)) "BUY: expired"))
+      (enforce (sale-active timeout) "BUY: expired")
+    )
+  )
+
   (defun enforce-quote-active:bool (sale-id:string)
     @doc "Sale is active until TIMEOUT time."
     (if (exists-quote sale-id)
@@ -456,18 +478,6 @@
         (timeout (at 'timeout quote))
         )
         (enforce (sale-active timeout) "QUOTE: Expired")
-      )
-      false
-    )
-  )
-
-  (defun sale-reserved:bool (sale-id:string)
-    @doc "Sale is reserved at a price for a buyer"
-    (if (exists-quote sale-id)
-      (let* (
-        (quote (get-quote-info sale-id))
-        (reserved (at 'reserved quote)))
-        (!= "" reserved) 
       )
       false
     )

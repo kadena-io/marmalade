@@ -235,7 +235,7 @@
   (env-sigs [
      { 'key: 'any
      ,'caps: [
-         (marmalade-v2.ledger.BUY "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" "k:buyer"  1.0 0 (read-string 'sale-id))
+         (marmalade-v2.ledger.BUY "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" "k:buyer"  1.0 (read-string 'sale-id))
        ]
      }
    ])

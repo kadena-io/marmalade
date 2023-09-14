@@ -233,7 +233,6 @@
       (enforce active "QUOTE: Inactive")
     )
   )
-
 )
 
 (if (read-msg 'upgrade )

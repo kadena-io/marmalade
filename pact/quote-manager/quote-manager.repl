@@ -123,6 +123,58 @@
      (map (remove "module-hash")  (env-events true))
   )
 
+(rollback-tx)
+
+(begin-tx "Create an offer with quote price of 0")
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.policy-manager)
+  (use marmalade-v2.util-v1)
+  (env-hash (hash "accept-offer-with-royalties"))
+
+  (env-data {
+    "token-id": "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI"
+   ,"quote": {
+      "spec": {
+        "seller-fungible-account": {
+            "account": "k:account"
+           ,"guard": {"keys": ["account"], "pred": "keys-all"}
+          }
+        ,"fungible": coin
+        ,"price": 0.0
+        ,"amount": 1.0
+        }
+      ,"seller-guard": {"keys": ["account"], "pred": "keys-all"}
+      ,"quote-guards": [{"keys": ["market"], "pred": "keys-all"}]
+    }
+  })
+
+  (env-sigs [
+    { 'key: 'account
+    ,'caps: [
+      (marmalade-v2.ledger.OFFER "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" 1.0 0)
+     ]}])
+
+  (expect "Offer token for sale"
+    "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
+    (sale (read-msg 'token-id) "k:account" 1.0 0))
+
+  (env-data {
+    "account-guard": {"keys": ["account"], "pred": "keys-all"}
+   ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
+   ,"token-id": "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI"
+  })
+
+  (expect "Offer with quote events"
+    [ {"name": "marmalade-v2.quote-manager.QUOTE","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" {"amount": 1.0,"fungible": coin,"price": 0.0,"seller-fungible-account": {"account": "k:account","guard": (read-keyset 'account-guard )}}]}
+      {"name": "marmalade-v2.quote-manager.QUOTE-GUARDS","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" (read-keyset 'account-guard) [(read-keyset 'market-guard)]]}
+      {"name": "marmalade-v2.ledger.OFFER","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" 1.0 0]}
+      {"name": "marmalade-v2.ledger.SALE","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" 1.0 0 "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"]}
+      {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo" (account-guard (read-string "token-id") "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo")]}
+      {"name": "marmalade-v2.ledger.TRANSFER","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo" 1.0]}
+      {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo","current": 1.0,"previous": 0.0}]}]
+     (map (remove "module-hash")  (env-events true))
+  )
+
 (commit-tx)
 
 (begin-tx "remove quote guard, add quote guard")
@@ -202,6 +254,21 @@
   )
 
 (commit-tx)
+
+(begin-tx "Buying without a finalized quote price fails")
+  (use marmalade-v2.ledger)
+
+ (env-data {
+     "token-id": "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI"
+    ,"sale-id": "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
+    ,"buyer": "k:buyer1"
+    ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
+  })
+
+  (expect-failure "continue buy fails if price is still 0"
+    "Price must be finalized before buy"
+    (continue-pact 1 false (read-msg 'sale-id)))
+(rollback-tx)
 
 (begin-tx "Reserve sale (update-quote-price) for the bidder, and process buy")
   (use marmalade-v2.ledger)

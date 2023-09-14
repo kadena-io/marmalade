@@ -268,19 +268,18 @@
       (let* (
         (quote (get-quote-info sale-id)))
         (enforce-quote-active sale-id)
-        (map (lambda (policy:module{kip.token-policy-v2})
-          (with-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id timeout policy)
-            (policy::enforce-withdraw token seller amount timeout sale-id)
-          )
-        ) (at 'policies token))
-
-      )
-      (map (lambda (policy:module{kip.token-policy-v2})
-        (with-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id timeout policy)
-          (policy::enforce-withdraw token seller amount timeout sale-id)
+        (with-capability (CLOSE-QUOTE-CALL sale-id)
+          (close-quote sale-id)
         )
-      ) (at 'policies token))
-    ))
+      )
+      true
+    )
+    (map (lambda (policy:module{kip.token-policy-v2})
+      (with-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id timeout policy)
+        (policy::enforce-withdraw token seller amount timeout sale-id)
+      )
+    ) (at 'policies token))
+  )
 
   (defun enforce-buy:[bool]
     ( token:object{token-info}

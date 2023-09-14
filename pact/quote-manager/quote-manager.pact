@@ -226,21 +226,13 @@
       true)
   )
 
-  (defun quote-active:bool (sale-id:string)
-    (with-read quotes sale-id {
-      "active":= active
-      }
-      active
-    )
-  )
-
   (defun enforce-quote-active:bool (sale-id:string)
     (with-read quotes sale-id {
       "active":= active
       }
       (enforce active "QUOTE: Inactive")
     )
-  ) 
+  )
 
 )
 

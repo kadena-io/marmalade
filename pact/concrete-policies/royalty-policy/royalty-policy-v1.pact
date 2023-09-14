@@ -122,9 +122,8 @@
       buyer:string
       buyer-guard:guard
       amount:decimal
-      timeout:integer
       sale-id:string )
-    (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id timeout royalty-policy-v1))
+    (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id royalty-policy-v1))
     (enforce-sale-pact sale-id)
     (bind (get-royalty token)
       { 'fungible := fungible:module{fungible-v2}

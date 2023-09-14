@@ -30,7 +30,6 @@
     buyer:string
     buyer-guard:guard
     amount:decimal
-    timeout:integer
     policies:[module{kip.token-policy-v2}]
   )
     @doc "Capability to grant internal access to the map-escrowed-buy function"
@@ -64,7 +63,7 @@
     true
   )
 
-  (defcap BUY-CALL:bool (id:string seller:string buyer:string amount:decimal sale-id:string timeout:integer policy:module{kip.token-policy-v2})
+  (defcap BUY-CALL:bool (id:string seller:string buyer:string amount:decimal sale-id:string policy:module{kip.token-policy-v2})
     true
   )
 
@@ -79,7 +78,7 @@
   (defcap UPDATE-QUOTE-PRICE-CALL:bool (sale-id:string price:decimal buyer:string)
     true
   )
-  
+
   (defun get-escrow-account:object{fungible-account} (sale-id:string)
     { 'account: (create-principal (create-capability-guard (ESCROW sale-id)))
     , 'guard: (create-capability-guard (ESCROW sale-id))
@@ -289,7 +288,6 @@
       buyer:string
       buyer-guard:guard
       amount:decimal
-      timeout:integer
       sale-id:string )
       @doc " Executed at `buy` step of marmalade.ledger.                                 \
       \ Required msg-data keys:                                                          \
@@ -297,7 +295,7 @@
       \ which transfers the fungible to the escrow account. Only required if the sale is \
       \ a quoted sale. "
     (let ((ledger:module{ledger-v1} (retrieve-ledger)))
-      (require-capability (ledger::BUY-CALL (at "id" token) seller buyer amount timeout sale-id))
+      (require-capability (ledger::BUY-CALL (at "id" token) seller buyer amount sale-id))
     )
     (enforce-sale-pact sale-id)
 
@@ -312,8 +310,8 @@
 
           ; Checks if price is final
           (enforce (> price 0.0) "Price must be finalized before buy")
-          (with-capability (MAP-ESCROWED-BUY sale-id token seller buyer buyer-guard amount timeout (at 'policies token))
-            (map-escrowed-buy sale-id token seller buyer buyer-guard amount timeout (at 'policies token))
+          (with-capability (MAP-ESCROWED-BUY sale-id token seller buyer buyer-guard amount (at 'policies token))
+            (map-escrowed-buy sale-id token seller buyer buyer-guard amount (at 'policies token))
           )
           (with-capability (CLOSE-QUOTE-CALL sale-id)
             (close-quote sale-id)
@@ -322,7 +320,7 @@
       ]
       ; quote is not used
       (map (lambda (policy:module{kip.token-policy-v2})
-        (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id timeout policy)
+        (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id policy)
           (policy::enforce-buy token seller buyer buyer-guard amount sale-id)
         )
       ) (at 'policies token))
@@ -402,10 +400,9 @@
       buyer:string
       buyer-guard:guard
       amount:decimal
-      timeout:integer
       policies:[module{kip.token-policy-v2}]
     )
-    (require-capability (MAP-ESCROWED-BUY sale-id token seller buyer buyer-guard amount timeout policies))
+    (require-capability (MAP-ESCROWED-BUY sale-id token seller buyer buyer-guard amount policies))
     (let* (
            (escrow-account:object{fungible-account} (get-escrow-account sale-id))
            (quote:object{quote-schema} (get-quote-info sale-id))
@@ -427,8 +424,8 @@
        (with-capability (ESCROW sale-id)
          ; Run policies::enforce-buy
          (map (lambda (policy:module{kip.token-policy-v2})
-            (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id timeout policy)
-              (policy::enforce-buy token seller buyer buyer-guard amount timeout sale-id)
+            (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id policy)
+              (policy::enforce-buy token seller buyer buyer-guard amount sale-id)
             )
           ) (at 'policies token))
          ; Transfer Escrow account to seller

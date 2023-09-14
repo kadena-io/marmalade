@@ -56,6 +56,7 @@
     seller-guard:guard
     quote-guards:[guard]
     reserved:string
+    active:bool
   )
 
   (defschema fungible-account
@@ -153,6 +154,7 @@
          , "quote-guards": quote-guards
          , "spec": quote-spec
          , "reserved": ""
+         , "active": true
         })
         (emit-event (QUOTE sale-id token-id quote-spec))
         (emit-event (QUOTE-GUARDS sale-id token-id seller-guard quote-guards))
@@ -182,8 +184,20 @@
               , "seller-fungible-account": fungible-account
             }
             , "reserved": buyer
+            , "active": false
             }))
       ))
+    true
+  )
+
+  (defun close-quote:bool (sale-id:string)
+    @doc "Closes quote at withdraw or buy"
+    (let ((policy-manager:module{policy-manager-v1} (retrieve-policy-manager)))
+      (require-capability (policy-manager::CLOSE-QUOTE-CALL sale-id))
+    )
+    (update quotes sale-id {
+      "active": false
+    })
     true
   )
 
@@ -210,6 +224,14 @@
       (fungible::enforce-unit sale-price)
       (enforce (>= price 0.0) "Offer price must be positive or zero")
       true)
+  )
+
+  (defun enforce-quote-active:bool (sale-id:string)
+    (with-read quotes sale-id {
+      "active":= active
+      }
+      (enforce active "QUOTE: Inactive")
+    )
   )
 )
 

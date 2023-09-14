@@ -131,7 +131,6 @@
       buyer:string
       buyer-guard:guard
       amount:decimal
-      timeout:integer
       sale-id:string
     )
     true

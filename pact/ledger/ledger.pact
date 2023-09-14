@@ -138,7 +138,7 @@
     true
   )
 
-  (defcap BUY-CALL:bool (id:string seller:string buyer:string amount:decimal timeout:integer sale-id:string)
+  (defcap BUY-CALL:bool (id:string seller:string buyer:string amount:decimal sale-id:string)
     true
   )
 
@@ -524,10 +524,9 @@
   )
 
   (defcap BUY:bool
-    (id:string seller:string buyer:string amount:decimal timeout:integer sale-id:string)
+    (id:string seller:string buyer:string amount:decimal sale-id:string)
     @doc "Completes sale OFFER to BUYER."
     @managed
-    (enforce (sale-active timeout) "BUY: expired")
     (compose-capability (SALE_PRIVATE sale-id))
     (compose-capability (DEBIT id (sale-account)))
     (compose-capability (CREDIT id buyer))
@@ -563,10 +562,10 @@
       ;; Step 1: buy
       (let ( (buyer:string (read-msg "buyer"))
               (buyer-guard:guard (read-msg "buyer-guard")) )
-          (with-capability (BUY-CALL id seller buyer amount timeout (pact-id))
-            (marmalade-v2.policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount timeout (pact-id))
+          (with-capability (BUY-CALL id seller buyer amount (pact-id))
+            (marmalade-v2.policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
           )
-          (with-capability (BUY id seller buyer amount timeout (pact-id))
+          (with-capability (BUY id seller buyer amount (pact-id))
             (buy id seller buyer buyer-guard amount (pact-id))
           )
           (pact-id)

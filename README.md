@@ -18,7 +18,7 @@ Token policies can be customised to allow one/both/none of the main marmalade fu
 
 All policies are immutable, meaning tokens will permanently store and run the rules that are attached when the token was created. However, the policy manager makes a distinction of some policies we call, `concrete-policies`. Concrete policies are the policies that policy manager knows about, and adds extra logic to run exceptions for some of the policies, that were thought to be most-used features.
 
-Another feature that policy manager provides is provide a standardized tool to process the fungibles throughout the sale process. The policy manager collects and emit quote information at `enforce-offer`. Then, it processes the fungible collection and distribution at `enforce-buy`. To provide extendable support for biddings, policy manager also allows bidders to update the quote price when the contract is granted the authority by the seller. The process is described in detail [here](./pact/policy-manager/policy-manager.md)
+Another feature that policy manager provides is a standardized tool to process the fungibles throughout the sale process. The policy manager collects and emit quote information at `enforce-offer`. Then, it processes the fungible collection and distribution at `enforce-buy`. To provide extendable support for biddings, policy manager also allows bidders to update the quote price when the contract is granted the authority by the seller. The process is described in detail [here](./pact/policy-manager/policy-manager.md)
 
 ### Quote Manager
 Quote manager is called from policy manager to store and manage the quote information.

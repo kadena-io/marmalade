@@ -15,9 +15,9 @@ When an offer is made with quotes, the policy manager adds the quotes with `quot
 
 ### Reserve sale at price
 
-In between `offer` and `buy`, we provide a function, `reserve-sale-at-price`. The purpose of the function is to update the quote price and reserve the `buyer` information. This is only necessary when the bidding contract is added as one of the quote guards and would like to process the sale with quote price different than initial quote price.
+In between `offer` and `buy`, we provide a function, `reserve-sale-at-price`. The purpose of the function is to update the quote price and reserve the `buyer` information. This is only necessary when the quote guard is added as one of the quote guards and would like to process the sale with quote price different than initial quote price.
 
-The function collects the fungible from the bidding contract, and reserves the `buyer` information, which will be enforced in the `enforce-buy`.
+The function collects the fungible from the quote guard, and reserves the `buyer` information, which will be enforced in the `enforce-buy`.
 
 ### Buy
 There are 3 different conditions that the `enforce-buy` runs

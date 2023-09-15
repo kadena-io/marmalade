@@ -4,62 +4,68 @@
 
 
 (begin-tx)
+  (env-data {
+    "ns": "marmalade-v2"
+  , "upgrade": false})
+  (env-sigs [
+    { 'key: 'marmalade-admin
+     ,'caps: []
+     }])
   (load "./fixed-issuance-policy-v1.pact")
    (typecheck "marmalade-v2.fixed-issuance-policy-v1")
 (commit-tx)
 
 (begin-tx)
-    (use marmalade-v2.ledger)
-    (use marmalade-v2.policy-manager)
-    (use marmalade-v2.fixed-issuance-policy-v1)
-    (use marmalade-v2.onchain-manifest-policy-v1)
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.policy-manager)
+  (use marmalade-v2.fixed-issuance-policy-v1)
+  (use mini-guard-utils)
+  (env-data {
+          "token-id": (create-token-id { 'uri: "test-fixed-issuance-policy-v1-0", 'precision: 0, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } ALWAYS-TRUE),
+          "token-id-wrong-precision": (create-token-id { 'uri: "test-fixed-issuance-policy-v1-0", 'precision: 1, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } ALWAYS-TRUE ),
+          "fixed_issuance_spec": {
+              'max-supply:2.0,
+              'min-amount:1.0,
+              'precision:0}
+      }
+  )
 
-    (env-data {
-            "token-id": (create-token-id { 'uri: "test-fixed-issuance-policy-v1-0", 'precision: 0, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } ),
-            "token-id-wrong-precision": (create-token-id { 'uri: "test-fixed-issuance-policy-v1-0", 'precision: 1, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } ),
-            "fixed_issuance_spec": {
-                'max-supply:2.0,
-                'min-amount:1.0,
-                'precision:0}
-        }
-    )
+  (env-sigs [])
 
-    (env-sigs [])
+  (expect "create a token with fixed-issuance-policy"
+      true
+      (create-token (read-msg 'token-id) 0 "test-fixed-issuance-policy-v1-0" [marmalade-v2.fixed-issuance-policy-v1] ALWAYS-TRUE))
 
-    (expect "create a token with fixed-issuance-policy"
-        true
-        (create-token (read-msg 'token-id) 0 "test-fixed-issuance-policy-v1-0" [marmalade-v2.fixed-issuance-policy-v1] ))
+  (expect-failure "Precision is incorrect"
+      "Invalid Precision"
+      (create-token (read-msg 'token-id-wrong-precision) 1 "test-fixed-issuance-policy-v1-0" [marmalade-v2.fixed-issuance-policy-v1] ALWAYS-TRUE))
 
-    (expect-failure "Precision is incorrect"
-        "Invalid Precision"
-        (create-token (read-msg 'token-id-wrong-precision) 1 "test-fixed-issuance-policy-v1-0" [marmalade-v2.fixed-issuance-policy-v1] ))
+  (env-data {
+          "token-id": (create-token-id { 'uri: "test-fixed-issuance-policy-v1-1", 'precision: 0, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } ALWAYS-TRUE),
+          "fixed_issuance_spec": {
+              'max-supply:2.0,
+              'min-amount:0.0,
+              'precision:0
+          }
+      }
+  )
 
-    (env-data {
-            "token-id": (create-token-id { 'uri: "test-fixed-issuance-policy-v1-1", 'precision: 0, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } ),
-            "fixed_issuance_spec": {
-                'max-supply:2.0,
-                'min-amount:0.0,
-                'precision:0
-            }
-        }
-    )
+  (expect-failure "min amount is not valid"
+      "Invalid min-amount"
+      (create-token (read-msg 'token-id) 0 "test-fixed-issuance-policy-v1-1" [marmalade-v2.fixed-issuance-policy-v1] ALWAYS-TRUE))
 
-    (expect-failure "min amount is not valid"
-        "Invalid min-amount"
-        (create-token (read-msg 'token-id) 0 "test-fixed-issuance-policy-v1-1" [marmalade-v2.fixed-issuance-policy-v1] ))
+  (env-data {
+          "token-id": (create-token-id { 'uri: "test-fixed-issuance-policy-v1-1", 'precision: 1, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } ALWAYS-TRUE),
+          "fixed_issuance_spec": {
+              'max-supply:0.0,
+              'min-amount:1.0,
+              'precision:1
+          }
+      }
+  )
 
-    (env-data {
-            "token-id": (create-token-id { 'uri: "test-fixed-issuance-policy-v1-1", 'precision: 1, 'policies: [marmalade-v2.fixed-issuance-policy-v1] } ),
-            "fixed_issuance_spec": {
-                'max-supply:0.0,
-                'min-amount:1.0,
-                'precision:1
-            }
-        }
-    )
-
-    (expect "Create token succeeds with max-supply 0"
-        true
-        (create-token (read-msg 'token-id) 1 "test-fixed-issuance-policy-v1-1" [marmalade-v2.fixed-issuance-policy-v1] ))
+  (expect "Create token succeeds with max-supply 0"
+      true
+      (create-token (read-msg 'token-id) 1 "test-fixed-issuance-policy-v1-1" [marmalade-v2.fixed-issuance-policy-v1] ALWAYS-TRUE))
 
 (commit-tx)

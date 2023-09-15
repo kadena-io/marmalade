@@ -2,8 +2,14 @@
 ;;load policy manager, ledger
 (load "../../../pact/marmalade.repl")
 
-
 (begin-tx)
+  (env-data {
+    "ns": "marmalade-v2"
+  , "upgrade": false})
+  (env-sigs [
+    { 'key: 'marmalade-admin
+     ,'caps: []
+     }])
   (load "./onchain-manifest-policy-v1.pact")
   (typecheck "marmalade-v2.onchain-manifest-policy-v1")
 (commit-tx)
@@ -12,9 +18,10 @@
   (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.onchain-manifest-policy-v1)
+  (use mini-guard-utils)
 
   (env-data {
-    "token-id": (create-token-id { 'uri: "test-onchain-manifest-uri", 'precision: 0, 'policies: [marmalade-v2.onchain-manifest-policy-v1] } )
+    "token-id": (create-token-id { 'uri: "test-onchain-manifest-uri", 'precision: 0, 'policies: [marmalade-v2.onchain-manifest-policy-v1] } ALWAYS-TRUE)
    ,"manifest_spec": {
       "manifest": (kip.token-manifest.create-manifest (kip.token-manifest.uri "text" "data") [])
      ,"guard": {"keys": ["manifest"], "pred": "keys-all"}
@@ -25,7 +32,7 @@
 
   (expect "create a token with onchain manifest policy"
     true
-    (create-token (read-msg 'token-id) 0 "test-onchain-manifest-uri" [marmalade-v2.onchain-manifest-policy-v1] ))
+    (create-token (read-msg 'token-id) 0 "test-onchain-manifest-uri" [marmalade-v2.onchain-manifest-policy-v1] ALWAYS-TRUE))
 
   (expect "Manifest is added at create-token"
     {"uri": {"scheme": "text","data": "data"},"hash": "QoE_VBnnOaZqxcBBbTXSQ7CVNWPXZ9iP6BbxTmPY-ag","data": []}
@@ -35,13 +42,15 @@
 (begin-tx)
   (use marmalade-v2.ledger)
   (use marmalade-v2.onchain-manifest-policy-v1)
+  (use mini-guard-utils)
+
    (env-data {
-     "token-id": (create-token-id { 'uri: "test-onchain-manifest-uri", 'precision: 0, 'policies: [marmalade-v2.onchain-manifest-policy-v1] } )
+     "token-id": (create-token-id { 'uri: "test-onchain-manifest-uri", 'precision: 0, 'policies: [marmalade-v2.onchain-manifest-policy-v1] } ALWAYS-TRUE)
     ,"manifest1": (kip.token-manifest.create-manifest (kip.token-manifest.uri "text1" "data") [])
    })
 
   (env-sigs [
-    {"key": "manifest", "caps": [(marmalade-v2.onchain-manifest-policy-v1.UPGRADE "t:OsLmFoN9uVZJQKTlpsqjiuoKi2Q-m3XDSWY0sDQm86g")]}
+    {"key": "manifest", "caps": [(marmalade-v2.onchain-manifest-policy-v1.UPGRADE "t:PtYNHB-CfxQPc4UhagrBFN2B2Ip0CKP10N1jiWChwus")]}
     ])
 
   (expect "upgrade a onchain manifest"

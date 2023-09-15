@@ -15,7 +15,7 @@
   (defconst GOVERNANCE-KS:string (+ (read-string 'ns) ".marmalade-admin"))
 
   (defcap GOVERNANCE ()
-    (enforce-keyset GOVERNANCE-KS))
+    (enforce-guard GOVERNANCE-KS))
 
   (defconst DEFAULT:object{concrete-policy-bool}
     { 'non-fungible-policy: true

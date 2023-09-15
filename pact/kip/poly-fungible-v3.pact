@@ -67,11 +67,6 @@
     @event
   )
 
-  (defcap TOKEN:bool (id:string precision:integer supply:decimal policies:[module{token-policy-v2}] uri:string)
-    @doc " Emitted when token ID is created."
-    @event
-  )
-
   (defcap ACCOUNT_GUARD:bool (id:string account:string guard:guard)
     @doc " Emitted when ACCOUNT guard is updated."
     @event
@@ -130,7 +125,7 @@
         (property (>= amount 0.0))
       ]
   )
-  
+
   (defun create-account:bool
     ( id:string
       account:string

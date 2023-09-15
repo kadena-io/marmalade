@@ -43,7 +43,7 @@
   (defconst GOVERNANCE-KS:string (+ (read-string 'ns) ".marmalade-admin"))
 
   (defcap GOVERNANCE ()
-    (enforce-keyset GOVERNANCE-KS))
+    (enforce-guard GOVERNANCE-KS))
 
   ;;
   ;; poly-fungible-v3 caps

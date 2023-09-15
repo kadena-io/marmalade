@@ -10,7 +10,7 @@
   (defconst GOVERNANCE-KS:string (+ (read-string 'ns) ".marmalade-admin"))
 
   (defcap GOVERNANCE ()
-    (enforce-keyset GOVERNANCE-KS))
+    (enforce-guard GOVERNANCE-KS))
 
   ; Saves reference to policy-manager
   (defschema policy-manager

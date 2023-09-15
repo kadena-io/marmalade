@@ -7,5 +7,5 @@
 )
 (namespace (read-msg 'ns))
 (define-keyset  (+ (read-msg 'ns) ".marmalade-admin"))
-(enforce-keyset (+ (read-msg 'ns) ".marmalade-admin"))
-(enforce-keyset 'marmalade-admin)
+(enforce-guard (+ (read-msg 'ns) ".marmalade-admin"))
+(enforce-guard 'marmalade-admin)

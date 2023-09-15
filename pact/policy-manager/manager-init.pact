@@ -1,4 +1,5 @@
 (namespace (read-string 'ns))
+(use policy-manager [NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
 
 (policy-manager.init ledger)
 (quote-manager.init policy-manager)

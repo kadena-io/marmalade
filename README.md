@@ -38,7 +38,7 @@ We provide 4 concrete policies, which will provide the most used functionalities
 - **Non-fungible Policy**: Defines the token supply to 1 and precision of 0, so the token becomes non-fungible
 - **Royalty-policy**: [dependent on `fungible-quote-policy`]: Defines creator account that will receive royalty whenever the token using `fungible-quote-policy` is sold.
 
-Marmalade users can mint tokens with above features by adding the policy to the policies field at token creation. If projects would like to use customized logic in addition to what concrete policies offer, they can also add their own policies to this same fieldfield.
+Marmalade users can mint tokens with above features by adding the policy to the policies field at token creation. If projects would like to use customized logic in addition to what concrete policies offer, they can also add their own policies to this same field.
 
 ## Marmalade Functions
 
@@ -50,8 +50,26 @@ A Token is created in marmalade via running `create-token`. Arguments include:
 - `precision`: Number of decimals allowed for for the token amount. For one-off token, precision must be 0, and should be enforced in the policy's `enforce-init`.
 - `uri`: url to external JSON containing metadata
 - `policies`: policies contracts with custom functions to execute at marmalade functions
+- `creation-guard`: Non stored guard (usally a Keyset). Must be used to reserve a `token-id`
 
 `policy-manager.enforce-init` calls `policy:enforce-init` in stored token-policies, and the function is executed in `ledger.create-token`.
+
+#### Creation guard usage
+
+Before creating a token, the creator must choose a temporary guard, which can be
+
+- An usual keyset. (eg: one already used in the guard-policy).
+- But also a single-use keyset, since it isn't stored and won't be needed anymore.
+- Some more complex setups could involve other guard types (eg: when token creations are managed by a SC).
+
+This guard will be part of the `token-id` (starting `t:`) creation. As a consequence, it protects the legit creator from being front-runned during token creation. With this mechanism, only the legit creator who owns the creation key can create a specific `token-id`.
+
+Creation steps:
+
+- Generate a unique `token-id` by calling `(ledger.create-token-id details creation-guard)`
+- Create the token by calling `(ledger.create-token ... creation-guard)`
+   * This transaction must include the `TOKEN` capability signed with the keyset `creation-guard`
+
 
 ### Mint Token
 

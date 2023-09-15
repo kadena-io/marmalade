@@ -7,14 +7,14 @@
   (defconst GOVERNANCE-KS:string (+ (read-string 'ns) ".marmalade-admin"))
 
   (defcap GOVERNANCE ()
-    (enforce-keyset GOVERNANCE-KS))
+    (enforce-guard GOVERNANCE-KS))
 
   (use policy-manager)
+  (use policy-manager [QUOTE-MSG-KEY])
   (use quote-manager)
   (use quote-manager [quote-spec quote-schema])
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
-
 
   (defschema royalty-schema
     fungible:module{fungible-v2}
@@ -28,22 +28,26 @@
   (defconst ROYALTY-SPEC-MSG-KEY "royalty_spec"
     @doc "Payload field for royalty spec")
 
-  (defun get-royalty:object{royalty-schema} (token:object{token-info})
-    (read royalties (at 'id token))
+  (defcap ROYALTY:bool (token-id:string royalty_spec:object{royalty-schema})
+    @doc "Emits event with royalty information for discovery"
+    @event
+    true
   )
 
-  (defcap ROYALTY:bool
+  (defcap ROYALTY-PAYOUT:bool
     ( sale-id:string
       token-id:string
       royalty-payout:decimal
       creator:string
     )
+    @doc "Emits event with royalty payout information at sale's completion"
     @event
     true
   )
 
-  (defun enforce-ledger:bool ()
-    (enforce-guard (ledger.ledger-guard)))
+  (defun get-royalty:object{royalty-schema} (token:object{token-info})
+    (read royalties (at 'id token))
+  )
 
   (defun enforce-init:bool
     ( token:object{token-info}
@@ -52,7 +56,7 @@
     \ Required msg-data keys:                                                  \
     \ * royalty_spec:object{royalty-schema} - registers royalty information of \
     \ the created token"
-    (enforce-ledger)
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) royalty-policy-v1))
     (let* ( (spec:object{royalty-schema} (read-msg ROYALTY-SPEC-MSG-KEY))
             (fungible:module{fungible-v2} (at 'fungible spec))
             (creator:string (at 'creator spec))
@@ -60,6 +64,7 @@
             (royalty-rate:decimal (at 'royalty-rate spec))
             (creator-details:object (fungible::details creator ))
             )
+      (enforce (= fungible coin) "Royalty support is restricted to coin")
       (enforce (=
         (at 'guard creator-details) creator-guard)
         "Creator guard does not match")
@@ -71,8 +76,8 @@
         , 'creator: creator
         , 'creator-guard: creator-guard
         , 'royalty-rate: royalty-rate
-        }))
-    true
+        })
+      (emit-event (ROYALTY (at 'id token) spec)))
   )
 
   (defun enforce-mint:bool
@@ -96,10 +101,20 @@
     ( token:object{token-info}
       seller:string
       amount:decimal
+      timeout:integer
       sale-id:string
     )
     @doc "Capture quote spec for SALE of TOKEN from message"
-    true
+    (require-capability (OFFER-CALL (at "id" token) seller amount sale-id timeout royalty-policy-v1))
+    (enforce (exists-msg-quote QUOTE-MSG-KEY) "Offer is restricted to quoted sale")
+    (bind (get-royalty token)
+      { 'fungible := fungible:module{fungible-v2} }
+      (let* (
+          (quote:object{quote-msg} (read-msg QUOTE-MSG-KEY))
+          (quote-spec:object{quote-spec} (at 'spec quote)) )
+        (enforce (= fungible (at 'fungible quote-spec)) (format "Offer is restricted to sale using fungible: {}" [fungible]))
+      )
+    )
   )
 
   (defun enforce-buy:bool
@@ -109,7 +124,7 @@
       buyer-guard:guard
       amount:decimal
       sale-id:string )
-    (enforce-ledger)
+    (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id royalty-policy-v1))
     (enforce-sale-pact sale-id)
     (bind (get-royalty token)
       { 'fungible := fungible:module{fungible-v2}
@@ -128,11 +143,20 @@
           (> royalty-payout 0.0)
           (let ((_ ""))
             (install-capability (fungible::TRANSFER escrow-account creator royalty-payout))
-            (emit-event (ROYALTY sale-id (at 'id token) royalty-payout creator))
+            (emit-event (ROYALTY-PAYOUT sale-id (at 'id token) royalty-payout creator))
             (fungible::transfer escrow-account creator royalty-payout))
           "No royalty"
           )))
         true)
+
+  (defun enforce-withdraw:bool
+    ( token:object{token-info}
+      seller:string
+      amount:decimal
+      timeout:integer
+      sale-id:string )
+    true
+  )
 
   (defun enforce-transfer:bool
     ( token:object{token-info}
@@ -143,13 +167,6 @@
     (enforce false "Transfer prohibited")
   )
 
-  (defun enforce-withdraw:bool
-    ( token:object{token-info}
-      seller:string
-      amount:decimal
-      sale-id:string )
-    true
-  )
 )
 
 

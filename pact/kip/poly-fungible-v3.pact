@@ -130,21 +130,7 @@
         (property (>= amount 0.0))
       ]
   )
-
-  (defun create-token:bool
-    ( id:string
-      precision:integer
-      uri:string
-      policies:[module{token-policy-v2}]
-    )
-    @doc "Create a new token with ID, PRECISION, URI, and POLICY."
-    @model
-      [ (property (!= id ""))
-        (property (>= precision 0))
-        (property (!= uri ""))
-      ]
-  )
-
+  
   (defun create-account:bool
     ( id:string
       account:string
@@ -249,7 +235,7 @@
   ;;
 
   (defcap SALE:bool
-    (id:string seller:string amount:decimal timeout:decimal sale-id:string)
+    (id:string seller:string amount:decimal timeout:integer sale-id:string)
     @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
     @event
   )
@@ -258,7 +244,7 @@
     ( id:string
       seller:string
       amount:decimal
-      timeout:decimal
+      timeout:integer
     )
     @doc " Offer->buy escrow pact of AMOUNT of token ID by SELLER with TIMEOUT in blocks. \
          \ Step 1 is offer with withdraw rollback after timeout. \

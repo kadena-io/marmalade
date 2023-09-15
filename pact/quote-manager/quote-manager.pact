@@ -2,6 +2,7 @@
 
 (module quote-manager GOVERNANCE
 
+  (use policy-manager-v1)
   (use kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
   (use util.guards1)
@@ -11,29 +12,25 @@
   (defcap GOVERNANCE ()
     (enforce-keyset GOVERNANCE-KS))
 
-  ;; Saves Policy Manager Guard information
+  ; Saves reference to policy-manager
   (defschema policy-manager
-    policy-manager-guard:guard
+    policy-manager-impl:module{policy-manager-v1}
   )
 
   (deftable policy-managers:{policy-manager}
-    @doc "Singleton table for policy-manager guard storage"
+    @doc "Singleton table for policy-manager reference storage"
   )
 
-  (defun enforce-policy-manager:bool ()
-    @doc "Enforces that function is called from the saved policy-manager"
-    (with-read policy-managers "" {
-      "policy-manager-guard":= policy-manager-guard
-      }
-      (enforce-guard policy-manager-guard)
-    )
+  (defun retrieve-policy-manager:module{policy-manager-v1} ()
+    @doc "Retrieves the ledger implementation"
+    (at 'policy-manager-impl (read policy-managers ""))
   )
 
-  (defun init:bool(policy-manager-guard:guard)
+  (defun init:bool(policy-manager:module{policy-manager-v1})
     @doc "Must be initiated with policy-manager information"
     (with-capability (GOVERNANCE)
       (insert policy-managers "" {
-        "policy-manager-guard": policy-manager-guard
+        "policy-manager-impl": policy-manager
       })
     )
     true
@@ -61,6 +58,7 @@
     seller-guard:guard
     quote-guards:[guard]
     reserved:string
+    active:bool
   )
 
   (defschema fungible-account
@@ -78,16 +76,8 @@
     true
   )
 
-  (defcap QUOTE_PRICE_UPDATE:bool
-    ( sale-id:string
-      price:decimal
-      buyer:string
-    )
-    @event
-    true
-  )
 
-  (defcap QUOTE_GUARDS:bool
+  (defcap QUOTE-GUARDS:bool
     ( sale-id:string
       token-id:string
       seller-guard:guard
@@ -99,7 +89,7 @@
 
   (deftable quotes:{quote-schema})
 
-  (defcap UPDATE_QUOTE_PRICE:bool (sale-id:string)
+  (defcap UPDATE-QUOTE-PRICE:bool (sale-id:string price:decimal buyer:string)
     @doc "Enforces quote-guards on update-quote-price"
     (with-read quotes sale-id {
       "quote-guards":=quote-guards
@@ -109,7 +99,7 @@
     true
   )
 
-  (defcap UPDATE_QUOTE_GUARD:bool (sale-id:string)
+  (defcap UPDATE-QUOTE-GUARD:bool (sale-id:string)
     @doc "Enforces seller-guard on update-quote-guard"
     (with-read quotes sale-id {
       "seller-guard":= guard
@@ -122,7 +112,7 @@
 ;; Quote storage functions
   (defun remove-quote-guard:bool (sale-id:string guard:guard)
     @doc "Removes a quote-guard if signed by the seller guard"
-    (with-capability (UPDATE_QUOTE_GUARD sale-id)
+    (with-capability (UPDATE-QUOTE-GUARD sale-id)
       (with-read quotes sale-id {
           "token-id":=token-id
          ,"seller-guard":= seller-guard
@@ -133,12 +123,12 @@
           (update quotes sale-id {
             "quote-guards": updated-guards
           })
-        (emit-event (QUOTE_GUARDS sale-id token-id seller-guard updated-guards)))))
+        (emit-event (QUOTE-GUARDS sale-id token-id seller-guard updated-guards)))))
   )
 
   (defun add-quote-guard:bool (sale-id:string guard:guard)
     @doc "Adds a quote-guard if signed by the seller guard"
-    (with-capability (UPDATE_QUOTE_GUARD sale-id)
+    (with-capability (UPDATE-QUOTE-GUARD sale-id)
       (with-read quotes sale-id {
           "token-id":=token-id
          ,"seller-guard":= seller-guard
@@ -149,15 +139,16 @@
           (update quotes sale-id {
             "quote-guards": updated-guards
           })
-        (emit-event (QUOTE_GUARDS sale-id token-id seller-guard updated-guards)))))
+        (emit-event (QUOTE-GUARDS sale-id token-id seller-guard updated-guards)))))
   )
 
   (defun add-quote:bool (sale-id:string token-id:string quote-msg:object{quote-msg})
-    @doc "Add quote if quote-msg exists in transaction data"
-    (enforce-policy-manager)
+    @doc "Add quote in transaction data"
     (let* ( (quote-spec:object{quote-spec} (at 'spec quote-msg))
             (seller-guard:guard (at 'seller-guard quote-msg))
-            (quote-guards:[guard] (at 'quote-guards quote-msg)))
+            (quote-guards:[guard] (at 'quote-guards quote-msg))
+            (policy-manager:module{policy-manager-v1} (retrieve-policy-manager)))
+        (require-capability (policy-manager::ADD-QUOTE-CALL sale-id token-id (at 'price quote-spec)))
         (validate-quote quote-spec)
         (insert quotes sale-id {
            "token-id": token-id
@@ -165,17 +156,20 @@
          , "quote-guards": quote-guards
          , "spec": quote-spec
          , "reserved": ""
+         , "active": true
         })
         (emit-event (QUOTE sale-id token-id quote-spec))
-        (emit-event (QUOTE_GUARDS sale-id token-id seller-guard quote-guards))
+        (emit-event (QUOTE-GUARDS sale-id token-id seller-guard quote-guards))
        true
     )
   )
 
   (defun update-quote-price:bool (sale-id:string price:decimal buyer:string)
     @doc "Updates the quote price and sets the designated buyer"
-    (enforce-policy-manager)
-    (with-capability (UPDATE_QUOTE_PRICE sale-id)
+    (let ((policy-manager:module{policy-manager-v1} (retrieve-policy-manager)))
+      (require-capability (policy-manager::UPDATE-QUOTE-PRICE-CALL sale-id price buyer))
+    )
+    (with-capability (UPDATE-QUOTE-PRICE sale-id price buyer)
       (with-read quotes sale-id {
           "spec":= quote-spec
         }
@@ -192,9 +186,20 @@
               , "seller-fungible-account": fungible-account
             }
             , "reserved": buyer
+            , "active": false
             }))
-      )
-      (emit-event (QUOTE_PRICE_UPDATE sale-id price buyer)))
+      ))
+    true
+  )
+
+  (defun close-quote:bool (sale-id:string)
+    @doc "Closes quote at withdraw or buy"
+    (let ((policy-manager:module{policy-manager-v1} (retrieve-policy-manager)))
+      (require-capability (policy-manager::CLOSE-QUOTE-CALL sale-id))
+    )
+    (update quotes sale-id {
+      "active": false
+    })
     true
   )
 
@@ -221,6 +226,14 @@
       (fungible::enforce-unit sale-price)
       (enforce (>= price 0.0) "Offer price must be positive or zero")
       true)
+  )
+
+  (defun enforce-quote-active:bool (sale-id:string)
+    (with-read quotes sale-id {
+      "active":= active
+      }
+      (enforce active "QUOTE: Inactive")
+    )
   )
 )
 

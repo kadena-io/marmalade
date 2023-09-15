@@ -8,6 +8,7 @@
           (> (length account) 2))
     ]
 
+  (implements ledger-v1)
   (implements kip.poly-fungible-v3)
   (use kip.poly-fungible-v3 [account-details sender-balance-change receiver-balance-change])
   (use util.fungible-util)
@@ -87,9 +88,9 @@
     @event true
   )
 
-  (defcap TOKEN:bool (id:string precision:integer supply:decimal policies:[module{kip.token-policy-v2}] uri:string)
+  (defcap TOKEN:bool (id:string precision:integer policies:[module{kip.token-policy-v2}] uri:string creation-guard:guard)
     @event
-    true
+    (enforce-guard creation-guard)
   )
 
   (defcap RECONCILE:bool
@@ -112,6 +113,38 @@
   )
 
   ;;
+  ;; ledger-v1 caps to be able to validate access to policy operations.
+  ;;
+
+  (defcap INIT-CALL:bool (id:string precision:integer uri:string)
+    true
+  )
+
+  (defcap TRANSFER-CALL:bool (id:string sender:string receiver:string amount:decimal)
+    true
+  )
+
+  (defcap MINT-CALL:bool (id:string account:string amount:decimal)
+    true
+  )
+
+  (defcap BURN-CALL:bool (id:string account:string amount:decimal)
+    true
+  )
+
+  (defcap OFFER-CALL:bool (id:string seller:string amount:decimal timeout:integer sale-id:string)
+    true
+  )
+
+  (defcap WITHDRAW-CALL:bool (id:string seller:string amount:decimal timeout:integer sale-id:string)
+    true
+  )
+
+  (defcap BUY-CALL:bool (id:string seller:string buyer:string amount:decimal sale-id:string)
+    true
+  )
+
+  ;;
   ;; Implementation caps
   ;;
 
@@ -129,7 +162,7 @@
     "private cap for update-supply"
     true)
 
-  (defcap MINT (id:string account:string amount:decimal)
+  (defcap MINT:bool (id:string account:string amount:decimal)
     @managed ;; one-shot for a given amount
     (enforce (< 0.0 amount) "Amount must be positive")
     (compose-capability (CREDIT id account))
@@ -141,15 +174,6 @@
     (enforce (< 0.0 amount) "Amount must be positive")
     (compose-capability (DEBIT id account))
     (compose-capability (UPDATE_SUPPLY))
-  )
-
-  (defcap LEDGER:bool ()
-    @doc "Ledger module guard for policies to be able to validate access to policy operations."
-    true
-  )
-
-  (defun ledger-guard:guard ()
-    (create-capability-guard (LEDGER))
   )
 
   ;  Transform token-schema object to token-info object
@@ -191,9 +215,10 @@
       s)
   )
 
-  (defun create-token-id:string (token-details:object{token-details})
+  (defun create-token-id:string (token-details:object{token-details}
+                                 creation-guard:guard)
     (format "t:{}"
-      [(hash [token-details (at 'chain-id (chain-data))])])
+      [(hash [token-details (at 'chain-id (chain-data)) creation-guard])])
   )
 
   (defun create-token:bool
@@ -201,17 +226,19 @@
       precision:integer
       uri:string
       policies:[module{kip.token-policy-v2}]
+      creation-guard:guard
     )
-    (with-capability (LEDGER)
-      ;; enforces token and uri protocols
-      (enforce-uri-reserved uri)
-      (let ((token-details { 'uri: uri, 'precision: precision, 'policies: (sort policies) }))
-       (enforce-token-reserved id token-details)
-      )
+    ;; enforces token and uri protocols
+    (enforce-uri-reserved uri)
+    (let ((token-details { 'uri: uri, 'precision: precision, 'policies: (sort policies) }))
+      (enforce-token-reserved id token-details creation-guard)
+    )
+    (with-capability (INIT-CALL id precision uri)
       ;; maps policy list and calls policy::enforce-init
       (policy-manager.enforce-init
         { 'id: id, 'supply: 0.0, 'precision: precision, 'uri: uri,  'policies: policies})
-
+    )
+    (with-capability (TOKEN id precision policies uri creation-guard)
       (insert tokens id {
         "id": id,
         "uri": uri,
@@ -219,7 +246,8 @@
         "supply": 0.0,
         "policies": policies
       })
-      (emit-event (TOKEN id precision 0.0 policies uri)))
+      true
+    )
   )
 
   (defun check-reserved:string (token-id:string)
@@ -229,13 +257,14 @@
     (let ((pfx (take 2 token-id)))
       (if (= ":" (take -1 pfx)) (take 1 pfx) "")))
 
-  (defun enforce-token-reserved:bool (token-id:string token-details:object{token-details})
+  (defun enforce-token-reserved:bool (token-id:string token-details:object{token-details}
+                                      creation-guard:guard)
     @doc "Enforce reserved token-id name protocols."
     (let ((r (check-reserved token-id)))
       (if (= "t" r)
         (enforce
           (= token-id
-             (create-token-id token-details))
+             (create-token-id token-details creation-guard))
           "Token protocol violation")
         (enforce false
           (format "Unrecognized reserved protocol: {}" [r]) ))))
@@ -267,31 +296,22 @@
       receiver:string
       amount:decimal
     )
-    (with-capability (LEDGER)
-      (enforce (!= sender receiver)
-        "sender cannot be the receiver of a transfer")
-      (enforce-valid-transfer sender receiver (precision id) amount)
-      (enforce-transfer-policy id sender receiver amount)
-      (with-capability (TRANSFER id sender receiver amount)
-        (with-read ledger (key id receiver)
-          { "guard" := g }
-          (let
-            ( (sender (debit id sender amount))
-              (receiver (credit id receiver g amount))
-            )
-            (emit-event (RECONCILE id amount sender receiver))
+    (enforce (!= sender receiver)
+      "sender cannot be the receiver of a transfer")
+    (enforce-valid-transfer sender receiver (precision id) amount)
+    (with-capability (TRANSFER-CALL id sender receiver amount)
+      (policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
+    )
+    (with-capability (TRANSFER id sender receiver amount)
+      (with-read ledger (key id receiver)
+        { "guard" := g }
+        (let
+          ( (sender (debit id sender amount))
+            (receiver (credit id receiver g amount))
           )
+          (emit-event (RECONCILE id amount sender receiver))
         )
       ))
-  )
-
-  (defun enforce-transfer-policy
-    ( id:string
-      sender:string
-      receiver:string
-      amount:decimal
-    )
-    (policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
   )
 
   (defun transfer-create:bool
@@ -301,19 +321,20 @@
       receiver-guard:guard
       amount:decimal
     )
-    (with-capability (LEDGER)
-      (enforce (!= sender receiver)
-        "sender cannot be the receiver of a transfer")
-      (enforce-valid-transfer sender receiver (precision id) amount)
-      (enforce-transfer-policy id sender receiver amount)
-      (with-capability (TRANSFER id sender receiver amount)
-        (let
-          (
-            (sender (debit id sender amount))
-            (receiver (credit id receiver receiver-guard amount))
-          )
-          (emit-event (RECONCILE id amount sender receiver))
-        )))
+    (enforce (!= sender receiver)
+      "sender cannot be the receiver of a transfer")
+    (enforce-valid-transfer sender receiver (precision id) amount)
+    (with-capability (TRANSFER-CALL id sender receiver amount)
+      (policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
+    )
+    (with-capability (TRANSFER id sender receiver amount)
+      (let
+        (
+          (sender (debit id sender amount))
+          (receiver (credit id receiver receiver-guard amount))
+        )
+        (emit-event (RECONCILE id amount sender receiver))
+      ))
   )
 
   (defun mint:bool
@@ -322,18 +343,19 @@
       guard:guard
       amount:decimal
     )
-    (with-capability (LEDGER)
+    (with-capability (MINT-CALL id account amount)
       (policy-manager.enforce-mint (get-token-info id) account guard amount)
-      (with-capability (MINT id account amount)
-        (let
-          (
-            (receiver (credit id account guard amount))
-            (sender:object{sender-balance-change}
-              {'account: "", 'previous: 0.0, 'current: 0.0})
-          )
-          (emit-event (RECONCILE id amount sender receiver))
-          (update-supply id amount)
-        )))
+    )
+    (with-capability (MINT id account amount)
+      (let
+        (
+          (receiver (credit id account guard amount))
+          (sender:object{sender-balance-change}
+            {'account: "", 'previous: 0.0, 'current: 0.0})
+        )
+        (emit-event (RECONCILE id amount sender receiver))
+        (update-supply id amount)
+      ))
   )
 
   (defun burn:bool
@@ -341,19 +363,20 @@
       account:string
       amount:decimal
     )
-    (with-capability (LEDGER)
+    (with-capability (BURN-CALL id account amount)
       (policy-manager.enforce-burn (get-token-info id) account amount)
-      (with-capability (BURN id account amount)
-        (let
-          (
-            (sender (debit id account amount))
-            (receiver:object{receiver-balance-change}
-              {'account: "", 'previous: 0.0, 'current: 0.0})
-          )
-          (emit-event (RECONCILE id amount sender receiver))
-          (update-supply id (- amount))
-        ))
-  ))
+    )
+    (with-capability (BURN id account amount)
+      (let
+        (
+          (sender (debit id account amount))
+          (receiver:object{receiver-balance-change}
+            {'account: "", 'previous: 0.0, 'current: 0.0})
+        )
+        (emit-event (RECONCILE id amount sender receiver))
+        (update-supply id (- amount))
+      ))
+  )
 
   (defun debit:object{sender-balance-change}
     ( id:string
@@ -472,17 +495,16 @@
   ;;
 
   (defcap SALE:bool
-    (id:string seller:string amount:decimal timeout:decimal sale-id:string)
+    (id:string seller:string amount:decimal timeout:integer sale-id:string)
     @doc "Wrapper cap/event of SALE of token ID by SELLER of AMOUNT until TIMEOUT block height."
     @event
     (enforce (> amount 0.0) "Amount must be positive")
-    (compose-capability (LEDGER))
     (compose-capability (OFFER id seller amount timeout))
     (compose-capability (SALE_PRIVATE sale-id))
   )
 
   (defcap OFFER:bool
-    (id:string seller:string amount:decimal timeout:decimal)
+    (id:string seller:string amount:decimal timeout:integer)
     @doc "Managed cap for SELLER offering AMOUNT of token ID until TIMEOUT."
     @managed
     (enforce (sale-active timeout) "SALE: invalid timeout")
@@ -491,29 +513,22 @@
   )
 
   (defcap WITHDRAW:bool
-    (id:string seller:string amount:decimal timeout:decimal sale-id:string)
+    (id:string seller:string amount:decimal timeout:integer sale-id:string)
     @doc "Withdraws offer SALE from SELLER of AMOUNT of token ID after timeout."
     @managed
     (compose-capability (SALE_PRIVATE sale-id))
-    (enforce-one "WITHDRAW: still active" [
-      (enforce (= 0.0 timeout) "No timeout set")
-      (enforce (not (sale-active timeout)) "WITHDRAW: still active")
-    ])
-    (if (= 0.0 timeout)
-      ;; check seller guard
+    (if (= 0 timeout)
       (enforce-guard (at 'guard (details id seller)))
-      ;; skip
-      true
+      (enforce (not (sale-active timeout)) "WITHDRAW: still active")
     )
     (compose-capability (DEBIT id (sale-account)))
     (compose-capability (CREDIT id seller))
   )
 
   (defcap BUY:bool
-    (id:string seller:string buyer:string amount:decimal timeout:decimal sale-id:string)
+    (id:string seller:string buyer:string amount:decimal sale-id:string)
     @doc "Completes sale OFFER to BUYER."
     @managed
-    (enforce (sale-active timeout) "BUY: expired")
     (compose-capability (SALE_PRIVATE sale-id))
     (compose-capability (DEBIT id (sale-account)))
     (compose-capability (CREDIT id buyer))
@@ -525,32 +540,38 @@
     ( id:string
       seller:string
       amount:decimal
-      timeout:decimal
+      timeout:integer
     )
     (step-with-rollback
       ;; Step 0: offer
-      (with-capability (LEDGER)
-        (policy-manager.enforce-offer (get-token-info id) seller amount (pact-id))
+      (let ((token-info (get-token-info id)))
+        (with-capability (OFFER-CALL id seller amount timeout (pact-id))
+          (policy-manager.enforce-offer token-info seller amount timeout (pact-id)))
         (with-capability (SALE id seller amount timeout (pact-id))
           (offer id seller amount))
-          (pact-id))
+        (pact-id)
+      )
       ;;Step 0, rollback: withdraw
-      (with-capability (LEDGER)
-        (policy-manager.enforce-withdraw (get-token-info id) seller amount (pact-id))
+      (let ((token-info (get-token-info id)))
+        (with-capability (WITHDRAW-CALL id seller amount timeout (pact-id))
+          (policy-manager.enforce-withdraw token-info seller amount timeout (pact-id)))
         (with-capability (WITHDRAW id seller amount timeout (pact-id))
           (withdraw id seller amount))
-          (pact-id))
+        (pact-id)
+      )
     )
     (step
       ;; Step 1: buy
-      (with-capability (LEDGER)
-        (let ( (buyer:string (read-msg "buyer"))
-               (buyer-guard:guard (read-msg "buyer-guard")) )
-           (policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
-           (with-capability (BUY id seller buyer amount timeout (pact-id))
-             (buy id seller buyer buyer-guard amount (pact-id))
-           ))
-           (pact-id)))
+      (let ( (buyer:string (read-msg "buyer"))
+              (buyer-guard:guard (read-msg "buyer-guard")) )
+          (with-capability (BUY-CALL id seller buyer amount (pact-id))
+            (policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
+          )
+          (with-capability (BUY id seller buyer amount (pact-id))
+            (buy id seller buyer buyer-guard amount (pact-id))
+          )
+          (pact-id)
+    ))
   )
 
   (defun offer:bool
@@ -621,9 +642,9 @@
       true
   ))
 
-  (defun sale-active:bool (timeout:decimal)
+  (defun sale-active:bool (timeout:integer)
     @doc "Sale is active until TIMEOUT time."
-    (if (= 0.0 timeout)
+    (if (= 0 timeout)
       true
       (< (at 'block-time (chain-data)) (add-time (time "1970-01-01T00:00:00Z") timeout))
     )

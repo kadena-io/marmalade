@@ -11,16 +11,18 @@
     "creator-guard": {"keys": ["creator"], "pred": "keys-all"},
     "bidder-guard": {"keys": ["bidder"], "pred": "keys-all"}
   })
-  (marmalade-v2.abc.create-account "k:account" (read-keyset 'seller-guard))
-  (marmalade-v2.abc.create-account "k:creator" (read-keyset 'creator-guard))
-  (marmalade-v2.abc.create-account "k:bidder" (read-keyset 'bidder-guard))
-  (marmalade-v2.abc.fund "k:bidder" 25.0)
+  (coin.create-account "k:account" (read-keyset 'seller-guard))
+  (coin.create-account "k:creator" (read-keyset 'creator-guard))
+  (coin.create-account "k:bidder" (read-keyset 'bidder-guard))
+  (test-capability (coin.COINBASE))
+  (coin.coinbase "k:bidder" (read-keyset 'bidder-guard) 25.0)
 (commit-tx)
 
 (begin-tx "Create add mint token with royalties")
   (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.util-v1)
+  (use mini-guard-utils)
     (env-data {
       "token-id": (create-token-id {
         'uri: "test-quote-royalty-uri",
@@ -31,9 +33,9 @@
           ,'collection-policy: false
           ,'guard-policy: false
         })
-      })
+      } ALWAYS-TRUE)
      ,"royalty_spec": {
-        "fungible": marmalade-v2.abc
+        "fungible": coin
         ,"creator": "k:creator"
         ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
         ,"royalty-rate": 0.05
@@ -48,7 +50,7 @@
         ,'royalty-policy: true
         ,'collection-policy: false
         ,'guard-policy: false
-      })))
+      }) ALWAYS-TRUE))
 
     (env-sigs [
       { 'key: 'any
@@ -61,10 +63,11 @@
        (mint (read-msg 'token-id) "k:account" (read-keyset 'account-guard ) 1.0))
 
      (expect "create, mint token events"
-        [ {"name": "marmalade-v2.ledger.TOKEN","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" 0 0.0 [marmalade-v2.royalty-policy-v1] "test-quote-royalty-uri"]}
-          {"name": "marmalade-v2.ledger.MINT","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" 1.0]}
-          {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" (read-keyset 'account-guard)]}
-          {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": "k:account","current": 1.0,"previous": 0.0}]} {"name": "marmalade-v2.ledger.SUPPLY","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" 1.0]}
+        [ {"name": "marmalade-v2.royalty-policy-v1.ROYALTY","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" {"creator": "k:creator","creator-guard": (at 'creator-guard (read-msg 'royalty_spec)),"fungible": coin,"royalty-rate": 0.05}]}
+          {"name": "marmalade-v2.ledger.TOKEN","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" 0 [marmalade-v2.royalty-policy-v1] "test-quote-royalty-uri" ALWAYS-TRUE]}
+          {"name": "marmalade-v2.ledger.MINT","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" 1.0]}
+          {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" (read-keyset 'account-guard)]}
+          {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": "k:account","current": 1.0,"previous": 0.0}]} {"name": "marmalade-v2.ledger.SUPPLY","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" 1.0]}
         ]
         (map (remove "module-hash")  (env-events true))
      )
@@ -77,14 +80,14 @@
   (env-hash (hash "accept-offer-with-royalties"))
 
   (env-data {
-    "token-id": "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ"
+    "token-id": "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI"
    ,"quote": {
       "spec": {
         "seller-fungible-account": {
             "account": "k:account"
            ,"guard": {"keys": ["account"], "pred": "keys-all"}
           }
-        ,"fungible": marmalade-v2.abc
+        ,"fungible": coin
         ,"price": 10.0
         ,"amount": 1.0
         }
@@ -96,27 +99,79 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-      (marmalade-v2.ledger.OFFER "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" 1.0 0.0)
+      (marmalade-v2.ledger.OFFER "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" 1.0 0)
      ]}])
 
   (expect "Offer token for sale"
     "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
-    (sale (read-msg 'token-id) "k:account" 1.0 0.0))
+    (sale (read-msg 'token-id) "k:account" 1.0 0))
 
   (env-data {
     "account-guard": {"keys": ["account"], "pred": "keys-all"}
    ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
-   ,"token-id": "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ"
+   ,"token-id": "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI"
   })
 
   (expect "Offer with quote events"
-    [ {"name": "marmalade-v2.quote-manager.QUOTE","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" {"amount": 1.0,"fungible": marmalade-v2.abc,"price": 10.0,"seller-fungible-account": {"account": "k:account","guard": (read-keyset 'account-guard )}}]}
-      {"name": "marmalade-v2.quote-manager.QUOTE_GUARDS","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" (read-keyset 'account-guard) [(read-keyset 'market-guard)]]}
-      {"name": "marmalade-v2.ledger.OFFER","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" 1.0 0.0]}
-      {"name": "marmalade-v2.ledger.SALE","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" 1.0 0.0 "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"]}
-      {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo" (account-guard (read-string "token-id") "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo")]}
-      {"name": "marmalade-v2.ledger.TRANSFER","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo" 1.0]}
-      {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo","current": 1.0,"previous": 0.0}]}]
+    [ {"name": "marmalade-v2.quote-manager.QUOTE","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" {"amount": 1.0,"fungible": coin,"price": 10.0,"seller-fungible-account": {"account": "k:account","guard": (read-keyset 'account-guard )}}]}
+      {"name": "marmalade-v2.quote-manager.QUOTE-GUARDS","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" (read-keyset 'account-guard) [(read-keyset 'market-guard)]]}
+      {"name": "marmalade-v2.ledger.OFFER","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" 1.0 0]}
+      {"name": "marmalade-v2.ledger.SALE","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" 1.0 0 "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"]}
+      {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo" (account-guard (read-string "token-id") "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo")]}
+      {"name": "marmalade-v2.ledger.TRANSFER","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo" 1.0]}
+      {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo","current": 1.0,"previous": 0.0}]}]
+     (map (remove "module-hash")  (env-events true))
+  )
+
+(rollback-tx)
+
+(begin-tx "Create an offer with quote price of 0")
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.policy-manager)
+  (use marmalade-v2.util-v1)
+  (env-hash (hash "accept-offer-with-royalties"))
+
+  (env-data {
+    "token-id": "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI"
+   ,"quote": {
+      "spec": {
+        "seller-fungible-account": {
+            "account": "k:account"
+           ,"guard": {"keys": ["account"], "pred": "keys-all"}
+          }
+        ,"fungible": coin
+        ,"price": 0.0
+        ,"amount": 1.0
+        }
+      ,"seller-guard": {"keys": ["account"], "pred": "keys-all"}
+      ,"quote-guards": [{"keys": ["market"], "pred": "keys-all"}]
+    }
+  })
+
+  (env-sigs [
+    { 'key: 'account
+    ,'caps: [
+      (marmalade-v2.ledger.OFFER "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" 1.0 0)
+     ]}])
+
+  (expect "Offer token for sale"
+    "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
+    (sale (read-msg 'token-id) "k:account" 1.0 0))
+
+  (env-data {
+    "account-guard": {"keys": ["account"], "pred": "keys-all"}
+   ,"market-guard": {"keys": ["market"], "pred": "keys-all"}
+   ,"token-id": "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI"
+  })
+
+  (expect "Offer with quote events"
+    [ {"name": "marmalade-v2.quote-manager.QUOTE","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" {"amount": 1.0,"fungible": coin,"price": 0.0,"seller-fungible-account": {"account": "k:account","guard": (read-keyset 'account-guard )}}]}
+      {"name": "marmalade-v2.quote-manager.QUOTE-GUARDS","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" (read-keyset 'account-guard) [(read-keyset 'market-guard)]]}
+      {"name": "marmalade-v2.ledger.OFFER","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" 1.0 0]}
+      {"name": "marmalade-v2.ledger.SALE","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" 1.0 0 "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"]}
+      {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo" (account-guard (read-string "token-id") "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo")]}
+      {"name": "marmalade-v2.ledger.TRANSFER","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo" 1.0]}
+      {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "c:s0U-eAHPqrKNfJElCDaypSWOOryXXOqwwWV2FA8usNo","current": 1.0,"previous": 0.0}]}]
      (map (remove "module-hash")  (env-events true))
   )
 
@@ -130,7 +185,7 @@
 
   (env-sigs [
     { 'key: 'any
-    ,'caps: [(marmalade-v2.quote-manager.UPDATE_QUOTE_GUARD "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o")]}
+    ,'caps: [(marmalade-v2.quote-manager.UPDATE-QUOTE-GUARD "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o")]}
     ])
 
   (expect-failure "remove quote guard fails without seller sig"
@@ -139,7 +194,7 @@
 
   (env-sigs [
     { 'key: 'account
-    ,'caps: [(marmalade-v2.quote-manager.UPDATE_QUOTE_GUARD "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o")]}
+    ,'caps: [(marmalade-v2.quote-manager.UPDATE-QUOTE-GUARD "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o")]}
     ])
 
   (expect "seller can remove quote guard"
@@ -147,7 +202,7 @@
     (marmalade-v2.quote-manager.remove-quote-guard  "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" (read-keyset 'market-guard) ))
 
    (env-data {
-      "token-id": "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ"
+      "token-id": "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI"
       ,"sale-id": "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
       ,"buyer": "k:bidder"
       ,"buyer-guard": {"keys": ["bidder"], "pred": "keys-all"}
@@ -156,23 +211,22 @@
     (env-sigs [
       { 'key: 'market
       ,'caps: [
-        (marmalade-v2.quote-manager.UPDATE_QUOTE_PRICE (read-msg 'sale-id))
+          (marmalade-v2.policy-manager.RESERVE-SALE-AT-PRICE (read-msg 'sale-id) 20.0 (read-msg 'buyer) (read-keyset 'buyer-guard))
         ]}
       ])
 
   (expect-failure "update-quote-price cannot be called directly"
-    "Capability not acquired"
+    "(require-capability (policy-ma...: Failure: require-capability: not granted: (marmalade-v2.policy-manager.UPDATE-QUOTE-PRICE-CALL"
     (update-quote-price (read-msg 'sale-id) 20.0 (read-msg 'buyer))
   )
 
   (expect-failure "Reserve sale fails when quote guard is empty, test update-quote-price"
     "None of the guards passed"
-    (reserve-sale (read-msg 'sale-id) 20.0 (read-msg 'buyer) (read-keyset 'buyer-guard) (read-msg 'buyer)))
-
+    (reserve-sale-at-price (read-msg 'sale-id) 20.0 (read-msg 'buyer) (read-keyset 'buyer-guard) (read-msg 'buyer)))
 
   (env-sigs [
     { 'key: 'any
-    ,'caps: [(marmalade-v2.quote-manager.UPDATE_QUOTE_GUARD "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o")]}
+    ,'caps: [(marmalade-v2.quote-manager.UPDATE-QUOTE-GUARD "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o")]}
     ])
 
   (env-data {
@@ -186,7 +240,7 @@
 
  (env-sigs [
    { 'key: 'account
-   ,'caps: [(marmalade-v2.quote-manager.UPDATE_QUOTE_GUARD "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o")]}
+   ,'caps: [(marmalade-v2.quote-manager.UPDATE-QUOTE-GUARD "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o")]}
    ])
 
   (expect "seller can add quote guard"
@@ -194,12 +248,27 @@
     (marmalade-v2.quote-manager.add-quote-guard  "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" (read-keyset 'market-guard) ))
 
   (expect "Quote guard Events"
-    [ {"name": "marmalade-v2.quote-manager.QUOTE_GUARDS","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" (read-keyset 'account-guard) []]}
-      {"name": "marmalade-v2.quote-manager.QUOTE_GUARDS","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" (read-keyset 'account-guard) [ (read-keyset 'market-guard) ]]}]
+    [ {"name": "marmalade-v2.quote-manager.QUOTE-GUARDS","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" (read-keyset 'account-guard) []]}
+      {"name": "marmalade-v2.quote-manager.QUOTE-GUARDS","params": ["4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o" "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" (read-keyset 'account-guard) [ (read-keyset 'market-guard) ]]}]
      (map (remove "module-hash")  (env-events true))
   )
 
 (commit-tx)
+
+(begin-tx "Buying without a finalized quote price fails")
+  (use marmalade-v2.ledger)
+
+ (env-data {
+     "token-id": "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI"
+    ,"sale-id": "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
+    ,"buyer": "k:buyer1"
+    ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
+  })
+
+  (expect-failure "continue buy fails if price is still 0"
+    "Price must be finalized before buy"
+    (continue-pact 1 false (read-msg 'sale-id)))
+(rollback-tx)
 
 (begin-tx "Reserve sale (update-quote-price) for the bidder, and process buy")
   (use marmalade-v2.ledger)
@@ -208,7 +277,7 @@
   (use marmalade-v2.util-v1)
 
   (env-data {
-      "token-id": "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ"
+      "token-id": "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI"
      ,"sale-id": "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
      ,"bidder": "k:bidder"
      ,"buyer": "k:buyer"
@@ -218,28 +287,28 @@
    (env-sigs [
       { 'key: 'bidder
       ,'caps: [
-          (marmalade-v2.abc.TRANSFER "k:bidder" "c:yk0ICQ5W7xvtcDUaXSOyBYD4nMKhm-GXdVxY1mC0PQs" 20.0)
+          (coin.TRANSFER "k:bidder" "c:yk0ICQ5W7xvtcDUaXSOyBYD4nMKhm-GXdVxY1mC0PQs" 20.0)
       ]}
       { 'key: 'market
       ,'caps: [
-        (marmalade-v2.quote-manager.UPDATE_QUOTE_PRICE (read-msg 'sale-id))
+          (marmalade-v2.policy-manager.RESERVE-SALE-AT-PRICE (read-msg 'sale-id) 20.0 (read-msg 'buyer) (read-keyset 'buyer-guard))
         ]}
     ])
 
    (expect "Update the quote and reserve sale for the bidder"
      true
-     (reserve-sale (read-msg 'sale-id) 20.0 (read-msg 'buyer) (read-keyset 'buyer-guard) (read-msg 'bidder)))
+     (reserve-sale-at-price (read-msg 'sale-id) 20.0 (read-msg 'buyer) (read-keyset 'buyer-guard) (read-msg 'bidder)))
 
   (env-sigs [
      { 'key: 'any
      ,'caps: [
-         (marmalade-v2.ledger.BUY "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ" "k:account" "k:buyer"  1.0 0.0 (read-string 'sale-id))
+         (marmalade-v2.ledger.BUY "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI" "k:account" "k:buyer"  1.0 (read-string 'sale-id))
        ]
      }
    ])
 
  (env-data {
-     "token-id": "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ"
+     "token-id": "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI"
     ,"sale-id": "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
     ,"buyer": "k:buyer1"
     ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
@@ -250,7 +319,7 @@
     (continue-pact 1 false (read-msg 'sale-id)))
 
   (env-data {
-      "token-id": "t:JlLcrX-v00nuzRF8HUxhPRtUgWUFBpj_4cDmFnpOtfQ"
+      "token-id": "t:dxhD6igHw2OaaV_fwrFX4nJUrWsslZk6k-LuRFyOGuI"
      ,"sale-id": "4OsyAnzjiE0phoCAJ3tZ_bRR2OH3TXk7gP5Cobq4E8o"
      ,"buyer": "k:buyer"
      ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
@@ -262,10 +331,10 @@
 
   (expect "Seller account has increased with 20 tokens minus royalty fees"
     19.0
-    (marmalade-v2.abc.get-balance "k:account"))
+    (coin.get-balance "k:account"))
 
   (expect "Creator account has received 5% royalties"
     1.0
-    (marmalade-v2.abc.get-balance "k:creator"))
+    (coin.get-balance "k:creator"))
 
 (rollback-tx)

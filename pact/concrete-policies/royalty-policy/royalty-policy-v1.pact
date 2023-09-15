@@ -1,19 +1,20 @@
-(namespace (read-msg 'ns))
+(namespace (read-string 'ns))
 
 (module royalty-policy-v1 GOVERNANCE
 
   @doc "Concrete policy to support royalty payouts in a specified fungible during sale."
 
-  (defcap GOVERNANCE ()
-    (enforce-guard "marmalade-v2.marmalade-admin"))
+  (defconst GOVERNANCE-KS:string (+ (read-string 'ns) ".marmalade-admin"))
 
-  (use marmalade-v2.policy-manager)
-  (use marmalade-v2.policy-manager [QUOTE-MSG-KEY])
-  (use marmalade-v2.quote-manager)
-  (use marmalade-v2.quote-manager [quote-spec quote-schema])
+  (defcap GOVERNANCE ()
+    (enforce-guard GOVERNANCE-KS))
+
+  (use policy-manager)
+  (use policy-manager [QUOTE-MSG-KEY])
+  (use quote-manager)
+  (use quote-manager [quote-spec quote-schema])
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
-
 
   (defschema royalty-schema
     fungible:module{fungible-v2}

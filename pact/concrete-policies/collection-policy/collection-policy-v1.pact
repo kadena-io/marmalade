@@ -1,12 +1,14 @@
 
-(namespace (read-msg 'ns))
+(namespace (read-string 'ns))
 
 (module collection-policy-v1 GOVERNANCE
 
   @doc "Collection token policy."
 
+  (defconst GOVERNANCE-KS:string (+ (read-string 'ns) ".marmalade-admin"))
+
   (defcap GOVERNANCE ()
-    (enforce-guard "marmalade-v2.marmalade-admin"))
+    (enforce-guard GOVERNANCE-KS))
 
   (implements kip.token-policy-v2)
 

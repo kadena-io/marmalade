@@ -1,4 +1,4 @@
-(namespace (read-msg 'ns))
+(namespace (read-string 'ns))
 
 (module ledger GOVERNANCE
 
@@ -8,11 +8,11 @@
           (> (length account) 2))
     ]
 
-  (implements marmalade-v2.ledger-v1)
+  (implements ledger-v1)
   (implements kip.poly-fungible-v3)
   (use kip.poly-fungible-v3 [account-details sender-balance-change receiver-balance-change])
   (use util.fungible-util)
-  (use marmalade-v2.policy-manager)
+  (use policy-manager)
 
   ;;
   ;; Tables/Schemas
@@ -40,8 +40,10 @@
   ;; Capabilities
   ;;
 
+  (defconst GOVERNANCE-KS:string (+ (read-string 'ns) ".marmalade-admin"))
+
   (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin)))
+    (enforce-guard GOVERNANCE-KS))
 
   ;;
   ;; poly-fungible-v3 caps
@@ -233,7 +235,7 @@
     )
     (with-capability (INIT-CALL id precision uri)
       ;; maps policy list and calls policy::enforce-init
-      (marmalade-v2.policy-manager.enforce-init
+      (policy-manager.enforce-init
         { 'id: id, 'supply: 0.0, 'precision: precision, 'uri: uri,  'policies: policies})
     )
     (with-capability (TOKEN id precision policies uri creation-guard)
@@ -298,7 +300,7 @@
       "sender cannot be the receiver of a transfer")
     (enforce-valid-transfer sender receiver (precision id) amount)
     (with-capability (TRANSFER-CALL id sender receiver amount)
-      (marmalade-v2.policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
+      (policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
     )
     (with-capability (TRANSFER id sender receiver amount)
       (with-read ledger (key id receiver)
@@ -323,7 +325,7 @@
       "sender cannot be the receiver of a transfer")
     (enforce-valid-transfer sender receiver (precision id) amount)
     (with-capability (TRANSFER-CALL id sender receiver amount)
-      (marmalade-v2.policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
+      (policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
     )
     (with-capability (TRANSFER id sender receiver amount)
       (let
@@ -342,7 +344,7 @@
       amount:decimal
     )
     (with-capability (MINT-CALL id account amount)
-      (marmalade-v2.policy-manager.enforce-mint (get-token-info id) account guard amount)
+      (policy-manager.enforce-mint (get-token-info id) account guard amount)
     )
     (with-capability (MINT id account amount)
       (let
@@ -362,7 +364,7 @@
       amount:decimal
     )
     (with-capability (BURN-CALL id account amount)
-      (marmalade-v2.policy-manager.enforce-burn (get-token-info id) account amount)
+      (policy-manager.enforce-burn (get-token-info id) account amount)
     )
     (with-capability (BURN id account amount)
       (let
@@ -544,7 +546,7 @@
       ;; Step 0: offer
       (let ((token-info (get-token-info id)))
         (with-capability (OFFER-CALL id seller amount timeout (pact-id))
-          (marmalade-v2.policy-manager.enforce-offer token-info seller amount timeout (pact-id)))
+          (policy-manager.enforce-offer token-info seller amount timeout (pact-id)))
         (with-capability (SALE id seller amount timeout (pact-id))
           (offer id seller amount))
         (pact-id)
@@ -552,7 +554,7 @@
       ;;Step 0, rollback: withdraw
       (let ((token-info (get-token-info id)))
         (with-capability (WITHDRAW-CALL id seller amount timeout (pact-id))
-          (marmalade-v2.policy-manager.enforce-withdraw token-info seller amount timeout (pact-id)))
+          (policy-manager.enforce-withdraw token-info seller amount timeout (pact-id)))
         (with-capability (WITHDRAW id seller amount timeout (pact-id))
           (withdraw id seller amount))
         (pact-id)
@@ -563,7 +565,7 @@
       (let ( (buyer:string (read-msg "buyer"))
               (buyer-guard:guard (read-msg "buyer-guard")) )
           (with-capability (BUY-CALL id seller buyer amount (pact-id))
-            (marmalade-v2.policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
+            (policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
           )
           (with-capability (BUY id seller buyer amount (pact-id))
             (buy id seller buyer buyer-guard amount (pact-id))

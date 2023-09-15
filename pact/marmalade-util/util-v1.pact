@@ -1,9 +1,9 @@
-(namespace (read-msg 'ns))
+(namespace (read-string 'ns))
 
 (module util-v1 GOVERNANCE
   (use kip.token-policy-v2)
-  (use marmalade-v2.policy-manager )
-  (use marmalade-v2.policy-manager [CONCRETE_POLICY_LIST NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
+  (use policy-manager)
+  (use policy-manager [CONCRETE_POLICY_LIST NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
 
   (defschema concrete-policy-bool
     non-fungible-policy:bool
@@ -12,8 +12,10 @@
     guard-policy:bool
   )
 
+  (defconst GOVERNANCE-KS:string (+ (read-string 'ns) ".marmalade-admin"))
+
   (defcap GOVERNANCE ()
-    (enforce-guard "marmalade-v2.marmalade-admin"))
+    (enforce-guard GOVERNANCE-KS))
 
   (defconst DEFAULT:object{concrete-policy-bool}
     { 'non-fungible-policy: true

@@ -1,16 +1,18 @@
-(namespace (read-msg 'ns))
+(namespace (read-string 'ns))
 
 (module policy-manager GOVERNANCE
 
-  (defcap GOVERNANCE ()
-    (enforce-guard "marmalade-v2.marmalade-admin"))
+  (defconst GOVERNANCE-KS:string (+ (read-string 'ns) ".marmalade-admin"))
 
-  (implements marmalade-v2.policy-manager-v1)
+  (defcap GOVERNANCE ()
+    (enforce-guard GOVERNANCE-KS))
+
+  (implements policy-manager-v1)
   (use kip.token-policy-v2 [token-info])
   (use util.fungible-util)
-  (use marmalade-v2.ledger-v1)
-  (use marmalade-v2.quote-manager)
-  (use marmalade-v2.quote-manager [quote-spec quote-msg fungible-account])
+  (use ledger-v1)
+  (use quote-manager)
+  (use quote-manager [quote-spec quote-msg fungible-account])
 
   (defconst QUOTE-MSG-KEY:string "quote"
     @doc "Payload field for quote spec")
@@ -114,8 +116,7 @@
 
   (defcap CONCRETE-POLICY:bool (policy-field:string policy:module{kip.token-policy-v2})
     @event
-    (enforce-guard "marmalade-v2.marmalade-admin")
-  )
+    (enforce-guard GOVERNANCE-KS))
 
   (deftable concrete-policies:{concrete-policy})
 

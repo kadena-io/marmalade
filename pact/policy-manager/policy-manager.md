@@ -1,11 +1,42 @@
 # Policy Manager
 
-The Policy Manager is a module that maps that maps the function calls of individual policies of the token. With the upgrade of marmalade V2, token creators now can select multiple policies to program the tokens. These policies can include rules for transfers, burns, sales, and more, providing a flexible and customizable way to manage the behavior of tokens on the platform. The token policies is built using the `kip.token-policy-v2` interface, which defines the standard interface that token policies must implement.
+The Policy Manager is a module that maps that maps the function calls of individual policies of the token. With the upgrade of marmalade V2, token creators now can select multiple policies to program the tokens. These policies can include rules for creation, mints, transfers, burns, sales, and more, providing a flexible and customizable way to manage the behavior of tokens on the platform. The token policies is built using the `kip.token-policy-v2` interface, which defines the standard interface that token policies must implement.
+
+## Policy Manager and Quotes
+
+Another main feature that policy manager allows is having one standard for collecting and distributing the fungibles. Previously in marmalade v1, `fixed-quote-policy` was an example of handling the fungible transfers at sales, and in marmalade v2, the feature is optionally supported for every tokens from policy-manager.
+
+### Offer
+Seller can choose to make a quoted offer by adding `quote` information in transaction data. If not present, the sale will proceed without quotes. Note that individual policies can enforce quoted sale by adding their logic in the code. |
+
+When an offer is made with quotes, the policy manager adds the quotes with `quote-manager.add-quote` function. Quote has additional fields, `quote-guards` and `seller-guard`.
+`quote-guards` represent the list of guards that the seller grants the authority to update the quote price. `seller-guard` represents the seller's guard, which can add or remove the guards from the `quote-guards` list.
+
+
+### Reserve sale at price
+
+In between `offer` and `buy`, we provide a function, `reserve-sale-at-price`. The purpose of the function is to update the quote price and reserve the `buyer` information. This is only necessary when the quote guard is added as one of the quote guards and would like to process the sale with quote price different than initial quote price.
+
+The function collects the fungible from the `quote-account`, and reserves the `buyer` information, which will be enforced in the `enforce-buy`.
+
+#### Quote Guards
+
+Quote guards are a list of guards that have ability to call `reserve-sale-at-price`. The seller adds the quote guards at `offer`, and also have the ability to add or remove quote guards after making the offer, which would be analogous to participating in multiple auctions simultaneously. If the seller wants the quote price to be unchanged, the quote guards field can be left as an empty list.
+
+Note that the `offer` is still valid to be bought directly by the buyer, even if the quote guards are present. The seller can block the direct `buy`'s by setting the quote price at `0.0`, which will only allow `buy`'s through `reserve-sale-at-price` with updated quote price.
+
+
+### Buy
+There are 3 different conditions that the `enforce-buy` runs
+  1. Sale was processed without quotes: the function doesn't do more than running policy functions.
+  2. Sale was reserved: Escrow account already collected fungibles, and so escrow account distributes the collected fungible from the `reserve-sale-at-price` to the seller and the required policies.
+  3. Sale was processed with quotes and not reserved:  `buyer-fungible-account` needs to transfer fungible to the escrow account, and the escrow account distributes to the seller and required policies.
+
+##  Components
 
 This module includes the following key components:
 
-
-**Ledgers Table**: There are functions that limits their call to be initiated fro the ledger. We create a ledgers table, so we can save the module reference to the ledger, and add enforcement that the function cannot be called otherwise.
+**Ledgers Table**: There are functions that limits their call to be initiated from the ledger. We create a ledgers table, so we can save the module reference to the ledger, and add enforcement that the function cannot be called otherwise.
 
 **Concrete Policies Table**: A table, `concrete-policies` is created to store the concrete policy information for each token policy. A Concrete policy can be viewed as a default policy provided by the marmalade team. Its a standardised set of policies to get token creators started. This table ensures proper handling of policy configurations for the NFTs managed under the policy.
 

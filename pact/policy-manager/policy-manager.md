@@ -13,6 +13,25 @@ This module includes the following key components:
 
 **Concrete Policies Schema:**: The `concrete-policies` schema contains the module reference. We strictly limit the module to use the interface, `token-policy-v2`
 
+**Capabilities**
+ - `GOVERNANCE`
+ - `CONCRETE-POLICY` @event
+ - `ESCROW`
+ - `MAP-ESCROWED-BUY`
+ - `OFFER`
+ - `BUY`
+ - `WITHDRAW`
+ - `RESERVE-SALE-AT-PRICE` @event
+ - `INIT-CALL`
+ - `TRANSFER-CALL`
+ - `MINT-CALL`
+ - `BURN-CALL`
+ - `OFFER-CALL`
+ - `WITHDRAW-CALL`
+ - `BUY-CALL`
+ - `ADD-QUOTE-CALL`
+ - `UPDATE-QUOTE-PRICE-CALL`
+
 ## Policy Functions
 
 `enforce-**` functions requires the `ledger::**-CALL` capability to be in scope, which enforces that the function is started from the ledger with the scoped parameters. It then retrieves the `policies` list from the `token` input parameter, which contains a list of policies associated with the token.
@@ -33,7 +52,7 @@ This module includes the following key components:
 
 `reserve-sale-at-price`: Updates the quote price and reserves the sale, and the marmalade buyer account information. Fungible payment is required. After this step, anyone can process `marmalade-v2.ledger.buy` step.
   - Required Capability
-    - Capability: `(RESERVE_SALE_AT_PRICE sale-id price buyer buyer-guard)`
+    - Capability: `(RESERVE-SALE-AT-PRICE sale-id price buyer buyer-guard)`
     - Signer: One of the `quote-guards`
     - Capability: `(fungible::TRANSFER buyer-fungible-account escrow-account sale-price)`
     - Signer: buyer-fungible-account
@@ -44,10 +63,9 @@ This module includes the following key components:
 
 `write-concrete-policy`: Registers concrete policy modref into the concrete-policies table.
   - Required Capability
-    - Capability: `(CONCRETE_POLICY policy-field policy)`
+    - Capability: `(CONCRETE-POLICY policy-field policy)`
     - Signer: (keyset-ref-guard `marmalade-v2.marmalade-admin`)
 
 `get-concrete-policy`: Returns the modref of the concrete policy.
-
 
 `enforce-sale-pact`: Ensures that the `sale` parameter provided to the function is equal to the ID of the currently executing pact. It does this by calling the `pact-id` function to retrieve the ID of the currently executing pact and comparing it to the provided `sale` parameter. If they are not equal, an exception will be thrown".

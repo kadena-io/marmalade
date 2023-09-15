@@ -9,6 +9,11 @@
     "Capability securing the modref call for add-quote"
   )
 
+  (defcap CLOSE-QUOTE-CALL:bool (sale-id:string)
+    @doc
+    "Capability securing the modref call for close-quote"
+  )
+
   (defcap UPDATE-QUOTE-PRICE-CALL:bool (sale-id:string price:decimal buyer:string)
     @doc
     "Capability securing the modref call for update-quote-price"

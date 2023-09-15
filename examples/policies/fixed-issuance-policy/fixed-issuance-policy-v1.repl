@@ -1,17 +1,12 @@
 
 ;;load policy manager, ledger
-(load "../../marmalade.repl")
+(load "../../../pact/marmalade.repl")
+
 
 (begin-tx)
   (load "./fixed-issuance-policy-v1.pact")
    (typecheck "marmalade-v2.fixed-issuance-policy-v1")
 (commit-tx)
-
-(begin-tx)
-  (load "../onchain-manifest-policy/onchain-manifest-policy-v1.pact")
-(commit-tx)
-
-
 
 (begin-tx)
     (use marmalade-v2.ledger)

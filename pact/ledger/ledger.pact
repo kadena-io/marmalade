@@ -86,9 +86,9 @@
     @event true
   )
 
-  (defcap TOKEN:bool (id:string precision:integer supply:decimal policies:[module{kip.token-policy-v2}] uri:string)
+  (defcap TOKEN:bool (id:string precision:integer policies:[module{kip.token-policy-v2}] uri:string creation-guard:guard)
     @event
-    true
+    (enforce-guard creation-guard)
   )
 
   (defcap RECONCILE:bool
@@ -130,11 +130,11 @@
     true
   )
 
-  (defcap OFFER-CALL:bool (id:string seller:string amount:decimal sale-id:string)
+  (defcap OFFER-CALL:bool (id:string seller:string amount:decimal timeout:integer sale-id:string)
     true
   )
 
-  (defcap WITHDRAW-CALL:bool (id:string seller:string amount:decimal sale-id:string)
+  (defcap WITHDRAW-CALL:bool (id:string seller:string amount:decimal timeout:integer sale-id:string)
     true
   )
 
@@ -213,9 +213,10 @@
       s)
   )
 
-  (defun create-token-id:string (token-details:object{token-details})
+  (defun create-token-id:string (token-details:object{token-details}
+                                 creation-guard:guard)
     (format "t:{}"
-      [(hash [token-details (at 'chain-id (chain-data))])])
+      [(hash [token-details (at 'chain-id (chain-data)) creation-guard])])
   )
 
   (defun create-token:bool
@@ -223,26 +224,28 @@
       precision:integer
       uri:string
       policies:[module{kip.token-policy-v2}]
+      creation-guard:guard
     )
     ;; enforces token and uri protocols
     (enforce-uri-reserved uri)
     (let ((token-details { 'uri: uri, 'precision: precision, 'policies: (sort policies) }))
-      (enforce-token-reserved id token-details)
+      (enforce-token-reserved id token-details creation-guard)
     )
     (with-capability (INIT-CALL id precision uri)
       ;; maps policy list and calls policy::enforce-init
       (marmalade-v2.policy-manager.enforce-init
         { 'id: id, 'supply: 0.0, 'precision: precision, 'uri: uri,  'policies: policies})
     )
-
-    (insert tokens id {
-      "id": id,
-      "uri": uri,
-      "precision": precision,
-      "supply": 0.0,
-      "policies": policies
-    })
-    (emit-event (TOKEN id precision 0.0 policies uri))
+    (with-capability (TOKEN id precision policies uri creation-guard)
+      (insert tokens id {
+        "id": id,
+        "uri": uri,
+        "precision": precision,
+        "supply": 0.0,
+        "policies": policies
+      })
+      true
+    )
   )
 
   (defun check-reserved:string (token-id:string)
@@ -252,13 +255,14 @@
     (let ((pfx (take 2 token-id)))
       (if (= ":" (take -1 pfx)) (take 1 pfx) "")))
 
-  (defun enforce-token-reserved:bool (token-id:string token-details:object{token-details})
+  (defun enforce-token-reserved:bool (token-id:string token-details:object{token-details}
+                                      creation-guard:guard)
     @doc "Enforce reserved token-id name protocols."
     (let ((r (check-reserved token-id)))
       (if (= "t" r)
         (enforce
           (= token-id
-             (create-token-id token-details))
+             (create-token-id token-details creation-guard))
           "Token protocol violation")
         (enforce false
           (format "Unrecognized reserved protocol: {}" [r]) ))))
@@ -520,10 +524,9 @@
   )
 
   (defcap BUY:bool
-    (id:string seller:string buyer:string amount:decimal timeout:integer sale-id:string)
+    (id:string seller:string buyer:string amount:decimal sale-id:string)
     @doc "Completes sale OFFER to BUYER."
     @managed
-    (enforce (sale-active timeout) "BUY: expired")
     (compose-capability (SALE_PRIVATE sale-id))
     (compose-capability (DEBIT id (sale-account)))
     (compose-capability (CREDIT id buyer))
@@ -540,16 +543,16 @@
     (step-with-rollback
       ;; Step 0: offer
       (let ((token-info (get-token-info id)))
-        (with-capability (OFFER-CALL id seller amount (pact-id))
-          (marmalade-v2.policy-manager.enforce-offer token-info seller amount (pact-id)))
+        (with-capability (OFFER-CALL id seller amount timeout (pact-id))
+          (marmalade-v2.policy-manager.enforce-offer token-info seller amount timeout (pact-id)))
         (with-capability (SALE id seller amount timeout (pact-id))
           (offer id seller amount))
         (pact-id)
       )
       ;;Step 0, rollback: withdraw
       (let ((token-info (get-token-info id)))
-        (with-capability (WITHDRAW-CALL id seller amount (pact-id))
-          (marmalade-v2.policy-manager.enforce-withdraw token-info seller amount (pact-id)))
+        (with-capability (WITHDRAW-CALL id seller amount timeout (pact-id))
+          (marmalade-v2.policy-manager.enforce-withdraw token-info seller amount timeout (pact-id)))
         (with-capability (WITHDRAW id seller amount timeout (pact-id))
           (withdraw id seller amount))
         (pact-id)
@@ -562,7 +565,7 @@
           (with-capability (BUY-CALL id seller buyer amount (pact-id))
             (marmalade-v2.policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
           )
-          (with-capability (BUY id seller buyer amount timeout (pact-id))
+          (with-capability (BUY id seller buyer amount (pact-id))
             (buy id seller buyer buyer-guard amount (pact-id))
           )
           (pact-id)

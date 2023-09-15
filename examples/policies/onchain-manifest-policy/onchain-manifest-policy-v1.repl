@@ -1,6 +1,7 @@
 
 ;;load policy manager, ledger
-(load "../../marmalade.repl")
+(load "../../../pact/marmalade.repl")
+
 
 (begin-tx)
   (load "./onchain-manifest-policy-v1.pact")
@@ -50,7 +51,7 @@
   (expect "Manifest was upgraded"
    {"uri": {"scheme": "text1","data": "data"},"hash": "dD_VD1vl5Qx25WYNhW6RWIuxo25LQfa49Fs55ckMwUE","data": []}
    (get-manifest (read-msg 'token-id )))
-   
+
 (commit-tx)
 
 ;; test manifest + royalty policy creation

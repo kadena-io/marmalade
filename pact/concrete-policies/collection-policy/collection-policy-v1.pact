@@ -31,22 +31,20 @@
 
   (defconst COLLECTION-ID-MSG-KEY:string "collection_id")
 
-  (defcap OPERATOR (collection-id:string)
-    @doc "Capability to grant creation of a collection's token"
+  (defcap COLLECTION:bool (collection-id:string collection-name:string collection-size:integer operator-guard:guard)
+    @doc "Capability to grant creation of a collection and emit COLLECTION event for discovery"
+    @event
+    (enforce-guard operator-guard)
+  )
+
+  (defcap TOKEN-COLLECTION (collection-id:string token-id:string)
+    @doc "Capability to grant creation of a collection's token and emit TOKEN-COLLECTION event for discovery"
+    @event
     (with-read collections collection-id {
       'operator-guard:= operator-guard:guard
       }
       (enforce-guard operator-guard))
   )
-
-  (defcap COLLECTION:bool (collection-id:string collection-name:string collection-size:integer operator-guard:guard)
-    @event
-    (enforce-guard operator-guard)
-  )
-
-  (defcap TOKEN_COLLECTION:bool (token-id:string collection-id:string)
-    @event
-    true)
 
   (defun create-collection:bool
     ( collection-name:string
@@ -73,12 +71,12 @@
     @doc "Executed at `create-token` step of marmalade.ledger.                 \
     \ Required msg-data keys:                                                  \
     \ * collection_id:string - registers the token to a collection and emits   \
-    \ TOKEN_COLLECTION event for discovery"
+    \ TOKEN-COLLECTION event for collection token discovery"
     (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) collection-policy-v1))
     (let* ( (token-id:string  (at 'id token))
             (collection-id:string (read-msg COLLECTION-ID-MSG-KEY)) )
     ;;Enforce operator guard
-    (with-capability (OPERATOR collection-id)
+    (with-capability (TOKEN-COLLECTION collection-id token-id)
       (with-read collections collection-id {
         "max-size":= max-size
        ,"size":= size
@@ -94,8 +92,8 @@
         { "id" : token-id
          ,"collection-id" : collection-id
       })
+      )
     )
-    (emit-event (TOKEN_COLLECTION token-id collection-id)))
     true
   )
 
@@ -121,6 +119,7 @@
     ( token:object{token-info}
       seller:string
       amount:decimal
+      timeout:integer
       sale-id:string
     )
     true
@@ -141,6 +140,7 @@
     ( token:object{token-info}
       seller:string
       amount:decimal
+      timeout:integer
       sale-id:string
     )
     true

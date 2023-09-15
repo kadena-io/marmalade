@@ -42,9 +42,9 @@
     ( token:object{token-info}
       seller:string
       amount:decimal
+      timeout:integer
       sale-id:string
     )
-    @doc "Capture quote spec for SALE of TOKEN from message"
     true
   )
 
@@ -58,6 +58,15 @@
     true
   )
 
+  (defun enforce-withdraw:bool
+    ( token:object{token-info}
+      seller:string
+      amount:decimal
+      timeout:integer
+      sale-id:string )
+    true
+  )
+
   (defun enforce-transfer:bool
     ( token:object{token-info}
       sender:string
@@ -67,11 +76,4 @@
     true
   )
 
-  (defun enforce-withdraw:bool
-    ( token:object{token-info}
-      seller:string
-      amount:decimal
-      sale-id:string )
-    true
-  )
 )

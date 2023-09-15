@@ -6,14 +6,10 @@ The `non-fungible-policy-v1` facilitates the creation and management of non-fung
 
 ## Specifications and Tables:
 
-
 **Policy functions**: Several functions that enforce specific rules for token-related actions.
 
-**Mint Guards Specification**: The `mint-guard-schema` is a schema designed to store information related to mint guards for non-fungible tokens.
-
-**Mint Guards Table**: A table, `mintguards`, is created to store the mint guard information for each non-fungible token (NFT), including the token ID and its associated mint guard. This table ensures proper authorization and control over the minting process, preserving the unique properties of the NFTs managed under the policy.
-
-
+**Capabilities**:
+ - `GOVERNANCE`: enforces access control of contract upgrade.
 
 ## Policy Functions
 

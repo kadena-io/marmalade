@@ -1,4 +1,4 @@
-codeFile: ../../kip/token-policy-v2.pact
+codeFile: ../kip/token-policy-v2.pact
 signers:
   - public: {{sender_key}}
 data:

@@ -1,4 +1,4 @@
-codeFile: ../../concrete-policies/collection-policy/collection-policy-v1.pact
+codeFile: ../concrete-policies/collection-policy/collection-policy-v1.pact
 signers:
   - public: {{sender_key}}
 data:

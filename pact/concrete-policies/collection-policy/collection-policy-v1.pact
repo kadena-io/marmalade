@@ -12,7 +12,7 @@
 
   (implements kip.token-policy-v2)
 
-  (use marmalade-v2.policy-manager)
+  (use policy-manager)
   (use kip.token-policy-v2 [token-info])
 
   (defschema collection

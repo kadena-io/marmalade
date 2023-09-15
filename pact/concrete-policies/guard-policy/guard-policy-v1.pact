@@ -10,7 +10,7 @@
 
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
-  (use marmalade-v2.policy-manager)
+  (use policy-manager)
 
   (defschema guards
     mint-guard:guard

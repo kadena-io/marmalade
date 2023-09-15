@@ -1,4 +1,4 @@
-codeFile: ../../policy-manager/manager-init.pact
+codeFile: ../policy-manager/manager-init.pact
 signers:
   - public: {{sender_key}}
 data:

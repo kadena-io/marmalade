@@ -2,8 +2,10 @@
 
 (module policy-manager GOVERNANCE
 
+  (defconst ADMIN-KS:string "marmalade-v2.marmalade-admin")
+
   (defcap GOVERNANCE ()
-    (enforce-guard "marmalade-v2.marmalade-admin"))
+    (enforce-guard ADMIN-KS))
 
   (implements policy-manager-v1)
   (use kip.token-policy-v2 [token-info])
@@ -114,7 +116,7 @@
 
   (defcap CONCRETE-POLICY:bool (policy-field:string policy:module{kip.token-policy-v2})
     @event
-    (enforce-guard GOVERNANCE-KS))
+    (enforce-guard ADMIN-KS))
 
   (deftable concrete-policies:{concrete-policy})
 

@@ -4,8 +4,10 @@
 
   @doc "Concrete policy to support royalty payouts in a specified fungible during sale."
 
+  (defconst ADMIN-KS:string "marmalade-v2.marmalade-admin")
+
   (defcap GOVERNANCE ()
-    (enforce-guard "marmalade-v2.marmalade-admin"))
+    (enforce-guard ADMIN-KS))
 
   (use policy-manager)
   (use policy-manager [QUOTE-MSG-KEY])

@@ -4,10 +4,10 @@
 
   @doc "Concrete policy for issuing an nft with a fixed supply of 1 and precision of 0"
 
-  (defconst GOVERNANCE-KS:string (+ (read-string 'ns) ".marmalade-admin"))
+  (defconst ADMIN-KS:string "marmalade-v2.marmalade-admin")
 
   (defcap GOVERNANCE ()
-    (enforce-guard GOVERNANCE-KS))
+    (enforce-guard ADMIN-KS))
 
   (implements kip.token-policy-v2)
   (use policy-manager)

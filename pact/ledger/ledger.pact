@@ -40,11 +40,11 @@
   ;; Capabilities
   ;;
 
-  (defconst GOVERNANCE-KS:string (+ (read-string 'ns) ".marmalade-admin"))
+  (defconst ADMIN-KS:string "marmalade-v2.marmalade-admin")
 
   (defcap GOVERNANCE ()
-    (enforce-guard GOVERNANCE-KS))
-
+    (enforce-guard ADMIN-KS))
+    
   ;;
   ;; poly-fungible-v3 caps
   ;;

@@ -7,10 +7,10 @@
   (use kip.token-policy-v2 [token-info])
   (use util.guards1)
 
-  (defconst GOVERNANCE-KS:string (+ (read-string 'ns) ".marmalade-admin"))
+  (defconst ADMIN-KS:string "marmalade-v2.marmalade-admin")
 
   (defcap GOVERNANCE ()
-    (enforce-guard GOVERNANCE-KS))
+    (enforce-guard ADMIN-KS))
 
   ; Saves reference to policy-manager
   (defschema policy-manager

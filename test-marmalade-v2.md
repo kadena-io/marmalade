@@ -27,6 +27,10 @@ To enable smooth migration from Marmalade V1 into Marmalade V2, V2 contracts on 
 - `marmalade-v2.non-fungible-policy-v1`
 - `marmalade-v2.guard-policy-v1`
 
+## Example Bidding Contract
+
+- `n_9dadddb8426ba2397433bf4e6a110dab4fccead6.basic-bidding-sale`
+
 ## Util
 
 - `marmalade-v2.util-v1`

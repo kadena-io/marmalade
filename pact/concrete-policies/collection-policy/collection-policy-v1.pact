@@ -5,8 +5,10 @@
 
   @doc "Collection token policy."
 
+  (defconst ADMIN-KS:string "marmalade-v2.marmalade-admin")
+
   (defcap GOVERNANCE ()
-    (enforce-guard "marmalade-v2.marmalade-admin"))
+    (enforce-guard ADMIN-KS))
 
   (implements kip.token-policy-v2)
 

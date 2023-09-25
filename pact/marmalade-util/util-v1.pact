@@ -5,8 +5,10 @@
   (use policy-manager)
   (use policy-manager [CONCRETE_POLICY_LIST NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
 
+  (defconst ADMIN-KS:string "marmalade-v2.marmalade-admin")
+
   (defcap GOVERNANCE ()
-    (enforce-guard "marmalade-v2.marmalade-admin"))
+    (enforce-guard ADMIN-KS))
 
   (defschema concrete-policy-bool
     non-fungible-policy:bool

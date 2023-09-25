@@ -4,36 +4,32 @@ To enable smooth migration from Marmalade V1 into Marmalade V2, V2 contracts on 
 
 ## Test Namespace and Chain
 
-- Namespace: `n_9dadddb8426ba2397433bf4e6a110dab4fccead6`
+- Namespace: `marmalade-v2`
 - Chain ID: `1`
 
 ## Interfaces
 
-- `n_9dadddb8426ba2397433bf4e6a110dab4fccead6.poly-fungible-v3`
-- `n_9dadddb8426ba2397433bf4e6a110dab4fccead6.token-policy-v2`
-- `n_9dadddb8426ba2397433bf4e6a110dab4fccead6.policy-manager-v1`
-- `n_9dadddb8426ba2397433bf4e6a110dab4fccead6.ledger-v1`
+- `marmalade-v2.poly-fungible-v3`
+- `marmalade-v2.token-policy-v2`
+- `marmalade-v2.policy-manager-v1`
+- `marmalade-v2.ledger-v1`
 
 ## Ledger, Policy Manager, Quote Manager
 
-- `n_9dadddb8426ba2397433bf4e6a110dab4fccead6.ledger`
-- `n_9dadddb8426ba2397433bf4e6a110dab4fccead6.policy-manager`
-- `n_9dadddb8426ba2397433bf4e6a110dab4fccead6.quote-manager`
+- `marmalade-v2.ledger`
+- `marmalade-v2.policy-manager`
+- `marmalade-v2.quote-manager`
 
 ## Concrete policies
 
-- `n_9dadddb8426ba2397433bf4e6a110dab4fccead6.collection-policy-v1`
-- `n_9dadddb8426ba2397433bf4e6a110dab4fccead6.royalty-policy-v1`
-- `n_9dadddb8426ba2397433bf4e6a110dab4fccead6.non-fungible-policy-v1`
-- `n_9dadddb8426ba2397433bf4e6a110dab4fccead6.guard-policy-v1`
-
-## Example Bidding Contract
-
-- `n_9dadddb8426ba2397433bf4e6a110dab4fccead6.basic-bidding-sale`
+- `marmalade-v2.collection-policy-v1`
+- `marmalade-v2.royalty-policy-v1`
+- `marmalade-v2.non-fungible-policy-v1`
+- `marmalade-v2.guard-policy-v1`
 
 ## Util
 
-- `n_9dadddb8426ba2397433bf4e6a110dab4fccead6.util-v1`
+- `marmalade-v2.util-v1`
 
 ## Docs
 

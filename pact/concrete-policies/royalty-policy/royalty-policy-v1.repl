@@ -201,7 +201,6 @@
   (env-data {
     "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ALWAYS-TRUE)
     ,"quote":{
-       "spec": {
          "fungible": marmalade-v2.def
          ,"price": 2.0
          ,"amount": 1.0
@@ -209,11 +208,9 @@
              "account": "k:creator"
             ,"guard": {"keys": ["creator"], "pred": "keys-all"}
            }
+       ,"sale-type": ""
        }
-       ,"seller-guard": {"keys": ["creator"], "pred": "keys-all"}
-       ,"quote-guards": []
-     }
-    })
+   })
 
   (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
   (env-sigs [
@@ -262,17 +259,14 @@
   (env-data {
     "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ALWAYS-TRUE)
     ,"quote":{
-       "spec": {
-         "fungible": coin
-         ,"price": 2.0
-         ,"amount": 1.0
-         ,"seller-fungible-account": {
-             "account": "k:creator"
-            ,"guard": {"keys": ["creator"], "pred": "keys-all"}
-           }
-       }
-       ,"seller-guard": {"keys": ["creator"], "pred": "keys-all"}
-       ,"quote-guards": []
+       "fungible": coin
+       ,"price": 2.0
+       ,"amount": 1.0
+       ,"seller-fungible-account": {
+           "account": "k:creator"
+          ,"guard": {"keys": ["creator"], "pred": "keys-all"}
+         }
+       ,"sale-type": ""
      }
     })
 
@@ -288,8 +282,7 @@
     (sale (read-msg 'token-id) "k:creator" 1.0 (to-timestamp (time "2023-07-22T11:26:35Z"))))
 
   (expect "offer events"
-   [ {"name": "marmalade-v2.quote-manager.QUOTE","params": ["0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM" "t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" {"amount": 1.0,"fungible": coin,"price": 2.0,"seller-fungible-account": {"account": "k:creator","guard": (at 'seller-guard (read-msg 'quote))}}]}
-     {"name": "marmalade-v2.quote-manager.QUOTE-GUARDS","params": ["0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM" "t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" (at 'seller-guard (read-msg 'quote)) []]}
+   [ {"name": "marmalade-v2.policy-manager.QUOTE","params": ["0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM" "t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" (read-msg 'quote) ]}
      {"name": "marmalade-v2.ledger.OFFER","params": ["t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" "k:creator" 1.0 1690025195]}
      {"name": "marmalade-v2.ledger.SALE","params": ["t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" "k:creator" 1.0 1690025195 "0HZ-zWbio-_Q0whoIO_BU2_tjLVm9rvZbc2ZxkbhWeM"]}
      {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" "c:0-3xXARaPTprNrOOHGoO8tEh-ADvWDHskO-2sXZ4eRg" (account-guard "t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" "c:0-3xXARaPTprNrOOHGoO8tEh-ADvWDHskO-2sXZ4eRg")]}
@@ -303,6 +296,7 @@
     "buyer": "k:buyer"
    ,"buyer_fungible_account": "k:buyer"
    ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
+   ,"token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ALWAYS-TRUE)
    })
 
   (env-sigs
@@ -365,19 +359,16 @@
   (env-data {
     "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ALWAYS-TRUE)
     ,"quote":{
-       "spec": {
-         "fungible": coin
-         ,"price": 2.0
-         ,"amount": 1.0
-         ,"seller-fungible-account": {
-             "account": "k:buyer"
-            ,"guard": {"keys": ["buyer"], "pred": "keys-all"}
-           }
-       }
-       ,"seller-guard": {"keys": ["buyer"], "pred": "keys-all"}
-       ,"quote-guards": []
+       "fungible": coin
+       ,"price": 2.0
+       ,"amount": 1.0
+       ,"seller-fungible-account": {
+           "account": "k:buyer"
+          ,"guard": {"keys": ["buyer"], "pred": "keys-all"}
+         }
+       ,"sale-type": ""
      }
-    })
+  })
 
   (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
   (env-sigs [
@@ -391,8 +382,7 @@
     (sale (read-msg 'token-id) "k:buyer" 1.0 (to-timestamp (time "2023-07-22T11:26:35Z"))))
 
   (expect "offer events"
-    [ {"name": "marmalade-v2.quote-manager.QUOTE","params": ["2L8Q_bSe63oTP32EVXFxNoNtR7BWcUMmmtMmOkI1GyU" "t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" {"amount": 1.0,"fungible": coin,"price": 2.0,"seller-fungible-account": {"account": "k:buyer","guard": (at 'seller-guard (read-msg 'quote))}}]}
-      {"name": "marmalade-v2.quote-manager.QUOTE-GUARDS","params": ["2L8Q_bSe63oTP32EVXFxNoNtR7BWcUMmmtMmOkI1GyU" "t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" (at 'seller-guard (read-msg 'quote)) []]}
+    [ {"name": "marmalade-v2.policy-manager.QUOTE","params": ["2L8Q_bSe63oTP32EVXFxNoNtR7BWcUMmmtMmOkI1GyU" "t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" (read-msg 'quote)]}
       {"name": "marmalade-v2.ledger.OFFER","params": ["t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" "k:buyer" 1.0 1690025195]}
       {"name": "marmalade-v2.ledger.SALE","params": ["t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" "k:buyer" 1.0 1690025195 "2L8Q_bSe63oTP32EVXFxNoNtR7BWcUMmmtMmOkI1GyU"]}
       {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" "c:WkjYGRQKZsGJEvaQovu3B6V1VC9LBTtMRVMXm9l9IiI" (account-guard "t:xagtuzvBhb2cixbyeLMFuhRCbs8QWkyX28L71FlXhoA" "c:WkjYGRQKZsGJEvaQovu3B6V1VC9LBTtMRVMXm9l9IiI")]}

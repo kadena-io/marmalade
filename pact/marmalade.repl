@@ -47,10 +47,8 @@
    , 'marmalade-ns-admin: ["marmalade-admin"]
    , 'ns: "marmalade-v2"
    , 'upgrade: false })
-  (load "./policy-manager/policy-manager.interface.pact")
   (load "./ledger/ledger.interface.pact")
-  (load "./quote-manager/quote-manager.pact")
-
+  (load "./policy-manager/sale.interface.pact")
   (load "./policy-manager/policy-manager.pact")
   (load "./ledger/ledger.pact")
   (load "./marmalade-util/util-v1.pact")

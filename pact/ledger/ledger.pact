@@ -44,7 +44,7 @@
 
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
-    
+
   ;;
   ;; poly-fungible-v3 caps
   ;;
@@ -88,9 +88,14 @@
     @event true
   )
 
+  (defcap CREATE-TOKEN:bool (id:string creation-guard:guard)
+    (enforce-guard creation-guard)
+    true
+  )
+
   (defcap TOKEN:bool (id:string precision:integer policies:[module{kip.token-policy-v2}] uri:string creation-guard:guard)
     @event
-    (enforce-guard creation-guard)
+    true
   )
 
   (defcap RECONCILE:bool
@@ -238,7 +243,7 @@
       (policy-manager.enforce-init
         { 'id: id, 'supply: 0.0, 'precision: precision, 'uri: uri,  'policies: policies})
     )
-    (with-capability (TOKEN id precision policies uri creation-guard)
+    (with-capability (CREATE-TOKEN id creation-guard)
       (insert tokens id {
         "id": id,
         "uri": uri,
@@ -246,7 +251,7 @@
         "supply": 0.0,
         "policies": policies
       })
-      true
+      (emit-event (TOKEN id precision policies uri creation-guard))
     )
   )
 

@@ -10,9 +10,8 @@
     (enforce-guard ADMIN-KS))
 
   (use policy-manager)
-  (use policy-manager [QUOTE-MSG-KEY])
-  (use quote-manager)
-  (use quote-manager [quote-spec quote-schema])
+  (use policy-manager [QUOTE-MSG-KEY quote-schema])
+
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
 
@@ -110,8 +109,7 @@
     (bind (get-royalty token)
       { 'fungible := fungible:module{fungible-v2} }
       (let* (
-          (quote:object{quote-msg} (read-msg QUOTE-MSG-KEY))
-          (quote-spec:object{quote-spec} (at 'spec quote)) )
+          (quote-spec:object{quote-schema} (read-msg QUOTE-MSG-KEY)) )
         (enforce (= fungible (at 'fungible quote-spec)) (format "Offer is restricted to sale using fungible: {}" [fungible]))
       )
     )
@@ -131,14 +129,12 @@
       , 'creator:= creator:string
       , 'royalty-rate:= royalty-rate:decimal
       }
-      (let* ( (quote:object{quote-schema} (get-quote-info sale-id))
-              (spec:object{quote-spec} (at 'spec quote))
-              (price:decimal (at 'price spec))
+      (let* ( (quote-spec:object{quote-schema} (get-quote-info sale-id))
+              (price:decimal (at 'price quote-spec))
               (sale-price:decimal (* amount price))
               (escrow-account:string (at 'account (get-escrow-account sale-id)))
               (royalty-payout:decimal
                  (floor (* sale-price royalty-rate) (fungible::precision))))
-        (enforce (= (at 'token-id quote) (at 'id token)) "incorrect sale token")
         (if
           (> royalty-payout 0.0)
           (let ((_ ""))

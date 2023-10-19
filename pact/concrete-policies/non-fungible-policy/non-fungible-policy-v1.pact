@@ -4,7 +4,7 @@
 
   @doc "Concrete policy for issuing an nft with a fixed supply of 1 and precision of 0"
 
-  (defconst ADMIN-KS:string "marmalade-v2.marmalade-admin")
+  (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
 
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))

@@ -9,14 +9,13 @@
   (load "./root/gas-payer-v1.pact")
   (env-exec-config ["DisablePact44"])
   (load "./root/ns.pact")
-  (define-namespace 'kip (sig-keyset) (sig-keyset))
+  (env-exec-config [])
+
+ (define-namespace 'kip (sig-keyset) (sig-keyset))
 
   (load "./kip/account-protocols-v1.pact")
   (env-data
-  { 'marmalade-admin: ["marmalade-admin"]
-  , 'marmalade-ns-user: ["marmalade-admin"]
-  , 'marmalade-ns-admin: ["marmalade-admin"]
-  , 'ns: "kip"
+  { 'ns: "kip"
   , 'upgrade: false })
 
   (load "./kip/manifest.pact")
@@ -31,22 +30,26 @@
 (begin-tx)
   (env-data
    { 'marmalade-admin: ["marmalade-admin"]
-   , "marmalade-v2.marmalade-admin": ["marmalade-admin"]
-   , 'marmalade-ns-user: ["marmalade-admin"]
-   , 'marmalade-ns-admin: ["marmalade-admin"]
+   , 'marmalade-user: ["marmalade-user"]
    , 'ns: "marmalade-v2"
    , 'upgrade: false })
    (env-sigs [
      { 'key: 'marmalade-admin
       ,'caps: []
       }])
-  (load "./ns-marmalade.pact")
+  (load "./marmalade-ns/ns-marmalade.pact")
   (env-data
-   { 'marmalade-admin: ["marmalade-admin"]
-   , 'marmalade-ns-user: ["marmalade-admin"]
-   , 'marmalade-ns-admin: ["marmalade-admin"]
+   { "marmalade-v2.marmalade-contract-admin": ["marmalade-contract-admin"]
    , 'ns: "marmalade-v2"
    , 'upgrade: false })
+   (env-sigs [
+     { 'key: 'marmalade-user
+      ,'caps: []
+     }, {
+       'key: 'marmalade-contract-admin
+      ,'caps: []
+      }])
+  (load "./marmalade-ns/ns-contract-admin.pact")
   (load "./ledger/ledger.interface.pact")
   (load "./policy-manager/sale.interface.pact")
   (load "./policy-manager/policy-manager.pact")

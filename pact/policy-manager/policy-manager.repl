@@ -126,7 +126,7 @@
     })
 
   (expect-failure "enforce-init cannot be called directly"
-    "require-capability (ledger::I...: Failure: require-capability: not granted: (marmalade-v2.ledger.INIT-CALL "
+    "(require-capability (ledger::I...: Failure: Tx Failed: require-capability: not granted: (marmalade-v2.ledger.INIT-CALL \"t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA\" 0 \"default-test-uri\")"
     (enforce-init {
       "id": (create-token-id { 'uri: "default-test-uri", 'precision: 0, 'policies: [] } ALWAYS-TRUE)
      ,"supply": 0.0
@@ -166,7 +166,7 @@
     ]}])
 
    (expect-failure "enforce-mint cannot be called directly"
-     "(require-capability (ledger::M...: Failure: require-capability: not granted: (marmalade-v2.ledger.MINT-CALL "
+     "(require-capability (ledger::M...: Failure: Tx Failed: require-capability: not granted: (marmalade-v2.ledger.MINT-CALL \"t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA\" \"k:account\" 1.0)"
      (enforce-mint (get-token-info "t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA") (read-string 'account) (read-keyset 'account-guard ) 1.0)
    )
 
@@ -195,7 +195,7 @@
   }])
 
 (expect-failure "enforce-burn cannot be called directly"
- "(require-capability (ledger::B...: Failure: require-capability: not granted: (marmalade-v2.ledger.BURN-CALL"
+ "require-capability (ledger::B...: Failure: Tx Failed: require-capability: not granted: (marmalade-v2.ledger.BURN-CALL \"t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA\" \"k:account\" 1.0)"
  (enforce-burn (get-token-info "t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA") (read-string 'account) 1.0)
 )
 
@@ -225,7 +225,7 @@
     }])
 
   (expect-failure "enforce-offer cannot be called directly"
-    "(require-capability (ledger::O...: Failure: require-capability: not granted: (marmalade-v2.ledger.OFFER-CALL"
+    "(marmalade-v2.ledger.OFFER-CALL \"t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA\" \"k:account\" 1.0 0 \"void-sale-id\")"
     (enforce-offer (get-token-info (read-string "token-id")) (read-string 'seller) 1.0 0 "void-sale-id")
   )
 
@@ -257,7 +257,7 @@
   })
 
   (expect-failure "enforce-buy cannot be called directly"
-   "(require-capability (ledger::B...: Failure: require-capability: not granted: (marmalade-v2.ledger.BUY-CALL"
+   "(marmalade-v2.ledger.BUY-CALL \"t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA\" \"k:account\" \"k:buyer\" 1.0 \"y9iTTBsSq56yIgmJexCyOX3DSFVe0CwQs4K0jISRAdM\")"
    (enforce-buy (get-token-info (read-string 'token-id )) (read-string 'seller ) (read-string 'buyer ) (read-keyset 'buyer-guard ) 1.0 (pact-id)))
 
   (expect "Buy succeeds"
@@ -323,7 +323,7 @@
     }])
 
   (expect-failure "enforce-withdraw cannot be called directly"
-    "(require-capability (ledger::W...: Failure: require-capability: not granted: (marmalade-v2.ledger.WITHDRAW-CALL"
+    "(marmalade-v2.ledger.WITHDRAW-CALL \"t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA\" \"k:account\" 1.0 0 \"i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY\")"
     (enforce-withdraw (get-token-info (read-string 'token-id )) (read-string 'seller ) 1.0 0 (pact-id) ))
 
   (expect "Withdraw succeeds"

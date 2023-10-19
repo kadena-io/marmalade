@@ -2,7 +2,7 @@
 
 (module policy-manager GOVERNANCE
 
-  (defconst ADMIN-KS:string "marmalade-v2.marmalade-admin")
+  (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
 
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
@@ -101,12 +101,12 @@
   )
 
 
-  (defcap UPDATE-QUOTE-PRICE:bool (token-id:string sale-id:string sale-type:string updated_price:decimal)
+  (defcap UPDATE-QUOTE-PRICE:bool (token-id:string sale-id:string sale-type:string updated-price:decimal)
     @doc "Enforces sale-guard on update-quote-price"
-    (enforce (> updated_price 0.0) "quote price must be positive")
-    (compose-capability (SALE-GUARD-CALL sale-id updated_price))
+    (enforce (> updated-price 0.0) "QUOTE price must be positive")
+    (compose-capability (SALE-GUARD-CALL sale-id updated-price))
     (let ((sale-contract:module{sale-v1} (retrieve-sale sale-type)))
-      (enforce-guard (sale-contract::sale-guard sale-id updated_price)))
+      (sale-contract::enforce-quote-update sale-id updated-price))
   )
 
   (defun get-escrow-account:object{fungible-account} (sale-id:string)
@@ -129,7 +129,7 @@
 
   (deftable sale-whitelist:{sale-contract})
 
-  (defcap SALE-WHITELIST:bool (sale-contract:module{sale-v1})
+  (defcap SALE-WHITELIST:bool(sale-contract-key:string)
     @event
     (enforce-guard ADMIN-KS)
   )
@@ -137,7 +137,7 @@
   (defun add-sale-whitelist:bool (sale-contract:module{sale-v1})
     @doc "Adds quote-guard to quote-guard-whitelist list"
     (let ((sale-key (format "{}" [sale-contract])))
-      (with-capability (SALE-WHITELIST sale-contract)
+      (with-capability (SALE-WHITELIST sale-key)
         (insert sale-whitelist sale-key
           { 'sale-contract: sale-contract }
     )))
@@ -261,6 +261,7 @@
           (fungible:module{fungible-v2} (at 'fungible quote-spec))
           (escrow-account:object{fungible-account} (get-escrow-account sale-id))
         )
+        (enforce (= (at 'amount quote-spec) amount) "QUOTE amount must match OFFER amount")
         (validate-quote quote-spec)
         (insert quotes sale-id quote-spec) ;; void sale type
         (fungible::create-account (at 'account escrow-account) (at 'guard escrow-account))

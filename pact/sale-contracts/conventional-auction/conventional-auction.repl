@@ -11,7 +11,7 @@
       'key: 'marmalade-contract-admin
     ,'caps: []
     }])
-  (load "conventional.pact")
+  (load "conventional-auction.pact")
   (marmalade-v2.policy-manager.add-sale-whitelist marmalade-v2.conventional-auction)
 (commit-tx)
 
@@ -67,8 +67,7 @@
     "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
     ,"quote":{
       "fungible": coin
-      ,"price": 0.0
-      ,"amount": 1.0
+      ,"sale-price": 0.0
       ,"seller-fungible-account": {
           "account": "k:creator"
         ,"guard": {"keys": ["creator"], "pred": "keys-all"}
@@ -113,10 +112,10 @@
     (create-auction (read-string "sale-id") (read-string "token1-id") 1696204800 1696204700 50.0)
   )
 
-  ; (env-sigs [
-  ;   { 'key: 'imr-admin
-  ;    ,'caps: []
-  ;    }])
+  (env-sigs [
+   { 'key: 'creator
+    ,'caps: [(MANAGE_AUCTION (read-msg 'sale-id) (read-msg 'token1-id))]
+    }])
 
   (expect "Create a conventional auction"
     true
@@ -154,16 +153,16 @@
    ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
    ,'imr-admin: ["imr-admin"]
   })
-  ; (env-sigs [])
-  ; (expect-failure "Update auction without Governance key fails"
-  ;   "Keyset failure"
-  ;   (update-auction (read-string "sale-id") 1696809600 1697328000 50.0)
-  ; )
-  ; (env-sigs [
-  ;   { 'key: 'imr-admin
-  ;    ,'caps: []
-  ;    }
-  ; ])
+  (env-sigs [])
+  (expect-failure "Update auction without rights fails"
+    "Keyset failure"
+    (update-auction (read-string "sale-id") 1696809600 1697328000 50.0)
+  )
+  (env-sigs [
+    { 'key: 'creator
+     ,'caps: [(MANAGE_AUCTION (read-msg 'sale-id) (read-msg 'token1-id))]
+     }
+  ])
   (expect "Update auction succeeds"
     "Write succeeded"
     (update-auction (read-string "sale-id") 1696809600 1697328000 80.0)

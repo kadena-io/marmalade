@@ -40,6 +40,14 @@
     true
   )
 
+  (defcap MANAGE_AUCTION:bool (sale-id:string token-id:string)
+    (let* (
+      (quote-info:object{quote-schema} (get-quote-info sale-id))
+      (seller:string (at 'seller quote-info)))
+      (enforce-guard (marmalade-v2.ledger.account-guard token-id seller))
+    )
+  )
+
   (defcap BID_PLACED:bool
     ( bid-id:string
       bidder:string
@@ -54,11 +62,6 @@
 
   (defcap PLACE_BID:bool (bidder-guard:guard)
     (enforce-guard bidder-guard)
-  )
-
-  (defcap MANAGE_AUCTION:bool ()
-    ; TODO: implement
-    true
   )
 
   (defcap REFUND_CAP:bool (sale-id:string) true)
@@ -118,9 +121,14 @@
     (enforce (> start-date (curr-time)) "Start date must be in the future")
     (enforce (> end-date start-date) "End date must be after start date")
     (enforce (> reserve-price 0.0) "Reserve price must be greater than 0")
-    ; TODO: validate price in ledger offer = 0
+    (let (
+      (quote-info:object{quote-schema} (get-quote-info sale-id)))
 
-    (with-capability (MANAGE_AUCTION)
+      (enforce (= (at 'sale-price quote-info) 0.0) "Quote price must be 0")
+      (enforce (= token-id (at 'token-id quote-info)) "Token-id does not match quote token-id")
+    )
+
+    (with-capability (MANAGE_AUCTION sale-id token-id)
       (insert auctions sale-id {
         "token-id": token-id
         ,"start-date": start-date
@@ -142,7 +150,8 @@
     (enforce (> start-date (curr-time)) "Start date must be in the future")
     (enforce (> end-date start-date) "End date must be after start date")
     (enforce (> reserve-price 0.0) "Reserve price must be greater than 0")
-    (with-capability (MANAGE_AUCTION)
+
+    (with-capability (MANAGE_AUCTION sale-id (at 'token-id (read auctions sale-id)))
       (update auctions sale-id {
         "start-date": start-date
         ,"end-date": end-date

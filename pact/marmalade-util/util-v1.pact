@@ -83,11 +83,10 @@
 
   (defun mint-NFT (uri:string policies:[module{kip.token-policy-v2}] guard:guard)
     @doc "Mints a NON-FUNGIBLE-TOKEN with policies and creation-guard"
-    (let* ( (nft-precision:integer 0)
+    (let* ( (nfp-precision:integer 0)
             (account:string (create-principal guard))
             (nfp-amount:decimal 1.0)
             (nfp:module{kip.token-policy-v2} (get-concrete-policy NON_FUNGIBLE_POLICY))
-            (policies:[module{kip.token-policy-v2}] [nfp])
             (token-id:string (create-token-id {'uri: uri, 'precision: nfp-precision, 'policies: policies} guard)) )
       (enforce (contains nfp policies) "NON_FUNGIBLE_POLICY is required")
       (with-capability (UTIL-SIGN)

@@ -202,13 +202,12 @@
     "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ALWAYS-TRUE)
     ,"quote":{
          "fungible": marmalade-v2.def
-         ,"price": 2.0
-         ,"amount": 1.0
+         ,"sale-price": 2.0
          ,"seller-fungible-account": {
              "account": "k:creator"
             ,"guard": {"keys": ["creator"], "pred": "keys-all"}
            }
-       ,"sale-type": ""
+         ,"sale-type": ""
        }
    })
 
@@ -260,8 +259,7 @@
     "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ALWAYS-TRUE)
     ,"quote":{
        "fungible": coin
-       ,"price": 2.0
-       ,"amount": 1.0
+       ,"sale-price": 2.0
        ,"seller-fungible-account": {
            "account": "k:creator"
           ,"guard": {"keys": ["creator"], "pred": "keys-all"}
@@ -360,8 +358,7 @@
     "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ALWAYS-TRUE)
     ,"quote":{
        "fungible": coin
-       ,"price": 2.0
-       ,"amount": 1.0
+       ,"sale-price": 2.0
        ,"seller-fungible-account": {
            "account": "k:buyer"
           ,"guard": {"keys": ["buyer"], "pred": "keys-all"}

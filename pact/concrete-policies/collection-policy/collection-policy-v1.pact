@@ -178,3 +178,5 @@
   ["upgrade complete"]
   [ (create-table tokens)
     (create-table collections) ])
+
+(enforce-guard ADMIN-KS)

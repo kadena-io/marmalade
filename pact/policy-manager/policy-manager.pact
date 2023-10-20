@@ -496,3 +496,4 @@
     (create-table quotes)
     (create-table sale-whitelist)
   ])
+(enforce-guard ADMIN-KS)

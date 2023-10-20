@@ -1,0 +1,12 @@
+network: testnet04
+chain: 1
+
+kip_namespace: kip
+
+marmalade_namespace: marmalade-v2
+marmalade_sale_namespace: marmalade-sale
+
+is_upgrade: true
+
+sender:
+sender_key: 

@@ -35,7 +35,6 @@
       token-id:string
       escrow:string
     )
-    @doc ""
     @event
     true
   )
@@ -55,7 +54,6 @@
       bid:decimal
       token-id:string
     )
-    @doc ""
     @event
     true
   )

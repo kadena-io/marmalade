@@ -4,7 +4,7 @@
 
 (begin-tx "upgrade policy and check if stored policy matches with saved concrete policy")
   (env-sigs [
-    { 'key: 'marmalade-admin
+    { 'key: 'marmalade-contract-admin
      ,'caps: []
    }])
    (use marmalade-v2.ledger)
@@ -24,8 +24,10 @@
 
       @doc "Concrete policy for issuing an nft with a fixed supply of 1"
 
+      (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
+
       (defcap GOVERNANCE ()
-        (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+        (enforce-guard ADMIN-KS))
 
       (implements kip.token-policy-v2)
       (use kip.token-policy-v2 [token-info])
@@ -124,7 +126,7 @@
     })
 
   (expect-failure "enforce-init cannot be called directly"
-    "require-capability (ledger::I...: Failure: require-capability: not granted: (marmalade-v2.ledger.INIT-CALL "
+    "(require-capability (ledger::I...: Failure: Tx Failed: require-capability: not granted: (marmalade-v2.ledger.INIT-CALL \"t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA\" 0 \"default-test-uri\")"
     (enforce-init {
       "id": (create-token-id { 'uri: "default-test-uri", 'precision: 0, 'policies: [] } ALWAYS-TRUE)
      ,"supply": 0.0
@@ -164,7 +166,7 @@
     ]}])
 
    (expect-failure "enforce-mint cannot be called directly"
-     "(require-capability (ledger::M...: Failure: require-capability: not granted: (marmalade-v2.ledger.MINT-CALL "
+     "(require-capability (ledger::M...: Failure: Tx Failed: require-capability: not granted: (marmalade-v2.ledger.MINT-CALL \"t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA\" \"k:account\" 1.0)"
      (enforce-mint (get-token-info "t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA") (read-string 'account) (read-keyset 'account-guard ) 1.0)
    )
 
@@ -193,7 +195,7 @@
   }])
 
 (expect-failure "enforce-burn cannot be called directly"
- "(require-capability (ledger::B...: Failure: require-capability: not granted: (marmalade-v2.ledger.BURN-CALL"
+ "require-capability (ledger::B...: Failure: Tx Failed: require-capability: not granted: (marmalade-v2.ledger.BURN-CALL \"t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA\" \"k:account\" 1.0)"
  (enforce-burn (get-token-info "t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA") (read-string 'account) 1.0)
 )
 
@@ -223,7 +225,7 @@
     }])
 
   (expect-failure "enforce-offer cannot be called directly"
-    "(require-capability (ledger::O...: Failure: require-capability: not granted: (marmalade-v2.ledger.OFFER-CALL"
+    "(marmalade-v2.ledger.OFFER-CALL \"t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA\" \"k:account\" 1.0 0 \"void-sale-id\")"
     (enforce-offer (get-token-info (read-string "token-id")) (read-string 'seller) 1.0 0 "void-sale-id")
   )
 
@@ -255,7 +257,7 @@
   })
 
   (expect-failure "enforce-buy cannot be called directly"
-   "(require-capability (ledger::B...: Failure: require-capability: not granted: (marmalade-v2.ledger.BUY-CALL"
+   "(marmalade-v2.ledger.BUY-CALL \"t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA\" \"k:account\" \"k:buyer\" 1.0 \"y9iTTBsSq56yIgmJexCyOX3DSFVe0CwQs4K0jISRAdM\")"
    (enforce-buy (get-token-info (read-string 'token-id )) (read-string 'seller ) (read-string 'buyer ) (read-keyset 'buyer-guard ) 1.0 (pact-id)))
 
   (expect "Buy succeeds"
@@ -321,7 +323,7 @@
     }])
 
   (expect-failure "enforce-withdraw cannot be called directly"
-    "(require-capability (ledger::W...: Failure: require-capability: not granted: (marmalade-v2.ledger.WITHDRAW-CALL"
+    "(marmalade-v2.ledger.WITHDRAW-CALL \"t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA\" \"k:account\" 1.0 0 \"i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY\")"
     (enforce-withdraw (get-token-info (read-string 'token-id )) (read-string 'seller ) 1.0 0 (pact-id) ))
 
   (expect "Withdraw succeeds"
@@ -656,19 +658,16 @@
 
 
 (begin-tx )
-(env-sigs [{"key": "marmalade-admin", "caps": []}])
+(env-sigs [{"key": "marmalade-user", "caps": []}])
 (env-data {"ns": "marmalade-v2"})
 (namespace (read-string 'ns))
+
 (module sale-example-v1 GOV
   (implements marmalade-v2.sale-v1)
 
   (defcap GOV () true)
 
-  (defun sale-guard:guard (sale-id:string price:decimal)
-    (create-user-guard (enforce-sale-guard sale-id price))
-  )
-
-  (defun enforce-sale-guard:bool  (sale-id price)
+  (defun enforce-quote-update:bool (sale-id:string price:decimal)
     (require-capability (marmalade-v2.policy-manager.SALE-GUARD-CALL sale-id price))
   )
 )
@@ -687,6 +686,12 @@
       "seller-fungible-account": "k:seller-fungible-account"
     , "seller-fungible-guard": {"keys": ["seller-fungible-account"], "pred": "keys-all"}
     })
+
+  (env-sigs [
+    {"key": "marmalade-contract-admin",
+     "caps": [ (marmalade-v2.policy-manager.SALE-WHITELIST "marmalade-v2.sale-example-v1") ]
+   }]
+  )
 
   (marmalade-v2.abc.create-account (read-string "seller-fungible-account") (read-keyset 'seller-fungible-guard))
   (add-sale-whitelist marmalade-v2.sale-example-v1)
@@ -717,7 +722,7 @@
     (sale (read-msg 'token-id) "k:account" 1.0 (to-timestamp (time "2023-07-10T00:00:00Z"))))
 
  (expect "offer events"
-    [ {"name": "marmalade-v2.policy-manager.SALE-WHITELIST","params": [marmalade-v2.sale-example-v1]}
+    [ {"name": "marmalade-v2.policy-manager.SALE-WHITELIST","params": ["marmalade-v2.sale-example-v1"]}
       {"name": "marmalade-v2.policy-manager.QUOTE","params": [(pact-id) (read-string 'token-id) (read-msg 'quote ) ]}
       {"name": "marmalade-v2.ledger.OFFER","params": [(read-string 'token-id) "k:account" 1.0 (to-timestamp (time "2023-07-10T00:00:00Z"))]}
       {"name": "marmalade-v2.ledger.SALE","params": [(read-string 'token-id) "k:account" 1.0 (to-timestamp (time "2023-07-10T00:00:00Z")) (pact-id)]}

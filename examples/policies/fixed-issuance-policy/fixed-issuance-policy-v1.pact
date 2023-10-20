@@ -4,8 +4,10 @@
 
   @doc "Policy for minting with a fixed issuance"
 
+  (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
+
   (defcap GOVERNANCE ()
-    (enforce-guard "marmalade-v2.marmalade-admin"))
+    (enforce-guard ADMIN-KS))
 
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
@@ -62,7 +64,10 @@
       , 'max-supply:=max-supply:decimal
       }
       (enforce (>= amount min-amount) "mint amount < min-amount")
-      (enforce (<= (+ amount (at 'supply token)) max-supply) "Exceeds max supply")
+      (if (> 0.0 max-supply)
+        (enforce (<= (+ amount (at 'supply token)) max-supply) "Exceeds max supply")
+        true
+      )
   ))
 
   (defun enforce-burn:bool
@@ -70,7 +75,7 @@
       account:string
       amount:decimal
     )
-    (enforce false "Burn prohibited")
+    true
   )
 
   (defun enforce-offer:bool

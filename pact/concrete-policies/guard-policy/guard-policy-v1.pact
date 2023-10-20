@@ -1,14 +1,16 @@
 
-(namespace (read-msg 'ns))
+(namespace (read-string 'ns))
 
 (module guard-policy-v1 GOVERNANCE
 
+  (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
+
   (defcap GOVERNANCE ()
-    (enforce-guard "marmalade-v2.marmalade-admin"))
+    (enforce-guard ADMIN-KS))
 
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
-  (use marmalade-v2.policy-manager)
+  (use policy-manager)
 
   (defschema guards
     mint-guard:guard

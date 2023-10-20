@@ -1,38 +1,63 @@
-(namespace (read-msg 'ns))
+(namespace (read-string 'ns))
 
 (module policy-manager GOVERNANCE
 
-  (defcap GOVERNANCE ()
-    (enforce-guard "marmalade-v2.marmalade-admin"))
+  (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
 
-  (implements marmalade-v2.policy-manager-v1)
+  (defcap GOVERNANCE ()
+    (enforce-guard ADMIN-KS))
+
   (use kip.token-policy-v2 [token-info])
   (use util.fungible-util)
-  (use marmalade-v2.ledger-v1)
-  (use marmalade-v2.quote-manager)
-  (use marmalade-v2.quote-manager [quote-spec quote-msg fungible-account])
+  (use ledger-v1)
+
+  (defun init:bool(ledger:module{ledger-v1})
+    @doc "Must be initiated with ledger implementation"
+    (with-capability (GOVERNANCE)
+      (insert ledgers "" {
+        "ledger-impl": ledger
+      })
+    )
+    true
+  )
+
+  (defschema quote-schema
+    @doc "Quote spec of the sale"
+    fungible:module{fungible-v2}
+    seller-fungible-account:object{fungible-account}
+    price:decimal
+    amount:decimal
+    sale-type:string
+  )
+
+  (defschema fungible-account
+    @doc "account and guard information of a fungible"
+    account:string
+    guard:guard
+  )
+
+  (defcap QUOTE:bool
+    ( sale-id:string
+      token-id:string
+      spec:object{quote-schema}
+    )
+    @event
+    true
+  )
+
+  (deftable quotes:{quote-schema})
 
   (defconst QUOTE-MSG-KEY:string "quote"
     @doc "Payload field for quote spec")
 
-  (defconst BUYER-FUNGIBLE-ACCOUNT-MSG-KEY "buyer_fungible_account"
+  (defconst BUYER-FUNGIBLE-ACCOUNT-MSG-KEY:string "buyer_fungible_account"
     @doc "Payload field for buyer's fungible account")
+
+  (defconst UPDATED-PRICE-KEY:string "updated_price"
+    @doc "Payload field for updated price")
 
   (defcap ESCROW (sale-id:string)
     @doc "Capability to be used as escrow's capability guard"
-    true
-  )
-
-  (defcap MAP-ESCROWED-BUY:bool (
-    sale-id:string
-    token:object{token-info}
-    seller:string
-    buyer:string
-    buyer-guard:guard
-    amount:decimal
-    policies:[module{kip.token-policy-v2}]
-  )
-    @doc "Capability to grant internal access to the map-escrowed-buy function"
     true
   )
 
@@ -67,16 +92,21 @@
     true
   )
 
-  (defcap ADD-QUOTE-CALL:bool (sale-id:string token-id:string price:decimal)
+  (defcap SALE-GUARD-CALL:bool (sale-id:string price:decimal)
     true
   )
 
-  (defcap CLOSE-QUOTE-CALL:bool (sale-id:string)
+  (defcap FUNGIBLE-TRANSFER-CALL:bool (id:string)
     true
   )
 
-  (defcap UPDATE-QUOTE-PRICE-CALL:bool (sale-id:string price:decimal buyer:string)
-    true
+
+  (defcap UPDATE-QUOTE-PRICE:bool (token-id:string sale-id:string sale-type:string updated-price:decimal)
+    @doc "Enforces sale-guard on update-quote-price"
+    (enforce (> updated-price 0.0) "QUOTE price must be positive")
+    (compose-capability (SALE-GUARD-CALL sale-id updated-price))
+    (let ((sale-contract:module{sale-v1} (retrieve-sale sale-type)))
+      (sale-contract::enforce-quote-update sale-id updated-price))
   )
 
   (defun get-escrow-account:object{fungible-account} (sale-id:string)
@@ -92,18 +122,25 @@
   (deftable ledgers:{ledger}
     @doc "Singleton table for ledger reference storage")
 
-  (defun retrieve-ledger:module{ledger-v1} ()
-    @doc "Retrieves the ledger implementation"
-    (at 'ledger-impl (read ledgers ""))
+  ;; Saves Sale Logic
+  (defschema sale-contract
+    sale-contract:module{sale-v1}
   )
 
-  (defun init:bool(ledger:module{ledger-v1})
-    @doc "Must be initiated with ledger implementation"
-    (with-capability (GOVERNANCE)
-      (insert ledgers "" {
-        "ledger-impl": ledger
-      })
-    )
+  (deftable sale-whitelist:{sale-contract})
+
+  (defcap SALE-WHITELIST:bool(sale-contract-key:string)
+    @event
+    (enforce-guard ADMIN-KS)
+  )
+
+  (defun add-sale-whitelist:bool (sale-contract:module{sale-v1})
+    @doc "Adds quote-guard to quote-guard-whitelist list"
+    (let ((sale-key (format "{}" [sale-contract])))
+      (with-capability (SALE-WHITELIST sale-key)
+        (insert sale-whitelist sale-key
+          { 'sale-contract: sale-contract }
+    )))
     true
   )
 
@@ -112,12 +149,11 @@
     policy:module{kip.token-policy-v2}
   )
 
+  (deftable concrete-policies:{concrete-policy})
+
   (defcap CONCRETE-POLICY:bool (policy-field:string policy:module{kip.token-policy-v2})
     @event
-    (enforce-guard "marmalade-v2.marmalade-admin")
-  )
-
-  (deftable concrete-policies:{concrete-policy})
+    (enforce-guard ADMIN-KS))
 
   (defconst NON_FUNGIBLE_POLICY:string 'non-fungible-policy )
   (defconst ROYALTY_POLICY:string 'royalty-policy )
@@ -136,36 +172,22 @@
     true)
   )
 
-  (defun get-concrete-policy:module{kip.token-policy-v2} (policy-field:string)
-    (with-read concrete-policies policy-field {
-      "policy":= policy
-      }
-      policy)
-  )
-
   ; Capbilities to guard internal functions
 
-  (defcap OFFER:bool
-    ( sale-id:string
-    )
+  (defcap OFFER:bool (sale-id:string)
     @doc "Capability to grant internal transaction inside OFFER"
     true
   )
 
-  (defcap BUY:bool
-    ( sale-id:string
-    )
+  (defcap BUY:bool (sale-id:string)
     @doc "Capability to grant internal transaction inside BUY"
     true
   )
 
-  (defcap WITHDRAW:bool
-    ( sale-id:string
-    )
+  (defcap WITHDRAW:bool (sale-id:string)
     @doc "Capability to grant internal transaction inside WITHDRAW"
     true
   )
-
 
   ; Map list of policy functions
 
@@ -223,33 +245,39 @@
     \ Required msg-data keys:                                                        \
     \ * (optional) quote:object{quote-msg} - sale is registered as a quoted fungible \
     \ sale if present. If absent, sale proceeds without quotes."
+
     (let ((ledger:module{ledger-v1} (retrieve-ledger)))
       (require-capability (ledger::OFFER-CALL (at "id" token) seller amount timeout sale-id))
     )
+
     (enforce-sale-pact sale-id)
+    (enforce (= (pact-id) (tx-hash)) "cannot be triggered as nested defpacts")
+
     ; Check if quote-msg exists
     (if (exists-msg-quote QUOTE-MSG-KEY)
       ; true - insert quote message and create escrow account in fungible
-      [
-        (let* (
-          (quote:object{quote-msg} (read-msg QUOTE-MSG-KEY))
-          (quote-spec:object{quote-spec} (at 'spec quote))
+      (let* (
+          (quote-spec:object{quote-schema} (read-msg QUOTE-MSG-KEY))
           (fungible:module{fungible-v2} (at 'fungible quote-spec))
           (escrow-account:object{fungible-account} (get-escrow-account sale-id))
         )
-          (with-capability (ADD-QUOTE-CALL sale-id (at 'id token) (at 'price quote-spec))
-            (add-quote sale-id (at 'id token) quote)
-          )
-          (fungible::create-account (at 'account escrow-account) (at 'guard escrow-account))
-        )
-      ]
-      ; false - skip
-      true)
-    (map (lambda (policy:module{kip.token-policy-v2})
-      (with-capability (OFFER-CALL (at "id" token) seller amount sale-id timeout policy)
-        (policy::enforce-offer token seller amount timeout sale-id)
+        (enforce (= (at 'amount quote-spec) amount) "QUOTE amount must match OFFER amount")
+        (validate-quote quote-spec)
+        (insert quotes sale-id quote-spec) ;; void sale type
+        (fungible::create-account (at 'account escrow-account) (at 'guard escrow-account))
+        (emit-event (QUOTE sale-id (at 'id token) quote-spec))
       )
-    ) (at 'policies token))
+      ; false - skip
+      true
+    )
+     ; run policy::enfore-offer
+    (map
+      (lambda (policy:module{kip.token-policy-v2})
+        (with-capability (OFFER-CALL (at "id" token) seller amount sale-id timeout policy)
+          (policy::enforce-offer token seller amount timeout sale-id)
+        )
+      )
+      (at 'policies token))
   )
 
   (defun enforce-withdraw:[bool]
@@ -264,16 +292,7 @@
     )
     (enforce-sale-pact sale-id)
 
-    (if (exists-quote sale-id)
-      (let* (
-        (quote (get-quote-info sale-id)))
-        (enforce-quote-active sale-id)
-        (with-capability (CLOSE-QUOTE-CALL sale-id)
-          (close-quote sale-id)
-        )
-      )
-      true
-    )
+
     (map (lambda (policy:module{kip.token-policy-v2})
       (with-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id timeout policy)
         (policy::enforce-withdraw token seller amount timeout sale-id)
@@ -293,30 +312,61 @@
       \ * (optional) buyer_fungible_account:string - The fungible account of the buyer   \
       \ which transfers the fungible to the escrow account. Only required if the sale is \
       \ a quoted sale. "
+
+    (enforce-sale-pact sale-id)
+
+    ;; enforce function is called from ledger
     (let ((ledger:module{ledger-v1} (retrieve-ledger)))
       (require-capability (ledger::BUY-CALL (at "id" token) seller buyer amount sale-id))
     )
-    (enforce-sale-pact sale-id)
 
     ; Checks if quote is saved at offer
     (if (exists-quote sale-id)
-      ; quote is used
-      [
-        (let* (
-          (quote (get-quote-info sale-id))
-          (spec:object{quote-spec} (at 'spec quote))
-          (price:decimal (at 'price spec)))
+      ; true - quote is used
 
-          ; Checks if price is final
-          (enforce (> price 0.0) "Price must be finalized before buy")
-          (with-capability (MAP-ESCROWED-BUY sale-id token seller buyer buyer-guard amount (at 'policies token))
-            (map-escrowed-buy sale-id token seller buyer buyer-guard amount (at 'policies token))
+      (let* (
+             (escrow-account:object{fungible-account} (get-escrow-account sale-id))
+             (quote-spec:object{quote-schema} (get-quote-info sale-id))
+             (fungible:module{fungible-v2} (at 'fungible quote-spec))
+             (seller-fungible-account:object{fungible-account} (at 'seller-fungible-account quote-spec))
+             (sale-type:string (at 'sale-type quote-spec))
+             (quote-price:decimal (at 'price quote-spec))
+           )
+      (if (!= sale-type "")
+        (if (exists-msg-decimal UPDATED-PRICE-KEY)
+          (let ((updated-price:decimal (read-decimal UPDATED-PRICE-KEY)))
+            (with-capability (UPDATE-QUOTE-PRICE (at 'id token) sale-id sale-type updated-price)
+              (update quotes sale-id { "price": updated-price })
+            )
           )
-          (with-capability (CLOSE-QUOTE-CALL sale-id)
-            (close-quote sale-id)
-          )
+          (enforce (> quote-price 0.0) "Price is not finalized for this quote")
         )
-      ]
+        true
+      )
+      (let ((sale-price:decimal (floor (* (at 'price (get-quote-info sale-id)) amount) (fungible::precision))))
+          (with-capability (FUNGIBLE-TRANSFER-CALL sale-id)
+            (install-capability (fungible::TRANSFER (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at 'account escrow-account) sale-price))
+            (fungible::transfer-create (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at 'account escrow-account) (at 'guard escrow-account) sale-price)
+          )
+         (with-capability (ESCROW sale-id)
+           ; Run policies::enforce-buy
+           (let ((result:[bool]
+             (map (lambda (policy:module{kip.token-policy-v2})
+                (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id policy)
+                  (policy::enforce-buy token seller buyer buyer-guard amount sale-id)
+                )
+              ) (at 'policies token))
+              ))
+             (let (
+                   (balance:decimal (fungible::get-balance (at 'account escrow-account)))
+                 )
+               (install-capability (fungible::TRANSFER (at 'account escrow-account) (at 'account seller-fungible-account) balance))
+               (fungible::transfer (at 'account escrow-account) (at 'account seller-fungible-account) balance)
+           )
+         result
+         ))
+       )
+     )
       ; quote is not used
       (map (lambda (policy:module{kip.token-policy-v2})
         (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id policy)
@@ -342,102 +392,12 @@
     ) (at 'policies token))
   )
 
-  ; Sale/Escrow Functions
-  (defcap RESERVE-SALE-AT-PRICE:bool
-    ( sale-id:string
-      price:decimal
-      buyer:string
-      buyer-guard:guard
-    )
-    @event
-    true
-  )
-
   (defun enforce-sale-pact:bool (sale:string)
     "Enforces that SALE is id for currently executing pact"
     (enforce (= sale (pact-id)) "Invalid pact/sale id")
   )
 
-  (defun reserve-sale-at-price:bool (
-    sale-id:string
-    price:decimal
-    buyer:string
-    buyer-guard:guard
-    quote-account:string
-    )
-    @doc "Reserves the token for buyer and transfers funds"
 
-    (enforce (> price 0.0) "price must be positive")
-    (enforce-reserved buyer buyer-guard)
-    (enforce-quote-active sale-id)
-    (with-capability (UPDATE-QUOTE-PRICE-CALL sale-id price buyer)
-      (with-capability (RESERVE-SALE-AT-PRICE sale-id price buyer buyer-guard)
-        (install-capability (UPDATE-QUOTE-PRICE sale-id price buyer))
-        (update-quote-price sale-id price buyer)
-      )
-    )
-
-    (let* (
-      (escrow-account:object{fungible-account} (get-escrow-account sale-id))
-      (quote (get-quote-info sale-id))
-      (spec:object{quote-spec} (at 'spec quote))
-      (fungible:module{fungible-v2} (at 'fungible spec))
-      (amount:decimal (at 'amount spec))
-      (sale-price:decimal (floor (* price amount) (fungible::precision))))
-
-      ; Transfer buy-amount to escrow account
-      (install-capability (fungible::TRANSFER quote-account (at 'account escrow-account) sale-price))
-      (fungible::transfer-create quote-account (at 'account escrow-account) (at 'guard escrow-account) sale-price)
-    )
-    true
-  )
-
-  (defun map-escrowed-buy:bool
-    ( sale-id:string
-      token:object{token-info}
-      seller:string
-      buyer:string
-      buyer-guard:guard
-      amount:decimal
-      policies:[module{kip.token-policy-v2}]
-    )
-    (require-capability (MAP-ESCROWED-BUY sale-id token seller buyer buyer-guard amount policies))
-    (let* (
-           (escrow-account:object{fungible-account} (get-escrow-account sale-id))
-           (quote:object{quote-schema} (get-quote-info sale-id))
-           (reserved-buyer:string (at 'reserved quote))
-           (spec:object{quote-spec} (at 'spec quote))
-           (fungible:module{fungible-v2} (at 'fungible spec))
-           (seller-fungible-account:object{fungible-account} (at 'seller-fungible-account spec))
-           (price:decimal (at 'price spec))
-           (sale-price:decimal (floor (* price amount) (fungible::precision)))
-      )
-
-       (if (= reserved-buyer "")
-        ; No reserved buyer, transfer from buyer to escrow
-        (fungible::transfer-create (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at 'account escrow-account) (at 'guard escrow-account) sale-price)
-        ; Reserved buyer, escrow has already been funded
-        (enforce (= reserved-buyer buyer) "Reserved buyer must be buyer")
-       )
-
-       (with-capability (ESCROW sale-id)
-         ; Run policies::enforce-buy
-         (map (lambda (policy:module{kip.token-policy-v2})
-            (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id policy)
-              (policy::enforce-buy token seller buyer buyer-guard amount sale-id)
-            )
-          ) (at 'policies token))
-         ; Transfer Escrow account to seller
-         (let (
-               (balance:decimal (fungible::get-balance (at 'account escrow-account)))
-             )
-             (install-capability (fungible::TRANSFER (at 'account escrow-account) (at 'account seller-fungible-account) balance))
-             (fungible::transfer (at 'account escrow-account) (at 'account seller-fungible-account) balance)
-         )
-       )
-       true
-    )
-  )
 
   ; Utility functions
 
@@ -457,10 +417,64 @@
     (let ((o:object (try {} (read-msg msg))))
       (!= o {}))
   )
+
+  (defun retrieve-ledger:module{ledger-v1} ()
+    @doc "Retrieves the ledger implementation"
+    (with-read ledgers "" {
+        "ledger-impl":= ledger
+      }
+    ledger)
+  )
+
+  (defun retrieve-sale:module{sale-v1} (sale-type:string)
+    @doc "Retrieves the sale-contract"
+    (with-read sale-whitelist sale-type {"sale-contract":= sale} sale)
+  )
+
+  (defun get-concrete-policy:module{kip.token-policy-v2} (policy-field:string)
+    (with-read concrete-policies policy-field {
+      "policy":= policy
+      }
+      policy)
+  )
+
+  (defun get-quote-info:object{quote-schema} (sale-id:string)
+    @doc "Get Quote information"
+    (read quotes sale-id)
+  )
+
+
+  ;; Validate functions
+  (defun validate-fungible-account (fungible:module{fungible-v2} account:object{fungible-account})
+    (let ((seller-details (fungible::details (at 'account account))))
+      (enforce (=
+        (at 'guard seller-details) (at 'guard account))
+            "Account guard does not match"))
+  )
+
+  (defun validate-quote:bool (quote-spec:object{quote-schema})
+    (let* ( (fungible:module{fungible-v2} (at 'fungible quote-spec) )
+            (seller-fungible-account:object{fungible-account} (at 'seller-fungible-account quote-spec))
+            (amount:decimal (at 'amount quote-spec))
+            (price:decimal (at 'price quote-spec))
+            (sale-type:string (at 'sale-type quote-spec))
+            (sale-price:decimal (* amount price)) )
+      (validate-fungible-account fungible seller-fungible-account)
+      (fungible::enforce-unit sale-price)
+      (if (= sale-type "")
+        (enforce (> price 0.0) "Offer price must be positive" )
+        [ (retrieve-sale sale-type)
+          (enforce (>= price 0.0) "Offer price must be positive or zero")
+        ]
+      )
+      true)
+  )
 )
 
 (if (read-msg 'upgrade )
   ["upgrade complete"]
   [ (create-table ledgers)
     (create-table concrete-policies)
+    (create-table quotes)
+    (create-table sale-whitelist)
   ])

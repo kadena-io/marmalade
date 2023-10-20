@@ -6,27 +6,27 @@ This repo houses smart contracts and frontend code for Marmalade, Kadena's platf
 
 ### Marmalade Ledger
 
-The main contract in Marmalade is `marmalade.ledger`. This contract stores the token information, token's accounts, and the policies associated with it. The main functions, `create-token`, `mint`, `burn`, `transfer`, `sale`. Token policies can customise to allow one/both/none of `transfer` and `sale` as a way of transferring. `transfer` allows a direct transfer, and `sale` allows escrowed transfer with timeout.
+![alt text](./images/mint_flow.png)
+
+Marmalade is a system of multiple contracts, that calls functions in layers. The main contract in Marmalade is `marmalade-v2.ledger`, which stores the token information, token's accounts, and the policies associated with it.
+The main functions are `create-token`, `mint`, `burn`, `transfer`, `sale`.
 
 ### Policy manager
 
-Marmalade V2's new feature is a policy manager. Marmalade tokens now store multiple policies in a `policies` format, instead of a single policy.
+Marmalade V2's new feature is a policy manager. Marmalade tokens now store multiple policies in a `policies` list, instead of a single policy. The main contract, `ledger`, calls the `policy-manager`, which acts as a middleware between policies, and runs the `policy::enforce-**` functions.
+Token policies can be customised to allow one/both/none of the main marmalade functions.
+
 All policies are immutable, meaning tokens will permanently store and run the rules that are attached when the token was created. However, the policy manager makes a distinction of some policies we call, `concrete-policies`. Concrete policies are the policies that policy manager knows about, and adds extra logic to run exceptions for some of the policies, that were thought to be most-used features.
 
-Policy manager acts as a middleware between policies, and runs the `policy::enforce-**` functions.
+Another feature that policy manager provides is a standardized tool to process the fungibles throughout the sale process. The policy manager collects and emit quote information at `enforce-offer`. Then, it processes the fungible collection and distribution at `enforce-buy`. To provide extendable support for biddings, policy manager also allows bidders to update the quote price when the contract is granted the authority by the seller. The process is described in detail [here](./pact/policy-manager/policy-manager.md)
+
+### Quote Manager
+Quote manager is called from policy manager to store and manage the quote information.
 
 ## Using Policies
 
 ### Token Policies
-
-```
-  (defschema concrete-policy
-    non-fungible-policy:bool
-    royalty-policy:bool
-    collection-policy:bool
-    guard-policy:bool
-  )
-```
+Token Policies represent the rules that the tokens follow throughout its lifecycle. Token policy is any contract that implements `kip.token-policy-v2` interfaces.
 
 ### Concrete Policies
 
@@ -36,7 +36,7 @@ We provide 4 concrete policies, which will provide the most used functionalities
 - **Guard Policy**: Initiates a guard with each marmalade activities. The guards are optional, but mint guards are recommended to prevent foreign entity from minting the created tokens.
 - **Collection Policy**: Initiates a collection with pre-defined token lists
 - **Non-fungible Policy**: Defines the token supply to 1 and precision of 0, so the token becomes non-fungible
-- **Royalty-policy**: [dependent on `fungible-quote-policy`]: Defines creator account that will receive royalty whenever the token using `fungible-quote-policy` is sold.
+- **Royalty-policy**: Defines creator account that will receive royalty.
 
 Marmalade users can mint tokens with above features by adding the policy to the policies field at token creation. If projects would like to use customized logic in addition to what concrete policies offer, they can also add their own policies to this same field.
 
@@ -52,7 +52,7 @@ A Token is created in marmalade via running `create-token`. Arguments include:
 - `policies`: policies contracts with custom functions to execute at marmalade functions
 - `creation-guard`: Non stored guard (usally a Keyset). Must be used to reserve a `token-id`
 
-`policy-manager.enforce-init` calls `policy:enforce-init` in stored token-policies, and the function is executed in `ledger.create-token`.
+`policy-manager.enforce-init` calls `policy::enforce-init` in stored token-policies, and the function is executed in `ledger.create-token`.
 
 #### Creation guard usage
 

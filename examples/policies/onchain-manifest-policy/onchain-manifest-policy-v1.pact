@@ -9,9 +9,11 @@
   (use kip.token-policy-v2 [token-info])
   (use marmalade-v2.policy-manager)
 
-  (defcap GOVERNANCE ()
-    (enforce-guard (keyset-ref-guard 'marmalade-admin )))
+  (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
 
+  (defcap GOVERNANCE ()
+    (enforce-guard ADMIN-KS))
+    
   (defconst MANIFEST-SPEC-MSG-KEY:string "manifest_spec")
 
   (defschema manifest-spec

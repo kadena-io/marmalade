@@ -1,13 +1,12 @@
-codeFile: ../../policy-manager/manager-init.pact
+codeFile: ../policy-manager/manager-init.pact
 signers:
-  - public: dfb16b13e4032a6878fd98506b22cb0d6e5932c541e656b7ee5d69d72e6eb76e
+  - public: {{sender_key}}
 data:
-  ns: "marmalade-v2"
-networkId: testnet04
-nonce: init policy manager and quote manager
+  ns: {{marmalade_namespace}}
+networkId: {{network}}
 publicMeta:
-  chainId: "1"
-  sender: "dfb16b13e4032a6878fd98506b22cb0d6e5932c541e656b7ee5d69d72e6eb76e"
+  chainId: "{{chain}}"
+  sender: {{sender}}
   gasLimit: 5000
   gasPrice: 0.0000001
   ttl: 600

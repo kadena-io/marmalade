@@ -1,6 +1,4 @@
-(enforce-pact-version "3.7")
-
-(namespace 'kip)
+(namespace (read-string 'ns))
 
 (interface poly-fungible-v3
 

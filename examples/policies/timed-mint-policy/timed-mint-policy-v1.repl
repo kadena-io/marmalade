@@ -1,0 +1,26 @@
+
+;;load policy manager, ledger
+(load "../../../pact/marmalade.repl")
+
+(begin-tx "load timed mint policy")
+  (env-data {
+    "ns": "marmalade-examples"
+  , "marmalade-examples-admin": ["marmalade-examples-admin"]
+  , "upgrade": false}
+  )
+  (load "../ns-marmalade-examples.pact")
+  (env-sigs [
+    { 'key: 'marmalade-examples-admin
+     ,'caps: []
+  }])
+  (load "timed-mint-policy-v1.pact")
+  (typecheck "marmalade-examples.timed-mint-policy-v1")
+
+(commit-tx)
+
+
+(begin-tx "create timed mint, royalty, fixed issuance token")
+
+ ;; add royalty, timed-mint, fixed-issuance policy in the policies list
+
+(commit-tx)

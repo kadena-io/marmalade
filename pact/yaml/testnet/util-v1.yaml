@@ -1,4 +1,4 @@
-codeFile: ../ledger/ledger.pact
+codeFile: ../marmalade-util/util-v1.pact
 signers:
   - public: {{sender_key}}
 data:

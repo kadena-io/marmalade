@@ -1,19 +1,19 @@
-(namespace (read-msg 'ns))
+(namespace (read-string 'ns))
 
 (module royalty-policy-v1 GOVERNANCE
 
   @doc "Concrete policy to support royalty payouts in a specified fungible during sale."
 
-  (defcap GOVERNANCE ()
-    (enforce-guard "marmalade-v2.marmalade-admin"))
+  (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
 
-  (use marmalade-v2.policy-manager)
-  (use marmalade-v2.policy-manager [QUOTE-MSG-KEY])
-  (use marmalade-v2.quote-manager)
-  (use marmalade-v2.quote-manager [quote-spec quote-schema])
+  (defcap GOVERNANCE ()
+    (enforce-guard ADMIN-KS))
+
+  (use policy-manager)
+  (use policy-manager [QUOTE-MSG-KEY quote-schema])
+
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
-
 
   (defschema royalty-schema
     fungible:module{fungible-v2}
@@ -63,6 +63,8 @@
             (royalty-rate:decimal (at 'royalty-rate spec))
             (creator-details:object (fungible::details creator ))
             )
+      (enforce (= (format "{}" [fungible]) (format "{}" [coin]))
+        "Royalty support is restricted to coin")
       (enforce (=
         (at 'guard creator-details) creator-guard)
         "Creator guard does not match")
@@ -108,8 +110,7 @@
     (bind (get-royalty token)
       { 'fungible := fungible:module{fungible-v2} }
       (let* (
-          (quote:object{quote-msg} (read-msg QUOTE-MSG-KEY))
-          (quote-spec:object{quote-spec} (at 'spec quote)) )
+          (quote-spec:object{quote-schema} (read-msg QUOTE-MSG-KEY)) )
         (enforce (= fungible (at 'fungible quote-spec)) (format "Offer is restricted to sale using fungible: {}" [fungible]))
       )
     )
@@ -129,18 +130,16 @@
       , 'creator:= creator:string
       , 'royalty-rate:= royalty-rate:decimal
       }
-      (let* ( (quote:object{quote-schema} (get-quote-info sale-id))
-              (spec:object{quote-spec} (at 'spec quote))
-              (price:decimal (at 'price spec))
+      (let* ( (quote-spec:object{quote-schema} (get-quote-info sale-id))
+              (price:decimal (at 'price quote-spec))
               (sale-price:decimal (* amount price))
               (escrow-account:string (at 'account (get-escrow-account sale-id)))
               (royalty-payout:decimal
                  (floor (* sale-price royalty-rate) (fungible::precision))))
-        (enforce (= (at 'token-id quote) (at 'id token)) "incorrect sale token")
         (if
           (> royalty-payout 0.0)
           (let ((_ ""))
-            (install-capability (fungible::TRANSFER escrow-account creator royalty-payout))
+            (install-capability (fungible::TRANSFER escrow-account creator sale-price))
             (emit-event (ROYALTY-PAYOUT sale-id (at 'id token) royalty-payout creator))
             (fungible::transfer escrow-account creator royalty-payout))
           "No royalty"

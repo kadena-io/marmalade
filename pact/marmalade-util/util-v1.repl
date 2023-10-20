@@ -1,0 +1,91 @@
+(load "../marmalade.repl")
+
+(begin-tx "mint a featureless NFT")
+
+  (use marmalade-v2.util-v1)
+  (env-data {"account-guard": ["account"]})
+
+  (env-sigs [
+    { 'key: 'account
+     ,'caps: [(marmalade-v2.util-v1.UTIL-SIGN) ]
+    }
+   ])
+
+  (mint-basic-NFT "uri" (read-keyset 'account-guard ))
+
+  (expect "create-token, mint events"
+     [ {"name": "marmalade-v2.ledger.TOKEN","params": ["t:Y_OKRK94Nw-x1JT2oYnIzaiv-MLLQzWzjnFMam1uYro" 0 [marmalade-v2.non-fungible-policy-v1] "uri" (read-keyset 'account-guard)]}
+       {"name": "marmalade-v2.ledger.MINT","params": ["t:Y_OKRK94Nw-x1JT2oYnIzaiv-MLLQzWzjnFMam1uYro" "k:account" 1.0]}
+       {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:Y_OKRK94Nw-x1JT2oYnIzaiv-MLLQzWzjnFMam1uYro" "k:account" (read-keyset 'account-guard)]}
+       {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:Y_OKRK94Nw-x1JT2oYnIzaiv-MLLQzWzjnFMam1uYro" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": "k:account","current": 1.0,"previous": 0.0}]}
+       {"name": "marmalade-v2.ledger.SUPPLY","params": ["t:Y_OKRK94Nw-x1JT2oYnIzaiv-MLLQzWzjnFMam1uYro" 1.0]}]
+     (map (remove "module-hash")  (env-events true))
+  )
+
+(commit-tx)
+
+(begin-tx "mint a NFT with policies")
+
+  (use marmalade-v2.util-v1)
+  (env-data {
+    "account-guard": ["account1"],
+    "sale_guard": {"keys": ["sale"], "pred": "keys-all"}
+  })
+
+  (env-sigs [
+    { 'key: 'account1
+     ,'caps: [(marmalade-v2.ledger.CREATE-TOKEN "t:5EnPXFfU5mgy80jvTXb8PoGqwFlIH1oRtHsCkTNFJQE" (read-keyset 'account-guard)) ]
+    }
+   ])
+
+  (mint-NFT "uri-1" (create-policies DEFAULT) (read-keyset 'account-guard ))
+
+  (expect "create-token, mint events"
+     [ {"name": "marmalade-v2.guard-policy-v1.GUARDS","params": ["t:5EnPXFfU5mgy80jvTXb8PoGqwFlIH1oRtHsCkTNFJQE" {"burn-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"mint-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"sale-guard": (read-keyset 'sale_guard),"transfer-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS}]}
+       {"name": "marmalade-v2.ledger.TOKEN","params": ["t:5EnPXFfU5mgy80jvTXb8PoGqwFlIH1oRtHsCkTNFJQE" 0 [marmalade-v2.non-fungible-policy-v1 marmalade-v2.guard-policy-v1] "uri-1" (read-keyset 'account-guard)]}
+       {"name": "marmalade-v2.ledger.MINT","params": ["t:5EnPXFfU5mgy80jvTXb8PoGqwFlIH1oRtHsCkTNFJQE" "k:account1" 1.0]}
+       {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:5EnPXFfU5mgy80jvTXb8PoGqwFlIH1oRtHsCkTNFJQE" "k:account1" (read-keyset 'account-guard)]}
+       {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:5EnPXFfU5mgy80jvTXb8PoGqwFlIH1oRtHsCkTNFJQE" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": "k:account1","current": 1.0,"previous": 0.0}]}
+       {"name": "marmalade-v2.ledger.SUPPLY","params": ["t:5EnPXFfU5mgy80jvTXb8PoGqwFlIH1oRtHsCkTNFJQE" 1.0]}]
+     (map (remove "module-hash")  (env-events true))
+  )
+
+(commit-tx)
+
+(begin-tx)
+(use marmalade-v2.util-v1)
+(env-data {"mint_guard": {"keys": ["account"], "pred": "keys-all"}})
+(env-sigs [
+  { 'key: 'account
+   ,'caps: [(marmalade-v2.ledger.CREATE-TOKEN "t:Rp5AHGtt7xe6yXwYR7zGhTtsESXmmAqnRjwtDMHB3Pw" (read-keyset 'mint_guard))]
+  }
+ ])
+(create-token-with-mint-guard "ur1i" 0 (create-policies DEFAULT))
+(expect "create-token, events"
+  [ {"name": "marmalade-v2.guard-policy-v1.GUARDS","params": ["t:Rp5AHGtt7xe6yXwYR7zGhTtsESXmmAqnRjwtDMHB3Pw" {"burn-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"mint-guard": (read-keyset 'mint_guard),"sale-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"transfer-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS}]}
+    {"name": "marmalade-v2.ledger.TOKEN","params": ["t:Rp5AHGtt7xe6yXwYR7zGhTtsESXmmAqnRjwtDMHB3Pw" 0 [marmalade-v2.non-fungible-policy-v1 marmalade-v2.guard-policy-v1] "ur1i" (read-keyset 'mint_guard)]}]
+   (map (remove "module-hash")  (env-events true))
+)
+(commit-tx)
+
+(begin-tx)
+(use marmalade-v2.util-v1)
+(env-sigs [
+  { 'key: 'account
+   ,'caps: [
+     (marmalade-v2.ledger.MINT "t:Rp5AHGtt7xe6yXwYR7zGhTtsESXmmAqnRjwtDMHB3Pw" "k:account" 1.0)
+     (marmalade-v2.guard-policy-v1.MINT "t:Rp5AHGtt7xe6yXwYR7zGhTtsESXmmAqnRjwtDMHB3Pw" "k:account" 1.0)
+   ]
+  }
+ ])
+
+(env-data {"account-guard": {"keys": ["account"], "pred": "keys-all"}})
+(marmalade-v2.ledger.mint "t:Rp5AHGtt7xe6yXwYR7zGhTtsESXmmAqnRjwtDMHB3Pw" "k:account" (read-keyset 'account-guard ) 1.0)
+(expect "mint, events"
+  [ {"name": "marmalade-v2.ledger.MINT","params": ["t:Rp5AHGtt7xe6yXwYR7zGhTtsESXmmAqnRjwtDMHB3Pw" "k:account" 1.0]}
+    {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:Rp5AHGtt7xe6yXwYR7zGhTtsESXmmAqnRjwtDMHB3Pw" "k:account" (read-keyset 'account-guard)]}
+    {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:Rp5AHGtt7xe6yXwYR7zGhTtsESXmmAqnRjwtDMHB3Pw" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": "k:account","current": 1.0,"previous": 0.0}]}
+    {"name": "marmalade-v2.ledger.SUPPLY","params": ["t:Rp5AHGtt7xe6yXwYR7zGhTtsESXmmAqnRjwtDMHB3Pw" 1.0]}]
+   (map (remove "module-hash")  (env-events true))
+)
+(commit-tx)

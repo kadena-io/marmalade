@@ -123,6 +123,7 @@
       (quote-info:object{quote-schema} (get-quote-info sale-id)))
 
       (enforce (= (at 'sale-price quote-info) 0.0) "Quote price must be 0")
+      (enforce (= (at 'sale-type quote-info) "marmalade-v2.conventional-auction") "Quote does not support auction")
       (enforce (= token-id (at 'token-id quote-info)) "Token-id does not match quote token-id")
     )
 
@@ -226,3 +227,4 @@
     (create-table bids)
   ]
 )
+(enforce-guard ADMIN-KS)

@@ -3,7 +3,7 @@
 (module conventional-auction GOVERNANCE
   @doc "Conventional auction contract"
 
-  (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
+  (defconst ADMIN-KS:string "marmalade-sale.marmalade-contract-admin")
 
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
@@ -123,7 +123,7 @@
       (quote-info:object{quote-schema} (get-quote-info sale-id)))
 
       (enforce (= (at 'sale-price quote-info) 0.0) "Quote price must be 0")
-      (enforce (= (at 'sale-type quote-info) "marmalade-v2.conventional-auction") "Quote does not support auction")
+      (enforce (= (at 'sale-type quote-info) "marmalade-sale.conventional-auction") "Quote does not support auction")
       (enforce (= token-id (at 'token-id quote-info)) "Token-id does not match quote token-id")
     )
 

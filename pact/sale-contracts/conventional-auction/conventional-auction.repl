@@ -1,8 +1,7 @@
 (load "../../marmalade.repl")
 (begin-tx "Load modules")
   (env-data
-    { "marmalade-v2.marmalade-contract-admin": ["marmalade-contract-admin"]
-    , 'ns: "marmalade-v2"
+    { 'ns: "marmalade-sale"
     , 'upgrade: false })
   (env-sigs [
     { 'key: 'marmalade-user
@@ -12,7 +11,7 @@
     ,'caps: []
     }])
   (load "conventional-auction.pact")
-  (marmalade-v2.policy-manager.add-sale-whitelist marmalade-v2.conventional-auction)
+  (marmalade-v2.policy-manager.add-sale-whitelist marmalade-sale.conventional-auction)
 (commit-tx)
 
 (begin-tx "Create and mint a token")
@@ -72,7 +71,7 @@
           "account": "k:creator"
         ,"guard": {"keys": ["creator"], "pred": "keys-all"}
       }
-      ,"sale-type": "marmalade-v2.conventional-auction"
+      ,"sale-type": "marmalade-sale.conventional-auction"
      }
     })
 
@@ -94,7 +93,7 @@
   (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
   (use mini-guard-utils)
-  (use marmalade-v2.conventional-auction)
+  (use marmalade-sale.conventional-auction)
 
   (env-data {
     "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
@@ -135,7 +134,7 @@
 
   (expect "create-auction events"
     [
-      {"name": "marmalade-v2.conventional-auction.AUCTION_CREATED","params": ["_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y" "t:VoRnIK4vGzoq74tuygIJWHxE8mdaYipdfwqfXTgU28Y" "u:util.guards1.enforce-guard-any:YfibXP1evNQiDjULlSw9vvn6bWXCdjPyDSPqjzeVYAE"]}
+      {"name": "marmalade-sale.conventional-auction.AUCTION_CREATED","params": ["_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y" "t:VoRnIK4vGzoq74tuygIJWHxE8mdaYipdfwqfXTgU28Y" "u:util.guards1.enforce-guard-any:8iBtcNCfjArejHvxJ0rde1DsWxuhHqOzd1w40jsDPV4"]}
     ]
     (map (remove "module-hash")  (env-events true))
   )
@@ -146,7 +145,7 @@
   (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
   (use mini-guard-utils)
-  (use marmalade-v2.conventional-auction)
+  (use marmalade-sale.conventional-auction)
 
   (env-data {
     "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
@@ -175,7 +174,7 @@
   (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
   (use mini-guard-utils)
-  (use marmalade-v2.conventional-auction)
+  (use marmalade-sale.conventional-auction)
 
    (env-data {
      "buyer-guard":  {"keys": ["buyer"], "pred": "keys-all"}
@@ -198,7 +197,7 @@
   (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
   (use mini-guard-utils)
-  (use marmalade-v2.conventional-auction)
+  (use marmalade-sale.conventional-auction)
 
   (env-data {
     "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
@@ -213,7 +212,7 @@
     { 'key: 'buyer
      ,'caps: [
       (PLACE_BID (read-keyset 'buyer-guard)),
-      (coin.TRANSFER "buyer" "u:util.guards1.enforce-guard-any:YfibXP1evNQiDjULlSw9vvn6bWXCdjPyDSPqjzeVYAE" 75.0)
+      (coin.TRANSFER "buyer" "u:util.guards1.enforce-guard-any:8iBtcNCfjArejHvxJ0rde1DsWxuhHqOzd1w40jsDPV4" 75.0)
     ]}])
   (expect "Place bid succeeds"
     true
@@ -241,7 +240,7 @@
   (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
   (use mini-guard-utils)
-  (use marmalade-v2.conventional-auction)
+  (use marmalade-sale.conventional-auction)
 
   (env-data {
     "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
@@ -257,7 +256,7 @@
     { 'key: 'next-buyer
      ,'caps: [
       (PLACE_BID (read-keyset 'next-buyer-guard)),
-      (coin.TRANSFER "k:next-buyer" "u:util.guards1.enforce-guard-any:YfibXP1evNQiDjULlSw9vvn6bWXCdjPyDSPqjzeVYAE" 125.0)
+      (coin.TRANSFER "k:next-buyer" "u:util.guards1.enforce-guard-any:8iBtcNCfjArejHvxJ0rde1DsWxuhHqOzd1w40jsDPV4" 125.0)
     ]}])
   (expect "Place bid succeeds"
     true
@@ -288,7 +287,7 @@
 (begin-tx "Claiming the token fails before the sale has ended")
   (env-hash (hash "conventional-auction-claim-failure"))
   (env-chain-data {"block-time": (time "2023-10-04T00:00:00Z")})
-  (use marmalade-v2.conventional-auction)
+  (use marmalade-sale.conventional-auction)
 
   (env-data {
     'buyer: "k:next-buyer",
@@ -307,7 +306,7 @@
   (env-hash (hash "conventional-auction-price-failure"))
   (env-chain-data {"block-time": (time "2023-10-09T00:00:00Z")})
   (use marmalade-v2.ledger)
-  (use marmalade-v2.conventional-auction)
+  (use marmalade-sale.conventional-auction)
 
   (env-data {
     'buyer: "k:next-buyer",
@@ -326,7 +325,7 @@
   (env-hash (hash "conventional-auction-claim-success"))
   (env-chain-data {"block-time": (time "2023-10-09T00:00:00Z")})
   (use marmalade-v2.ledger)
-  (use marmalade-v2.conventional-auction)
+  (use marmalade-sale.conventional-auction)
 
   (env-sigs [
     { 'key: 'any

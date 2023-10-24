@@ -1,0 +1,13 @@
+codeFile: ../../sale-contracts/conventional-auction/conventional-auction.pact
+signers:
+  - public: {{signer}}
+data:
+  ns: {{marmalade_namespace}}
+  upgrade: {{is_upgrade}}
+networkId: {{network}}
+publicMeta:
+  chainId: "{{chain}}"
+  sender: {{sender}}
+  gasLimit: 100000
+  gasPrice: 0.0000001
+  ttl: 10000

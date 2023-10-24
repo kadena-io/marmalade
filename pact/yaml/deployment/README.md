@@ -53,7 +53,7 @@ The deployment order must be respected to fulfill all modules dependencies.
 * In the marmalade Namespace
 
   3. ledger-v1
-  4. policy-manager-v1
+  4. sale-v1
   5. policy-manager
   6. ledger
   7. Concrete policies
@@ -61,8 +61,8 @@ The deployment order must be respected to fulfill all modules dependencies.
     * guard-policy-v1
     * non-fungible-policy-v1
     * royalty-policy-v1
-  8. util-v1
   9. policy-init **(Don't forget this one)*
+  10. util-v1
 
 Ideally, verify that each transaction has been fully mined and has succeed between each step.
 

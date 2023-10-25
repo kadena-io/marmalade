@@ -204,3 +204,5 @@
   ["upgrade complete"]
   [ (create-table policy-guards) ]
   )
+
+(enforce-guard ADMIN-KS)

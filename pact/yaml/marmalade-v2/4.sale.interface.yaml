@@ -1,12 +1,14 @@
-codeFile: ../policy-manager/manager-init.pact
+codeFile: ../policy-manager/sale.interface.pact
 signers:
   - public: {{sender_key}}
+  - public: {{marmalade_user_key_1}}
+  - public: {{marmalade_user_key_2}}
 data:
   ns: {{marmalade_namespace}}
 networkId: {{network}}
 publicMeta:
   chainId: "{{chain}}"
   sender: {{sender}}
-  gasLimit: 5000
+  gasLimit: 100000
   gasPrice: 0.0000001
-  ttl: 600
+  ttl: 10000

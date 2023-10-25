@@ -169,3 +169,5 @@
 (if (read-msg 'upgrade)
   ["upgrade complete"]
   [ (create-table royalties)])
+  
+(enforce-guard ADMIN-KS)

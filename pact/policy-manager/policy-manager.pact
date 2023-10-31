@@ -115,7 +115,7 @@
     @doc "Enforces sale-guard on update-quote-price"
     (enforce (> updated-price 0.0) "QUOTE price must be positive")
     (compose-capability (SALE-GUARD-CALL sale-id updated-price))
-    (let ((sale-contract:module{sale-v1} (retrieve-sale sale-type)))
+    (let ((sale-contract:module{sale-v2} (retrieve-sale sale-type)))
       (sale-contract::enforce-quote-update sale-id updated-price))
   )
 
@@ -134,7 +134,7 @@
 
   ;; Saves Sale Logic
   (defschema sale-contract
-    sale-contract:module{sale-v1}
+    sale-contract:module{sale-v2}
   )
 
   (deftable sale-whitelist:{sale-contract})
@@ -144,7 +144,7 @@
     (enforce-guard ADMIN-KS)
   )
 
-  (defun add-sale-whitelist:bool (sale-contract:module{sale-v1})
+  (defun add-sale-whitelist:bool (sale-contract:module{sale-v2})
     @doc "Adds quote-guard to quote-guard-whitelist list"
     (let ((sale-key (format "{}" [sale-contract])))
       (with-capability (SALE-WHITELIST sale-key)
@@ -309,6 +309,18 @@
     )
     (enforce-sale-pact sale-id)
 
+    (if (exists-quote sale-id)
+      (let* (
+        (quote-spec:object{quote-schema} (get-quote-info sale-id))
+        (sale-type:string (at 'sale-type quote-spec)))
+
+        (if (!= sale-type "")
+          (let ((sale-contract:module{sale-v2} (retrieve-sale sale-type)))
+            (sale-contract::enforce-withdrawal sale-id))
+          true
+        ))
+      true
+    )
 
     (map (lambda (policy:module{kip.token-policy-v2})
       (with-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id timeout policy)
@@ -446,7 +458,7 @@
     ledger)
   )
 
-  (defun retrieve-sale:module{sale-v1} (sale-type:string)
+  (defun retrieve-sale:module{sale-v2} (sale-type:string)
     @doc "Retrieves the sale-contract"
     (with-read sale-whitelist sale-type {"sale-contract":= sale} sale)
   )

@@ -192,6 +192,45 @@
   )
 (rollback-tx)
 
+(begin-tx "Withdrawal before auction start")
+  (env-hash (hash "bid-withdrawal-before-start"))
+  (env-chain-data {"block-time": (time "2023-10-01T00:00:00Z")})
+  (use marmalade-v2.ledger)
+
+  (env-data {
+    "sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
+  })
+
+  (expect-failure "withdrawing before the auction has ended fails"
+    "Auction is still ongoing or hasn't started yet"
+    (continue-pact 0 true (read-msg 'sale-id))
+  )
+(rollback-tx)
+
+(begin-tx "Withdrawal after auction end")
+  (env-hash (hash "bid-withdrawal-after-end"))
+  (env-chain-data {"block-time": (time "2023-10-10T00:00:00Z")})
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.util-v1)
+  (use mini-guard-utils)
+
+  (env-data {
+    "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
+    ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
+  })
+
+  (env-sigs [
+    { 'key: 'creator
+     ,'caps: [(marmalade-v2.ledger.WITHDRAW (read-msg 'token1-id) "k:creator" 1.0 0 (read-msg 'sale-id))]
+     }
+  ])
+
+  (expect "withdrawing after the auction has ended withoud bids succeed"
+    "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
+    (continue-pact 0 true (read-msg 'sale-id))
+  )
+(rollback-tx)
+
 (begin-tx "Conventional auction bidding validations")
   (env-hash (hash "bid-conventional-auction-validation"))
   (env-chain-data {"block-time": (time "2023-10-01T00:00:00Z")})
@@ -342,6 +381,21 @@
   (expect-failure "Try to claim the token with the wrong price"
     "Price does not match highest bid"
     (continue-pact 1 false "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y")
+  )
+(rollback-tx)
+
+(begin-tx "Withdrawal when bids are placed")
+  (env-hash (hash "bid-withdrawal-bids-placed"))
+  (env-chain-data {"block-time": (time "2023-10-09T00:00:00Z")})
+  (use marmalade-v2.ledger)
+
+  (env-data {
+    "sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
+  })
+
+  (expect-failure "withdrawing after the auction has ended fails when there are bids placed"
+    "Bid has been placed, can't withdraw"
+    (continue-pact 0 true (read-msg 'sale-id))
   )
 (rollback-tx)
 

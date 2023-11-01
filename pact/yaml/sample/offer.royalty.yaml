@@ -26,8 +26,7 @@ data:
         refSpec:
           - namespace: null
             name: fungible-v2
-      price: 2.0
-      amount: 1.0
+      sale-price: 2.0
       seller-fungible-account:
         account: "{{seller-account}}"
         guard: {"keys": ["{{seller-key}}"], "pred": "keys-all"}

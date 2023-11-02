@@ -137,6 +137,7 @@
       ,"size": 1
       ,"max-size": 10
       ,"operator-guard": (read-keyset 'operator )
+      ,"operator-account": "k:operator"
     }
     (marmalade-v2.collection-policy-v1.get-collection (read-msg 'collection_id)))
 

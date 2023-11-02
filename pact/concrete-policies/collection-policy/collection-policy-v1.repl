@@ -20,7 +20,26 @@
 
  (expect-failure "create collection fails if operator guard isn't present"
     "Keyset failure"
-    (marmalade-v2.collection-policy-v1.create-collection "test-collection0" 10 (read-keyset 'operator ) "k:operator"))
+    (marmalade-v2.collection-policy-v1.create-collection "test-collection0" 10 (read-keyset 'operator) "k:operator"))
+(rollback-tx)
+
+(begin-tx "Creating collection with a non-principal account fails")
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.policy-manager)
+  (use marmalade-v2.util-v1)
+  (use mini-guard-utils)
+  (env-data {
+    "operator": {"keys": ["operator"], "pred": "keys-all"}
+  })
+
+  (env-sigs [
+    { 'key: 'operator
+    ,'caps: [(marmalade-v2.collection-policy-v1.COLLECTION "collection:lUAvkHxqGSH22Z7zLMljdmHlFZ-DvfuVYdC0ioHCfqk" "test-collection0" 10 (read-keyset 'operator ) "my-operator-account")]
+    }])
+
+  (expect-failure "Create a collection while using a named account"
+    "Incorrect account guard, only principal accounts allowed"
+    (marmalade-v2.collection-policy-v1.create-collection "test-collection0" 10 (read-keyset 'operator ) "my-operator-account"))
 (rollback-tx)
 
 (begin-tx "Creating collection")
@@ -53,7 +72,7 @@
 
   (expect "initiate a collection with `create-collection`"
     true
-    (marmalade-v2.collection-policy-v1.create-collection "test-collection0" 10 (read-keyset 'operator ) "k:operator"))
+    (marmalade-v2.collection-policy-v1.create-collection "test-collection0" 10 (read-keyset 'operator) "k:operator"))
 
   (expect "create-collection events"
     [ {"name": "marmalade-v2.collection-policy-v1.COLLECTION","params": ["collection:lUAvkHxqGSH22Z7zLMljdmHlFZ-DvfuVYdC0ioHCfqk" "test-collection0" 10 (read-keyset 'operator)  "k:operator"]}]
@@ -118,7 +137,6 @@
       ,"size": 1
       ,"max-size": 10
       ,"operator-guard": (read-keyset 'operator )
-      ,"operator-account":  "k:operator"
     }
     (marmalade-v2.collection-policy-v1.get-collection (read-msg 'collection_id)))
 
@@ -168,7 +186,7 @@
 
   (expect "initiate a collection with `create-collection`"
     true
-    (marmalade-v2.collection-policy-v1.create-collection "test-collection-size" 1 (read-keyset 'operator ) "k:operator"))
+    (marmalade-v2.collection-policy-v1.create-collection "test-collection-size" 1 (read-keyset 'operator) "k:operator"))
 
   (env-sigs [
     { 'key: 'operator
@@ -222,7 +240,7 @@
 
   (expect "initiate a collection with `create-collection`"
     true
-    (marmalade-v2.collection-policy-v1.create-collection "test-collection-size" 0 (read-keyset 'operator ) "k:operator"))
+    (marmalade-v2.collection-policy-v1.create-collection "test-collection-size" 0 (read-keyset 'operator) "k:operator"))
 
   (env-sigs [
       { 'key: 'operator

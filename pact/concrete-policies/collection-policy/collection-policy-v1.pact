@@ -21,7 +21,6 @@
     size:integer
     max-size:integer
     operator-guard:guard
-    operator-account:string
   )
 
   (defschema token
@@ -58,7 +57,7 @@
       @doc "Executed directly on the policy, required to succeed before `create-token` \
       \ step for collection tokens and emits COLLECTION event for discovery"
       (enforce (>= collection-size 0) "Collection size must be positive")
-      (enforce (validate-principal operator-guard operator-account) "Incorrect account guard")
+      (enforce (validate-principal operator-guard operator-account) "Incorrect account guard, only principal accounts allowed")
       (let ((collection-id:string (create-collection-id collection-name operator-guard) ))
         (with-capability (COLLECTION collection-id collection-name collection-size operator-guard operator-account)
           (insert collections collection-id {
@@ -67,7 +66,6 @@
           ,"max-size": collection-size
           ,"size": 0
           ,"operator-guard": operator-guard
-          ,"operator-account": operator-account
           })
           true
       ))

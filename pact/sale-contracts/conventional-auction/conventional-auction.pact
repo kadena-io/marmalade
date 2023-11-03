@@ -204,6 +204,7 @@
       (enforce (< (curr-time) end-date) "Auction has ended")
       (enforce (> bid prev-highest-bid) "Bid is not higher than previous highest bid")
       (enforce (> bid reserve-price) "Bid is not higher than reserve price")
+      (enforce (validate-principal bidder-guard bidder) "Incorrect account guard, only principal accounts allowed")
       (let ((bid-id:string (create-bid-id sale-id bidder)))
         (with-capability (PLACE_BID bidder-guard)
           ; Return amount to previous bidder if there was one

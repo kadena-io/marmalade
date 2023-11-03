@@ -21,6 +21,7 @@
     size:integer
     max-size:integer
     operator-guard:guard
+    operator-account:string
   )
 
   (defschema token
@@ -66,6 +67,7 @@
           ,"max-size": collection-size
           ,"size": 0
           ,"operator-guard": operator-guard
+          ,"operator-account": operator-account
           })
           true
       ))

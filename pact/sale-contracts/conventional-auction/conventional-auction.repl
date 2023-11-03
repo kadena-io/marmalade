@@ -168,6 +168,30 @@
   )
 (rollback-tx)
 
+(begin-tx "Update auction failure")
+  (env-hash (hash "update-auction-failure"))
+  (env-chain-data {"block-time": (time "2023-10-03T00:00:00Z")})
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.util-v1)
+  (use mini-guard-utils)
+  (use marmalade-sale.conventional-auction)
+
+  (env-data {
+    "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
+   ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
+   ,'imr-admin: ["imr-admin"]
+  })
+  (env-sigs [
+    { 'key: 'creator
+     ,'caps: [(MANAGE_AUCTION (read-msg 'sale-id) (read-msg 'token1-id))]
+     }
+  ])
+  (expect-failure "Update auction after it has started fails"
+    "Can't update auction after it has started"
+    (update-auction (read-string "sale-id") 1696809600 1697328000 80.0)
+  )
+(rollback-tx)
+
 (begin-tx "Conventional auction bidding validations")
   (env-hash (hash "bid-conventional-auction-validation"))
   (env-chain-data {"block-time": (time "2023-10-01T00:00:00Z")})

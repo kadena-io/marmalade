@@ -150,13 +150,19 @@
     (enforce (> end-date start-date) "End date must be after start date")
     (enforce (> reserve-price 0.0) "Reserve price must be greater than 0")
 
-    (with-capability (MANAGE_AUCTION sale-id (at 'token-id (read auctions sale-id)))
-      (update auctions sale-id {
-        "start-date": start-date
-        ,"end-date": end-date
-        ,"reserve-price": reserve-price
-      })
-    )
+    (with-read auctions sale-id
+      { 'token-id:= token-id,
+        'start-date:= curr-start-date
+      }
+      (enforce (> curr-start-date (curr-time)) "Can't update auction after it has started")
+
+      (with-capability (MANAGE_AUCTION sale-id token-id)
+        (update auctions sale-id {
+          "start-date": start-date
+          ,"end-date": end-date
+          ,"reserve-price": reserve-price
+        })
+      ))
   )
 
   (defun retrieve-auction (sale-id:string)

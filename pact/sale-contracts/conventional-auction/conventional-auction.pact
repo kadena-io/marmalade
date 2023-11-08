@@ -10,7 +10,7 @@
 
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.policy-manager [BUYER-FUNGIBLE-ACCOUNT-MSG-KEY])
-  (implements marmalade-v2.sale-v1)
+  (implements marmalade-v2.sale-v2)
 
   (defschema auctions-schema
     token-id:string
@@ -99,6 +99,17 @@
         (enforce (= (read-msg "buyer") bidder) "Buyer does not match highest bidder")
         (enforce (= (read-msg "buyer-guard" ) bidder-guard) "Buyer-guard does not match highest bidder-guard")
       )
+    )
+    true
+  )
+
+  (defun enforce-withdrawal:bool (sale-id:string)
+    (with-read auctions sale-id
+      { 'end-date:= end-date,
+        'highest-bid:= highest-bid
+      }
+      (enforce (> (curr-time) end-date) "Auction is still ongoing or hasn't started yet")
+      (enforce (= highest-bid 0.0) "Bid has been placed, can't withdraw")
     )
     true
   )
@@ -193,6 +204,7 @@
       (enforce (< (curr-time) end-date) "Auction has ended")
       (enforce (> bid prev-highest-bid) "Bid is not higher than previous highest bid")
       (enforce (> bid reserve-price) "Bid is not higher than reserve price")
+      (enforce (validate-principal bidder-guard bidder) "Incorrect account guard, only principal accounts allowed")
       (let ((bid-id:string (create-bid-id sale-id bidder)))
         (with-capability (PLACE_BID bidder-guard)
           ; Return amount to previous bidder if there was one

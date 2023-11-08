@@ -660,12 +660,16 @@
 (namespace (read-string 'ns))
 
 (module sale-example-v1 GOV
-  (implements marmalade-v2.sale-v1)
+  (implements marmalade-v2.sale-v2)
 
   (defcap GOV () true)
 
   (defun enforce-quote-update:bool (sale-id:string price:decimal)
     (require-capability (marmalade-v2.policy-manager.SALE-GUARD-CALL sale-id price))
+  )
+
+  (defun enforce-withdrawal:bool (sale-id:string)
+    true
   )
 )
 

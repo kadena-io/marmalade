@@ -36,7 +36,7 @@
 
   (test-capability (coin.COINBASE))
   (coin.coinbase "k:creator" (read-keyset 'creator-guard) 250.0)
-  (coin.coinbase "buyer" (read-keyset 'buyer-guard) 250.0)
+  (coin.coinbase "k:buyer" (read-keyset 'buyer-guard) 250.0)
   (coin.coinbase "k:next-buyer" (read-keyset 'next-buyer-guard) 250.0)
 
   (expect "Create the token"
@@ -192,6 +192,45 @@
   )
 (rollback-tx)
 
+(begin-tx "Withdrawal before auction start")
+  (env-hash (hash "bid-withdrawal-before-start"))
+  (env-chain-data {"block-time": (time "2023-10-01T00:00:00Z")})
+  (use marmalade-v2.ledger)
+
+  (env-data {
+    "sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
+  })
+
+  (expect-failure "withdrawing before the auction has ended fails"
+    "Auction is still ongoing or hasn't started yet"
+    (continue-pact 0 true (read-msg 'sale-id))
+  )
+(rollback-tx)
+
+(begin-tx "Withdrawal after auction end")
+  (env-hash (hash "bid-withdrawal-after-end"))
+  (env-chain-data {"block-time": (time "2023-10-10T00:00:00Z")})
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.util-v1)
+  (use mini-guard-utils)
+
+  (env-data {
+    "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
+    ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
+  })
+
+  (env-sigs [
+    { 'key: 'creator
+     ,'caps: [(marmalade-v2.ledger.WITHDRAW (read-msg 'token1-id) "k:creator" 1.0 0 (read-msg 'sale-id))]
+     }
+  ])
+
+  (expect "withdrawing after the auction has ended withoud bids succeed"
+    "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
+    (continue-pact 0 true (read-msg 'sale-id))
+  )
+(rollback-tx)
+
 (begin-tx "Conventional auction bidding validations")
   (env-hash (hash "bid-conventional-auction-validation"))
   (env-chain-data {"block-time": (time "2023-10-01T00:00:00Z")})
@@ -207,11 +246,11 @@
 
   (expect-failure "Bid on non-existent auction fails"
     "row not found"
-    (place-bid "bogus-sale-id" "buyer" (read-keyset 'buyer-guard) 100.0)
+    (place-bid "bogus-sale-id" "k:buyer" (read-keyset 'buyer-guard) 100.0)
   )
   (expect-failure "Bid while auction is still closed"
     "Auction has not started yet"
-    (place-bid (read-string "sale-id") "buyer" (read-keyset 'buyer-guard) 100.0)
+    (place-bid (read-string "sale-id") "k:buyer" (read-keyset 'buyer-guard) 100.0)
   )
 (rollback-tx)
 
@@ -230,28 +269,34 @@
   })
   (expect-failure "Bid below reserve price"
     "Bid is not higher than reserve price"
-    (place-bid (read-string "sale-id") "buyer" (read-keyset 'buyer-guard) 40.0)
+    (place-bid (read-string "sale-id") "k:buyer" (read-keyset 'buyer-guard) 40.0)
   )
+
+  (expect-failure "Bid using a named account"
+    "Incorrect account guard, only principal accounts allowed"
+    (place-bid (read-string "sale-id") "buyer" (read-keyset 'buyer-guard) 100.0)
+  )
+
   (env-sigs [
     { 'key: 'buyer
      ,'caps: [
       (PLACE_BID (read-keyset 'buyer-guard)),
-      (coin.TRANSFER "buyer" "u:util.guards1.enforce-guard-any:8iBtcNCfjArejHvxJ0rde1DsWxuhHqOzd1w40jsDPV4" 75.0)
+      (coin.TRANSFER "k:buyer" "u:util.guards1.enforce-guard-any:8iBtcNCfjArejHvxJ0rde1DsWxuhHqOzd1w40jsDPV4" 75.0)
     ]}])
   (expect "Place bid succeeds"
     true
-    (place-bid (read-string "sale-id") "buyer" (read-keyset 'buyer-guard) 75.0)
+    (place-bid (read-string "sale-id") "k:buyer" (read-keyset 'buyer-guard) 75.0)
   )
   (expect "Buyer balance has been deducted"
     175.0
-    (coin.get-balance "buyer")
+    (coin.get-balance "k:buyer")
   )
   (expect "The highest bid has been noted in the auction"
     { "token-id": (read-string "token1-id")
       ,"start-date": 1696204800
       ,"end-date": 1696723200
       ,"highest-bid": 75.0
-      ,"highest-bid-id": (create-bid-id (read-msg "sale-id") "buyer")
+      ,"highest-bid-id": (create-bid-id (read-msg "sale-id") "k:buyer")
       ,"reserve-price": 50.0
     }
     (retrieve-auction (read-string "sale-id"))
@@ -289,7 +334,7 @@
 
   (expect "Previous bidder has received his bid amount back"
     250.0
-    (coin.get-balance "buyer")
+    (coin.get-balance "k:buyer")
   )
   (expect "Next bidder's balance has been deducted"
     125.0
@@ -342,6 +387,21 @@
   (expect-failure "Try to claim the token with the wrong price"
     "Price does not match highest bid"
     (continue-pact 1 false "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y")
+  )
+(rollback-tx)
+
+(begin-tx "Withdrawal when bids are placed")
+  (env-hash (hash "bid-withdrawal-bids-placed"))
+  (env-chain-data {"block-time": (time "2023-10-09T00:00:00Z")})
+  (use marmalade-v2.ledger)
+
+  (env-data {
+    "sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
+  })
+
+  (expect-failure "withdrawing after the auction has ended fails when there are bids placed"
+    "Bid has been placed, can't withdraw"
+    (continue-pact 0 true (read-msg 'sale-id))
   )
 (rollback-tx)
 

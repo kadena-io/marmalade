@@ -221,9 +221,11 @@
       (enforce (validate-principal bidder-guard bidder) "Incorrect account guard, only principal accounts allowed")
       (let* (
           (bid-id:string (create-bid-id sale-id bidder))
+          (quote-info:object{quote-schema} (get-quote-info sale-id))
+          (fungible:module{fungible-v2} (at 'fungible quote-info))
           (mk-fee-spec:object{marketplace-fee-spec} (try { "mk-account": "", "mk-fee-percentage": 0.0 } (read-msg MARKETPLACE-FEE-KEY)))
           (mk-fee-percentage:decimal (at "mk-fee-percentage" mk-fee-spec))
-          (mk-fee:decimal (floor (* mk-fee-percentage bid) (coin.precision)))
+          (mk-fee:decimal (floor (* mk-fee-percentage bid) (fungible::precision)))
         )
         (with-capability (PLACE_BID bidder-guard)
           ; Return amount to previous bidder if there was one
@@ -233,15 +235,15 @@
                 'bidder-guard:= previous-bidder-guard
               }
               (with-capability (REFUND_CAP sale-id)
-                (install-capability (coin.TRANSFER (escrow-account sale-id) previous-bidder (coin.get-balance (escrow-account sale-id))))
-                (coin.transfer (escrow-account sale-id) previous-bidder (coin.get-balance (escrow-account sale-id)))
+                (install-capability (fungible::TRANSFER (escrow-account sale-id) previous-bidder (fungible::get-balance (escrow-account sale-id))))
+                (fungible::transfer (escrow-account sale-id) previous-bidder (fungible::get-balance (escrow-account sale-id)))
               )
             )
             true
           )
 
           ; Transfer amount (including fee if applicable) from bidder to escrow-account
-          (coin.transfer-create bidder (escrow-account sale-id) (escrow-guard sale-id) (+ bid mk-fee))
+          (fungible::transfer-create bidder (escrow-account sale-id) (escrow-guard sale-id) (+ bid mk-fee))
 
           ; Write new bid and store highest bid in auction
           (write bids bid-id {

@@ -23,10 +23,20 @@
 
   (defschema quote-schema
     @doc "Quote spec of the sale"
+    token-id:string
+    amount:decimal
+    seller:string
+    timeout:integer
     fungible:module{fungible-v2}
     seller-fungible-account:object{fungible-account}
-    price:decimal
-    amount:decimal
+    sale-price:decimal
+    sale-type:string
+  )
+
+  (defschema quote-spec
+    fungible:module{fungible-v2}
+    seller-fungible-account:object{fungible-account}
+    sale-price:decimal
     sale-type:string
   )
 
@@ -39,7 +49,7 @@
   (defcap QUOTE:bool
     ( sale-id:string
       token-id:string
-      spec:object{quote-schema}
+      spec:object{quote-spec}
     )
     @event
     true
@@ -105,7 +115,7 @@
     @doc "Enforces sale-guard on update-quote-price"
     (enforce (> updated-price 0.0) "QUOTE price must be positive")
     (compose-capability (SALE-GUARD-CALL sale-id updated-price))
-    (let ((sale-contract:module{sale-v1} (retrieve-sale sale-type)))
+    (let ((sale-contract:module{sale-v2} (retrieve-sale sale-type)))
       (sale-contract::enforce-quote-update sale-id updated-price))
   )
 
@@ -124,7 +134,7 @@
 
   ;; Saves Sale Logic
   (defschema sale-contract
-    sale-contract:module{sale-v1}
+    sale-contract:module{sale-v2}
   )
 
   (deftable sale-whitelist:{sale-contract})
@@ -134,7 +144,7 @@
     (enforce-guard ADMIN-KS)
   )
 
-  (defun add-sale-whitelist:bool (sale-contract:module{sale-v1})
+  (defun add-sale-whitelist:bool (sale-contract:module{sale-v2})
     @doc "Adds quote-guard to quote-guard-whitelist list"
     (let ((sale-key (format "{}" [sale-contract])))
       (with-capability (SALE-WHITELIST sale-key)
@@ -243,7 +253,7 @@
       sale-id:string )
     @doc " Executed at `offer` step of marmalade.ledger.                             \
     \ Required msg-data keys:                                                        \
-    \ * (optional) quote:object{quote-msg} - sale is registered as a quoted fungible \
+    \ * (optional) quote:object{quote-spec} - sale is registered as a quoted fungible \
     \ sale if present. If absent, sale proceeds without quotes."
 
     (let ((ledger:module{ledger-v1} (retrieve-ledger)))
@@ -256,17 +266,24 @@
     ; Check if quote-msg exists
     (if (exists-msg-quote QUOTE-MSG-KEY)
       ; true - insert quote message and create escrow account in fungible
-      (let* (
-          (quote-spec:object{quote-schema} (read-msg QUOTE-MSG-KEY))
-          (fungible:module{fungible-v2} (at 'fungible quote-spec))
-          (escrow-account:object{fungible-account} (get-escrow-account sale-id))
-        )
-        (enforce (= (at 'amount quote-spec) amount) "QUOTE amount must match OFFER amount")
-        (validate-quote quote-spec)
-        (insert quotes sale-id quote-spec) ;; void sale type
-        (fungible::create-account (at 'account escrow-account) (at 'guard escrow-account))
-        (emit-event (QUOTE sale-id (at 'id token) quote-spec))
+    (let* (
+        (quote-spec:object{quote-spec} (read-msg QUOTE-MSG-KEY))
+        (fungible:module{fungible-v2} (at 'fungible quote-spec))
+        (escrow-account:object{fungible-account} (get-escrow-account sale-id))
+        (token-id:string (at 'id token))
+        (quote:object{quote-schema} (+
+            { "token-id": token-id
+            , 'seller: seller
+            , 'amount: amount
+            , 'timeout: timeout
+            }
+            quote-spec))
       )
+      (validate-quote quote)
+      (insert quotes sale-id quote) ;; void sale type
+      (fungible::create-account (at 'account escrow-account) (at 'guard escrow-account))
+      (emit-event (QUOTE sale-id token-id quote-spec))
+    )
       ; false - skip
       true
     )
@@ -292,6 +309,18 @@
     )
     (enforce-sale-pact sale-id)
 
+    (if (exists-quote sale-id)
+      (let* (
+        (quote-spec:object{quote-schema} (get-quote-info sale-id))
+        (sale-type:string (at 'sale-type quote-spec)))
+
+        (if (!= sale-type "")
+          (let ((sale-contract:module{sale-v2} (retrieve-sale sale-type)))
+            (sale-contract::enforce-withdrawal sale-id))
+          true
+        ))
+      true
+    )
 
     (map (lambda (policy:module{kip.token-policy-v2})
       (with-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id timeout policy)
@@ -330,23 +359,26 @@
              (fungible:module{fungible-v2} (at 'fungible quote-spec))
              (seller-fungible-account:object{fungible-account} (at 'seller-fungible-account quote-spec))
              (sale-type:string (at 'sale-type quote-spec))
-             (quote-price:decimal (at 'price quote-spec))
+             (sale-price:decimal (at 'sale-price quote-spec))
            )
       (if (!= sale-type "")
         (if (exists-msg-decimal UPDATED-PRICE-KEY)
-          (let ((updated-price:decimal (read-decimal UPDATED-PRICE-KEY)))
+          (let ((updated-price:decimal (read-msg UPDATED-PRICE-KEY)))
+            (fungible::enforce-unit updated-price)
             (with-capability (UPDATE-QUOTE-PRICE (at 'id token) sale-id sale-type updated-price)
-              (update quotes sale-id { "price": updated-price })
+              (update quotes sale-id { "sale-price": updated-price })
             )
+            true
           )
-          (enforce (> quote-price 0.0) "Price is not finalized for this quote")
+         true
         )
         true
       )
-      (let ((sale-price:decimal (floor (* (at 'price (get-quote-info sale-id)) amount) (fungible::precision))))
+      (let ((final-sale-price:decimal  (at 'sale-price (get-quote-info sale-id))))
+          (enforce (> final-sale-price 0.0) "Price is not finalized for this quote")
           (with-capability (FUNGIBLE-TRANSFER-CALL sale-id)
-            (install-capability (fungible::TRANSFER (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at 'account escrow-account) sale-price))
-            (fungible::transfer-create (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at 'account escrow-account) (at 'guard escrow-account) sale-price)
+            (install-capability (fungible::TRANSFER (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at 'account escrow-account) final-sale-price))
+            (fungible::transfer-create (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at 'account escrow-account) (at 'guard escrow-account) final-sale-price)
           )
          (with-capability (ESCROW sale-id)
            ; Run policies::enforce-buy
@@ -408,7 +440,7 @@
 
   (defun exists-msg-decimal:bool (msg:string)
     @doc "Checks env-data field and see if the msg is a decimal"
-    (let  ((d:decimal (try -1.0 (read-decimal msg))))
+    (let  ((d:decimal (try -1.0 (read-msg msg))))
       (!= d -1.0))
   )
 
@@ -426,7 +458,7 @@
     ledger)
   )
 
-  (defun retrieve-sale:module{sale-v1} (sale-type:string)
+  (defun retrieve-sale:module{sale-v2} (sale-type:string)
     @doc "Retrieves the sale-contract"
     (with-read sale-whitelist sale-type {"sale-contract":= sale} sale)
   )
@@ -455,20 +487,21 @@
   (defun validate-quote:bool (quote-spec:object{quote-schema})
     (let* ( (fungible:module{fungible-v2} (at 'fungible quote-spec) )
             (seller-fungible-account:object{fungible-account} (at 'seller-fungible-account quote-spec))
-            (amount:decimal (at 'amount quote-spec))
-            (price:decimal (at 'price quote-spec))
             (sale-type:string (at 'sale-type quote-spec))
-            (sale-price:decimal (* amount price)) )
+            (sale-price:decimal (at 'sale-price quote-spec)) )
       (validate-fungible-account fungible seller-fungible-account)
       (fungible::enforce-unit sale-price)
       (if (= sale-type "")
-        (enforce (> price 0.0) "Offer price must be positive" )
+        (enforce (> sale-price 0.0) "Offer price must be positive" )
         [ (retrieve-sale sale-type)
-          (enforce (>= price 0.0) "Offer price must be positive or zero")
+          (enforce (>= sale-price 0.0) "Offer price must be positive or zero")
         ]
       )
       true)
   )
+
+  ; Bless previous versions
+  (bless "WC7obfshJ_VsH2PmcTL2iy4TKjbhHvA1WU_aMWIRwKc")
 )
 
 (if (read-msg 'upgrade )
@@ -478,3 +511,4 @@
     (create-table quotes)
     (create-table sale-whitelist)
   ])
+(enforce-guard ADMIN-KS)

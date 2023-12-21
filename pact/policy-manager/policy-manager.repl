@@ -392,8 +392,7 @@
      ,"seller": "k:account"
      ,"quote":{
         "fungible": marmalade-v2.abc
-        ,"price": 2.0
-        ,"amount": 1.0
+        ,"sale-price": 2.0
         ,"seller-fungible-account": {
             "account": "k:seller-fungible-account"
            ,"guard": {"keys": ["seller-fungible-account"], "pred": "keys-all"}
@@ -484,8 +483,7 @@
      ,"seller": "k:account"
      ,"quote":{
         "fungible": marmalade-v2.abc
-        ,"price": 2.0
-        ,"amount": 1.0
+        ,"sale-price": 2.0
         ,"seller-fungible-account": {
             "account": "k:seller-fungible-account"
            ,"guard": {"keys": ["seller-fungible-account"], "pred": "keys-all"}
@@ -520,6 +518,7 @@
     "buyer": "k:buyer"
    ,"buyer-guard": {"keys": ['buyer], "pred": "keys-all"}
    ,"buyer_fungible_account": "k:buyer-fungible"
+   ,"updated_price":4.0
    })
 
    (env-sigs
@@ -578,8 +577,7 @@
      ,"seller": "k:account"
      ,"quote":{
         "fungible": marmalade-v2.abc
-        ,"price": 2.0
-        ,"amount": 1.0
+        ,"sale-price": 2.0
         ,"seller-fungible-account": {
             "account": "k:seller-fungible-account"
            ,"guard": {"keys": ["seller-fungible-account"], "pred": "keys-all"}
@@ -604,8 +602,7 @@
      ,"seller": "k:account"
      ,"quote":{
         "fungible": marmalade-v2.abc
-        ,"price": 2.0
-        ,"amount": 1.0
+        ,"sale-price": 2.0
         ,"seller-fungible-account": {
             "account": "k:seller-fungible-account"
            ,"guard": {"keys": ["seller-fungible-account"], "pred": "keys-all"}
@@ -663,12 +660,16 @@
 (namespace (read-string 'ns))
 
 (module sale-example-v1 GOV
-  (implements marmalade-v2.sale-v1)
+  (implements marmalade-v2.sale-v2)
 
   (defcap GOV () true)
 
   (defun enforce-quote-update:bool (sale-id:string price:decimal)
     (require-capability (marmalade-v2.policy-manager.SALE-GUARD-CALL sale-id price))
+  )
+
+  (defun enforce-withdrawal:bool (sale-id:string)
+    true
   )
 )
 
@@ -700,8 +701,7 @@
      ,"seller": "k:account"
      ,"quote":{
         "fungible": marmalade-v2.abc
-        ,"price": 2.0
-        ,"amount": 1.0
+        ,"sale-price": 2.0000000000000001
         ,"seller-fungible-account": {
             "account": "k:seller-fungible-account"
            ,"guard": {"keys": ["seller-fungible-account"], "pred": "keys-all"}
@@ -714,12 +714,31 @@
   (env-sigs [
     { 'key: 'account
     ,'caps: [
-      (marmalade-v2.ledger.OFFER (read-string 'token-id) "k:account" 1.0 (to-timestamp (time "2023-07-10T00:00:00Z")))]
+      (marmalade-v2.ledger.OFFER (read-string 'token-id) (read-string 'seller) 1.0 (to-timestamp (time "2023-07-10T00:00:00Z")))]
     }])
+
+  (expect-failure "sale fails when sale-price precision is incorrect"
+    "precision violation"
+    (sale (read-msg 'token-id) "k:account" 1.0 (to-timestamp (time "2023-07-10T00:00:00Z"))))
+
+  (env-data {
+      "token-id": "t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA"
+     ,"seller": "k:account"
+     ,"quote":{
+        "fungible": marmalade-v2.abc
+        ,"sale-price": 0.0
+        ,"seller-fungible-account": {
+            "account": "k:seller-fungible-account"
+           ,"guard": {"keys": ["seller-fungible-account"], "pred": "keys-all"}
+          }
+        ,"sale-type": "marmalade-v2.sale-example-v1"
+      }
+    }
+  )
 
   (expect "start offer with quote spec"
     (pact-id)
-    (sale (read-msg 'token-id) "k:account" 1.0 (to-timestamp (time "2023-07-10T00:00:00Z"))))
+    (sale (read-msg 'token-id) (read-string 'seller) 1.0 (to-timestamp (time "2023-07-10T00:00:00Z"))))
 
  (expect "offer events"
     [ {"name": "marmalade-v2.policy-manager.SALE-WHITELIST","params": ["marmalade-v2.sale-example-v1"]}
@@ -737,7 +756,6 @@
     "buyer": "k:buyer"
    ,"buyer-guard": {"keys": ['buyer], "pred": "keys-all"}
    ,"buyer_fungible_account": "k:buyer-fungible"
-   ,"updated_price": 50.0
    })
 
   (marmalade-v2.abc.fund "k:buyer-fungible" 50.0)
@@ -751,8 +769,50 @@
       }
   ])
 
-  (expect "Buy succeeds"
-    (pact-id)
-    (continue-pact 1))
+(expect-failure "Buy fails without quote price update"
+  "Price is not finalized for this quote"
+  (continue-pact 1))
+
+(env-data {
+  "buyer": "k:buyer"
+ ,"buyer-guard": {"keys": ['buyer], "pred": "keys-all"}
+ ,"buyer_fungible_account": "k:buyer-fungible"
+ ,"updated_price":  49.0000000000000001
+ })
+
+(expect-failure "Buy fails with incorrect precision"
+  "precision violation"
+  (continue-pact 1))
+
+(env-data {
+  "buyer": "k:buyer"
+ ,"buyer-guard": {"keys": ['buyer], "pred": "keys-all"}
+ ,"buyer_fungible_account": "k:buyer-fungible"
+ ,"updated_price": ""
+})
+
+(expect-failure "Buy fails when updated_price is not decimal"
+  "Type error: expected decimal, found string"
+  (continue-pact 1))
+(env-data {
+  "buyer": "k:buyer"
+ ,"buyer-guard": {"keys": ['buyer], "pred": "keys-all"}
+ ,"buyer_fungible_account": "k:buyer-fungible"
+ ,"updated_price": 50.0
+})
+
+(expect "Buy succeeds"
+  (pact-id)
+  (continue-pact 1))
+
+(expect "buy events"
+  [ {"name": "marmalade-v2.abc.TRANSFER","params": ["k:buyer-fungible" "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" 50.0]}
+    {"name": "marmalade-v2.abc.TRANSFER","params": ["c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" "k:seller-fungible-account" 50.0]}
+    {"name": "marmalade-v2.ledger.BUY","params": ["t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA" "k:account" "k:buyer" 1.0 "i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"]}
+    {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA" "k:buyer" (read-keyset 'buyer-guard)]}
+    {"name": "marmalade-v2.ledger.TRANSFER","params": ["t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA" "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q" "k:buyer" 1.0]}
+    {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA" 1.0 {"account": "c:JKwZqh1BLwRitGKgaousFt5ZgWOSyY0tyPh_xh25a2Q","current": 0.0,"previous": 1.0} {"account": "k:buyer","current": 1.0,"previous": 0.0}]}]
+    (map (remove "module-hash")  (env-events true)))
+
 
 (rollback-tx)

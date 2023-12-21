@@ -79,3 +79,5 @@
   )
 
 )
+
+(enforce-guard ADMIN-KS)

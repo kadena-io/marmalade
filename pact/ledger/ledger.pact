@@ -664,3 +664,4 @@
   ["upgrade complete"]
   [ (create-table ledger)
     (create-table tokens) ])
+(enforce-guard ADMIN-KS)

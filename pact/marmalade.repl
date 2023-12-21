@@ -24,10 +24,9 @@
   (define-namespace 'util (sig-keyset) (sig-keyset))
   (load "./util/fungible-util.pact")
   (load "./util/guards1.pact")
-
 (commit-tx)
 
-(begin-tx)
+(begin-tx "deploy marmalade-v2 namespace and admin keyset")
   (env-data
    { 'marmalade-admin: ["marmalade-admin"]
    , 'marmalade-user: ["marmalade-user"]
@@ -50,6 +49,42 @@
       ,'caps: []
       }])
   (load "./marmalade-ns/ns-contract-admin.pact")
+(commit-tx)
+
+(begin-tx "deploy marmalade-sale namespace and admin keyset")
+  (env-data
+   { 'marmalade-admin: ["marmalade-admin"]
+   , 'marmalade-user: ["marmalade-user"]
+   , 'ns: "marmalade-sale"
+   , 'upgrade: false })
+   (env-sigs [
+     { 'key: 'marmalade-admin
+      ,'caps: []
+      }])
+  (load "./marmalade-ns/ns-marmalade.pact")
+  (env-data
+   { "marmalade-sale.marmalade-contract-admin": ["marmalade-contract-admin"]
+   , 'ns: "marmalade-sale"
+   , 'upgrade: false })
+   (env-sigs [
+     { 'key: 'marmalade-user
+      ,'caps: []
+     }, {
+       'key: 'marmalade-contract-admin
+      ,'caps: []
+      }])
+  (load "./marmalade-ns/ns-contract-admin.pact")
+
+(commit-tx)
+
+(env-data
+ { 'marmalade-admin: ["marmalade-admin"]
+ , 'marmalade-user: ["marmalade-user"]
+ , 'ns: "marmalade-v2"
+ , 'upgrade: false })
+
+(begin-tx)
+
   (load "./ledger/ledger.interface.pact")
   (load "./policy-manager/sale.interface.pact")
   (load "./policy-manager/policy-manager.pact")

@@ -1,12 +1,13 @@
-codeFile: ../policy-manager/policy-manager.pact
+codeFile: ../../sale-contracts/conventional-auction/conventional-auction.pact
 signers:
-  - public: {{sender_key}}
+  - public: {{signer}}
 data:
   ns: {{marmalade_namespace}}
+  upgrade: {{is_upgrade}}
 networkId: {{network}}
 publicMeta:
   chainId: "{{chain}}"
   sender: {{sender}}
   gasLimit: 100000
   gasPrice: 0.0000001
-  ttl: 600
+  ttl: 10000

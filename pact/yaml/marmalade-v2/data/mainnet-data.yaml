@@ -1,0 +1,15 @@
+network: mainnet01
+chain: 8
+
+kip_namespace: kip
+
+marmalade_namespace: marmalade-v2
+marmalade_sale_namespace: marmalade-sale
+
+is_upgrade: false
+
+sender:
+sender_key:
+
+marmalade_user_key_1:
+marmalade_user_key_2: 

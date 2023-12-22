@@ -1,0 +1,12 @@
+codeFile: ../kip/token-policy-v2.pact
+signers:
+  - public: {{sender_key}}
+data:
+  ns: {{kip_namespace}}
+networkId: {{network}}
+publicMeta:
+  chainId: "{{chain}}"
+  sender: {{sender}}
+  gasLimit: 100000
+  gasPrice: 0.0000001
+  ttl: 600

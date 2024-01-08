@@ -22,7 +22,7 @@ Token can be minted by an account only once, even if the token is burned in the 
 
 **`enforce-init`:** Enforced during `marmalade-v2.ledger.create-token`, and will ensure the `precision` is set to 0.
 
-**`enforce-mint`:** Enforced during `marmalade-v2.ledger.offer`, and will ensure that an account can only own one instance of a token at any given time.
+**`enforce-mint`:** Enforced during `marmalade-v2.ledger.mint`, and will ensure that an account can only own one instance of a token at any given time.
 
 **`enforce-burn`:** Enforced during `marmalade-v2.ledger.burn`, and will ensure whole amount is burned.
 

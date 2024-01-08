@@ -23,6 +23,18 @@
 
   (defconst TIMED-MINT-SPEC:string "timed_mint_spec")
 
+  (defun validate-specs (spec:object{timed-mint-schema})
+    @doc "Enforce that the time windows and max supply conforms \
+    \to the contract requirements."
+
+    (let* ( (max-supply:decimal (at 'max-supply spec))
+            (mint-start-time:time (at 'mint-start-time spec))
+            (mint-end-time:time (at 'mint-end-time spec)) )
+
+      (enforce (>= max-supply 0.0) "Max supply must be non-negative")
+      (enforce (>= mint-end-time mint-start-time) "Mint end time must be after mint start time")
+      (enforce (>= mint-start-time (at 'block-time (chain-data))) "Mint start time must be in the future") ))
+
    (defun enforce-init:bool
      ( token:object{token-info}
      )
@@ -32,6 +44,7 @@
              (mint-start-time:time (at 'mint-start-time spec))
              (mint-end-time:time (at 'mint-end-time spec))
            )
+       (validate-specs spec)
        (insert timed-mint (at 'id token)
          { 'max-supply: max-supply
          , 'mint-start-time:mint-start-time
@@ -48,6 +61,7 @@
     )
     (require-capability (MINT-CALL (at "id" token) account amount timed-mint-policy-v1))
     (let* ( (account-bal:decimal (try 0.0 (at 'balance (marmalade-v2.ledger.details (at 'id token) account))))
+            (total-supply:decimal (try 0.0 (marmalade-v2.ledger.total-supply (at 'id token))))
             (timed-mint:object{timed-mint-schema} (get-timed-mint token))
             (max-supply:decimal (at 'max-supply timed-mint))
             (mint-start-time:time (at 'mint-start-time timed-mint))
@@ -55,6 +69,12 @@
       (enforce (= account-bal 0.0) "Account has already minted")
       (enforce (>= (at 'block-time (chain-data))  mint-start-time) "Mint has not started yet")
       (enforce (< (at 'block-time (chain-data))  mint-end-time) "Mint has ended")
+      (enforce (>= amount 0.0) "Mint amount must be positive")
+      (if (= max-supply 0.0) true [
+        (if (> total-supply 0.0) (enforce (!= max-supply total-supply) "Mint has reached max supply") true)
+        (enforce (<= (+ total-supply amount) max-supply) "Exceeds max supply")
+      ])
+      true
     )
   )
 
@@ -103,16 +123,6 @@
       sender:string
       guard:guard
       receiver:string
-      amount:decimal )
-    (enforce false "Transfer prohibited")
-  )
-
-  (defun enforce-crosschain:bool
-    ( token:object{token-info}
-      sender:string
-      guard:guard
-      receiver:string
-      target-chain:string
       amount:decimal )
     (enforce false "Transfer prohibited")
   )

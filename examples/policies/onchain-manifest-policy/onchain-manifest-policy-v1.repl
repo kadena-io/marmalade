@@ -53,12 +53,16 @@
    })
 
   (env-sigs [
-    {"key": "manifest", "caps": [(marmalade-examples.onchain-manifest-policy-v1.UPGRADE "t:arm8y-YTeB6pxmAIKg9Uzfe0JGQLMRgzGo6Yliu9DVg")]}
+    {"key": "manifest", "caps": [(marmalade-examples.onchain-manifest-policy-v1.UPGRADE (read-msg 'token-id))]}
     ])
 
   (expect "upgrade a onchain manifest"
     "Write succeeded"
     (upgrade-manifest (read-msg 'token-id ) (read-msg 'manifest1 )))
+
+  (expect "upgrade-manifest events"
+    [ { "name": "marmalade-examples.onchain-manifest-policy-v1.UPGRADE","params": [(read-msg 'token-id)]} ]
+    (map (remove "module-hash")  (env-events true)))
 
   (expect "Manifest was upgraded"
    {"uri": {"scheme": "text1","data": "data"},"hash": "dD_VD1vl5Qx25WYNhW6RWIuxo25LQfa49Fs55ckMwUE","data": []}

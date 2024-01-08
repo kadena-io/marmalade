@@ -1,0 +1,252 @@
+;;load policy manager, ledger
+(load "../../../pact/marmalade.repl")
+
+(begin-tx "load timed mint policy")
+  (env-data {
+    "ns": "marmalade-examples"
+  , "marmalade-examples-admin": ["marmalade-examples-admin"]
+  , "upgrade": false}
+  )
+  (load "../ns-marmalade-examples.pact")
+  (env-sigs [
+    { 'key: 'marmalade-examples-admin
+     ,'caps: []
+  }])
+  (load "soul-bound-policy-v1.pact")
+  (typecheck "marmalade-examples.soul-bound-policy-v1")
+
+(commit-tx)
+
+(begin-tx "Create soul bounded token")
+    (use marmalade-v2.ledger)
+    (use marmalade-examples.soul-bound-policy-v1)
+    (use mini-guard-utils)
+  (env-data {
+     "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: [marmalade-examples.soul-bound-policy-v1] } ALWAYS-TRUE)
+     ,"token-id-with-bad-precision": (create-token-id { 'uri: "test-default-guard", 'precision: 1, 'policies: [marmalade-examples.soul-bound-policy-v1] } ALWAYS-TRUE)
+  })
+
+  (expect-failure "failed to create token with precision bigger than 0"
+    "Precision must be 0 for soul-bound tokens"
+    (create-token (read-msg 'token-id-with-bad-precision) 1 "test-default-guard" [marmalade-examples.soul-bound-policy-v1] ALWAYS-TRUE))
+
+  (expect "Token created successfully"
+    true
+    (create-token (read-msg 'token-id) 0 "test-default-guard" [marmalade-examples.soul-bound-policy-v1] ALWAYS-TRUE))
+
+  (expect "create-token events"
+    [ {"name": "marmalade-v2.ledger.TOKEN","params": [(read-msg 'token-id) 0 [marmalade-examples.soul-bound-policy-v1] "test-default-guard" ALWAYS-TRUE]} ]
+    (map (remove "module-hash")  (env-events true)))
+
+(commit-tx)
+
+(begin-tx "Mint soul bound token successfully")
+    (use marmalade-v2.ledger)
+    (use marmalade-examples.soul-bound-policy-v1)
+    (use mini-guard-utils)
+  (env-data {
+     "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: [marmalade-examples.soul-bound-policy-v1] } ALWAYS-TRUE)
+    ,"account": "k:account"
+    ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
+  })
+
+  (env-sigs [
+    { 'key: 'account
+     ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
+    }])
+  
+  (expect-failure "failed to mint amount bigger than 1"
+    "Amount must be 1.0 for soul-bound tokens"
+    (mint (read-msg 'token-id) (read-msg 'account) (read-keyset 'account-guard ) 2.0))
+      
+  (expect-failure "failed to mint amount lower than 1"
+    "Amount must be 1.0 for soul-bound tokens"
+    (mint (read-msg 'token-id) (read-msg 'account) (read-keyset 'account-guard ) 0.5))
+
+  (expect "Mint token succeeds"
+    true
+    (mint (read-msg 'token-id) (read-msg 'account) (read-keyset 'account-guard ) 1.0))
+
+  (expect "mint events"
+    [ {"name": "marmalade-v2.ledger.MINT","params": [(read-msg 'token-id) "k:account" 1.0]}
+      {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": [(read-msg 'token-id) "k:account" (read-keyset 'account-guard)]}
+      {"name": "marmalade-v2.ledger.RECONCILE","params": [(read-msg 'token-id) 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": "k:account","current": 1.0,"previous": 0.0}]} {"name": "marmalade-v2.ledger.SUPPLY","params": [(read-msg 'token-id) 1.0]}]
+    (map (remove "module-hash")  (env-events true)))
+    
+  (expect-failure "Fail to mint the same token again"
+    "Account has already minted"
+    (mint (read-msg 'token-id) (read-msg 'account) (read-keyset 'account-guard ) 1.0))
+
+(commit-tx)
+
+(begin-tx "Mint, burn and mint again the same token")
+    (use marmalade-v2.ledger)
+    (use marmalade-examples.soul-bound-policy-v1)
+    (use mini-guard-utils)
+  (env-data {
+     "token-id": (create-token-id { 'uri: "mint-burn-mint", 'precision: 0, 'policies: [marmalade-examples.soul-bound-policy-v1] } ALWAYS-TRUE)
+    ,"account": "k:account"
+    ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
+  })
+
+  (expect "Token created successfully"
+    true
+    (create-token (read-msg 'token-id) 0 "mint-burn-mint" [marmalade-examples.soul-bound-policy-v1] ALWAYS-TRUE))
+
+  (expect "create-token events"
+    [ {"name": "marmalade-v2.ledger.TOKEN","params": [(read-msg 'token-id) 0 [marmalade-examples.soul-bound-policy-v1] "mint-burn-mint" ALWAYS-TRUE]} ]
+    (map (remove "module-hash")  (env-events true)))
+
+  (env-sigs [
+    { 'key: 'account
+     ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
+    }])
+  
+  (expect "Mint token succeeds"
+    true
+    (mint (read-msg 'token-id) (read-msg 'account) (read-keyset 'account-guard ) 1.0))
+
+  (expect "mint events"
+    [ {"name": "marmalade-v2.ledger.MINT","params": [(read-msg 'token-id) "k:account" 1.0]}
+      {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": [(read-msg 'token-id) "k:account" (read-keyset 'account-guard)]}
+      {"name": "marmalade-v2.ledger.RECONCILE","params": [(read-msg 'token-id) 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": "k:account","current": 1.0,"previous": 0.0}]} {"name": "marmalade-v2.ledger.SUPPLY","params": [(read-msg 'token-id) 1.0]}]
+    (map (remove "module-hash")  (env-events true)))
+  
+  (env-sigs [
+    { 'key: 'account
+      ,'caps: [(marmalade-v2.ledger.BURN (read-msg 'token-id) "k:account" 1.0)]
+    }])
+
+  (expect "Burn token succeeds"
+    true
+    (burn (read-msg 'token-id) (read-msg 'account) 1.0))
+
+  (expect "burn events"
+    [ {"name": "marmalade-v2.ledger.BURN","params": [(read-msg 'token-id) "k:account" 1.0]}
+      {"name": "marmalade-v2.ledger.RECONCILE","params": [(read-msg 'token-id) 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "","current": 0.0,"previous": 0.0}]} {"name": "marmalade-v2.ledger.SUPPLY","params": [(read-msg 'token-id) 0.0]}]
+    (map (remove "module-hash")  (env-events true)))
+
+  (env-sigs [
+    { 'key: 'account
+     ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token-id) "k:account" 1.0)]
+    }])
+  
+  (expect-failure "Fail to mint the same token again"
+    "Account has already minted"
+    (mint (read-msg 'token-id) (read-msg 'account) (read-keyset 'account-guard ) 1.0))
+
+  (env-data {
+    "token-id": (create-token-id { 'uri: "mint-burn-mint", 'precision: 0, 'policies: [marmalade-examples.soul-bound-policy-v1] } ALWAYS-TRUE)
+    ,"account": "k:other-account"
+    ,"account-guard": {"keys": ["other-account"], "pred": "keys-all"}
+  })
+
+  (env-sigs [
+    { 'key: 'account
+    ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token-id) "k:other-account" 1.0)]
+    }])
+  
+  (expect "Mint same token successfully to other account"
+    true
+    (mint (read-msg 'token-id) (read-msg 'account) (read-keyset 'account-guard ) 1.0))
+
+  (expect "mint events"
+    [ {"name": "marmalade-v2.ledger.MINT","params": [(read-msg 'token-id) "k:other-account" 1.0]}
+      {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": [(read-msg 'token-id) "k:other-account" (read-keyset 'account-guard)]}
+      {"name": "marmalade-v2.ledger.RECONCILE","params": [(read-msg 'token-id) 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": "k:other-account","current": 1.0,"previous": 0.0}]} {"name": "marmalade-v2.ledger.SUPPLY","params": [(read-msg 'token-id) 1.0]}]
+    (map (remove "module-hash")  (env-events true)))
+ 
+(rollback-tx)
+
+(begin-tx "Burn soul bound token successfully")
+    (use marmalade-v2.ledger)
+    (use marmalade-examples.soul-bound-policy-v1)
+    (use mini-guard-utils)
+  (env-data {
+     "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: [marmalade-examples.soul-bound-policy-v1] } ALWAYS-TRUE)
+    ,"account": "k:account"
+    ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
+  })
+
+  (env-sigs [
+    { 'key: 'account
+     ,'caps: [(marmalade-v2.ledger.BURN (read-msg 'token-id) "k:account" 1.0)]
+    }])
+
+  (expect-failure "failed to burn amount bigger than 1"
+    "Amount must be 1.0 for soul-bound tokens"
+    (burn (read-msg 'token-id) (read-msg 'account) 2.0))
+
+  (expect-failure "failed to burn amount lower than 1"
+    "Amount must be 1.0 for soul-bound tokens"
+    (burn (read-msg 'token-id) (read-msg 'account) 0.5))
+
+  (expect "Burn token succeeds"
+    true
+    (burn (read-msg 'token-id) (read-msg 'account) 1.0))
+
+  (expect "burn events"
+    [ {"name": "marmalade-v2.ledger.BURN","params": [(read-msg 'token-id) "k:account" 1.0]}
+      {"name": "marmalade-v2.ledger.RECONCILE","params": [(read-msg 'token-id) 1.0 {"account": "k:account","current": 0.0,"previous": 1.0} {"account": "","current": 0.0,"previous": 0.0}]} {"name": "marmalade-v2.ledger.SUPPLY","params": [(read-msg 'token-id) 0.0]}]
+    (map (remove "module-hash")  (env-events true)))
+
+(rollback-tx)
+
+(begin-tx "Transfer fails on soul bound tokens")
+    (use marmalade-v2.ledger)
+    (use marmalade-examples.soul-bound-policy-v1)
+    (use mini-guard-utils)
+  (env-data {
+     "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: [marmalade-examples.soul-bound-policy-v1] } ALWAYS-TRUE)
+    ,"account": "k:account"
+    ,"receiver": "k:receiver"
+  })
+
+  (expect-failure "transfer token fails"
+    "Transfer is not allowed!"
+    (transfer (read-msg 'token-id) (read-msg 'account) (read-msg 'receiver) 1.0 ))
+
+(rollback-tx)
+
+(begin-tx "Crosschain transfer fails on soul bound tokens")
+    (use marmalade-v2.ledger)
+    (use marmalade-examples.soul-bound-policy-v1)
+    (use mini-guard-utils)
+  (env-data {
+     "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: [marmalade-examples.soul-bound-policy-v1] } ALWAYS-TRUE)
+    ,"account": "k:account"
+    ,"receiver": "k:receiver"
+    ,"receiver-guard": {"keys": ["receiver"], "pred": "keys-all"}
+    ,"target-chain": "8"
+  })
+
+  (expect-failure "Fail to transfer"
+    "cross chain not supported"
+    (transfer-crosschain (read-msg 'token-id) (read-msg 'account) (read-msg 'receiver) (read-keyset 'receiver-guard ) (read-msg 'target-chain) 1.0))
+    
+(rollback-tx)
+
+(begin-tx "Sale fails on soul bound tokens")
+  (env-hash (hash "offer-0"))
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.util-v1)
+  (use mini-guard-utils)
+  (env-chain-data {"block-time": (time "2023-07-20T11:26:35Z")})
+
+  (env-data {
+    "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: [marmalade-examples.soul-bound-policy-v1] } ALWAYS-TRUE)
+    ,"account": "k:account"
+    ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
+    })
+
+  (env-sigs [
+    { 'key: 'account
+     ,'caps: [(marmalade-v2.ledger.OFFER (read-string "token-id") (read-string "account") 1.0 (to-timestamp (time "2023-07-08T11:26:35Z")))]}
+  ])
+
+  (expect-failure "offer fails"
+    "Sale is not allowed!"
+    (sale (read-string "token-id") (read-string "account") 1.0 (to-timestamp (time "2023-07-08T11:26:35Z")))
+  )
+  
+(rollback-tx)

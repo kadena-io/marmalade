@@ -17,10 +17,6 @@
 
   (deftable records:{mint-record})
 
-  (defun key:string (tokenId:string account:string)
-    (format "{}:{}" [tokenId account])
-  )
-
   (defun enforce-init:bool
     ( token:object{token-info}
     )
@@ -44,13 +40,13 @@
     (enforce (= amount 1.0) "Amount must be 1.0 for soul-bound tokens")
 
     (let* ((account-balance (try 0.0 (at 'balance (marmalade-v2.ledger.details (at 'id token) account) )))
-          (mint-record (try { 'account: "" } (read records (key (at 'id token) account))))
+          (mint-record (try { 'account: "" } (read records (at 'id token))))
           (has-mint-record (try false (!= (at 'account mint-record) ""))))
-      (enforce (= account-balance 0.0) "Account has already minted")
-      (enforce (not has-mint-record) "Account has already minted")
+      (enforce (= account-balance 0.0) "Token was already minted")
+      (enforce (not has-mint-record) "Token was already minted")
     )
 
-    (insert records (key (at 'id token) account) { 'account: account })
+    (insert records (at 'id token) { 'account: account })
 
     true
   )

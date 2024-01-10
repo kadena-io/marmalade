@@ -5,7 +5,7 @@ Soul Bound Policy is an example module of Marmalade which provides a simple meth
 
 This token can be initiated, minted and burned but not sold or transferred.
 
-Token can be minted by an account only once, even if the token is burned in the future.
+Token can be minted only once, even if the token is burned in the future.
 
 ## Specification, tables, capabilities:
 

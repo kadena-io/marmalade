@@ -28,7 +28,7 @@ jobs:
         run: |
           mkdir bin
           cd bin
-          wget https://github.com/kadena-io/pact/releases/download/v4.8/pact-4.8-linux-20.04.zip
+          wget https://github.com/kadena-io/pact/releases/download/v4.10.0/pact-4.10.0-linux-20.04.zip
           unzip "pact*.zip"
           chmod +x pact
           cd ..

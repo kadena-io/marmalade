@@ -25,9 +25,10 @@
   (use marmalade-v2.util-v1)
   (use mini-guard-utils)
   (env-data {
-    "creator-guard": {"keys": ["creator"], "pred": "keys-all"}
+    "creator-account": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3",
+    "creator-guard": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
   })
-  (marmalade-v2.abc.create-account "k:creator" (read-keyset 'creator-guard))
+  (marmalade-v2.abc.create-account (read-string "creator-account") (read-keyset 'creator-guard))
 (commit-tx)
 
 (begin-tx "Create a non-fungible token fails when precision is not 0")
@@ -37,8 +38,8 @@
 
   (env-data {
     "token-id": (create-token-id { 'uri: "test-non-fungible-uri", 'precision: 1, 'policies: (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) } ALWAYS-TRUE)
-    ,"account": "k:account"
-    ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
+    ,"account": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+    ,"mint-guard": {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
   })
 
   (expect-failure  "Precision should be 0"
@@ -54,8 +55,8 @@
   (use mini-guard-utils)
   (env-data {
     "token-id": (create-token-id { 'uri: "test-non-fungible-uri", 'precision: 0, 'policies: (create-policies util.DEFAULT_NON_FUNGIBLE_CONCRETE_POLICY) } ALWAYS-TRUE)
-    ,"account": "k:account"
-    ,"mint-guard": {"keys": ["account"], "pred": "keys-all"}
+    ,"account": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+    ,"mint-guard": {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
   })
 
 (expect  "create-token succeeds with non-fungible-policy"
@@ -72,8 +73,8 @@
 
   (use marmalade-v2.ledger)
   (env-sigs [
-    { 'key: 'account
-     ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token-id) "k:account" 5.0)
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
+     ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token-id) "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3" 5.0)
     ]
     }])
 
@@ -86,8 +87,8 @@
 (begin-tx "Mint with a fractional amount fails ")
   (use marmalade-v2.ledger)
   (env-sigs [
-    { 'key: 'account
-    ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token-id) "k:account" 0.5)]
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
+    ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token-id) "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3" 0.5)]
     }])
 
   (expect-failure "minting with amout of 0.5 fails"
@@ -98,9 +99,9 @@
 (begin-tx "Mint with amount of 1 succeeds")
   (use marmalade-v2.ledger)
   (env-sigs [
-    { 'key: 'account
-    ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token-id) "k:account" 1.0)
-             (marmalade-v2.guard-policy-v1.MINT (read-msg 'token-id) "k:account" 1.0)
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
+    ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token-id) (read-string "account") 1.0)
+             (marmalade-v2.guard-policy-v1.MINT (read-msg 'token-id) (read-string "account" ) 1.0)
             ]
     }])
 
@@ -109,9 +110,9 @@
     (mint (read-msg "token-id" )  (read-msg "account" ) (read-keyset "mint-guard" ) 1.0))
 
   (expect "mint events"
-   [ {"name": "marmalade-v2.ledger.MINT","params": ["t:zJEj9yNd9xDzlubDN2saEJxu5_iYYPnZ8kZhWYhE6QE" "k:account" 1.0]}
-     {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:zJEj9yNd9xDzlubDN2saEJxu5_iYYPnZ8kZhWYhE6QE" "k:account" (read-keyset 'mint-guard)]}
-     {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:zJEj9yNd9xDzlubDN2saEJxu5_iYYPnZ8kZhWYhE6QE" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": "k:account","current": 1.0,"previous": 0.0}]}
+   [ {"name": "marmalade-v2.ledger.MINT","params": ["t:zJEj9yNd9xDzlubDN2saEJxu5_iYYPnZ8kZhWYhE6QE" (read-string "account") 1.0]}
+     {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:zJEj9yNd9xDzlubDN2saEJxu5_iYYPnZ8kZhWYhE6QE" (read-string "account") (read-keyset 'mint-guard)]}
+     {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:zJEj9yNd9xDzlubDN2saEJxu5_iYYPnZ8kZhWYhE6QE" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-string "account" ),"current": 1.0,"previous": 0.0}]}
      {"name": "marmalade-v2.ledger.SUPPLY","params": ["t:zJEj9yNd9xDzlubDN2saEJxu5_iYYPnZ8kZhWYhE6QE" 1.0]}]
     (map (remove "module-hash")  (env-events true)))
 (commit-tx)
@@ -119,11 +120,11 @@
 (begin-tx "Burn a non-fungible token")
   (use marmalade-v2.ledger)
   (env-sigs [
-    { 'key: 'account
-    ,'caps: [(marmalade-v2.ledger.BURN (read-msg 'token-id) "k:account" 1.0)]
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
+    ,'caps: [(marmalade-v2.ledger.BURN (read-msg 'token-id) (read-string "account") 1.0)]
     }])
 
   (expect-failure "Burning is not allowed"
     "Burn prohibited"
-    (burn (read-msg "token-id" )  (read-msg "account" ) 1.0))
+    (burn (read-msg "token-id" )  (read-string "account") 1.0))
 (commit-tx)

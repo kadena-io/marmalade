@@ -10,12 +10,16 @@
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
   (use marmalade-v2.policy-manager)
+  (use marmalade-v2.guard-policy-v1 [MINT-GUARD-MSG-KEY BURN-GUARD-MSG-KEY GUARD_SUCCESS])
 
   (defschema mint-record 
     account:string
   )
 
   (deftable records:{mint-record})
+
+  (defun has-guard-policy:bool (policies)
+    (> (length (filter (lambda (policy) (= policy marmalade-v2.guard-policy-v1)) policies)) 0))
 
   (defun enforce-init:bool
     ( token:object{token-info}
@@ -26,6 +30,17 @@
 
     (enforce (= (at 'precision token) 0) "Precision must be 0 for soul-bound tokens")
 
+    (let* (
+        (policies (at 'policies token))
+
+        (mint-guard (try GUARD_SUCCESS (read-msg MINT-GUARD-MSG-KEY) ))
+        (burn-guard (try GUARD_SUCCESS (read-msg BURN-GUARD-MSG-KEY) ))
+      )
+      (enforce (has-guard-policy policies) "Guard policy is required for soul-bound tokens")
+
+      (enforce (!= mint-guard GUARD_SUCCESS) "Mint guard is required for soul-bound tokens")
+      (enforce (!= burn-guard GUARD_SUCCESS) "Burn guard is required for soul-bound tokens")
+    )
     true
   )
 
@@ -39,10 +54,8 @@
 
     (enforce (= amount 1.0) "Amount must be 1.0 for soul-bound tokens")
 
-    (let* ((account-balance (try 0.0 (at 'balance (marmalade-v2.ledger.details (at 'id token) account) )))
-          (mint-record (try { 'account: "" } (read records (at 'id token))))
-          (has-mint-record (try false (!= (at 'account mint-record) ""))))
-      (enforce (= account-balance 0.0) "Token was already minted")
+    (let* ((mint-record (try { 'account: "" } (read records (at 'id token))))
+          (has-mint-record (!= (at 'account mint-record) "")))
       (enforce (not has-mint-record) "Token was already minted")
     )
 

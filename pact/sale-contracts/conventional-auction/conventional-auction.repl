@@ -23,36 +23,39 @@
   (env-chain-data {"chain-id": "0"})
   (env-data {
     "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
-   ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
-   ,"buyer-guard":  {"keys": ["buyer"], "pred": "keys-all"}
-   ,"next-buyer-guard":  {"keys": ["next-buyer"], "pred": "keys-all"}
+   ,"creator": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+   ,"creator-guard":  {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
+   ,"buyer": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
+   ,"buyer-guard":  {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
+   ,"next-buyer": "k:ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c"
+   ,"next-buyer-guard":  {"keys": ["ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c"], "pred": "keys-all"}
    ,"royalty_spec": {
       "fungible": coin
-     ,"creator": "k:creator"
-     ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
+     ,"creator": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+     ,"creator-guard":  {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
      ,"royalty-rate": 0.1
     }
   })
 
   (test-capability (coin.COINBASE))
-  (coin.coinbase "k:creator" (read-keyset 'creator-guard) 250.0)
-  (coin.coinbase "k:buyer" (read-keyset 'buyer-guard) 250.0)
-  (coin.coinbase "k:next-buyer" (read-keyset 'next-buyer-guard) 250.0)
+  (coin.coinbase (read-string 'creator) (read-keyset 'creator-guard) 250.0)
+  (coin.coinbase (read-string 'buyer) (read-keyset 'buyer-guard) 250.0)
+  (coin.coinbase (read-string 'next-buyer) (read-keyset 'next-buyer-guard) 250.0)
 
   (expect "Create the token"
     true
     (create-token (read-string "token1-id") 0 "conventional-auction-uri-1" (create-policies DEFAULT_ROYALTY) ALWAYS-TRUE))
 
   (env-sigs [
-    { 'key: 'creator
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
     ,'caps: [
-      (marmalade-v2.ledger.MINT (read-msg 'token1-id) "k:creator" 1.0)
+      (marmalade-v2.ledger.MINT (read-msg 'token1-id) (read-string 'creator) 1.0)
     ]
     }])
 
   (expect "Mint the token"
     true
-    (mint (read-string "token1-id" ) "k:creator" (read-keyset 'creator-guard ) 1.0))
+    (mint (read-string "token1-id" ) (read-string 'creator) (read-keyset 'creator-guard ) 1.0))
 (commit-tx)
 
 (begin-tx "Offer token for sale with the conventional auction sale type and a non-finalized price")
@@ -64,26 +67,27 @@
 
   (env-data {
     "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
+    ,"creator": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
     ,"quote":{
       "fungible": coin
       ,"sale-price": 0.0
       ,"seller-fungible-account": {
-          "account": "k:creator"
-        ,"guard": {"keys": ["creator"], "pred": "keys-all"}
+          "account": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+        ,"guard": {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
       }
       ,"sale-type": "marmalade-sale.conventional-auction"
      }
     })
 
   (env-sigs [
-    { 'key: 'creator
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
      ,'caps: [
-      (marmalade-v2.ledger.OFFER (read-msg 'token1-id) "k:creator" 1.0 0)]
+      (marmalade-v2.ledger.OFFER (read-msg 'token1-id) (read-string 'creator) 1.0 0)]
      }])
 
   (expect "Offer token up for sale"
     "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
-    (sale (read-msg 'token1-id) "k:creator" 1.0 0))
+    (sale (read-msg 'token1-id) (read-string 'creator) 1.0 0))
 (commit-tx)
 
 
@@ -98,7 +102,7 @@
   (env-data {
     "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
    ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
-   ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
+   ,"creator-guard":  {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
   })
 
   (expect-failure "Creating a conventional auction in the past fails"
@@ -112,7 +116,7 @@
   )
 
   (env-sigs [
-   { 'key: 'creator
+   { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
     ,'caps: [(MANAGE_AUCTION (read-msg 'sale-id) (read-msg 'token1-id))]
     }])
 
@@ -158,7 +162,7 @@
     (update-auction (read-string "sale-id") 1696809600 1697328000 50.0)
   )
   (env-sigs [
-    { 'key: 'creator
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
      ,'caps: [(MANAGE_AUCTION (read-msg 'sale-id) (read-msg 'token1-id))]
      }
   ])
@@ -182,7 +186,7 @@
    ,'imr-admin: ["imr-admin"]
   })
   (env-sigs [
-    { 'key: 'creator
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
      ,'caps: [(MANAGE_AUCTION (read-msg 'sale-id) (read-msg 'token1-id))]
      }
   ])
@@ -216,12 +220,13 @@
 
   (env-data {
     "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
+    ,"creator": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
     ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
   })
 
   (env-sigs [
-    { 'key: 'creator
-     ,'caps: [(marmalade-v2.ledger.WITHDRAW (read-msg 'token1-id) "k:creator" 1.0 0 (read-msg 'sale-id))]
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
+     ,'caps: [(marmalade-v2.ledger.WITHDRAW (read-msg 'token1-id) (read-string 'creator) 1.0 0 (read-msg 'sale-id))]
      }
   ])
 
@@ -265,11 +270,12 @@
   (env-data {
     "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
     ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
-    ,"buyer-guard":  {"keys": ["buyer"], "pred": "keys-all"}
+    ,"buyer": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
+    ,"buyer-guard":  {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
   })
   (expect-failure "Bid below reserve price"
     "Bid is not higher than reserve price"
-    (place-bid (read-string "sale-id") "k:buyer" (read-keyset 'buyer-guard) 40.0)
+    (place-bid (read-string "sale-id") (read-string 'buyer) (read-keyset 'buyer-guard) 40.0)
   )
 
   (expect-failure "Bid using a named account"
@@ -278,25 +284,25 @@
   )
 
   (env-sigs [
-    { 'key: 'buyer
+    { 'key: "6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
      ,'caps: [
       (PLACE_BID (read-keyset 'buyer-guard)),
-      (coin.TRANSFER "k:buyer" "u:util.guards1.enforce-guard-any:8iBtcNCfjArejHvxJ0rde1DsWxuhHqOzd1w40jsDPV4" 75.0)
+      (coin.TRANSFER (read-string 'buyer) "u:util.guards1.enforce-guard-any:8iBtcNCfjArejHvxJ0rde1DsWxuhHqOzd1w40jsDPV4" 75.0)
     ]}])
   (expect "Place bid succeeds"
     true
-    (place-bid (read-string "sale-id") "k:buyer" (read-keyset 'buyer-guard) 75.0)
+    (place-bid (read-string "sale-id") (read-string 'buyer) (read-keyset 'buyer-guard) 75.0)
   )
   (expect "Buyer balance has been deducted"
     175.0
-    (coin.get-balance "k:buyer")
+    (coin.get-balance (read-string 'buyer))
   )
   (expect "The highest bid has been noted in the auction"
     { "token-id": (read-string "token1-id")
       ,"start-date": 1696204800
       ,"end-date": 1696723200
       ,"highest-bid": 75.0
-      ,"highest-bid-id": (create-bid-id (read-msg "sale-id") "k:buyer")
+      ,"highest-bid-id": (create-bid-id (read-msg "sale-id") (read-string 'buyer))
       ,"reserve-price": 50.0
     }
     (retrieve-auction (read-string "sale-id"))
@@ -314,31 +320,33 @@
   (env-data {
     "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
     ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
-    ,"next-buyer-guard":  {"keys": ["next-buyer"], "pred": "keys-all"}
+    ,"buyer": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
+    ,"next-buyer": "k:ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c"
+    ,"next-buyer-guard":  {"keys": ["ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c"], "pred": "keys-all"}
   })
   (expect-failure "Place a bid lower than the previous bid"
     "Bid is not higher than previous highest bid"
-    (place-bid (read-string "sale-id") "k:next-buyer" (read-keyset 'next-buyer-guard) 70.0)
+    (place-bid (read-string "sale-id") (read-string 'next-buyer) (read-keyset 'next-buyer-guard) 70.0)
   )
 
   (env-sigs [
-    { 'key: 'next-buyer
+    { 'key: 'ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c
      ,'caps: [
       (PLACE_BID (read-keyset 'next-buyer-guard)),
-      (coin.TRANSFER "k:next-buyer" "u:util.guards1.enforce-guard-any:8iBtcNCfjArejHvxJ0rde1DsWxuhHqOzd1w40jsDPV4" 125.0)
+      (coin.TRANSFER (read-string 'next-buyer) "u:util.guards1.enforce-guard-any:8iBtcNCfjArejHvxJ0rde1DsWxuhHqOzd1w40jsDPV4" 125.0)
     ]}])
   (expect "Place bid succeeds"
     true
-    (place-bid (read-string "sale-id") "k:next-buyer" (read-keyset 'next-buyer-guard) 125.0)
+    (place-bid (read-string "sale-id") (read-string 'next-buyer) (read-keyset 'next-buyer-guard) 125.0)
   )
 
   (expect "Previous bidder has received his bid amount back"
     250.0
-    (coin.get-balance "k:buyer")
+    (coin.get-balance (read-string 'buyer))
   )
   (expect "Next bidder's balance has been deducted"
     125.0
-    (coin.get-balance "k:next-buyer")
+    (coin.get-balance (read-string 'next-buyer))
   )
 
   (expect "The highest bid has been noted in the auction"
@@ -346,7 +354,7 @@
       ,"start-date": 1696204800
       ,"end-date": 1696723200
       ,"highest-bid": 125.0
-      ,"highest-bid-id": (create-bid-id (read-msg "sale-id") "k:next-buyer")
+      ,"highest-bid-id": (create-bid-id (read-msg "sale-id") (read-string 'next-buyer))
       ,"reserve-price": 50.0
     }
     (retrieve-auction (read-string "sale-id"))
@@ -359,8 +367,8 @@
   (use marmalade-sale.conventional-auction)
 
   (env-data {
-    'buyer: "k:next-buyer",
-    'buyer-guard: {"keys": ["next-buyer"], "pred": "keys-all"},
+    'buyer: "k:ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c",
+    'buyer-guard: {"keys": ["ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c"], "pred": "keys-all"},
     'buyer_fungible_account: (escrow-account "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y")
     ,'updated_price: 125.0
     })
@@ -378,8 +386,8 @@
   (use marmalade-sale.conventional-auction)
 
   (env-data {
-    'buyer: "k:next-buyer",
-    'buyer-guard: {"keys": ["next-buyer"], "pred": "keys-all"},
+    'buyer: "k:ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c",
+    'buyer-guard: {"keys": ["ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c"], "pred": "keys-all"},
     'buyer_fungible_account: (escrow-account "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y")
     ,'updated_price: 25.0
     })
@@ -411,17 +419,17 @@
   (use marmalade-v2.ledger)
   (use marmalade-sale.conventional-auction)
 
-  (env-sigs [
-    { 'key: 'any
-     ,'caps: [(marmalade-v2.ledger.BUY "t:VoRnIK4vGzoq74tuygIJWHxE8mdaYipdfwqfXTgU28Y" "k:creator" "k:next-buyer" 1.0 "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y")]
-     }])
-
   (env-data {
-    'buyer: "k:next-buyer",
-    'buyer-guard: {"keys": ["next-buyer"], "pred": "keys-all"},
+    'buyer: "k:ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c",
+    'buyer-guard: {"keys": ["ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c"], "pred": "keys-all"},
     'buyer_fungible_account: (escrow-account "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y")
     ,'updated_price: 125.0
     })
+
+  (env-sigs [
+    { 'key: 'any
+     ,'caps: [(marmalade-v2.ledger.BUY "t:VoRnIK4vGzoq74tuygIJWHxE8mdaYipdfwqfXTgU28Y" "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3" (read-string 'buyer) 1.0 "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y")]
+     }])
 
   (expect "Claim the token succeeds"
     "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
@@ -434,6 +442,6 @@
 
   (expect "Seller balance has increased"
     375.0
-    (coin.get-balance "k:creator")
+    (coin.get-balance "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3")
   )
 (commit-tx)

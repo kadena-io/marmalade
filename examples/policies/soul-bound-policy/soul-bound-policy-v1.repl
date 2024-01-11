@@ -47,11 +47,11 @@
   (env-data {
      "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: [marmalade-examples.soul-bound-policy-v1] } ALWAYS-TRUE)
     ,"account": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
-    ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
+    ,"account-guard": {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
   })
 
   (env-sigs [
-    { 'key: 'account
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
      ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token-id) (read-msg 'account) 1.0)]
     }])
   
@@ -86,7 +86,7 @@
   (env-data {
      "token-id": (create-token-id { 'uri: "mint-burn-mint", 'precision: 0, 'policies: [marmalade-examples.soul-bound-policy-v1] } ALWAYS-TRUE)
     ,"account": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
-    ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
+    ,"account-guard": {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
   })
 
   (expect "Token created successfully"
@@ -98,7 +98,7 @@
     (map (remove "module-hash")  (env-events true)))
 
   (env-sigs [
-    { 'key: 'account
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
      ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token-id) (read-msg 'account) 1.0)]
     }])
   
@@ -113,7 +113,7 @@
     (map (remove "module-hash")  (env-events true)))
   
   (env-sigs [
-    { 'key: 'account
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
       ,'caps: [(marmalade-v2.ledger.BURN (read-msg 'token-id) (read-msg 'account) 1.0)]
     }])
 
@@ -127,7 +127,7 @@
     (map (remove "module-hash")  (env-events true)))
 
   (env-sigs [
-    { 'key: 'account
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
      ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token-id) (read-msg 'account) 1.0)]
     }])
   
@@ -142,7 +142,7 @@
   })
 
   (env-sigs [
-    { 'key: 'account
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
     ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token-id) (read-msg 'account) 1.0)]
     }])
   
@@ -159,11 +159,11 @@
   (env-data {
      "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: [marmalade-examples.soul-bound-policy-v1] } ALWAYS-TRUE)
     ,"account": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
-    ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
+    ,"account-guard": {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
   })
 
   (env-sigs [
-    { 'key: 'account
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
      ,'caps: [(marmalade-v2.ledger.BURN (read-msg 'token-id) (read-msg 'account) 1.0)]
     }])
 
@@ -230,11 +230,11 @@
   (env-data {
     "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: [marmalade-examples.soul-bound-policy-v1] } ALWAYS-TRUE)
     ,"account": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
-    ,"account-guard": {"keys": ["account"], "pred": "keys-all"}
+    ,"account-guard": {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
     })
 
   (env-sigs [
-    { 'key: 'account
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
      ,'caps: [(marmalade-v2.ledger.OFFER (read-string "token-id") (read-string "account") 1.0 (to-timestamp (time "2023-07-08T11:26:35Z")))]}
   ])
 

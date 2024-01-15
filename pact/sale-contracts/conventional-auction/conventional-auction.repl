@@ -455,30 +455,32 @@
 
   (env-data {
     "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
+    ,"seller": "k:ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c"
     ,"quote":{
       "fungible": coin
       ,"sale-price": 0.0
       ,"seller-fungible-account": {
-          "account": "k:next-buyer"
-        ,"guard": {"keys": ["next-buyer"], "pred": "keys-all"}
+          "account": "k:ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c"
+        ,"guard": {"keys": ["ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c"], "pred": "keys-all"}
       }
       ,"sale-type": "marmalade-sale.conventional-auction"
      }
-    ,"marketplace-guard": { "keys": ["marketplace"], "pred": "keys-all" }
+    ,"marketplace-account": "k:cad725b9789b04dd1ee21e02287a0b65201c1c8b17275860e8e82aa68b12be2d"
+    ,"marketplace-guard": { "keys": ["cad725b9789b04dd1ee21e02287a0b65201c1c8b17275860e8e82aa68b12be2d"], "pred": "keys-all" }
   })
 
   (test-capability (coin.COINBASE))
-  (coin.coinbase "k:marketplace" (read-keyset 'marketplace-guard) 250.0)
+  (coin.coinbase (read-string 'marketplace-account) (read-keyset 'marketplace-guard) 250.0)
 
   (env-sigs [
-    { 'key: 'next-buyer
+    { 'key: 'ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c
      ,'caps: [
-      (marmalade-v2.ledger.OFFER (read-msg 'token1-id) "k:next-buyer" 1.0 0)]
+      (marmalade-v2.ledger.OFFER (read-msg 'token1-id) (read-string 'seller) 1.0 0)]
      }])
 
   (expect "Offer token up for sale"
     "L8MyXGnK9uOtzMsi8JPGcdMrOybW862pHZHnnuYHVhs"
-    (sale (read-msg 'token1-id) "k:next-buyer" 1.0 0))
+    (sale (read-msg 'token1-id) (read-string 'seller) 1.0 0))
 
   (env-data {
     "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
@@ -486,7 +488,7 @@
   })
 
   (env-sigs [
-   { 'key: 'next-buyer
+   { 'key: 'ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c
     ,'caps: [(MANAGE_AUCTION (read-msg 'sale-id) (read-msg 'token1-id))]
     }])
 
@@ -507,27 +509,28 @@
   (env-data {
     "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
     ,"sale-id": "L8MyXGnK9uOtzMsi8JPGcdMrOybW862pHZHnnuYHVhs"
-    ,"buyer-guard": {"keys": ["buyer"], "pred": "keys-all"}
+    ,"buyer": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
+    ,"buyer-guard": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
     ,"marketplace_fee": {
-      "mk-account": "k:marketplace"
+      "mk-account": "k:cad725b9789b04dd1ee21e02287a0b65201c1c8b17275860e8e82aa68b12be2d"
       ,"mk-fee-percentage": 0.1
     }
   })
 
   (env-sigs [
-    { 'key: 'buyer
+    { 'key: "6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
      ,'caps: [
       (PLACE_BID (read-keyset 'buyer-guard)),
-      (coin.TRANSFER "k:buyer" "u:util.guards1.enforce-guard-any:pL1c4j8Ex_J4FE6nlpKwUhyyNuj2PCE2zvTb_2pmfV0" 110.0)
+      (coin.TRANSFER (read-string 'buyer) "u:util.guards1.enforce-guard-any:pL1c4j8Ex_J4FE6nlpKwUhyyNuj2PCE2zvTb_2pmfV0" 110.0)
     ]}])
   (expect "Place bid succeeds"
     true
-    (place-bid (read-string "sale-id") "k:buyer" (read-keyset 'buyer-guard) 100.0)
+    (place-bid (read-string "sale-id") (read-string 'buyer) (read-keyset 'buyer-guard) 100.0)
   )
 
   (expect "Buyer balance has been deducted"
     140.0
-    (coin.get-balance "k:buyer")
+    (coin.get-balance (read-string 'buyer))
   )
 
   (expect "Escrow account contains bid amount including marketplace fees"
@@ -539,7 +542,7 @@
       ,"start-date": 1696204800
       ,"end-date": 1696723200
       ,"highest-bid": 100.0
-      ,"highest-bid-id": (create-bid-id (read-msg "sale-id") "k:buyer")
+      ,"highest-bid-id": (create-bid-id (read-msg "sale-id") (read-string 'buyer))
       ,"reserve-price": 50.0
     }
     (retrieve-auction (read-string "sale-id"))
@@ -552,18 +555,13 @@
   (use marmalade-v2.ledger)
   (use marmalade-sale.conventional-auction)
 
-  (env-sigs [
-    { 'key: 'any
-     ,'caps: [(marmalade-v2.ledger.BUY "t:VoRnIK4vGzoq74tuygIJWHxE8mdaYipdfwqfXTgU28Y" "k:next-buyer" "k:buyer" 1.0 "L8MyXGnK9uOtzMsi8JPGcdMrOybW862pHZHnnuYHVhs")]
-    }])
-
   (env-data {
-    'buyer: "k:buyer",
-    'buyer-guard: {"keys": ["buyer"], "pred": "keys-all"},
+    'buyer: "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3",
+    'buyer-guard: {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"},
     'buyer_fungible_account: (escrow-account "L8MyXGnK9uOtzMsi8JPGcdMrOybW862pHZHnnuYHVhs"),
     'updated_price: 100.0,
     "marketplace_fee": {
-      "mk-account": "k:different_marketplace"
+      "mk-account": "k:e14b9a83582b450a98220d10a52f7069901bc13ec4de189b03b2492ce29d86a7"
       ,"mk-fee-percentage": 0.1
     }
   })
@@ -573,12 +571,12 @@
     (continue-pact 1 false "L8MyXGnK9uOtzMsi8JPGcdMrOybW862pHZHnnuYHVhs"))
 
   (env-data {
-    'buyer: "k:buyer",
-    'buyer-guard: {"keys": ["buyer"], "pred": "keys-all"},
+    'buyer: "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3",
+    'buyer-guard: {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"},
     'buyer_fungible_account: (escrow-account "L8MyXGnK9uOtzMsi8JPGcdMrOybW862pHZHnnuYHVhs"),
     'updated_price: 100.0,
     "marketplace_fee": {
-      "mk-account": "k:marketplace"
+      "mk-account": "k:cad725b9789b04dd1ee21e02287a0b65201c1c8b17275860e8e82aa68b12be2d"
       ,"mk-fee-percentage": 0.8
     }
   })
@@ -588,15 +586,21 @@
     (continue-pact 1 false "L8MyXGnK9uOtzMsi8JPGcdMrOybW862pHZHnnuYHVhs"))
 
   (env-data {
-    'buyer: "k:buyer",
-    'buyer-guard: {"keys": ["buyer"], "pred": "keys-all"},
+    'seller: "k:ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c",
+    'buyer: "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3",
+    'buyer-guard: {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"},
     'buyer_fungible_account: (escrow-account "L8MyXGnK9uOtzMsi8JPGcdMrOybW862pHZHnnuYHVhs"),
     'updated_price: 100.0,
     "marketplace_fee": {
-      "mk-account": "k:marketplace"
+      "mk-account": "k:cad725b9789b04dd1ee21e02287a0b65201c1c8b17275860e8e82aa68b12be2d"
       ,"mk-fee-percentage": 0.1
     }
   })
+
+  (env-sigs [
+    { 'key: 'any
+     ,'caps: [(marmalade-v2.ledger.BUY "t:VoRnIK4vGzoq74tuygIJWHxE8mdaYipdfwqfXTgU28Y" (read-string 'seller) (read-string 'buyer) 1.0 "L8MyXGnK9uOtzMsi8JPGcdMrOybW862pHZHnnuYHVhs")]
+    }])
 
   (expect "Claim the token succeeds"
     "L8MyXGnK9uOtzMsi8JPGcdMrOybW862pHZHnnuYHVhs"
@@ -609,11 +613,11 @@
 
   (expect "Seller balance has increased with sell amount minus royalties"
     215.0
-    (coin.get-balance "k:next-buyer")
+    (coin.get-balance (read-string 'seller))
   )
 
   (expect "Marketplace balance has been increased with marketplace fees"
     260.0
-    (coin.get-balance "k:marketplace")
+    (coin.get-balance "k:cad725b9789b04dd1ee21e02287a0b65201c1c8b17275860e8e82aa68b12be2d")
   )
 (commit-tx)

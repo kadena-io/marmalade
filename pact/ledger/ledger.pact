@@ -627,7 +627,6 @@
       buyer:string
       buyer-guard:guard
       amount:decimal
-      sale-id:string
     )
     @doc "Complete sale with transfer."
     @model

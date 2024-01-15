@@ -25,19 +25,19 @@
   (env-chain-data {"chain-id": "0"})
   (env-data {
     "token1-id": (create-token-id { 'uri: "dutch-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
-   ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
-   ,"buyer-guard":  {"keys": ["buyer"], "pred": "keys-all"}
+   ,"creator-guard":  {"keys": ["05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"], "pred": "keys-all"}
+   ,"buyer-guard":  {"keys": ["15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7"], "pred": "keys-all"}
    ,"royalty_spec": {
       "fungible": coin
-     ,"creator": "k:creator"
-     ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
+     ,"creator": "k:05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"
+     ,"creator-guard":  {"keys": ["05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"], "pred": "keys-all"}
      ,"royalty-rate": 0.1
     }
   })
 
   (test-capability (coin.COINBASE))
-  (coin.coinbase "k:creator" (read-keyset 'creator-guard) 250.0)
-  (coin.coinbase "k:buyer" (read-keyset 'buyer-guard) 250.0)
+  (coin.coinbase "k:05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e" (read-keyset 'creator-guard) 250.0)
+  (coin.coinbase "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7" (read-keyset 'buyer-guard) 250.0)
   ;  (coin.coinbase "k:next-buyer" (read-keyset 'next-buyer-guard) 250.0)
 
   (expect "Create the token"
@@ -45,15 +45,15 @@
     (create-token (read-string "token1-id") 0 "dutch-auction-uri-1" (create-policies DEFAULT_ROYALTY) ALWAYS-TRUE))
 
   (env-sigs [
-    { 'key: 'creator
+    { 'key: "05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"
     ,'caps: [
-      (marmalade-v2.ledger.MINT (read-msg 'token1-id) "k:creator" 1.0)
+      (marmalade-v2.ledger.MINT (read-msg 'token1-id) "k:05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e" 1.0)
     ]
     }])
 
   (expect "Mint the token"
     true
-    (mint (read-string "token1-id" ) "k:creator" (read-keyset 'creator-guard ) 1.0))
+    (mint (read-string "token1-id" ) "k:05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e" (read-keyset 'creator-guard ) 1.0))
 (commit-tx)
 
  (begin-tx "Offer token for sale with the dutch auction sale type and a non-finalized price")
@@ -69,22 +69,22 @@
        "fungible": coin
        ,"sale-price": 0.0
        ,"seller-fungible-account": {
-           "account": "k:creator"
-         ,"guard": {"keys": ["creator"], "pred": "keys-all"}
+           "account": "k:05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"
+         ,"guard": {"keys": ["05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"], "pred": "keys-all"}
        }
        ,"sale-type": "marmalade-sale.dutch-auction"
       }
      })
 
    (env-sigs [
-     { 'key: 'creator
+     { 'key: "05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"
       ,'caps: [
-       (marmalade-v2.ledger.OFFER (read-msg 'token1-id) "k:creator" 1.0 0)]
+       (marmalade-v2.ledger.OFFER (read-msg 'token1-id) "k:05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e" 1.0 0)]
       }])
 
    (expect "Offer token up for sale"
      "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
-     (sale (read-msg 'token1-id) "k:creator" 1.0 0))
+     (sale (read-msg 'token1-id) "k:05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e" 1.0 0))
  (commit-tx)
 
 
@@ -99,7 +99,7 @@
    (env-data {
      "token1-id": (create-token-id { 'uri: "dutch-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
     ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
-    ,"creator-guard":  {"keys": ["creator"], "pred": "keys-all"}
+    ,"creator-guard":  {"keys": ["05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"], "pred": "keys-all"}
    })
 
    (expect-failure "Creating a ducth auction in the past fails"
@@ -118,7 +118,7 @@
    )
 
    (env-sigs [
-    { 'key: 'creator
+    { 'key: "05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"
      ,'caps: [(MANAGE_AUCTION (read-msg 'sale-id) (read-msg 'token1-id))]
      }])
 
@@ -165,7 +165,7 @@
      (update-auction (read-string "sale-id") 1696809600 1697328000 100.0 50.0)
    )
    (env-sigs [
-     { 'key: 'creator
+     { 'key: "05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"
       ,'caps: [(MANAGE_AUCTION (read-msg 'sale-id) (read-msg 'token1-id))]
       }
    ])
@@ -188,7 +188,7 @@
     ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
    })
    (env-sigs [
-     { 'key: 'creator
+     { 'key: "05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"
       ,'caps: [(MANAGE_AUCTION (read-msg 'sale-id) (read-msg 'token1-id))]
       }
    ])
@@ -226,8 +226,8 @@
    })
 
    (env-sigs [
-     { 'key: 'creator
-      ,'caps: [(marmalade-v2.ledger.WITHDRAW (read-msg 'token1-id) "k:creator" 1.0 0 (read-msg 'sale-id))]
+     { 'key: "05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"
+      ,'caps: [(marmalade-v2.ledger.WITHDRAW (read-msg 'token1-id) "k:05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e" 1.0 0 (read-msg 'sale-id))]
       }
    ])
 
@@ -287,9 +287,9 @@
    (use marmalade-sale.dutch-auction)
 
    (env-data {
-     'buyer: "k:buyer",
-     'buyer-guard: {"keys": ["buyer"], "pred": "keys-all"},
-     'buyer_fungible_account: "k:buyer"
+     'buyer: "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7",
+     'buyer-guard: {"keys": ["15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7"], "pred": "keys-all"},
+     'buyer_fungible_account: "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7"
      ,'updated_price: 25.0
      })
 
@@ -307,19 +307,19 @@
    (use marmalade-sale.dutch-auction)
 
    (env-data {
-     'buyer: "k:buyer",
-     'buyer-guard: {"keys": ["buyer"], "pred": "keys-all"},
-     'buyer_fungible_account: "k:buyer",
+     'buyer: "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7",
+     'buyer-guard: {"keys": ["15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7"], "pred": "keys-all"},
+     'buyer_fungible_account: "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7",
      'policy-manager-escrow: (at 'account (get-escrow-account "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y")),
      'updated_price: 66.67
      })
 
    (env-sigs [
-     { 'key: 'any
-      ,'caps: [(marmalade-v2.ledger.BUY "t:VP0cvrlSaYJ3HizKnl3g0eL9aDr_RQhunuYgI4BTTe0" "k:creator" "k:buyer" 1.0 "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y")]
+     { 'key: 'f0b8d36c97d77c782eec5facc3e235d1ac6b10247a36de52ea16908945d95ba9 ;; any key
+      ,'caps: [(marmalade-v2.ledger.BUY "t:VP0cvrlSaYJ3HizKnl3g0eL9aDr_RQhunuYgI4BTTe0" "k:05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e" "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7" 1.0 "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y")]
       },
-      { 'key: 'buyer
-       ,'caps: [(coin.TRANSFER "k:buyer" (read-string 'policy-manager-escrow) 66.67)]
+      { 'key: "15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7"
+       ,'caps: [(coin.TRANSFER "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7" (read-string 'policy-manager-escrow) 66.67)]
        }])
 
    (expect "Claim the token succeeds"
@@ -328,11 +328,11 @@
 
    (expect "Buyer account balance has been deducted"
      183.33
-     (coin.get-balance "k:buyer")
+     (coin.get-balance "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7")
    )
 
    (expect "Seller balance has increased"
      316.67
-     (coin.get-balance "k:creator")
+     (coin.get-balance "k:05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e")
    )
  (commit-tx)

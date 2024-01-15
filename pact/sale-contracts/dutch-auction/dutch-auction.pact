@@ -43,8 +43,8 @@
 
   (defcap PRICE_ACCEPTED:bool
     ( sale-id:string
-      bidder:string
-      bidder-guard:guard
+      buyer:string
+      buyer-guard:guard
       price:decimal
       token-id:string
     )
@@ -122,7 +122,7 @@
       start-date:integer
       end-date:integer
       reserve-price:decimal
-      start-price:decimal    
+      start-price:decimal
     )
     (validate-auction start-date end-date reserve-price start-price)
     (let (

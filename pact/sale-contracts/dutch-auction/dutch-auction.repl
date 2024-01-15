@@ -304,14 +304,18 @@
    (env-chain-data {"block-time": (time "2023-10-06T00:00:00Z")})
    (use marmalade-v2.ledger)
    (use marmalade-v2.policy-manager)
+   (use marmalade-v2.util-v1)
+   (use mini-guard-utils)
    (use marmalade-sale.dutch-auction)
 
    (env-data {
+     "token1-id":(create-token-id { 'uri: "dutch-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE),
      'buyer: "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7",
      'buyer-guard: {"keys": ["15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7"], "pred": "keys-all"},
      'buyer_fungible_account: "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7",
      'policy-manager-escrow: (at 'account (get-escrow-account "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y")),
-     'updated_price: 66.67
+     'updated_price: 66.67,
+     "sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
      })
 
    (env-sigs [
@@ -335,4 +339,18 @@
      316.67
      (coin.get-balance "k:05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e")
    )
+
+   (expect "auction table is updated with sell-price, buyer information"
+    { "token-id": (read-string 'token1-id )
+     ,"start-date": 1696204800
+     ,"end-date": 1696723200
+     ,"start-price": 100.0
+     ,"reserve-price": 50.0
+     ,"sell-price": 66.67
+     ,"buyer": (read-string 'buyer )
+     ,"buyer-guard": (read-keyset 'buyer-guard )
+    }
+    (retrieve-auction (read-string 'sale-id ))
+   )
+
  (commit-tx)

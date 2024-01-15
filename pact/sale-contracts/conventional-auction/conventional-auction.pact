@@ -255,7 +255,11 @@
           ; Store marketplace fee configuration
           (if (= mk-fee-percentage 0.0)
             true
-            (write mk-fees bid-id mk-fee-spec)
+            (let (
+             (mk-account:string (at 'account (fungible::details (at 'mk-account mk-fee-spec)))))
+             (enforce (!= "" mk-account) "Marketplace fee account does not exist")
+              (write mk-fees bid-id mk-fee-spec)
+            )
           )
           (update auctions sale-id { 'highest-bid: bid, 'highest-bid-id: bid-id })
           (emit-event (BID_PLACED bid-id bidder bidder-guard bid token-id))

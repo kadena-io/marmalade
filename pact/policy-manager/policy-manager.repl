@@ -629,7 +629,7 @@
    ,"marketplace-fungible-account": "k:4c5ba7f5bbb730602ebf7d4bc63fecd11f6d0288368797ee07d89977c71fc7e1"
    ,"marketplace_fee": {
      "mk-account": "k:4c5ba7f5bbb730602ebf7d4bc63fecd11f6d0288368797ee07d89977c71fc7e1",
-     "mk-fee-percentage": 0.1
+     "mk-fee-percentage": 1.1
     }
    })
 
@@ -641,6 +641,22 @@
          (marmalade-v2.ledger.BUY "t:RhvmOpBRc0_ZdNttX_D-z2D0-9XRtf3lzN10PhPBGuA" (read-string 'seller) (read-string 'buyer) 1.0 (pact-id))
        ]}
    ])
+
+   (expect-failure "Buy fails when marketplace fee configuration is incorrect"
+     "Invalid market-fee percentage"
+     (continue-pact 1))
+
+   (env-data {
+     "seller": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+    ,"buyer": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
+    ,"buyer-guard": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
+    ,"buyer_fungible_account": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
+    ,"marketplace-fungible-account": "k:4c5ba7f5bbb730602ebf7d4bc63fecd11f6d0288368797ee07d89977c71fc7e1"
+    ,"marketplace_fee": {
+      "mk-account": "k:4c5ba7f5bbb730602ebf7d4bc63fecd11f6d0288368797ee07d89977c71fc7e1",
+      "mk-fee-percentage": 0.1
+     }
+    })
 
   (expect "Buy succeeds"
     (pact-id)
@@ -899,9 +915,9 @@
  ,"updated_price":  49.0000000000000001
  })
 
-  (expect-failure "Buy fails with incorrect precision"
-    "precision violation"
-    (continue-pact 1))
+(expect-failure "Buy fails with incorrect precision"
+  "precision violation"
+  (continue-pact 1))
 
 (env-data {
   "buyer": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"

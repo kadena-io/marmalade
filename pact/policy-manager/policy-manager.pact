@@ -389,14 +389,17 @@
         (let* (
             (final-sale-price:decimal  (at 'sale-price (get-quote-info sale-id)))
             (mk-fee-spec:object{marketplace-fee-spec} (try { "mk-account": "", "mk-fee-percentage": 0.0 } (read-msg MARKETPLACE-FEE-KEY)))
-            (mk-fee:decimal (floor (* (at 'mk-fee-percentage mk-fee-spec) final-sale-price) (fungible::precision)))
+            (mk-fee-percentage:decimal (at 'mk-fee-percentage mk-fee-spec))
+            (mk-fee:decimal (floor (* mk-fee-percentage final-sale-price) (fungible::precision)))
           )
           (enforce (> final-sale-price 0.0) "Price is not finalized for this quote")
 
           ; Handle the marketplace fee if applicable
-          (if (= 0.0 mk-fee)
+          (if (= 0.0 mk-fee-percentage)
             true
             (with-capability (FUNGIBLE-TRANSFER-CALL sale-id)
+              (enforce (and (>= mk-fee-percentage 0.0) (<= mk-fee-percentage 1.0)) "Invalid market-fee percentage")
+
               (install-capability (fungible::TRANSFER (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at "mk-account" mk-fee-spec) mk-fee))
               (fungible::transfer (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at "mk-account" mk-fee-spec) mk-fee)
             )

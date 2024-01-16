@@ -285,5 +285,12 @@
 
 (rollback-tx)
 
-(begin-tx "test utility functions")
+(begin-tx "transfer-crosschain fails")
+  (use mini-guard-utils)
+
+  (expect-failure "transfer-crosschain is prohibited"
+    "cross chain not supported"
+    (marmalade-v2.ledger.transfer-crosschain "" "" "" ALWAYS-TRUE "" 0.0)
+  )
+
 (commit-tx)

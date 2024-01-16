@@ -479,7 +479,8 @@
       receiver-guard:guard
       target-chain:string
       amount:decimal )
-    (step (format "{}" [(enforce false "cross chain not supported")]) false)
+    (step
+      (enforce false "cross chain not supported"))
   )
 
   ;;

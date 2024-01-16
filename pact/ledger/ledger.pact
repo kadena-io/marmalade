@@ -573,7 +573,7 @@
             (policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
           )
           (with-capability (BUY id seller buyer amount (pact-id))
-            (buy id seller buyer buyer-guard amount (pact-id))
+            (buy id seller buyer buyer-guard amount)
           )
           (pact-id)
     ))

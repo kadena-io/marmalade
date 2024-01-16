@@ -64,7 +64,7 @@
       , 'max-supply:=max-supply:decimal
       }
       (enforce (>= amount min-amount) "mint amount < min-amount")
-      (if (> 0.0 max-supply)
+      (if (> max-supply 0.0)
         (enforce (<= (+ amount (at 'supply token)) max-supply) "Exceeds max supply")
         true
       )

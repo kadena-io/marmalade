@@ -100,6 +100,10 @@
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.policy-manager [NON_FUNGIBLE_POLICY])
 
+  (expect-failure "write-concrete-policy fails if concrete policy field is not registered"
+    "Not registered as concrete policy"
+    (write-concrete-policy "not-registered-policy" marmalade-v2.non-fungible-policy-v1))
+
   (expect "upgrade non-fungible-policy"
     true
     (write-concrete-policy NON_FUNGIBLE_POLICY marmalade-v2.non-fungible-policy-v1))

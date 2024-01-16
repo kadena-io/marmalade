@@ -182,7 +182,7 @@
     [NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY] )
 
   (defun write-concrete-policy:bool (policy-field:string policy:module{kip.token-policy-v2})
-    (contains policy-field CONCRETE_POLICY_LIST)
+    (enforce (contains policy-field CONCRETE_POLICY_LIST) "Not registered as concrete policy")
     (with-capability (CONCRETE-POLICY policy-field policy)
       (write concrete-policies policy-field {
         "policy": policy
@@ -506,7 +506,6 @@
     @doc "Get Quote information"
     (read quotes sale-id)
   )
-
 
   ;; Validate functions
   (defun validate-fungible-account (fungible:module{fungible-v2} account:object{fungible-account})

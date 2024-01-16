@@ -21,21 +21,13 @@
     (use marmalade-v2.ledger)
     (use marmalade-examples.soul-bound-policy-v1)
     (use mini-guard-utils)
-  (env-data {
-    "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: [marmalade-examples.soul-bound-policy-v1 marmalade-v2.guard-policy-v1] } ALWAYS-TRUE)
-    ,"token-id-without-guard-policy": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: [marmalade-examples.soul-bound-policy-v1] } ALWAYS-TRUE)
-  })
-
-  (expect-failure "Failed to create a token without guard-policy"
-    "Guard policy is required for soul-bound tokens"
-    (create-token (read-msg 'token-id-without-guard-policy) 0 "test-default-guard" [marmalade-examples.soul-bound-policy-v1] ALWAYS-TRUE))
-
+  
   (env-data {
     "token-id": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: [marmalade-examples.soul-bound-policy-v1 marmalade-v2.guard-policy-v1] } ALWAYS-TRUE)
   })
 
   (expect-failure "Failed to create a token without mint-guard"
-    "Mint guard is required for soul-bound tokens"
+    "Failure: Tx Failed: No such key in message: mint_guard"
     (create-token (read-msg 'token-id) 0 "test-default-guard" [marmalade-examples.soul-bound-policy-v1 marmalade-v2.guard-policy-v1] ALWAYS-TRUE))
 
   (env-data {
@@ -44,9 +36,19 @@
   })
 
   (expect-failure "Failed to create a token without burn-guard"
-    "Burn guard is required for soul-bound tokens"
+    "Failure: Tx Failed: No such key in message: burn_guard"
     (create-token (read-msg 'token-id) 0 "test-default-guard" [marmalade-examples.soul-bound-policy-v1 marmalade-v2.guard-policy-v1] ALWAYS-TRUE))
 
+  (env-data {
+    "mint_guard": {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
+    ,"burn_guard": {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
+    ,"token-id-without-guard-policy": (create-token-id { 'uri: "test-default-guard", 'precision: 0, 'policies: [marmalade-examples.soul-bound-policy-v1] } ALWAYS-TRUE)
+  })
+
+  (expect-failure "Failed to create a token without guard-policy"
+    "Guard policy is required for soul-bound tokens"
+    (create-token (read-msg 'token-id-without-guard-policy) 0 "test-default-guard" [marmalade-examples.soul-bound-policy-v1] ALWAYS-TRUE))
+  
 (commit-tx)
 
 (begin-tx "Create soul bounded token")

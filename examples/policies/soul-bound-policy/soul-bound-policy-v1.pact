@@ -30,17 +30,11 @@
 
     (enforce (= (at 'precision token) 0) "Precision must be 0 for soul-bound tokens")
 
-    (let* (
-        (policies (at 'policies token))
+    (read-msg MINT-GUARD-MSG-KEY)
+    (read-msg BURN-GUARD-MSG-KEY)
 
-        (mint-guard (try GUARD_SUCCESS (read-msg MINT-GUARD-MSG-KEY) ))
-        (burn-guard (try GUARD_SUCCESS (read-msg BURN-GUARD-MSG-KEY) ))
-      )
-      (enforce (has-guard-policy policies) "Guard policy is required for soul-bound tokens")
+    (enforce (has-guard-policy (at 'policies token)) "Guard policy is required for soul-bound tokens")
 
-      (enforce (!= mint-guard GUARD_SUCCESS) "Mint guard is required for soul-bound tokens")
-      (enforce (!= burn-guard GUARD_SUCCESS) "Burn guard is required for soul-bound tokens")
-    )
     true
   )
 
@@ -54,8 +48,8 @@
 
     (enforce (= amount 1.0) "Amount must be 1.0 for soul-bound tokens")
 
-    (let* ((mint-record (try { 'account: "" } (read records (at 'id token))))
-          (has-mint-record (!= (at 'account mint-record) "")))
+    (let* ((mint-record:object{mint-record} (try { 'account: "" } (read records (at 'id token))))
+          (has-mint-record:bool (!= (at 'account mint-record) "")))
       (enforce (not has-mint-record) "Token was already minted")
     )
 

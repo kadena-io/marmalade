@@ -9,7 +9,8 @@
     (enforce-guard ADMIN-KS))
 
   (use marmalade-v2.policy-manager)
-  (use marmalade-v2.policy-manager [BUYER-FUNGIBLE-ACCOUNT-MSG-KEY])
+  (use marmalade-v2.policy-manager [BUYER-FUNGIBLE-ACCOUNT-MSG-KEY MARKETPLACE-FEE-KEY marketplace-fee-spec])
+  (use marmalade-v2.util-v1)
   (implements marmalade-v2.sale-v2)
 
   (defschema auctions-schema
@@ -29,6 +30,7 @@
 
   (deftable auctions:{auctions-schema})
   (deftable bids:{bids-schema})
+  (deftable mk-fees:{marketplace-fee-spec})
 
   (defcap AUCTION_CREATED:bool
     ( sale-id:string
@@ -91,6 +93,7 @@
       (enforce (> (curr-time) end-date) "Auction is still ongoing")
       (enforce (> highest-bid 0.0) "No bids have been placed")
       (enforce (= price highest-bid) "Price does not match highest bid")
+      (enforce (= (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (escrow-account sale-id)) "Buyer fungible account must match escrow account")
       (with-read bids highest-bid-id
         { 'bidder:= bidder,
           'bidder-guard:= bidder-guard,
@@ -98,6 +101,19 @@
         }
         (enforce (= (read-msg "buyer") bidder) "Buyer does not match highest bidder")
         (enforce (= (read-msg "buyer-guard" ) bidder-guard) "Buyer-guard does not match highest bidder-guard")
+      )
+      (with-default-read mk-fees highest-bid-id
+        { 'mk-account: "", 'mk-fee-percentage: 0.0 }
+        { 'mk-account:= mk-account,
+          'mk-fee-percentage:= mk-fee-percentage
+        }
+        (if (= mk-fee-percentage 0.0)
+          true
+          (let ((mk-fee-spec:object{marketplace-fee-spec} (try { "mk-account": "", "mk-fee-percentage": 0.0 } (read-msg MARKETPLACE-FEE-KEY))))
+            (enforce (= mk-account (at "mk-account" mk-fee-spec)) "Marketplace fee account does not match stored marketplace fee account")
+            (enforce (= mk-fee-percentage (at "mk-fee-percentage" mk-fee-spec)) "Marketplace fee percentage does not match stored marketplace fee percentage")
+          )
+        )
       )
     )
     true
@@ -116,9 +132,6 @@
 
   (defun create-bid-id:string (sale-id:string bidder:string)
     (hash [sale-id bidder (int-to-str 10 (curr-time))]))
-
-  (defun curr-time:integer ()
-    (floor (diff-time (at 'block-time (chain-data)) (time "1970-01-01T00:00:00Z"))))
 
   (defun create-auction
     ( sale-id:string
@@ -205,7 +218,14 @@
       (enforce (> bid prev-highest-bid) "Bid is not higher than previous highest bid")
       (enforce (> bid reserve-price) "Bid is not higher than reserve price")
       (enforce (validate-principal bidder-guard bidder) "Incorrect account guard, only principal accounts allowed")
-      (let ((bid-id:string (create-bid-id sale-id bidder)))
+      (let* (
+          (bid-id:string (create-bid-id sale-id bidder))
+          (quote-info:object{quote-schema} (get-quote-info sale-id))
+          (fungible:module{fungible-v2} (at 'fungible quote-info))
+          (mk-fee-spec:object{marketplace-fee-spec} (try { "mk-account": "", "mk-fee-percentage": 0.0 } (read-msg MARKETPLACE-FEE-KEY)))
+          (mk-fee-percentage:decimal (at "mk-fee-percentage" mk-fee-spec))
+          (mk-fee:decimal (floor (* mk-fee-percentage bid) (fungible::precision)))
+        )
         (with-capability (PLACE_BID bidder-guard)
           ; Return amount to previous bidder if there was one
           (if (> prev-highest-bid 0.0)
@@ -214,15 +234,15 @@
                 'bidder-guard:= previous-bidder-guard
               }
               (with-capability (REFUND_CAP sale-id)
-                (install-capability (coin.TRANSFER (escrow-account sale-id) previous-bidder prev-highest-bid))
-                (coin.transfer (escrow-account sale-id) previous-bidder prev-highest-bid)
+                (install-capability (fungible::TRANSFER (escrow-account sale-id) previous-bidder (fungible::get-balance (escrow-account sale-id))))
+                (fungible::transfer (escrow-account sale-id) previous-bidder (fungible::get-balance (escrow-account sale-id)))
               )
             )
             true
           )
 
-          ; Transfer amount from bidder to escrow-account
-          (coin.transfer-create bidder (escrow-account sale-id) (escrow-guard sale-id) bid)
+          ; Transfer amount (including fee if applicable) from bidder to escrow-account
+          (fungible::transfer-create bidder (escrow-account sale-id) (escrow-guard sale-id) (+ bid mk-fee))
 
           ; Write new bid and store highest bid in auction
           (write bids bid-id {
@@ -230,6 +250,16 @@
             ,"bidder-guard": bidder-guard
             ,"bid": bid
           })
+
+          ; Store marketplace fee configuration
+          (if (= mk-fee-percentage 0.0)
+            true
+            (let (
+             (mk-account:string (at 'account (fungible::details (at 'mk-account mk-fee-spec)))))
+             (enforce (!= "" mk-account) "Marketplace fee account does not exist")
+              (write mk-fees bid-id mk-fee-spec)
+            )
+          )
           (update auctions sale-id { 'highest-bid: bid, 'highest-bid-id: bid-id })
           (emit-event (BID_PLACED bid-id bidder bidder-guard bid token-id))
         ))
@@ -239,10 +269,14 @@
 )
 
 (if (read-msg "upgrade")
-  ["upgrade complete"]
+  ;  ["upgrade complete"]
+  [
+    (create-table mk-fees)
+  ]
   [
     (create-table auctions)
     (create-table bids)
+    (create-table mk-fees)
   ]
 )
 (enforce-guard ADMIN-KS)

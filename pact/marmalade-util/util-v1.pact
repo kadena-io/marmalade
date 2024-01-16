@@ -81,6 +81,11 @@
     (floor (diff-time input (time "1970-01-01T00:00:00Z")))
   )
 
+  (defun curr-time:integer ()
+    "Computes an Unix timestamp of the block time"
+    (to-timestamp (at 'block-time (chain-data)))
+  )
+
   (defun mint-NFT (uri:string policies:[module{kip.token-policy-v2}] guard:guard)
     @doc "Mints a NON-FUNGIBLE-TOKEN with policies and creation-guard"
     (let* ( (nfp-precision:integer 0)

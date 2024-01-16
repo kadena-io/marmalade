@@ -132,9 +132,6 @@
   (defun create-bid-id:string (sale-id:string bidder:string)
     (hash [sale-id bidder (int-to-str 10 (curr-time))]))
 
-  (defun curr-time:integer ()
-    (floor (diff-time (at 'block-time (chain-data)) (time "1970-01-01T00:00:00Z"))))
-
   (defun create-auction
     ( sale-id:string
       token-id:string

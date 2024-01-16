@@ -10,6 +10,7 @@
 
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.policy-manager [BUYER-FUNGIBLE-ACCOUNT-MSG-KEY])
+  (use marmalade-v2.util-v1)
   (implements marmalade-v2.sale-v2)
 
   (defschema auctions-schema
@@ -103,9 +104,6 @@
     true
   )
 
-  (defun curr-time:integer ()
-    (floor (diff-time (at 'block-time (chain-data)) (time "1970-01-01T00:00:00Z"))))
-
   (defun validate-auction:bool (
     start-date:integer
     end-date:integer
@@ -176,6 +174,7 @@
           ,"end-date": end-date
           ,"start-price": start-price
           ,"reserve-price": reserve-price
+          ,"price-interval-seconds": price-interval-seconds
         })
       )
     )

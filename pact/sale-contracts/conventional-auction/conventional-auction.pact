@@ -92,6 +92,7 @@
       (enforce (> (curr-time) end-date) "Auction is still ongoing")
       (enforce (> highest-bid 0.0) "No bids have been placed")
       (enforce (= price highest-bid) "Price does not match highest bid")
+      (enforce (= (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (escrow-account sale-id)) "Buyer fungible account must match escrow account")
       (with-read bids highest-bid-id
         { 'bidder:= bidder,
           'bidder-guard:= bidder-guard,

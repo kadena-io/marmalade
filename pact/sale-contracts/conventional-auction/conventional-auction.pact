@@ -10,6 +10,7 @@
 
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.policy-manager [BUYER-FUNGIBLE-ACCOUNT-MSG-KEY MARKETPLACE-FEE-KEY marketplace-fee-spec])
+  (use marmalade-v2.util-v1)
   (implements marmalade-v2.sale-v2)
 
   (defschema auctions-schema

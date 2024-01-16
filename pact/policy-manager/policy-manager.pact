@@ -46,6 +46,12 @@
     guard:guard
   )
 
+  (defschema marketplace-fee-spec
+    @doc "Marketplace fee data to include in payload"
+    mk-account:string
+    mk-fee-percentage:decimal
+  )
+
   (defcap QUOTE:bool
     ( sale-id:string
       token-id:string
@@ -65,6 +71,9 @@
 
   (defconst UPDATED-PRICE-KEY:string "updated_price"
     @doc "Payload field for updated price")
+
+  (defconst MARKETPLACE-FEE-KEY "marketplace_fee"
+    @doc "Payload field for marketplace fee spec")
 
   (defcap ESCROW (sale-id:string)
     @doc "Capability to be used as escrow's capability guard"
@@ -287,7 +296,7 @@
       ; false - skip
       true
     )
-     ; run policy::enfore-offer
+     ; run policy::enforce-offer
     (map
       (lambda (policy:module{kip.token-policy-v2})
         (with-capability (OFFER-CALL (at "id" token) seller amount sale-id timeout policy)
@@ -351,8 +360,8 @@
 
     ; Checks if quote is saved at offer
     (if (exists-quote sale-id)
-      ; true - quote is used
 
+      ; true - quote is used
       (let* (
              (escrow-account:object{fungible-account} (get-escrow-account sale-id))
              (quote-spec:object{quote-schema} (get-quote-info sale-id))
@@ -361,45 +370,68 @@
              (sale-type:string (at 'sale-type quote-spec))
              (sale-price:decimal (at 'sale-price quote-spec))
            )
-      (if (!= sale-type "")
-        (if (exists-msg-decimal UPDATED-PRICE-KEY)
-          (let ((updated-price:decimal (read-msg UPDATED-PRICE-KEY)))
-            (fungible::enforce-unit updated-price)
-            (with-capability (UPDATE-QUOTE-PRICE (at 'id token) sale-id sale-type updated-price)
-              (update quotes sale-id { "sale-price": updated-price })
+
+        ; If a sale contract is being used, update the price accordingly
+        (if (!= sale-type "")
+          (if (exists-msg-decimal UPDATED-PRICE-KEY)
+            (let ((updated-price:decimal (read-msg UPDATED-PRICE-KEY)))
+              (fungible::enforce-unit updated-price)
+              (with-capability (UPDATE-QUOTE-PRICE (at 'id token) sale-id sale-type updated-price)
+                (update quotes sale-id { "sale-price": updated-price })
+              )
+              true
             )
-            true
+          true
           )
-         true
+          true
         )
-        true
-      )
-      (let ((final-sale-price:decimal  (at 'sale-price (get-quote-info sale-id))))
+
+        (let* (
+            (final-sale-price:decimal  (at 'sale-price (get-quote-info sale-id)))
+            (mk-fee-spec:object{marketplace-fee-spec} (try { "mk-account": "", "mk-fee-percentage": 0.0 } (read-msg MARKETPLACE-FEE-KEY)))
+            (mk-fee-percentage:decimal (at 'mk-fee-percentage mk-fee-spec))
+            (mk-fee:decimal (floor (* mk-fee-percentage final-sale-price) (fungible::precision)))
+          )
           (enforce (> final-sale-price 0.0) "Price is not finalized for this quote")
+
+          ; Handle the marketplace fee if applicable
+          (if (= 0.0 mk-fee-percentage)
+            true
+            (with-capability (FUNGIBLE-TRANSFER-CALL sale-id)
+              (enforce (and (>= mk-fee-percentage 0.0) (<= mk-fee-percentage 1.0)) "Invalid market-fee percentage")
+
+              (install-capability (fungible::TRANSFER (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at "mk-account" mk-fee-spec) mk-fee))
+              (fungible::transfer (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at "mk-account" mk-fee-spec) mk-fee)
+            )
+          )
+
           (with-capability (FUNGIBLE-TRANSFER-CALL sale-id)
+            ; Transfer sale amount from buyer to policy manager's escrow account
             (install-capability (fungible::TRANSFER (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at 'account escrow-account) final-sale-price))
             (fungible::transfer-create (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at 'account escrow-account) (at 'guard escrow-account) final-sale-price)
           )
-         (with-capability (ESCROW sale-id)
-           ; Run policies::enforce-buy
-           (let ((result:[bool]
-             (map (lambda (policy:module{kip.token-policy-v2})
-                (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id policy)
-                  (policy::enforce-buy token seller buyer buyer-guard amount sale-id)
-                )
-              ) (at 'policies token))
-              ))
-             (let (
-                   (balance:decimal (fungible::get-balance (at 'account escrow-account)))
-                 )
-               (install-capability (fungible::TRANSFER (at 'account escrow-account) (at 'account seller-fungible-account) balance))
-               (fungible::transfer (at 'account escrow-account) (at 'account seller-fungible-account) balance)
-           )
-         result
-         ))
-       )
-     )
-      ; quote is not used
+          (with-capability (ESCROW sale-id)
+            ; Run policies::enforce-buy
+            (let ((result:[bool]
+              (map (lambda (policy:module{kip.token-policy-v2})
+                  (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id policy)
+                    (policy::enforce-buy token seller buyer buyer-guard amount sale-id)
+                  )
+                ) (at 'policies token))
+                ))
+
+              (let (
+                    (balance:decimal (fungible::get-balance (at 'account escrow-account)))
+                  )
+                (install-capability (fungible::TRANSFER (at 'account escrow-account) (at 'account seller-fungible-account) balance))
+                (fungible::transfer (at 'account escrow-account) (at 'account seller-fungible-account) balance)
+              )
+            result
+          ))
+        )
+      )
+
+      ; false: quote is not used
       (map (lambda (policy:module{kip.token-policy-v2})
         (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id policy)
           (policy::enforce-buy token seller buyer buyer-guard amount sale-id)
@@ -499,9 +531,6 @@
       )
       true)
   )
-
-  ; Bless previous versions
-  (bless "WC7obfshJ_VsH2PmcTL2iy4TKjbhHvA1WU_aMWIRwKc")
 )
 
 (if (read-msg 'upgrade )

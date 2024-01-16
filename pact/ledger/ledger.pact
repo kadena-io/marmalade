@@ -573,7 +573,7 @@
             (policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
           )
           (with-capability (BUY id seller buyer amount (pact-id))
-            (buy id seller buyer buyer-guard amount (pact-id))
+            (buy id seller buyer buyer-guard amount)
           )
           (pact-id)
     ))
@@ -627,7 +627,6 @@
       buyer:string
       buyer-guard:guard
       amount:decimal
-      sale-id:string
     )
     @doc "Complete sale with transfer."
     @model

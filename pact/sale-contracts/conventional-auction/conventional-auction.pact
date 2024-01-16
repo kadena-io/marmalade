@@ -269,14 +269,11 @@
 )
 
 (if (read-msg "upgrade")
-  ;  ["upgrade complete"]
+  ["upgrade complete"]
   [
     (create-table mk-fees)
-  ]
-  [
     (create-table auctions)
     (create-table bids)
-    (create-table mk-fees)
   ]
 )
 (enforce-guard ADMIN-KS)

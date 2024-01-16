@@ -19,6 +19,7 @@
     start-price:decimal
     reserve-price:decimal
     sell-price:decimal
+    price-interval-seconds:integer
     buyer:string
     buyer-guard:guard
   )
@@ -109,11 +110,14 @@
     start-date:integer
     end-date:integer
     reserve-price:decimal
-    start-price:decimal)
+    start-price:decimal
+    price-interval-seconds:integer)
     (enforce (> start-date (curr-time)) "Start date must be in the future")
     (enforce (> end-date start-date) "End date must be after start date")
     (enforce (> reserve-price 0.0) "Reserve price must be greater than 0")
     (enforce (> start-price reserve-price) "Start price must be greater than reserve price")
+    (enforce (> price-interval-seconds 0) "Price interval must be greater than 0")
+    (enforce (> (- end-date start-date) price-interval-seconds) "Auction duration must be greather than price interval")
   )
 
   (defun create-auction
@@ -123,8 +127,9 @@
       end-date:integer
       reserve-price:decimal
       start-price:decimal
+      price-interval-seconds:integer
     )
-    (validate-auction start-date end-date reserve-price start-price)
+    (validate-auction start-date end-date reserve-price start-price price-interval-seconds)
     (let (
       (quote-info:object{quote-schema} (get-quote-info sale-id)))
 
@@ -140,6 +145,7 @@
         ,"end-date": end-date
         ,"start-price": start-price
         ,"reserve-price": reserve-price
+        ,"price-interval-seconds": price-interval-seconds
         ,"sell-price": 0.0
         ,"buyer": ""
         ,"buyer-guard": DUMMY_GUARD
@@ -154,8 +160,9 @@
       end-date:integer
       start-price:decimal
       reserve-price:decimal
+      price-interval-seconds:integer
     )
-    (validate-auction start-date end-date reserve-price start-price)
+    (validate-auction start-date end-date reserve-price start-price price-interval-seconds)
 
     (with-read auctions sale-id
       { 'token-id:= token-id,
@@ -185,12 +192,13 @@
         'start-date:= start-date,
         'end-date:= end-date,
         'reserve-price:= reserve-price,
-        'start-price:= start-price
+        'start-price:= start-price,
+        'price-interval-seconds:= price-interval-seconds
       }
 
       (let* (
-        (sale-period-hours:decimal  (* (round (/ (- end-date start-date) 3600.0)) 1.0))
-        (period-passed-hours:decimal (* (round (/ (- (curr-time) start-date) 3600.0)) 1.0))
+        (sale-period-hours:decimal  (* (round (/ (- end-date start-date) (* price-interval-seconds 1.0))) 1.0))
+        (period-passed-hours:decimal (* (round (/ (- (curr-time) start-date) (* price-interval-seconds 1.0))) 1.0))
         (price-range:decimal (- start-price reserve-price))
         )
         (if (or (< (curr-time) start-date) (> (curr-time) end-date))

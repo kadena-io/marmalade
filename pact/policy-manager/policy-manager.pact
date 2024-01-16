@@ -531,9 +531,6 @@
       )
       true)
   )
-
-  ; Bless previous versions
-  (bless "WC7obfshJ_VsH2PmcTL2iy4TKjbhHvA1WU_aMWIRwKc")
 )
 
 (if (read-msg 'upgrade )

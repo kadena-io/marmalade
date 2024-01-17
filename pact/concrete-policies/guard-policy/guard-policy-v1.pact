@@ -35,6 +35,12 @@
     true
   )
 
+  (defcap GUARD-UPDATED:bool (token-id:string guard-name:string guard:guard)
+    @doc "Emits event for discovery of updating guards"
+    @event
+    true
+  )
+
   (defcap MINT (token-id:string account:string amount:decimal)
     (enforce-guard (get-mint-guard token-id))
   )
@@ -94,6 +100,42 @@
 
   (defun get-guards:object{guards} (token:object{token-info})
     (read policy-guards (at 'id token))
+  )
+
+  (defun update-mint-guard:bool (token-id:string guard:guard)
+    (enforce-guard (get-mint-guard token-id))
+    (update policy-guards token-id {
+      "mint-guard": guard
+    })
+    (emit-event (GUARD-UPDATED token-id "mint-guard" guard))
+    true
+  )
+
+  (defun update-burn-guard:bool (token-id:string guard:guard)
+    (enforce-guard (get-burn-guard token-id))
+    (update policy-guards token-id {
+      "burn-guard": guard
+    })
+    (emit-event (GUARD-UPDATED token-id "burn-guard" guard))
+    true
+  )
+
+  (defun update-sale-guard:bool (token-id:string guard:guard)
+    (enforce-guard (get-sale-guard token-id))
+    (update policy-guards token-id {
+      "sale-guard": guard
+    })
+    (emit-event (GUARD-UPDATED token-id "sale-guard" guard))
+    true
+  )
+
+  (defun update-transfer-guard:bool (token-id:string guard:guard)
+    (enforce-guard (get-transfer-guard token-id))
+    (update policy-guards token-id {
+      "transfer-guard": guard
+    })
+    (emit-event (GUARD-UPDATED token-id "transfer-guard" guard))
+    true
   )
 
   (defun enforce-init:bool

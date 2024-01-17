@@ -367,11 +367,76 @@
    (get-current-price (read-string 'sale-id))
  )
 
+ (env-chain-data {"block-time": (time "2023-10-15T00:00:00Z")})
+ (expect "Price drops to reserve price at close time"
+   50.0
+   (get-current-price (read-string 'sale-id))
+ )
+
 (env-chain-data {"block-time": (time "2023-10-15T00:00:01Z")})
-(expect "Price is 0.0 at close time"
+(expect "Price is at 0.0 after close time"
   0.0
   (get-current-price (read-string 'sale-id))
 )
+
+(rollback-tx)
+
+(begin-tx "Auction price validations with 1 hour interval for total of 1hr and 30 minutes")
+ (env-hash (hash "auction-price-validations-1hr-2"))
+ (use marmalade-v2.ledger)
+ (use marmalade-v2.util-v1)
+ (use mini-guard-utils)
+ (use marmalade-sale.dutch-auction)
+
+ (env-data {
+   "token1-id": (create-token-id { 'uri: "dutch-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
+   ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
+ })
+
+ (env-sigs [
+   { 'key: "05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"
+    ,'caps: [(MANAGE_AUCTION (read-msg 'sale-id) (read-msg 'token1-id))]
+    }
+ ])
+
+ (env-chain-data {"block-time": (time "2023-10-01T00:00:00Z")})
+ (expect "Update auction to 30-minute interval"
+   "Write succeeded"
+   (update-auction (read-string "sale-id")
+    (to-timestamp (time "2023-10-09T00:00:00Z"))
+    (to-timestamp (time "2023-10-09T01:30:00Z"))
+    100.0 50.0 3600)
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T00:00:00Z")})
+ (expect "Current price returns opening price at start"
+   100.0
+   (get-current-price (read-string 'sale-id))
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T00:59:59Z")})
+ (expect "Current price remains at opening price for 59 minutes"
+   100.0
+   (get-current-price (read-string 'sale-id))
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T01:00:00Z")})
+ (expect "30 minutes later the price drops to reserve price"
+   50.0
+   (get-current-price (read-string 'sale-id))
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T01:30:00Z")})
+ (expect "Price remains until before close time"
+   50.0
+   (get-current-price (read-string 'sale-id))
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T01:30:01Z")})
+ (expect "Price is at 0.0 after close time"
+   0.0
+   (get-current-price (read-string 'sale-id))
+ )
 
 (rollback-tx)
 

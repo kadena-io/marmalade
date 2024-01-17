@@ -4,7 +4,7 @@
 
   @doc "Policy for minting with a fixed issuance"
 
-  (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
+  (defconst ADMIN-KS:string "marmalade-examples.marmalade-examples-admin")
 
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))

@@ -196,8 +196,8 @@
       }
 
       (let* (
-        (sale-period-hours:decimal  (* (round (/ (- end-date start-date) (* price-interval-seconds 1.0))) 1.0))
-        (period-passed-hours:decimal (* (round (/ (- (curr-time) start-date) (* price-interval-seconds 1.0))) 1.0))
+        (sale-period-hours:decimal  (* (floor (/ (- end-date start-date) (* price-interval-seconds 1.0))) 1.0))
+        (period-passed-hours:decimal (* (floor (/ (- (curr-time) start-date) (* price-interval-seconds 1.0))) 1.0))
         (price-range:decimal (- start-price reserve-price))
         )
         (if (or (< (curr-time) start-date) (> (curr-time) end-date))

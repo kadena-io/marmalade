@@ -267,8 +267,14 @@
     (get-current-price (read-string 'sale-id))
   )
 
-  (env-chain-data {"block-time": (time "2023-10-02T00:31:00Z")})
-  (expect "Current price drops as time progresses"
+  (env-chain-data {"block-time": (time "2023-10-02T00:59:59Z")})
+  (expect "Current price remains for 59 minutes"
+    100.0
+    (get-current-price (read-string 'sale-id))
+  )
+
+  (env-chain-data {"block-time": (time "2023-10-02T01:00:00Z")})
+  (expect "Current price drops after 1 hour interval"
     99.65
     (get-current-price (read-string 'sale-id))
   )
@@ -279,9 +285,21 @@
     (get-current-price (read-string 'sale-id))
   )
 
-  (env-chain-data {"block-time": (time "2023-10-07T23:45:00Z")})
-  (expect "Just before closing the price is at reserve price"
-    50.00
+  (env-chain-data {"block-time": (time "2023-10-07T23:59:59Z")})
+  (expect "Price keeps dropping close to reserve price"
+    50.35
+    (get-current-price (read-string 'sale-id))
+  )
+
+  (env-chain-data {"block-time": (time "2023-10-08T00:00:00Z")})
+  (expect "At closing the price drops to reserve price"
+    50.0
+    (get-current-price (read-string 'sale-id))
+  )
+
+  (env-chain-data {"block-time": (time "2023-10-08T00:00:01Z")})
+  (expect "Auction closes and price is set to 0.0"
+    0.0
     (get-current-price (read-string 'sale-id))
   )
 (rollback-tx)
@@ -307,7 +325,10 @@
  (env-chain-data {"block-time": (time "2023-10-01T00:00:00Z")})
  (expect "Update auction to 30-minute interval"
    "Write succeeded"
-   (update-auction (read-string "sale-id") 1696809600 1697328000 100.0 50.0 1800)
+   (update-auction (read-string "sale-id")
+    (to-timestamp (time "2023-10-09T00:00:00Z"))
+    (to-timestamp (time "2023-10-15T00:00:00Z"))
+    100.0 50.0 1800)
  )
 
  (env-chain-data {"block-time": (time "2023-10-09T00:00:00Z")})
@@ -316,35 +337,42 @@
    (get-current-price (read-string 'sale-id))
  )
 
- (env-chain-data {"block-time": (time "2023-10-09T00:15:01Z")})
- (expect "Current price drops as time progresses"
+ (env-chain-data {"block-time": (time "2023-10-09T00:29:59Z")})
+ (expect "Current price remains at opening price for 29 minutes"
+   100.0
+   (get-current-price (read-string 'sale-id))
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T00:30:00Z")})
+ (expect "30 minutes later the price drops"
    99.83
    (get-current-price (read-string 'sale-id))
  )
 
- (env-chain-data {"block-time": (time "2023-10-09T00:44:00Z")})
- (expect "29 minutes later the price remains the same"
+ (env-chain-data {"block-time": (time "2023-10-09T00:59:59Z")})
+ (expect "Price remains for 29 minutes"
    99.83
    (get-current-price (read-string 'sale-id))
  )
 
- (env-chain-data {"block-time": (time "2023-10-09T00:45:00Z")})
- (expect "30 minutes later the price drops again"
+ (env-chain-data {"block-time": (time "2023-10-09T01:00:00Z")})
+ (expect "Price drops at after 30 minutes"
    99.65
    (get-current-price (read-string 'sale-id))
  )
 
- (env-chain-data {"block-time": (time "2023-10-09T01:15:01Z")})
- (expect "30 minutes later the price drops again"
-   99.48
+ (env-chain-data {"block-time": (time "2023-10-14T23:59:59Z")})
+ (expect "Just before closing the price is at reserve price"
+   50.17
    (get-current-price (read-string 'sale-id))
  )
 
- (env-chain-data {"block-time": (time "2023-10-14T23:45:00Z")})
- (expect "Just before closing the price is at reserve price"
-   50.00
-   (get-current-price (read-string 'sale-id))
- )
+(env-chain-data {"block-time": (time "2023-10-15T00:00:01Z")})
+(expect "Price is 0.0 at close time"
+  0.0
+  (get-current-price (read-string 'sale-id))
+)
+
 (rollback-tx)
 
  (begin-tx "Buying the token with the wrong price fails")

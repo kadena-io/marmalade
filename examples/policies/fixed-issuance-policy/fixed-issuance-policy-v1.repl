@@ -6,14 +6,24 @@
 (begin-tx "load fixed issuance policy")
   (env-data {
     "ns": "marmalade-examples"
-  , "marmalade-examples-admin": ["marmalade-examples-admin"]
+  , "fixed-issuance-policy": ["fixed-issuance-policy"]
   , "upgrade": false}
   )
-  (load "../ns-marmalade-examples.pact")
   (env-sigs [
-    { 'key: 'marmalade-examples-admin
+    { 'key: 'fixed-issuance-policy
      ,'caps: []
   }])
+
+  (ns.write-registry (read-msg 'ns) (read-keyset 'fixed-issuance-policy) true)
+  (define-namespace
+    (read-msg 'ns)
+    (read-keyset 'fixed-issuance-policy) (read-keyset 'fixed-issuance-policy)
+  )
+
+  (namespace (read-msg 'ns))
+
+  (define-keyset (+ (read-msg 'ns) ".fixed-issuance-policy") (read-keyset 'fixed-issuance-policy))
+  
   (load "fixed-issuance-policy-v1.pact")
   (typecheck "marmalade-examples.fixed-issuance-policy-v1")
 

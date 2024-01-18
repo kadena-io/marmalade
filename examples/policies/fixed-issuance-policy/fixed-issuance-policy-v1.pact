@@ -4,7 +4,7 @@
 
   @doc "Policy for minting with a fixed issuance"
 
-  (defconst ADMIN-KS:string "marmalade-examples.marmalade-examples-admin")
+  (defconst ADMIN-KS:string "marmalade-examples.fixed-issuance-policy")
 
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
@@ -121,3 +121,5 @@
 (if (read-msg 'upgrade)
   ["upgrade complete"]
   [(create-table supplies) ])
+
+(enforce-guard ADMIN-KS)

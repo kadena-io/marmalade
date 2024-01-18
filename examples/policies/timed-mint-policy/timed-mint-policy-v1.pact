@@ -4,7 +4,7 @@
 
   @doc "Policy for timed-mint tokens with royalty and quoted sale in coin."
 
-  (defconst ADMIN-KS:string "marmalade-examples.marmalade-examples-admin")
+  (defconst ADMIN-KS:string "marmalade-examples.timed-mint-policy")
 
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
@@ -133,3 +133,5 @@
   true
   (create-table timed-mint)
 )
+
+(enforce-guard ADMIN-KS)

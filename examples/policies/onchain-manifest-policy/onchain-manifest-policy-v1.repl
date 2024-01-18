@@ -5,14 +5,24 @@
 (begin-tx "load onchain manifest policy")
   (env-data {
     "ns": "marmalade-examples"
-  , "marmalade-examples-admin": ["marmalade-examples-admin"]
+  , "onchain-manifest-policy": ["onchain-manifest-policy"]
   , "upgrade": false}
   )
-  (load "../ns-marmalade-examples.pact")
   (env-sigs [
-    { 'key: 'marmalade-examples-admin
+    { 'key: 'onchain-manifest-policy
      ,'caps: []
   }])
+
+  (ns.write-registry (read-msg 'ns) (read-keyset 'onchain-manifest-policy) true)
+  (define-namespace
+    (read-msg 'ns)
+    (read-keyset 'onchain-manifest-policy) (read-keyset 'onchain-manifest-policy)
+  )
+
+  (namespace (read-msg 'ns))
+
+  (define-keyset (+ (read-msg 'ns) ".onchain-manifest-policy") (read-keyset 'onchain-manifest-policy))
+  
   (load "onchain-manifest-policy-v1.pact")
   (typecheck "marmalade-examples.onchain-manifest-policy-v1")
 (commit-tx)

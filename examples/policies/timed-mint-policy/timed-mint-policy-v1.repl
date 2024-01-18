@@ -5,17 +5,26 @@
 (begin-tx "load timed mint policy")
   (env-data {
     "ns": "marmalade-examples"
-  , "marmalade-examples-admin": ["marmalade-examples-admin"]
+  , "timed-mint-policy": ["timed-mint-policy"]
   , "upgrade": false}
   )
-  (load "../ns-marmalade-examples.pact")
   (env-sigs [
-    { 'key: 'marmalade-examples-admin
+    { 'key: 'timed-mint-policy
      ,'caps: []
   }])
+
+  (ns.write-registry (read-msg 'ns) (read-keyset 'timed-mint-policy) true)
+  (define-namespace
+    (read-msg 'ns)
+    (read-keyset 'timed-mint-policy) (read-keyset 'timed-mint-policy)
+  )
+
+  (namespace (read-msg 'ns))
+
+  (define-keyset (+ (read-msg 'ns) ".timed-mint-policy") (read-keyset 'timed-mint-policy))
+  
   (load "timed-mint-policy-v1.pact")
   (typecheck "marmalade-examples.timed-mint-policy-v1")
-
 (commit-tx)
 
 

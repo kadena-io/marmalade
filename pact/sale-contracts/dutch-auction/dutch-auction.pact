@@ -202,7 +202,7 @@
         (price-range:decimal (- start-price reserve-price))
         (price-drop-per-interval:decimal (/ price-range sale-period-full-intervals))
         )
-        (if (or (< (curr-time) start-date) (> (curr-time) end-date))
+        (if (or (< (curr-time) start-date) (>= (curr-time) end-date))
           0.0
           (round (+ reserve-price (* remaining-intervals price-drop-per-interval)) 2)
         )

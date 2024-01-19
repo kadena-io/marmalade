@@ -296,6 +296,12 @@
     50.00
     (get-current-price (read-string 'sale-id))
   )
+
+  (env-chain-data {"block-time": (time "2023-10-08T00:00:00Z")})
+  (expect "At closing the price is at 0 again"
+    0.0
+    (get-current-price (read-string 'sale-id))
+  )
 (rollback-tx)
 
 (begin-tx "Auction price validations with 30-minute interval")
@@ -363,6 +369,12 @@
    50.00
    (get-current-price (read-string 'sale-id))
  )
+
+ (env-chain-data {"block-time": (time "2023-10-15T00:00:00Z")})
+ (expect "At closing the price is at 0 again"
+   0.0
+   (get-current-price (read-string 'sale-id))
+ )
 (rollback-tx)
 
 (begin-tx "Auction price validations with a broken interval")
@@ -416,6 +428,12 @@
  (env-chain-data {"block-time": (time "2023-10-09T17:35:00Z")})
  (expect "Just before closing the price is at reserve price"
    50.00
+   (get-current-price (read-string 'sale-id))
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T18:00:00Z")})
+ (expect "At closing the price is at 0 again"
+   0.0
    (get-current-price (read-string 'sale-id))
  )
 (rollback-tx)
@@ -477,6 +495,12 @@
  (env-chain-data {"block-time": (time "2023-10-09T16:40:00Z")})
  (expect "Just before closing the price is at reserve price"
    50.00
+   (get-current-price (read-string 'sale-id))
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T16:45:00Z")})
+ (expect "At closing the price is at 0 again"
+   0.0
    (get-current-price (read-string 'sale-id))
  )
 (rollback-tx)

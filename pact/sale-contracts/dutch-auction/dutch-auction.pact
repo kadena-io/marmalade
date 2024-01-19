@@ -196,13 +196,15 @@
       }
 
       (let* (
-        (sale-period-hours:decimal  (* (round (/ (- end-date start-date) (* price-interval-seconds 1.0))) 1.0))
-        (period-passed-hours:decimal (* (round (/ (- (curr-time) start-date) (* price-interval-seconds 1.0))) 1.0))
+        (auction-duration-seconds:decimal (* (- end-date start-date) 1.0))
+        (sale-period-full-intervals:integer  (- (ceiling (/ auction-duration-seconds (* price-interval-seconds 1.0))) 1))
+        (remaining-intervals:integer (- (ceiling (/ (- end-date (curr-time)) (* price-interval-seconds 1.0))) 1))
         (price-range:decimal (- start-price reserve-price))
+        (price-drop-per-interval:decimal (/ price-range sale-period-full-intervals))
         )
         (if (or (< (curr-time) start-date) (> (curr-time) end-date))
           0.0
-          (round (- start-price (* (/ period-passed-hours sale-period-hours) price-range)) 2)
+          (round (+ reserve-price (* remaining-intervals price-drop-per-interval)) 2)
         )
       )
     )

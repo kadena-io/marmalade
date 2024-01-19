@@ -267,7 +267,13 @@
     (get-current-price (read-string 'sale-id))
   )
 
-  (env-chain-data {"block-time": (time "2023-10-02T00:31:00Z")})
+  (env-chain-data {"block-time": (time "2023-10-02T00:59:00Z")})
+  (expect "Current price remains opening price during the first hour"
+    100.0
+    (get-current-price (read-string 'sale-id))
+  )
+
+  (env-chain-data {"block-time": (time "2023-10-02T01:10:00Z")})
   (expect "Current price drops as time progresses"
     99.65
     (get-current-price (read-string 'sale-id))
@@ -275,7 +281,13 @@
 
   (env-chain-data {"block-time": (time "2023-10-06T00:00:00Z")})
   (expect "Current price drops as time progresses"
-    66.67
+    66.43
+    (get-current-price (read-string 'sale-id))
+  )
+
+  (env-chain-data {"block-time": (time "2023-10-07T23:00:00Z")})
+  (expect "In the last hour the price is at reserve price"
+    50.00
     (get-current-price (read-string 'sale-id))
   )
 
@@ -316,31 +328,153 @@
    (get-current-price (read-string 'sale-id))
  )
 
- (env-chain-data {"block-time": (time "2023-10-09T00:15:01Z")})
+ (env-chain-data {"block-time": (time "2023-10-09T00:25:01Z")})
+ (expect "Current price remains the same in the first interval"
+   100.0
+   (get-current-price (read-string 'sale-id))
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T00:44:01Z")})
  (expect "Current price drops as time progresses"
    99.83
    (get-current-price (read-string 'sale-id))
  )
 
- (env-chain-data {"block-time": (time "2023-10-09T00:44:00Z")})
- (expect "29 minutes later the price remains the same"
+ (env-chain-data {"block-time": (time "2023-10-09T00:59:00Z")})
+ (expect "15 minutes later the price remains the same"
    99.83
    (get-current-price (read-string 'sale-id))
  )
 
- (env-chain-data {"block-time": (time "2023-10-09T00:45:00Z")})
- (expect "30 minutes later the price drops again"
+ (env-chain-data {"block-time": (time "2023-10-09T01:15:00Z")})
+ (expect "16 minutes later the price drops again"
    99.65
    (get-current-price (read-string 'sale-id))
  )
 
- (env-chain-data {"block-time": (time "2023-10-09T01:15:01Z")})
+ (env-chain-data {"block-time": (time "2023-10-09T01:45:00Z")})
  (expect "30 minutes later the price drops again"
    99.48
    (get-current-price (read-string 'sale-id))
  )
 
- (env-chain-data {"block-time": (time "2023-10-14T23:45:00Z")})
+ (env-chain-data {"block-time": (time "2023-10-14T23:35:00Z")})
+ (expect "Just before closing the price is at reserve price"
+   50.00
+   (get-current-price (read-string 'sale-id))
+ )
+(rollback-tx)
+
+(begin-tx "Auction price validations with a broken interval")
+ (env-hash (hash "auction-price-validations-broken"))
+ (use marmalade-v2.ledger)
+ (use marmalade-v2.util-v1)
+ (use mini-guard-utils)
+ (use marmalade-sale.dutch-auction)
+
+ (env-data {
+   "token1-id": (create-token-id { 'uri: "dutch-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
+   ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
+ })
+
+ (env-sigs [
+   { 'key: "05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"
+    ,'caps: [(MANAGE_AUCTION (read-msg 'sale-id) (read-msg 'token1-id))]
+    }
+ ])
+
+ (env-chain-data {"block-time": (time "2023-10-01T00:00:00Z")})
+ (expect "Update auction to 30-minute interval"
+   "Write succeeded"
+   (update-auction (read-string "sale-id") 1696859100 1696874400 100.0 50.0 1800)
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T13:45:00Z")})
+ (expect "Current price returns opening price at start"
+   100.0
+   (get-current-price (read-string 'sale-id))
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T14:05:00Z")})
+ (expect "First price drop occurs after 15 minutes (broken interval slot)"
+   93.75
+   (get-current-price (read-string 'sale-id))
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T14:25:00Z")})
+ (expect "Price remains the same before next full interval"
+   93.75
+   (get-current-price (read-string 'sale-id))
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T14:35:00Z")})
+ (expect "Second price drop occurs after next full interval"
+   87.50
+   (get-current-price (read-string 'sale-id))
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T17:35:00Z")})
+ (expect "Just before closing the price is at reserve price"
+   50.00
+   (get-current-price (read-string 'sale-id))
+ )
+(rollback-tx)
+
+(begin-tx "Auction price validations with a short interval")
+ (env-hash (hash "auction-price-validations-broken"))
+ (use marmalade-v2.ledger)
+ (use marmalade-v2.util-v1)
+ (use mini-guard-utils)
+ (use marmalade-sale.dutch-auction)
+
+ (env-data {
+   "token1-id": (create-token-id { 'uri: "dutch-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
+   ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
+ })
+
+ (env-sigs [
+   { 'key: "05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"
+    ,'caps: [(MANAGE_AUCTION (read-msg 'sale-id) (read-msg 'token1-id))]
+    }
+ ])
+
+ (env-chain-data {"block-time": (time "2023-10-01T00:00:00Z")})
+ (expect "Update auction to 10-minute interval"
+   "Write succeeded"
+   (update-auction (read-string "sale-id") 1696866000 1696869900 100.0 50.0 600)
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T15:40:00Z")})
+ (expect "Current price returns opening price at start"
+   100.0
+   (get-current-price (read-string 'sale-id))
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T15:45:00Z")})
+ (expect "First price drop occurs after 5 minutes (broken interval slot)"
+   91.67
+   (get-current-price (read-string 'sale-id))
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T15:50:00Z")})
+ (expect "Price remains the same before next full interval"
+   91.67
+   (get-current-price (read-string 'sale-id))
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T15:55:00Z")})
+ (expect "Second price drop occurs after next full interval"
+   83.33
+   (get-current-price (read-string 'sale-id))
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T16:25:00Z")})
+ (expect "Current price drops as time progresses"
+   58.33
+   (get-current-price (read-string 'sale-id))
+ )
+
+ (env-chain-data {"block-time": (time "2023-10-09T16:40:00Z")})
  (expect "Just before closing the price is at reserve price"
    50.00
    (get-current-price (read-string 'sale-id))
@@ -381,7 +515,7 @@
      'buyer-guard: {"keys": ["15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7"], "pred": "keys-all"},
      'buyer_fungible_account: "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7",
      'policy-manager-escrow: (at 'account (get-escrow-account "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y")),
-     'updated_price: 66.67,
+     'updated_price: 66.43,
      "sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
      })
 
@@ -390,7 +524,7 @@
       ,'caps: [(marmalade-v2.ledger.BUY "t:VP0cvrlSaYJ3HizKnl3g0eL9aDr_RQhunuYgI4BTTe0" "k:05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e" "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7" 1.0 "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y")]
       },
       { 'key: "15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7"
-       ,'caps: [(coin.TRANSFER "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7" (read-string 'policy-manager-escrow) 66.67)]
+       ,'caps: [(coin.TRANSFER "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7" (read-string 'policy-manager-escrow) 66.43)]
        }])
 
    (expect "Claim the token succeeds"
@@ -398,12 +532,12 @@
      (continue-pact 1 false "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"))
 
    (expect "Buyer account balance has been deducted"
-     183.33
+     183.57
      (coin.get-balance "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7")
    )
 
    (expect "Seller balance has increased"
-     316.67
+     316.43
      (coin.get-balance "k:05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e")
    )
 
@@ -414,7 +548,7 @@
      ,"start-price": 100.0
      ,"reserve-price": 50.0
      ,"price-interval-seconds": 3600
-     ,"sell-price": 66.67
+     ,"sell-price": 66.43
      ,"buyer": (read-string 'buyer )
      ,"buyer-guard": (read-keyset 'buyer-guard )
     }

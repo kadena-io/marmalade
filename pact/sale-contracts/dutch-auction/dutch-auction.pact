@@ -57,10 +57,6 @@
   (defcap DUMMY:bool () true)
   (defconst DUMMY_GUARD:guard (create-capability-guard (DUMMY)))
 
-  (defun enforce-fungible-transfer:bool (sale-id:string)
-    (require-capability (FUNGIBLE-TRANSFER-CALL sale-id) )
-  )
-
   (defun enforce-quote-update:bool (sale-id:string price:decimal)
     (require-capability (SALE-GUARD-CALL sale-id price))
     (with-read auctions sale-id

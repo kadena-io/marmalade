@@ -213,3 +213,5 @@
     (create-table auctions)
   ]
 )
+
+(enforce-guard ADMIN-KS)

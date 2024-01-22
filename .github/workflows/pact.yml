@@ -55,3 +55,8 @@ jobs:
         uses: ./.github/actions/repl
         with:
           target: pact/sale-contracts/conventional-auction/conventional-auction.repl
+
+      - name: Test dutch auction sale contract
+        uses: ./.github/actions/repl
+        with:
+          target: pact/sale-contracts/dutch-auction/dutch-auction.repl

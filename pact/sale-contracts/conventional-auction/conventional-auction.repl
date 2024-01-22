@@ -153,7 +153,6 @@
   (env-data {
     "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
    ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
-   ,'imr-admin: ["imr-admin"]
   })
   (env-sigs [])
   (expect-failure "Update auction without rights fails"
@@ -181,8 +180,7 @@
 
   (env-data {
     "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
-   ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
-   ,'imr-admin: ["imr-admin"]
+   ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"   
   })
   (env-sigs [
     { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3

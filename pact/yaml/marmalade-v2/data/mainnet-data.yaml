@@ -6,6 +6,8 @@ kip_namespace: kip
 marmalade_namespace: marmalade-v2
 marmalade_sale_namespace: marmalade-sale
 
+marmalade_sale_contract:
+
 is_upgrade:
 
 sender:

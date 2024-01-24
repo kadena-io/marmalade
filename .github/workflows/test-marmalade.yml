@@ -1,4 +1,4 @@
-name: Test concrete policies
+name: Test Marmalade protocol
 
 on:
   push:

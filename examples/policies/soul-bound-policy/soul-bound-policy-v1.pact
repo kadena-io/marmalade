@@ -2,7 +2,7 @@
 
 (module soul-bound-policy-v1 GOVERNANCE
 
-  (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
+  (defconst ADMIN-KS:string "marmalade-examples.soul-bound-policy")
 
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
@@ -112,3 +112,5 @@
   true
   (create-table records)
 )
+
+(enforce-guard ADMIN-KS)

@@ -4,14 +4,24 @@
 (begin-tx "load timed mint policy")
   (env-data {
     "ns": "marmalade-examples"
-  , "marmalade-examples-admin": ["marmalade-examples-admin"]
+  , "soul-bound-policy": ["soul-bound-policy"]
   , "upgrade": false}
   )
-  (load "../ns-marmalade-examples.pact")
   (env-sigs [
-    { 'key: 'marmalade-examples-admin
+    { 'key: 'soul-bound-policy
      ,'caps: []
   }])
+
+  (ns.write-registry (read-msg 'ns) (read-keyset 'soul-bound-policy) true)
+  (define-namespace
+    (read-msg 'ns)
+    (read-keyset 'soul-bound-policy) (read-keyset 'soul-bound-policy)
+  )
+
+  (namespace (read-msg 'ns))
+
+  (define-keyset (+ (read-msg 'ns) ".soul-bound-policy") (read-keyset 'soul-bound-policy))
+  
   (load "soul-bound-policy-v1.pact")
   (typecheck "marmalade-examples.soul-bound-policy-v1")
 

@@ -14,6 +14,8 @@
   (marmalade-v2.policy-manager.add-sale-whitelist marmalade-sale.conventional-auction)
 (commit-tx)
 
+(typecheck "marmalade-sale.conventional-auction")
+
 (begin-tx "Create and mint a token")
   (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)
@@ -180,7 +182,7 @@
 
   (env-data {
     "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
-   ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"   
+   ,"sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
   })
   (env-sigs [
     { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3

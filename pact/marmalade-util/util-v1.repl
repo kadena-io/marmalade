@@ -1,5 +1,7 @@
 (load "../marmalade.repl")
 
+(typecheck "marmalade-v2.util-v1")
+
 (begin-tx "mint a featureless NFT")
 
   (use marmalade-v2.util-v1)

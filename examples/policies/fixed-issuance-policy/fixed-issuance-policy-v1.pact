@@ -4,7 +4,7 @@
 
   @doc "Policy for minting with a fixed issuance"
 
-  (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
+  (defconst ADMIN-KS:string "marmalade-examples.fixed-issuance-policy")
 
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
@@ -64,7 +64,7 @@
       , 'max-supply:=max-supply:decimal
       }
       (enforce (>= amount min-amount) "mint amount < min-amount")
-      (if (> 0.0 max-supply)
+      (if (> max-supply 0.0)
         (enforce (<= (+ amount (at 'supply token)) max-supply) "Exceeds max supply")
         true
       )
@@ -121,3 +121,5 @@
 (if (read-msg 'upgrade)
   ["upgrade complete"]
   [(create-table supplies) ])
+
+(enforce-guard ADMIN-KS)

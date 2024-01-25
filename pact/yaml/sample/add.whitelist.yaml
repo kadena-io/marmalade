@@ -1,11 +1,8 @@
-codeFile: ../sale-contracts/conventional-auction/conventional-auction.pact
+code: (marmalade-v2.policy-manager.add-sale-whitelist {{marmalade_sale_contract}})
 signers:
   - public: {{sender_key}}
   - public: {{marmalade_user_key_1}}
   - public: {{marmalade_user_key_2}}
-data:
-  ns: {{marmalade_sale_namespace}}
-  upgrade: {{is_upgrade}}
 networkId: {{network}}
 publicMeta:
   chainId: "{{chain}}"

@@ -1,4 +1,4 @@
-codeFile: ../sale-contracts/conventional-auction/conventional-auction.pact
+codeFile: ../sale-contracts/dutch-auction/dutch-auction.pact
 signers:
   - public: {{sender_key}}
   - public: {{marmalade_user_key_1}}

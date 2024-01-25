@@ -9,7 +9,7 @@
   (use kip.token-policy-v2 [token-info])
   (use marmalade-v2.policy-manager)
 
-  (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
+  (defconst ADMIN-KS:string "marmalade-examples.onchain-manifest-policy")
 
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
@@ -128,3 +128,5 @@
   ["upgrade complete"]
   [ (create-table manifests)
 ])
+
+(enforce-guard ADMIN-KS)

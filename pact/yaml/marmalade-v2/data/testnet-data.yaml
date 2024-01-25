@@ -6,7 +6,12 @@ kip_namespace: kip
 marmalade_namespace: marmalade-v2
 marmalade_sale_namespace: marmalade-sale
 
-is_upgrade: true
+marmalade_sale_contract:
+
+is_upgrade:
 
 sender:
 sender_key: 
+
+marmalade_user_key_1:
+marmalade_user_key_2:

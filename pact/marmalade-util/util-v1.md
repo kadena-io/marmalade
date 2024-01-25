@@ -24,7 +24,7 @@ This function wraps the `mint-NFT` token, and provides an easy tool to create to
 ### create-token-with-mint-guard
 
 This function is a wrapper function around `marmalade-v2.ledger.create-token`. DApps can leverage the function
-to enforce that `mint_guard` is always registered with `guard-token-policy-v1`. 
+to enforce that `mint_guard` is always registered with `guard-token-policy-v1`.
 
 #### create-policies
 
@@ -38,3 +38,8 @@ This function is opposite of `create-policies`, and takes in the list of token-p
 
 This function takes in `time` argument and returns a UTC timestamp as `integer`. This function can be used in
 Marmalade sales, which requires an UTC timestamp in `integer` type.
+
+### curr-time
+
+This function returns the block time in UTC timestamp as `integer`. This function can be used in
+policies or sale contracts to check against various logics. 

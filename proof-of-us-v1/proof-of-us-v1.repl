@@ -1,0 +1,91 @@
+;;load policy manager, ledger
+(load "../pact/marmalade.repl")
+
+(begin-tx "load timed mint policy")
+  (env-data {
+    "ns": "marmalade-examples"
+  , "proof-of-us-v1": ["proof-of-us-v1"]
+  , "upgrade": false}
+  )
+  (env-sigs [
+    { 'key: 'proof-of-us-v1
+     ,'caps: []
+    },
+    { 'key: 'marmalade-contract-admin
+     ,'caps: []
+    }])
+
+  (ns.write-registry (read-msg 'ns) (read-keyset 'proof-of-us-v1) true)
+  (define-namespace
+    (read-msg 'ns)
+    (read-keyset 'proof-of-us-v1) (read-keyset 'proof-of-us-v1)
+  )
+
+  (namespace (read-msg 'ns))
+
+  (define-keyset (+ (read-msg 'ns) ".proof-of-us-v1") (read-keyset 'proof-of-us-v1))
+  
+  (load "proof-of-us-v1.pact")
+  (typecheck "marmalade-examples.proof-of-us-v1")
+
+(commit-tx)
+
+(begin-tx "Create event")
+  (use marmalade-v2.ledger)
+  (use marmalade-examples.proof-of-us-v1)
+  (use marmalade-v2.collection-policy-v1)
+  (use mini-guard-utils)
+  (use marmalade-v2.util-v1)
+
+  (env-chain-data {"block-time": (time "2024-02-01T12:00:00Z")})
+
+  (env-data {
+    "name": "KadenaEvent"
+    ,"uri": "kadena://event-1"
+    ,"starts_at": (to-timestamp (time "2024-02-01T15:00:00Z"))
+    ,"ends_at": (to-timestamp (time "2024-02-02T15:00:00Z"))
+    ,"operator_guard": ["3a9582c99cee1ee4bb2bdd995960d595c39776e5917bc43e8cdc71b645e0720e"]
+  })
+
+  (env-sigs [
+    { "key": "3a9582c99cee1ee4bb2bdd995960d595c39776e5917bc43e8cdc71b645e0720e"
+      ,"caps": [(EVENT (create-event-id (read-msg 'name) (read-keyset 'operator_guard)) (read-msg 'name) (read-keyset 'operator_guard))]
+    }
+  ])
+
+  (expect "successfully creates the event"
+    true
+    (create-event)
+  )
+  
+(commit-tx)
+
+(begin-tx "Update event")
+  (use marmalade-v2.ledger)
+  (use marmalade-examples.proof-of-us-v1)
+  (use marmalade-v2.collection-policy-v1)
+  (use mini-guard-utils)
+  (use marmalade-v2.util-v1)
+
+  (env-chain-data {"block-time": (time "2024-02-01T12:30:00Z")})
+
+  (env-data {
+    "name": "KadenaEvent"
+    ,"uri": "kadena://event-1-1"
+    ,"starts_at": (to-timestamp (time "2024-02-01T17:00:00Z"))
+    ,"ends_at": (to-timestamp (time "2024-02-02T13:00:00Z"))
+    ,"operator_guard": ["3a9582c99cee1ee4bb2bdd995960d595c39776e5917bc43e8cdc71b645e0720e"]
+  })
+
+  (env-sigs [
+    { "key": "3a9582c99cee1ee4bb2bdd995960d595c39776e5917bc43e8cdc71b645e0720e"
+      ,"caps": [(UPDATE_EVENT (create-event-id (read-msg 'name) (read-keyset 'operator_guard)))]
+    }
+  ])
+
+  (expect "successfully updates the event"
+    true
+    (update-event (create-event-id (read-msg 'name) (read-keyset 'operator_guard)))
+  )
+  
+(commit-tx)

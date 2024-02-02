@@ -42,6 +42,7 @@
   (env-data {
     "name": "KadenaEvent"
     ,"uri": "kadena://event-1"
+    ,"collection_id": (format "collection:{}" [(hash "proof-of-us")])
     ,"starts_at": (to-timestamp (time "2024-02-01T15:00:00Z"))
     ,"ends_at": (to-timestamp (time "2024-02-02T15:00:00Z"))
     ,"operator_guard": ["3a9582c99cee1ee4bb2bdd995960d595c39776e5917bc43e8cdc71b645e0720e"]
@@ -49,14 +50,19 @@
 
   (env-sigs [
     { "key": "3a9582c99cee1ee4bb2bdd995960d595c39776e5917bc43e8cdc71b645e0720e"
-      ,"caps": [(EVENT (create-event-id (read-msg 'name) (read-keyset 'operator_guard)) (read-msg 'name) (read-keyset 'operator_guard))]
+      ,"caps": [(EVENT (read-msg 'collection_id) (create-event-id (read-msg 'collection_id) (read-keyset 'operator_guard)) (read-msg 'name) (read-msg 'uri) (read-keyset 'operator_guard))]
     }
   ])
 
   (expect "successfully creates the event"
     true
-    (create-event)
+    (create-event (read-msg 'collection_id) (read-msg 'name) (read-msg 'uri) (read-integer 'starts_at) (read-integer 'ends_at) (read-keyset 'operator_guard))
   )
+
+  (expect "event created events"
+    [ {"name": "marmalade-examples.proof-of-us-v1.EVENT","params": [(read-msg 'collection_id) (create-event-id (read-msg 'collection_id) (read-keyset 'operator_guard)) (read-msg 'name) (read-msg 'uri) (read-keyset 'operator_guard)]} ]
+    (map (remove "module-hash")  (env-events true)))
+
   
 (commit-tx)
 
@@ -72,6 +78,7 @@
   (env-data {
     "name": "KadenaEvent"
     ,"uri": "kadena://event-1-1"
+    ,"collection_id": (format "collection:{}" [(hash "proof-of-us")])
     ,"starts_at": (to-timestamp (time "2024-02-01T17:00:00Z"))
     ,"ends_at": (to-timestamp (time "2024-02-02T13:00:00Z"))
     ,"operator_guard": ["3a9582c99cee1ee4bb2bdd995960d595c39776e5917bc43e8cdc71b645e0720e"]
@@ -79,13 +86,24 @@
 
   (env-sigs [
     { "key": "3a9582c99cee1ee4bb2bdd995960d595c39776e5917bc43e8cdc71b645e0720e"
-      ,"caps": [(UPDATE_EVENT (create-event-id (read-msg 'name) (read-keyset 'operator_guard)))]
+      ,"caps": [(EVENT_UPDATE (create-event-id (read-msg 'collection_id) (read-keyset 'operator_guard)))]
     }
   ])
 
   (expect "successfully updates the event"
     true
-    (update-event (create-event-id (read-msg 'name) (read-keyset 'operator_guard)))
+    (update-event 
+      (create-event-id (read-msg 'collection_id) (read-keyset 'operator_guard))
+      (read-msg 'name) 
+      (read-msg 'uri) 
+      (read-integer 'starts_at) 
+      (read-integer 'ends_at)
+    )
   )
+
+  (expect "event updated events"
+    [ {"name": "marmalade-examples.proof-of-us-v1.EVENT_UPDATE","params": [(create-event-id (read-msg 'collection_id) (read-keyset 'operator_guard))]} ]
+    (map (remove "module-hash")  (env-events true)))
+
   
 (commit-tx)

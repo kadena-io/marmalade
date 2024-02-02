@@ -11,14 +11,14 @@
   (use kip.token-policy-v2 [token-info])
   (use marmalade-v2.util-v1)
 
-  (defcap EVENT (event-id:string name:string operator-guard:guard)
+  (defcap EVENT (collection-id:string event-id:string name:string uri:string operator-guard:guard)
     @doc "Used for new event discovery"
     @event
     (enforce-guard operator-guard)
     true
   )
 
-  (defcap UPDATE_EVENT (event-id:string)
+  (defcap EVENT_UPDATE (event-id:string)
     @doc "Used for updated event discovery"
     @event
     (with-read events event-id { 
@@ -37,6 +37,7 @@
   (defschema event
     name:string
     uri:string
+    collection-id:string
     starts-at:integer
     ends-at:integer
     operator-guard:guard
@@ -44,27 +45,15 @@
 
   (deftable events:{event})
 
-  (defconst EVENT-NAME-MSG-KEY:string "name")
-  (defconst EVENT-URI-MSG-KEY:string "uri")
-  (defconst EVENT-STARTS-AT-MSG-KEY:string "starts_at")
-  (defconst EVENT-ENDS-AT-MSG-KEY:string "ends_at")
-  (defconst EVENT-OPERATOR-GUARD-MSG-KEY:string "operator_guard")
-
-  (defun create-event ()
-    (let* (
-      (name:string (read-msg EVENT-NAME-MSG-KEY))
-      (uri:string (read-msg EVENT-URI-MSG-KEY))
-      (starts-at:integer (read-integer EVENT-STARTS-AT-MSG-KEY))
-      (ends-at:integer (read-integer EVENT-ENDS-AT-MSG-KEY))
-      (operator-guard:guard (read-keyset EVENT-OPERATOR-GUARD-MSG-KEY))
-      (event-id:string (create-event-id name operator-guard)) )
-    
+  (defun create-event (collection-id:string name:string uri:string starts-at:integer ends-at:integer operator-guard:guard)
+    (let ((event-id:string (create-event-id collection-id operator-guard)) )
       (validate-event-time starts-at ends-at)
 
-      (with-capability (EVENT event-id name operator-guard)
+      (with-capability (EVENT collection-id event-id name uri operator-guard)
         (insert events event-id {
           'name: name
           ,'uri: uri
+          ,'collection-id: collection-id
           ,'starts-at: starts-at
           ,'ends-at: ends-at
           ,'operator-guard: operator-guard
@@ -74,20 +63,15 @@
     )
   )
 
-  (defun update-event (event-id:string)
-    (let* (
-      (uri:string (read-msg EVENT-URI-MSG-KEY))
-      (starts-at:integer (read-integer EVENT-STARTS-AT-MSG-KEY))
-      (ends-at:integer (read-integer EVENT-ENDS-AT-MSG-KEY)) )
-      
-      (with-capability (UPDATE_EVENT event-id)
-        (update events event-id {
-          'uri: uri
-          ,'starts-at: starts-at
-          ,'ends-at: ends-at
-        })
-        true
-      )
+  (defun update-event (event-id:string name:string uri:string starts-at:integer ends-at:integer)
+    (with-capability (EVENT_UPDATE event-id)
+      (update events event-id {
+        'name: name
+        ,'uri: uri
+        ,'starts-at: starts-at
+        ,'ends-at: ends-at
+      })
+      true
     )
   )
   

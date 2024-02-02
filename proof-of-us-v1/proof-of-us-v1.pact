@@ -7,8 +7,6 @@
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
 
-  (implements kip.token-policy-v2)
-  (use kip.token-policy-v2 [token-info])
   (use marmalade-v2.util-v1)
 
   (defcap EVENT (collection-id:string event-id:string name:string uri:string operator-guard:guard)
@@ -73,67 +71,6 @@
       })
       true
     )
-  )
-  
-  (defun enforce-init:bool
-    ( token:object{token-info}
-    )
-    true
-  )
-
-  (defun enforce-mint:bool
-    ( token:object{token-info}
-      account:string
-      guard:guard
-      amount:decimal
-    )
-    true
-  )
-
-  (defun enforce-burn:bool
-    ( token:object{token-info}
-      account:string
-      amount:decimal
-    )
-    true
-  )
-
-  (defun enforce-offer:bool
-    ( token:object{token-info}
-      seller:string
-      amount:decimal
-      timeout:integer
-      sale-id:string
-    )
-    (enforce false "Sale not allowed")
-  )
-
-  (defun enforce-buy:bool
-    ( token:object{token-info}
-      seller:string
-      buyer:string
-      buyer-guard:guard
-      amount:decimal
-      sale-id:string )
-    (enforce false "Sale not allowed")
-  )
-
-  (defun enforce-withdraw:bool
-    ( token:object{token-info}
-      seller:string
-      amount:decimal
-      timeout:integer
-      sale-id:string )
-    (enforce false "Sale not allowed")
-  )
-
-  (defun enforce-transfer:bool
-    ( token:object{token-info}
-      sender:string
-      guard:guard
-      receiver:string
-      amount:decimal )
-    (enforce false "Transfer not allowed")
   )
 
   ;;UTILITY FUNCTIONS

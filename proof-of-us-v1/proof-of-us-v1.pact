@@ -19,10 +19,10 @@
   (defcap EVENT_UPDATE (event-id:string)
     @doc "Used for updated event discovery"
     @event
-    (with-read events event-id { 
+    (with-read events event-id {
       'starts-at := starts-at
       ,'ends-at := ends-at
-      ,'operator-guard := operator-guard 
+      ,'operator-guard := operator-guard
     }
       (validate-event-time starts-at ends-at)
       (enforce (> starts-at (curr-time)) "Event can't be updated if it already started")
@@ -32,10 +32,15 @@
     true
   )
 
+  (defcap CONNECT (event-id:string uri:string connection-guards:[guard])
+    ;TODO: enforce-guard on connection-guards with util.guards1.enforce-guard-all
+  )
+
   (defschema event
     name:string
     uri:string
     collection-id:string
+    token-id:string
     starts-at:integer
     ends-at:integer
     operator-guard:guard
@@ -47,6 +52,8 @@
     (let ((event-id:string (create-event-id collection-id operator-guard)) )
       (validate-event-time starts-at ends-at)
 
+      ;  TODO: create token and store token-id
+
       (with-capability (EVENT collection-id event-id name uri operator-guard)
         (insert events event-id {
           'name: name
@@ -55,7 +62,7 @@
           ,'starts-at: starts-at
           ,'ends-at: ends-at
           ,'operator-guard: operator-guard
-        }) 
+        })
         true
       )
     )
@@ -72,6 +79,32 @@
       true
     )
   )
+
+  (defun attendance-guard:guard (event-id:string)
+    (create-user-guard (attendance-mint-guard event-id))
+  )
+
+  (defun attendance-mint-guard:guard (event-id:string)
+    (with-read events event-id {
+      'starts-at: starts-at
+      ,'ends-at: ends-at
+    }
+      (validate-event-time starts-at ends-at)
+    )
+  )
+
+  (defun mint-attendance-token (event-id:string attendant:string attendant-guard:guard)
+  ; validate principal account
+  ; read token from event table
+  ; mint token to attendant (taking into account the mint-guard)
+  )
+
+  (defun create-and-mint-connection-token (event-id:string uri:string connection-guards:[guard])
+    ; Capability that needs to be signed by all connection-guards, util.guards1.enforce-guard-all
+    ; set supply to number of guards
+    ; mint token to principal accounts that belong to the guards
+  )
+
 
   ;;UTILITY FUNCTIONS
 

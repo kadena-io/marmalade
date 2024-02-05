@@ -32,6 +32,16 @@
     true
   )
 
+  (defcap TOKEN_CREATION (event-id:string)
+    @doc "Used to validate token creation"
+    @event
+
+    (util.guards1.guard-any [
+      (enforce-guard ADMIN-KS)
+      (create-user-guard (validate-event event-id))
+    ])
+  )
+
   (defcap CONNECT (event-id:string uri:string connection-guards:[guard])
     @doc "Used to guarante signature of all connecting parties"
     @event
@@ -82,18 +92,6 @@
     )
   )
 
-  (defun attendance-guard:guard (event-id:string)
-    (create-user-guard (attendance-mint-guard event-id))
-  )
-
-  (defun attendance-mint-guard:guard (event-id:string)
-    (with-read events event-id {
-      'starts-at: starts-at
-      ,'ends-at: ends-at
-    }
-      (validate-event-time starts-at ends-at)
-    )
-  )
 
   (defun mint-attendance-token (event-id:string attendant:string attendant-guard:guard)
   ; validate principal account
@@ -116,16 +114,16 @@
     (enforce (> ends-at starts-at) "Event must end after it starts")
 
     true
-  ) 
-  
+  )
+
   (defun validate-event:{event} (event-id:string)
     (let* (
-      (event:{event} (get-event event-id)) 
+      (event:{event} (get-event event-id))
       (starts-at:integer (at 'starts-at event))
       (ends-at:integer (at 'ends-at event)) )
-      
+
       (enforce (and (>= (curr-time) starts-at) (<= (curr-time) ends-at)) "Minting is not allowed outside of event time")
-    
+
       true
     )
   )

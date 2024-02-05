@@ -25,6 +25,7 @@
     @doc "The function is run at `create-token` step of marmalade-v2.ledger.create-token"
 
     (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) proof-of-us-policy-v1))
+    (require-capability (TOKEN_CREATION (read-msg EVENT-ID-MSG-KEY)))
 
     (enforce (= (at 'precision token) 0) "Precision must be 0 for proof-of-us tokens")
 

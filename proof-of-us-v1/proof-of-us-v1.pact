@@ -33,7 +33,9 @@
   )
 
   (defcap CONNECT (event-id:string uri:string connection-guards:[guard])
-    ;TODO: enforce-guard on connection-guards with util.guards1.enforce-guard-all
+    @doc "Used to guarante signature of all connecting parties"
+    @event
+    (util.guards1.enforce-guard-all connection-guards)
   )
 
   (defschema event

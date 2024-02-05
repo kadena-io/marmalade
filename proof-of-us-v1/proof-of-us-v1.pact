@@ -116,10 +116,22 @@
     (enforce (> ends-at starts-at) "Event must end after it starts")
 
     true
+  ) 
+  
+  (defun validate-event:{event} (event-id:string)
+    (let* (
+      (event:{event} (get-event event-id)) 
+      (starts-at:integer (at 'starts-at event))
+      (ends-at:integer (at 'ends-at event)) )
+      
+      (enforce (and (>= (curr-time) starts-at) (<= (curr-time) ends-at)) "Minting is not allowed outside of event time")
+    
+      true
+    )
   )
 
-  (defun create-event-id:string (event-name:string operator-guard:guard)
-    (format "proof-of-us:{}" [(hash [event-name operator-guard])])
+  (defun create-event-id:string (collection-id:string operator-guard:guard)
+    (format "proof-of-us:{}" [(hash [collection-id operator-guard])])
   )
 
   (defun get-event:object{event} (event-id:string)

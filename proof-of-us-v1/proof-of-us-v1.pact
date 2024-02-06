@@ -7,12 +7,13 @@
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
 
+  (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
 
-  (defcap EVENT (collection-id:string event-id:string name:string uri:string operator-guard:guard)
+  (defcap EVENT (collection-id:string event-id:string name:string uri:string)
     @doc "Used for new event discovery"
     @event
-    (enforce-guard operator-guard)
+    (enforce-guard ADMIN-KS)
     true
   )
 
@@ -22,12 +23,11 @@
     (with-read events event-id {
       'starts-at := starts-at
       ,'ends-at := ends-at
-      ,'operator-guard := operator-guard
     }
       (validate-event-time starts-at ends-at)
       (enforce (> starts-at (curr-time)) "Event can't be updated if it already started")
       (enforce (> ends-at (curr-time)) "Event can't be updated if it ended")
-      (enforce-guard operator-guard)
+      (enforce-guard ADMIN-KS)
     )
     true
   )
@@ -55,25 +55,34 @@
     token-id:string
     starts-at:integer
     ends-at:integer
-    operator-guard:guard
   )
 
   (deftable events:{event})
 
-  (defun create-event (collection-id:string name:string uri:string starts-at:integer ends-at:integer operator-guard:guard)
-    (let ((event-id:string (create-event-id collection-id operator-guard)) )
+  (defun create-event (collection-id:string name:string uri:string starts-at:integer ends-at:integer)
+    (let* ((event-id:string (create-event-id collection-id name))
+        (creator-guard:guard (create-capability-guard (EVENT collection-id event-id name uri)))
+        (policies [marmalade-v2.collection-policy-v1 proof-of-us-policy-v1])
+        (token-id (create-token-id { 'uri: uri, 'precision: 0, 'policies: policies } creator-guard)) )
+      
       (validate-event-time starts-at ends-at)
 
-      ;  TODO: create token and store token-id
+      (create-token
+        token-id
+        0 
+        uri 
+        policies
+        creator-guard
+      )
 
-      (with-capability (EVENT collection-id event-id name uri operator-guard)
+      (with-capability (EVENT collection-id event-id name uri)
         (insert events event-id {
           'name: name
           ,'uri: uri
           ,'collection-id: collection-id
+          ,'token-id: token-id
           ,'starts-at: starts-at
           ,'ends-at: ends-at
-          ,'operator-guard: operator-guard
         })
         true
       )
@@ -92,19 +101,44 @@
     )
   )
 
-
   (defun mint-attendance-token (event-id:string attendant:string attendant-guard:guard)
-  ; validate principal account
-  ; read token from event table
-  ; mint token to attendant (taking into account the mint-guard)
+    (enforce (validate-principal attendant-guard attendant) "Incorrect account guard, only principal accounts allowed")
+
+    (let* (
+      (event:{event} (get-event event-id))
+      (token-id:integer (at 'token-id event)) )
+
+      (install-capability (MINT token-id attendant 1.0))
+      (mint token-id attendant attendant-guard 1.0)
+    )
   )
 
   (defun create-and-mint-connection-token (event-id:string uri:string connection-guards:[guard])
-    ; Capability that needs to be signed by all connection-guards, util.guards1.enforce-guard-all
-    ; set supply to number of guards
-    ; mint token to principal accounts that belong to the guards
-  )
+    (util.guards1.enforce-guard-all connection-guards)
 
+    (validate-event event-id)
+
+    (let* ((creator-guard:guard (util.guards1.guard-all connection-guards))
+      (policies [marmalade-v2.collection-policy-v1 proof-of-us-policy-v1])
+      (token-id (create-token-id { 'uri: uri, 'precision: 0, 'policies: policies } creator-guard)))
+
+      (create-token
+        token-id
+        0
+        uri 
+        policies
+        creator-guard
+      )
+
+      (map (lambda (connection-guard:guard)
+
+        (install-capability (MINT token-id (create-principal connection-guard) 1.0))
+        (mint token-id (create-principal connection-guard) connection-guard 1.0)
+
+      ) connection-guards)
+
+    )
+  )
 
   ;;UTILITY FUNCTIONS
 
@@ -128,8 +162,8 @@
     )
   )
 
-  (defun create-event-id:string (collection-id:string operator-guard:guard)
-    (format "proof-of-us:{}" [(hash [collection-id operator-guard])])
+  (defun create-event-id:string (collection-id:string name:string)
+    (format "proof-of-us:{}" [(hash [collection-id name])])
   )
 
   (defun get-event:object{event} (event-id:string)

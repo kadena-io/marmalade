@@ -48,6 +48,12 @@
     (util.guards1.enforce-guard-all connection-guards)
   )
 
+  (defcap ATTEND (event-id:string attendant-guard:guard)
+    @doc "Used to guarante signature of attendant"
+    @event
+    (enforce-guard attendant-guard)
+  )
+
   (defschema event
     name:string
     uri:string
@@ -108,35 +114,38 @@
       (event:{event} (get-event event-id))
       (token-id:integer (at 'token-id event)) )
 
-      (install-capability (MINT token-id attendant 1.0))
-      (mint token-id attendant attendant-guard 1.0)
+      (with-capability (ATTEND event-id attendant-guard)
+
+        (install-capability (MINT token-id attendant 1.0))
+        (mint token-id attendant attendant-guard 1.0)
+      )
     )
   )
 
   (defun create-and-mint-connection-token (event-id:string uri:string connection-guards:[guard])
-    (util.guards1.enforce-guard-all connection-guards)
-
     (validate-event event-id)
-
-    (let* ((creator-guard:guard (util.guards1.guard-all connection-guards))
+    
+    (let* (
+      (creator-guard:guard (util.guards1.guard-all connection-guards))
       (policies [marmalade-v2.collection-policy-v1 proof-of-us-policy-v1])
       (token-id (create-token-id { 'uri: uri, 'precision: 0, 'policies: policies } creator-guard)))
+    
+      (with-capability (CONNECT event-id uri connection-guards)
+        (create-token
+          token-id
+          0
+          uri 
+          policies
+          creator-guard
+        )
 
-      (create-token
-        token-id
-        0
-        uri 
-        policies
-        creator-guard
+        (map (lambda (connection-guard:guard)
+
+          (install-capability (MINT token-id (create-principal connection-guard) 1.0))
+          (mint token-id (create-principal connection-guard) connection-guard 1.0)
+
+        ) connection-guards)
       )
-
-      (map (lambda (connection-guard:guard)
-
-        (install-capability (MINT token-id (create-principal connection-guard) 1.0))
-        (mint token-id (create-principal connection-guard) connection-guard 1.0)
-
-      ) connection-guards)
-
     )
   )
 

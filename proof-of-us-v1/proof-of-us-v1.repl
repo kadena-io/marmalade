@@ -25,6 +25,26 @@
 
   (define-keyset (+ (read-msg 'ns) ".proof-of-us-v1") (read-keyset 'proof-of-us-v1))
   
+  (load "proof-of-us-policy-v1.pact")
+
+(commit-tx)
+
+(begin-tx "load timed mint policy")
+  (env-data {
+    "ns": "marmalade-examples"
+  , "proof-of-us-v1": ["proof-of-us-v1"]
+  , "upgrade": false}
+  )
+  (env-sigs [
+    { 'key: 'proof-of-us-v1
+     ,'caps: []
+    },
+    { 'key: 'marmalade-contract-admin
+     ,'caps: []
+    }])
+
+  (namespace (read-msg 'ns))
+
   (load "proof-of-us-v1.pact")
   (typecheck "marmalade-examples.proof-of-us-v1")
 

@@ -1,16 +1,21 @@
 (namespace (read-msg 'ns))
 
-(module proof-of-us-v1 GOVERNANCE
+(module proof-of-us-v2 GOVERNANCE
 
-  (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
+  (defconst ADMIN-KS:string "marmalade-examples.marmalade-contract-admin")
 
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
 
+  (implements kip.token-policy-v2)
+  (use kip.token-policy-v2 [token-info])
   (use marmalade-v2.ledger)
   (use marmalade-v2.util-v1)
+  (use marmalade-v2.policy-manager)
+  (use marmalade-v2.collection-policy-v1)
+  (use marmalade-v2.util-v1 [curr-time])
 
-  (defconst TOKEN-POLICIES [marmalade-v2.collection-policy-v1 marmalade-examples.proof-of-us-policy-v1])
+  (defconst TOKEN-POLICIES [marmalade-v2.collection-policy-v1 proof-of-us-v2])
 
   (defcap EVENT (collection-id:string event-id:string name:string uri:string)
     @doc "Used for new event discovery"
@@ -39,7 +44,7 @@
     @event
 
     (util.guards1.guard-any [
-      (enforce-guard ADMIN-KS)
+      (keyset-ref-guard ADMIN-KS)
       (create-user-guard (validate-event event-id))
     ])
   )
@@ -56,7 +61,12 @@
     (enforce-guard attendant-guard)
   )
 
-  (defschema event
+  (defconst EVENT-ID-MSG-KEY:string "event_id")
+
+  (defun has-collection-policy:bool (policies)
+    (> (length (filter (lambda (policy) (= policy marmalade-v2.collection-policy-v1)) policies)) 0))
+
+  (defschema event-schema
     name:string
     uri:string
     collection-id:string
@@ -65,24 +75,28 @@
     ends-at:integer
   )
 
-  (deftable events:{event})
+  (deftable events:{event-schema})
 
   (defun create-event (collection-id:string name:string uri:string starts-at:integer ends-at:integer)
     (let* ((event-id:string (create-event-id collection-id name))
         (creator-guard:guard (create-capability-guard (EVENT collection-id event-id name uri)))
         (token-id (create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } creator-guard)) )
-      
+        
       (validate-event-time starts-at ends-at)
 
-      (create-token
-        token-id
-        0 
-        uri 
-        TOKEN-POLICIES
-        creator-guard
-      )
-
       (with-capability (EVENT collection-id event-id name uri)
+        
+        (with-capability (TOKEN_CREATION event-id)
+
+          (create-token
+            token-id
+            0 
+            uri 
+            TOKEN-POLICIES
+            creator-guard
+          )
+        )
+
         (insert events event-id {
           'name: name
           ,'uri: uri
@@ -91,7 +105,6 @@
           ,'starts-at: starts-at
           ,'ends-at: ends-at
         })
-        true
       )
     )
   )
@@ -112,8 +125,8 @@
     (enforce (validate-principal attendant-guard attendant) "Incorrect account guard, only principal accounts allowed")
 
     (let* (
-      (event:{event} (get-event event-id))
-      (token-id:integer (at 'token-id event)) )
+      (event:object{event-schema} (get-event event-id))
+      (token-id:string (at 'token-id event)) )
 
       (with-capability (ATTEND event-id attendant-guard)
 
@@ -121,22 +134,27 @@
         (mint token-id attendant attendant-guard 1.0)
       )
     )
+
+    true
   )
 
   (defun create-and-mint-connection-token (event-id:string uri:string connection-guards:[guard])
-    (validate-event event-id)
     
     (let* (
       (creator-guard:guard (util.guards1.guard-all connection-guards))
       (token-id (create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } creator-guard)))
     
       (with-capability (CONNECT event-id uri connection-guards)
-        (create-token
-          token-id
-          0
-          uri 
-          TOKEN-POLICIES
-          creator-guard
+
+        (with-capability (TOKEN_CREATION event-id)
+
+          (create-token
+            token-id
+            0
+            uri
+            TOKEN-POLICIES
+            creator-guard
+          )
         )
 
         (map (lambda (connection-guard:guard)
@@ -145,8 +163,83 @@
           (mint token-id (create-principal connection-guard) connection-guard 1.0)
 
         ) connection-guards)
+
+        true
       )
     )
+  )
+
+  ;;POLICY IMPLEMENTATION
+
+  (defun enforce-init:bool
+    ( token:object{token-info}
+    )
+    @doc "The function is run at `create-token` step of marmalade-v2.ledger.create-token"
+
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
+    (require-capability (TOKEN_CREATION (read-msg EVENT-ID-MSG-KEY)))
+
+    (enforce (= (at 'precision token) 0) "Precision must be 0 for proof-of-us tokens")
+
+    (enforce (has-collection-policy (at 'policies token)) "Collection policy is required for proof-of-us tokens")
+  )
+
+  (defun enforce-mint:bool
+    ( token:object{token-info}
+      account:string
+      guard:guard
+      amount:decimal
+    )
+    (require-capability (MINT-CALL (at "id" token) account amount))
+
+    (enforce (= amount 1.0) "Amount must be 1.0 for proof-of-us tokens")
+
+    (validate-event (read-msg EVENT-ID-MSG-KEY))
+  )
+
+  (defun enforce-burn:bool
+    ( token:object{token-info}
+      account:string
+      amount:decimal
+    )
+    (enforce false "Burn is not allowed!")
+  )
+
+  (defun enforce-offer:bool
+    ( token:object{token-info}
+      seller:string
+      amount:decimal
+      timeout:integer
+      sale-id:string )
+    (enforce false "Sale is not allowed!")
+  )
+
+  (defun enforce-buy:bool
+    ( token:object{token-info}
+      seller:string
+      buyer:string
+      buyer-guard:guard
+      amount:decimal
+      sale-id:string )
+    (enforce false "Sale is not allowed!")
+  )
+
+  (defun enforce-withdraw:bool
+    ( token:object{token-info}
+      seller:string
+      amount:decimal
+      timeout:integer
+      sale-id:string )
+    (enforce false "Sale is not allowed!")
+  )
+
+  (defun enforce-transfer:bool
+    ( token:object{token-info}
+      sender:string
+      guard:guard
+      receiver:string
+      amount:decimal )
+    (enforce false "Transfer is not allowed!")
   )
 
   ;;UTILITY FUNCTIONS
@@ -159,9 +252,9 @@
     true
   )
 
-  (defun validate-event:{event} (event-id:string)
+  (defun validate-event:bool (event-id:string)
     (let* (
-      (event:{event} (get-event event-id))
+      (event:object{event-schema} (get-event event-id))
       (starts-at:integer (at 'starts-at event))
       (ends-at:integer (at 'ends-at event)) )
 
@@ -175,7 +268,7 @@
     (format "proof-of-us:{}" [(hash [collection-id name])])
   )
 
-  (defun get-event:object{event} (event-id:string)
+  (defun get-event:object{event-schema} (event-id:string)
     (read events event-id)
   )
 )

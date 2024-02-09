@@ -22,6 +22,7 @@
   (defun enforce-guard-all:bool (guards:[guard])
     "Enforces all guards in GUARDS"
     (map (enforce-guard) guards)
+    true
   )
 
   (defun guard-any:guard (guards:[guard])

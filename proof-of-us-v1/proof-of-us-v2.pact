@@ -1,8 +1,8 @@
 (namespace (read-msg 'ns))
 
-(module proof-of-us-v2 GOVERNANCE
+(module proof-of-us GOVERNANCE
 
-  (defconst ADMIN-KS:string "marmalade-examples.marmalade-contract-admin")
+  (defconst ADMIN-KS:string "n_2cf9d750a8ec510cb925d897b82069850b0a0bea.pou-admin")
 
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
@@ -15,7 +15,7 @@
   (use marmalade-v2.collection-policy-v1)
   (use marmalade-v2.util-v1 [curr-time])
 
-  (defconst TOKEN-POLICIES [marmalade-v2.collection-policy-v1 proof-of-us-v2])
+  (defconst TOKEN-POLICIES [marmalade-v2.collection-policy-v1 proof-of-us])
 
   (defcap EVENT (collection-id:string event-id:string name:string uri:string)
     @doc "Used for new event discovery"
@@ -32,8 +32,7 @@
       ,'ends-at := ends-at
     }
       (validate-event-time starts-at ends-at)
-      (enforce (> starts-at (curr-time)) "Event can't be updated if it already started")
-      (enforce (> ends-at (curr-time)) "Event can't be updated if it ended")
+      (enforce (> starts-at (curr-time)) "Event can't be updated after it has started")
       (enforce-guard ADMIN-KS)
     )
     true
@@ -42,7 +41,6 @@
   (defcap TOKEN_CREATION (event-id:string)
     @doc "Used to validate token creation"
     @event
-
     (util.guards1.guard-any [
       (keyset-ref-guard ADMIN-KS)
       (create-user-guard (validate-event event-id))
@@ -61,6 +59,10 @@
     (enforce-guard attendant-guard)
   )
 
+  (defcap COLLECTION_OPERATOR ()
+    true
+  )
+
   (defconst EVENT-ID-MSG-KEY:string "event_id")
 
   (defun has-collection-policy:bool (policies)
@@ -77,26 +79,28 @@
 
   (deftable events:{event-schema})
 
+  (defun collection-guard:guard ()
+    (create-capability-guard (COLLECTION_OPERATOR))
+  )
+
+  (defun create-event-collection:string (collection-name:string)
+    (let ((collection-id:string (create-collection-id collection-name (collection-guard))))
+      (with-capability (COLLECTION_OPERATOR)
+        (install-capability (COLLECTION collection-id collection-name 0 (collection-guard) (create-principal (collection-guard))))
+        (create-collection collection-name 0 (collection-guard) (create-principal (collection-guard)))
+        collection-id
+      )
+    )
+  )
+
   (defun create-event (collection-id:string name:string uri:string starts-at:integer ends-at:integer)
-    (let* ((event-id:string (create-event-id collection-id name))
+    (let* ((event-id:string (create-event-id name starts-at ends-at))
         (creator-guard:guard (create-capability-guard (EVENT collection-id event-id name uri)))
         (token-id (create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } creator-guard)) )
-        
+
       (validate-event-time starts-at ends-at)
 
       (with-capability (EVENT collection-id event-id name uri)
-        
-        (with-capability (TOKEN_CREATION event-id)
-
-          (create-token
-            token-id
-            0 
-            uri 
-            TOKEN-POLICIES
-            creator-guard
-          )
-        )
-
         (insert events event-id {
           'name: name
           ,'uri: uri
@@ -105,6 +109,21 @@
           ,'starts-at: starts-at
           ,'ends-at: ends-at
         })
+
+        (with-capability (TOKEN_CREATION event-id)
+          (with-capability (COLLECTION_OPERATOR)
+            ; TODO: attendance token needs to have the supply limited to one per user
+            ; Create the attendance token
+            (create-token
+              token-id
+              0
+              uri
+              TOKEN-POLICIES
+              creator-guard
+            )
+          )
+        )
+        token-id
       )
     )
   )
@@ -117,7 +136,6 @@
         ,'starts-at: starts-at
         ,'ends-at: ends-at
       })
-      true
     )
   )
 
@@ -129,31 +147,30 @@
       (token-id:string (at 'token-id event)) )
 
       (with-capability (ATTEND event-id attendant-guard)
-
         (install-capability (MINT token-id attendant 1.0))
         (mint token-id attendant attendant-guard 1.0)
       )
     )
-
     true
   )
 
-  (defun create-and-mint-connection-token (event-id:string uri:string connection-guards:[guard])
-    
+  (defun create-and-mint-connection-token:string (event-id:string uri:string connection-guards:[guard])
     (let* (
       (creator-guard:guard (util.guards1.guard-all connection-guards))
       (token-id (create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } creator-guard)))
-    
+
       (with-capability (CONNECT event-id uri connection-guards)
-
         (with-capability (TOKEN_CREATION event-id)
-
-          (create-token
-            token-id
-            0
-            uri
-            TOKEN-POLICIES
-            creator-guard
+          (with-capability (COLLECTION_OPERATOR)
+            ; TODO: connection token needs to have the supply limited to number of guards in connection
+            ; Create the connection token
+            (create-token
+              token-id
+              0
+              uri
+              TOKEN-POLICIES
+              creator-guard
+            )
           )
         )
 
@@ -163,8 +180,7 @@
           (mint token-id (create-principal connection-guard) connection-guard 1.0)
 
         ) connection-guards)
-
-        true
+        token-id
       )
     )
   )
@@ -193,7 +209,6 @@
     (require-capability (MINT-CALL (at "id" token) account amount))
 
     (enforce (= amount 1.0) "Amount must be 1.0 for proof-of-us tokens")
-
     (validate-event (read-msg EVENT-ID-MSG-KEY))
   )
 
@@ -259,13 +274,11 @@
       (ends-at:integer (at 'ends-at event)) )
 
       (enforce (and (>= (curr-time) starts-at) (<= (curr-time) ends-at)) "Minting is not allowed outside of event time")
-
-      true
     )
   )
 
-  (defun create-event-id:string (collection-id:string name:string)
-    (format "proof-of-us:{}" [(hash [collection-id name])])
+  (defun create-event-id:string (name:string starts-at:integer ends-at:integer)
+    (format "proof-of-us:{}" [(hash [name starts-at ends-at])])
   )
 
   (defun get-event:object{event-schema} (event-id:string)

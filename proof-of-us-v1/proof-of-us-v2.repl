@@ -1,73 +1,52 @@
 ;;load policy manager, ledger
 (load "../pact/marmalade.repl")
 
-(begin-tx "load timed mint policy")
+(begin-tx "load proof of us policy")
   (env-data {
-    "ns": "marmalade-examples"
-  , "proof-of-us-v2": ["proof-of-us-v2"]
-  , "marmalade-contract-admin": ["marmalade-contract-admin"]
+    "ns": "n_2cf9d750a8ec510cb925d897b82069850b0a0bea"
+  , "proof-of-us": ["proof-of-us"]
   , "upgrade": false}
   )
   (env-sigs [
-    { 'key: 'proof-of-us-v2
-     ,'caps: []
-    },
-    { 'key: 'marmalade-contract-admin
+    { 'key: 'proof-of-us
      ,'caps: []
     }])
 
-  (ns.write-registry (read-msg 'ns) (read-keyset 'proof-of-us-v2) true)
+  (ns.write-registry (read-msg 'ns) (read-keyset 'proof-of-us) true)
   (define-namespace
     (read-msg 'ns)
-    (read-keyset 'proof-of-us-v2) (read-keyset 'proof-of-us-v2)
+    (read-keyset 'proof-of-us) (read-keyset 'proof-of-us)
   )
 
   (namespace (read-msg 'ns))
 
-  (define-keyset (+ (read-msg 'ns) ".proof-of-us-v2") (read-keyset 'proof-of-us-v2))
-  (define-keyset (+ (read-msg 'ns) ".marmalade-contract-admin") (read-keyset 'marmalade-contract-admin))
-  
-  (load "proof-of-us-v2.pact")
-  ;  (typecheck "marmalade-examples.proof-of-us-v2")
+  (define-keyset (+ (read-msg 'ns) ".pou-admin") (read-keyset 'proof-of-us))
 
+  (load "proof-of-us.pact")
+  ; (typecheck "n_2cf9d750a8ec510cb925d897b82069850b0a0bea.proof-of-us")
 (commit-tx)
 
 
 (begin-tx "Create a collection for proof of us")
-  (use marmalade-v2.ledger)
-  (use marmalade-v2.policy-manager)
-  (use marmalade-v2.util-v1)
-  (use mini-guard-utils)
-  
-  (env-data {
-    "operator-account": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
-    ,"operator-guard": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
-  })
-
-  (expect "collection id generation based on name and operator"
-    "collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk"
-    (marmalade-v2.collection-policy-v1.create-collection-id "test-collection0" (read-keyset 'operator-guard )))
+  (use n_2cf9d750a8ec510cb925d897b82069850b0a0bea.proof-of-us)
 
   (env-sigs [
-    { 'key: "6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
-    ,'caps: [(marmalade-v2.collection-policy-v1.COLLECTION "collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk" "test-collection0" 10 (read-keyset 'operator-guard ) (read-string 'operator-account))]
+    { 'key: 'proof-of-us
+     ,'caps: []
     }])
 
   (expect "initiate a collection with `create-collection`"
-    true
-    (marmalade-v2.collection-policy-v1.create-collection "test-collection0" 10 (read-keyset 'operator-guard) (read-string 'operator-account)))
+    "collection:gKHdI25l4Y5CUaaEqAJJ5DJR3PFw2src2y4TRVr9y6U"
+    (create-event-collection "test-collection0"))
 
   (expect "create-collection events"
-    [ {"name": "marmalade-v2.collection-policy-v1.COLLECTION","params": ["collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk" "test-collection0" 10 (read-keyset 'operator-guard)  (read-string 'operator-account)]}]
+    [ {"name": "marmalade-v2.collection-policy-v1.COLLECTION","params": ["collection:gKHdI25l4Y5CUaaEqAJJ5DJR3PFw2src2y4TRVr9y6U" "test-collection0" 0 (collection-guard)  (create-principal (collection-guard))]}]
     (map (remove "module-hash")  (env-events true))
   )
 (commit-tx)
 
 (begin-tx "Create event")
-  (use marmalade-v2.ledger)
-  (use marmalade-examples.proof-of-us-v2)
-  (use marmalade-v2.collection-policy-v1)
-  (use mini-guard-utils)
+  (use n_2cf9d750a8ec510cb925d897b82069850b0a0bea.proof-of-us)
   (use marmalade-v2.util-v1)
 
   (env-chain-data {"block-time": (time "2024-02-01T12:00:00Z")})
@@ -75,49 +54,36 @@
   (env-data {
     "name": "KadenaEvent"
     ,"uri": "kadena://event-1"
-    ,"collection_id": "collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk"
-    ,"event_id": (create-event-id "collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk" "KadenaEvent")
+    ,"collection_id": "collection:gKHdI25l4Y5CUaaEqAJJ5DJR3PFw2src2y4TRVr9y6U"
+    ,"event_id": (create-event-id "KadenaEvent" (to-timestamp (time "2024-02-01T15:00:00Z")) (to-timestamp (time "2024-02-02T15:00:00Z")))
     ,"starts_at": (to-timestamp (time "2024-02-01T15:00:00Z"))
     ,"ends_at": (to-timestamp (time "2024-02-02T15:00:00Z"))
     ,"operator": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
+    ,"token_id": "t:KLL9uxEASwWVqx0sJOrYby9Ka0TqAaJyJ333qK0k77I"
   })
 
-  (let* ((creator-guard:guard (create-capability-guard (EVENT (read-msg 'collection_id) (read-msg 'event_id) (read-msg 'name) (read-msg 'uri))))
-        (token-id (create-token-id { 'uri: (read-msg 'uri), 'precision: 0, 'policies: TOKEN-POLICIES } creator-guard)) )
-      
-    (env-sigs [
-      { "key": 'marmalade-contract-admin
-        ,"caps": [(EVENT (read-msg 'collection_id) (create-event-id (read-msg 'collection_id) (read-msg 'name)) (read-msg 'name) (read-msg 'uri))]
-      },
-      { 'key: "6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
-      ,'caps: [(marmalade-v2.collection-policy-v1.TOKEN-COLLECTION "collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk" token-id)]
-      }
-    ])
-  )
+  (env-sigs [
+    { "key": 'proof-of-us
+      ,"caps": [(EVENT (read-msg 'collection_id) (read-msg 'event_id) (read-msg 'name) (read-msg 'uri))]
+    }])
 
   (expect "successfully creates the event"
-    "Write succeeded"
+    "t:KLL9uxEASwWVqx0sJOrYby9Ka0TqAaJyJ333qK0k77I"
     (create-event (read-msg 'collection_id) (read-msg 'name) (read-msg 'uri) (read-integer 'starts_at) (read-integer 'ends_at))
   )
 
-  (let* ((creator-guard:guard (create-capability-guard (EVENT (read-msg 'collection_id) (read-msg 'event_id) (read-msg 'name) (read-msg 'uri))))
-    (token-id (create-token-id { 'uri: (read-msg 'uri), 'precision: 0, 'policies: TOKEN-POLICIES } creator-guard)) )
-    
-    (expect "event created events"
-      [ {"name": "marmalade-examples.proof-of-us-v2.EVENT","params": [(read-msg 'collection_id) (create-event-id (read-msg 'collection_id) (read-msg 'name)) (read-msg 'name) (read-msg 'uri)]}
-        ,{"name": "marmalade-examples.proof-of-us-v2.TOKEN_CREATION","params": [(read-msg 'event_id)] }
-        ,{"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": [(read-msg 'collection_id) token-id] }
-        ,{"name": "marmalade-v2.ledger.TOKEN","params": [token-id 0 [marmalade-v2.collection-policy-v1 marmalade-examples.proof-of-us-v2] (read-msg 'uri) creator-guard] } ]
-      (map (remove "module-hash")  (env-events true)))
-  )
-
+  (expect "event created events"
+    [
+      {"name": "n_2cf9d750a8ec510cb925d897b82069850b0a0bea.proof-of-us.EVENT","params": [(read-msg 'collection_id) (read-msg 'event_id) (read-msg 'name) (read-msg 'uri)]}
+      ,{"name": "n_2cf9d750a8ec510cb925d897b82069850b0a0bea.proof-of-us.TOKEN_CREATION","params": [(read-msg 'event_id)]}
+      ,{"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": [(read-msg 'collection_id) (read-msg 'token_id)]}
+      ,{"name": "marmalade-v2.ledger.TOKEN","params": [(read-msg 'token_id) 0 [marmalade-v2.collection-policy-v1 n_2cf9d750a8ec510cb925d897b82069850b0a0bea.proof-of-us] (read-msg 'uri) (create-capability-guard (EVENT (read-msg 'collection_id) (read-msg 'event_id) (read-msg 'name) (read-msg 'uri)))]}
+      ]
+    (map (remove "module-hash")  (env-events true)))
 (commit-tx)
 
 (begin-tx "Update event")
-  (use marmalade-v2.ledger)
-  (use marmalade-examples.proof-of-us-v2)
-  (use marmalade-v2.collection-policy-v1)
-  (use mini-guard-utils)
+  (use n_2cf9d750a8ec510cb925d897b82069850b0a0bea.proof-of-us)
   (use marmalade-v2.util-v1)
 
   (env-chain-data {"block-time": (time "2024-02-01T12:30:00Z")})
@@ -125,49 +91,51 @@
   (env-data {
     "name": "KadenaEvent"
     ,"uri": "kadena://event-1-1"
-    ,"collection_id": "collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk"
+    ,"collection_id": "collection:gKHdI25l4Y5CUaaEqAJJ5DJR3PFw2src2y4TRVr9y6U"
+    ,"event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
     ,"starts_at": (to-timestamp (time "2024-02-01T17:00:00Z"))
     ,"ends_at": (to-timestamp (time "2024-02-02T13:00:00Z"))
     ,"operator_guard": ["3a9582c99cee1ee4bb2bdd995960d595c39776e5917bc43e8cdc71b645e0720e"]
   })
 
+  (to-timestamp (time "2024-02-01T17:00:00Z"))
+  (to-timestamp (time "2024-02-02T13:00:00Z"))
+
   (env-sigs [
-    { "key": 'marmalade-contract-admin
-      ,"caps": [(EVENT_UPDATE (create-event-id (read-msg 'collection_id) (read-msg 'name)))]
+    { "key": 'proof-of-us
+      ,"caps": [(EVENT_UPDATE (read-string 'event_id))]
     }
   ])
 
   (expect "successfully updates the event"
-    true
-    (update-event 
-      (create-event-id (read-msg 'collection_id) (read-msg 'name))
-      (read-msg 'name) 
-      (read-msg 'uri) 
-      (read-integer 'starts_at) 
+    "Write succeeded"
+    (update-event
+      (read-string 'event_id)
+      (read-msg 'name)
+      (read-msg 'uri)
+      (read-integer 'starts_at)
       (read-integer 'ends_at)
     )
   )
 
   (expect "event updated events"
-    [ {"name": "marmalade-examples.proof-of-us-v2.EVENT_UPDATE","params": [(create-event-id (read-msg 'collection_id) (read-msg 'name))]} ]
+    [ {"name": "n_2cf9d750a8ec510cb925d897b82069850b0a0bea.proof-of-us.EVENT_UPDATE","params": [(read-string 'event_id)]} ]
     (map (remove "module-hash")  (env-events true)))
-  
+
 (commit-tx)
 
 
 (begin-tx "Mint attendance token")
-  (use marmalade-v2.ledger)
-  (use marmalade-examples.proof-of-us-v2)
-  (use marmalade-v2.collection-policy-v1)
-  (use mini-guard-utils)
+  (use n_2cf9d750a8ec510cb925d897b82069850b0a0bea.proof-of-us)
   (use marmalade-v2.util-v1)
 
   (env-chain-data {"block-time": (time "2024-02-01T20:30:00Z")})
 
   (env-data {
-    "event_id": (create-event-id "collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk" "KadenaEvent") ; get this trough a QR code
+    "event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4" ; get this trough a QR code
     ,"attendant": "k:1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
     ,"attendant_guard": ["1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"]
+    ,"token_id": "t:KLL9uxEASwWVqx0sJOrYby9Ka0TqAaJyJ333qK0k77I"
   })
 
   (env-sigs [
@@ -178,93 +146,80 @@
 
   (expect "successfully create an attendance token"
     true
-    (mint-attendance-token 
+    (mint-attendance-token
       (read-msg 'event_id)
       (read-msg 'attendant)
-      (read-keyset 'attendant_guard) 
+      (read-keyset 'attendant_guard)
     )
   )
 
   (expect "events"
     [
-      {"name": "marmalade-examples.proof-of-us-v2.ATTEND","params": [(read-msg 'event_id) (read-keyset 'attendant_guard)]} 
-      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:APqM5CqW33-SysGB74dVNTAXQ1jbYnd_LrmAa_d4ESw" (read-msg 'attendant) 1.0]} 
-      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:APqM5CqW33-SysGB74dVNTAXQ1jbYnd_LrmAa_d4ESw" (read-msg 'attendant) (read-keyset 'attendant_guard)]} 
-      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:APqM5CqW33-SysGB74dVNTAXQ1jbYnd_LrmAa_d4ESw" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant),"current": 1.0,"previous": 0.0}]} 
-      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:APqM5CqW33-SysGB74dVNTAXQ1jbYnd_LrmAa_d4ESw" 1.0]}
+      {"name": "n_2cf9d750a8ec510cb925d897b82069850b0a0bea.proof-of-us.ATTEND","params": [(read-msg 'event_id) (read-keyset 'attendant_guard)]}
+      ,{"name": "marmalade-v2.ledger.MINT","params": [(read-string 'token_id) (read-msg 'attendant) 1.0]}
+      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": [(read-string 'token_id) (read-msg 'attendant) (read-keyset 'attendant_guard)]}
+      ,{"name": "marmalade-v2.ledger.RECONCILE","params": [(read-string 'token_id) 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant),"current": 1.0,"previous": 0.0}]}
+      ,{"name": "marmalade-v2.ledger.SUPPLY","params": [(read-string 'token_id) 1.0]}
     ]
     (map (remove "module-hash")  (env-events true)))
-  
+
 
 (commit-tx)
 
-
-
 (begin-tx "Mint connection token")
+  (use n_2cf9d750a8ec510cb925d897b82069850b0a0bea.proof-of-us)
   (use marmalade-v2.ledger)
-  (use marmalade-examples.proof-of-us-v2)
   (use marmalade-v2.collection-policy-v1)
-  (use mini-guard-utils)
   (use marmalade-v2.util-v1)
 
   (env-chain-data {"block-time": (time "2024-02-01T20:30:00Z")})
 
   (env-data {
     "uri": "kadena://event-1-2"
-    ,"event_id": (create-event-id "collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk" "KadenaEvent")
-    ,"collection_id": "collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk"
+    ,"event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
+    ,"collection_id": "collection:gKHdI25l4Y5CUaaEqAJJ5DJR3PFw2src2y4TRVr9y6U"
     ,"attendant_1": "k:6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
     ,"attendant_1_guard": ["6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"]
     ,"attendant_2": "k:1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
     ,"attendant_2_guard": ["1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"]
   })
 
-  (let (
-      (token-id (create-token-id { 'uri: (read-msg 'uri), 'precision: 0, 'policies: TOKEN-POLICIES } (util.guards1.guard-all [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)] )))
-    )
-    (env-sigs [
-      { "key": "6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
-        ,"caps": [
-          (CONNECT (read-msg 'event_id) (read-msg 'uri) [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)] )
-        ]
-      },
-      { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
-        ,"caps": [
-          (CONNECT (read-msg 'event_id) (read-msg 'uri) [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)] )
-        ]
-      }, ; this capability is a problem
-      { 'key: "6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
-        ,'caps: [(marmalade-v2.collection-policy-v1.TOKEN-COLLECTION "collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk" token-id)]
-      }
-    ])
-  )
-
+  (env-sigs [
+    { "key": "6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
+      ,"caps": [
+        (CONNECT (read-msg 'event_id) (read-msg 'uri) [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)] )
+      ]
+    },
+    { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+      ,"caps": [
+        (CONNECT (read-msg 'event_id) (read-msg 'uri) [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)] )
+      ]
+    }
+  ])
 
   (expect "successfully create a group connection"
-    true
-    (create-and-mint-connection-token 
+    "t:5yl8F5Ws9IqDDuoLppXZ_NtRak7yRkYnjrGv-wtMT_s"
+    (create-and-mint-connection-token
       (read-msg 'event_id)
       (read-msg 'uri)
-      [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)] 
+      [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)]
     )
   )
 
   (expect "events"
     [
-      {"name": "marmalade-examples.proof-of-us-v2.CONNECT","params": ["proof-of-us:zo2Zs6TRW055mC9NuX2Oho0BVOpaefFrOXoQaaa5-G8" (read-msg 'uri) [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)]]} 
-      ,{"name": "marmalade-examples.proof-of-us-v2.TOKEN_CREATION","params": ["proof-of-us:zo2Zs6TRW055mC9NuX2Oho0BVOpaefFrOXoQaaa5-G8"]} 
-      ,{"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk" "t:OHZ9patGFF5yTeNEFI0HZhoHvrK4Z8zqs_1y0WpCipI"]} 
-      ,{"name": "marmalade-v2.ledger.TOKEN","params": ["t:OHZ9patGFF5yTeNEFI0HZhoHvrK4Z8zqs_1y0WpCipI" 0 TOKEN-POLICIES (read-msg 'uri) (util.guards1.guard-all [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)] ) ]} 
-      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:OHZ9patGFF5yTeNEFI0HZhoHvrK4Z8zqs_1y0WpCipI" (read-msg 'attendant_1) 1.0]} 
-      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:OHZ9patGFF5yTeNEFI0HZhoHvrK4Z8zqs_1y0WpCipI" (read-msg 'attendant_1) (read-keyset 'attendant_1_guard)]} 
-      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:OHZ9patGFF5yTeNEFI0HZhoHvrK4Z8zqs_1y0WpCipI" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_1),"current": 1.0,"previous": 0.0}]} 
-      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:OHZ9patGFF5yTeNEFI0HZhoHvrK4Z8zqs_1y0WpCipI" 1.0]} 
-      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:OHZ9patGFF5yTeNEFI0HZhoHvrK4Z8zqs_1y0WpCipI" (read-msg 'attendant_2) 1.0]} 
-      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:OHZ9patGFF5yTeNEFI0HZhoHvrK4Z8zqs_1y0WpCipI" (read-msg 'attendant_2) (read-keyset 'attendant_2_guard)]} 
-      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:OHZ9patGFF5yTeNEFI0HZhoHvrK4Z8zqs_1y0WpCipI" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_2),"current": 1.0,"previous": 0.0}]} 
-      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:OHZ9patGFF5yTeNEFI0HZhoHvrK4Z8zqs_1y0WpCipI" 2.0]}
+      {"name": "n_2cf9d750a8ec510cb925d897b82069850b0a0bea.proof-of-us.CONNECT","params": ["proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4" (read-msg 'uri) [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)]]}
+      ,{"name": "n_2cf9d750a8ec510cb925d897b82069850b0a0bea.proof-of-us.TOKEN_CREATION","params": ["proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"]}
+      ,{"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:gKHdI25l4Y5CUaaEqAJJ5DJR3PFw2src2y4TRVr9y6U" "t:5yl8F5Ws9IqDDuoLppXZ_NtRak7yRkYnjrGv-wtMT_s"]}
+      ,{"name": "marmalade-v2.ledger.TOKEN","params": ["t:5yl8F5Ws9IqDDuoLppXZ_NtRak7yRkYnjrGv-wtMT_s" 0 TOKEN-POLICIES (read-msg 'uri) (util.guards1.guard-all [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)] ) ]}
+      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:5yl8F5Ws9IqDDuoLppXZ_NtRak7yRkYnjrGv-wtMT_s" (read-msg 'attendant_1) 1.0]}
+      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:5yl8F5Ws9IqDDuoLppXZ_NtRak7yRkYnjrGv-wtMT_s" (read-msg 'attendant_1) (read-keyset 'attendant_1_guard)]}
+      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:5yl8F5Ws9IqDDuoLppXZ_NtRak7yRkYnjrGv-wtMT_s" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_1),"current": 1.0,"previous": 0.0}]}
+      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:5yl8F5Ws9IqDDuoLppXZ_NtRak7yRkYnjrGv-wtMT_s" 1.0]}
+      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:5yl8F5Ws9IqDDuoLppXZ_NtRak7yRkYnjrGv-wtMT_s" (read-msg 'attendant_2) 1.0]}
+      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:5yl8F5Ws9IqDDuoLppXZ_NtRak7yRkYnjrGv-wtMT_s" (read-msg 'attendant_2) (read-keyset 'attendant_2_guard)]}
+      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:5yl8F5Ws9IqDDuoLppXZ_NtRak7yRkYnjrGv-wtMT_s" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_2),"current": 1.0,"previous": 0.0}]}
+      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:5yl8F5Ws9IqDDuoLppXZ_NtRak7yRkYnjrGv-wtMT_s" 2.0]}
     ]
     (map (remove "module-hash")  (env-events true)))
-
-
 (commit-tx)

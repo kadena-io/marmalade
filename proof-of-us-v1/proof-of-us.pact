@@ -47,6 +47,11 @@
     ])
   )
 
+  (defcap COLLECTION_CREATION ()
+    @doc "Used to guard collection creation"
+    (enforce-guard ADMIN-KS)
+  )
+
   (defcap CONNECT (event-id:string uri:string connection-guards:[guard])
     @doc "Used to guarante signature of all connecting parties"
     @event
@@ -64,6 +69,8 @@
   )
 
   (defconst EVENT-ID-MSG-KEY:string "event_id")
+  (defconst ATTENDANCE-SUPPLY-KEY:string "attendance_supply")
+
 
   (defun has-collection-policy:bool (policies)
     (> (length (filter (lambda (policy) (= policy marmalade-v2.collection-policy-v1)) policies)) 0))
@@ -77,7 +84,12 @@
     ends-at:integer
   )
 
+  (defschema supply-schema
+    max-supply:integer
+  )
+
   (deftable events:{event-schema})
+  (deftable supplies:{supply-schema})
 
   (defun collection-guard:guard ()
     (create-capability-guard (COLLECTION_OPERATOR))
@@ -85,10 +97,12 @@
 
   (defun create-event-collection:string (collection-name:string)
     (let ((collection-id:string (create-collection-id collection-name (collection-guard))))
-      (with-capability (COLLECTION_OPERATOR)
-        (install-capability (COLLECTION collection-id collection-name 0 (collection-guard) (create-principal (collection-guard))))
-        (create-collection collection-name 0 (collection-guard) (create-principal (collection-guard)))
-        collection-id
+      (with-capability (COLLECTION_CREATION)
+        (with-capability (COLLECTION_OPERATOR)
+          (install-capability (COLLECTION collection-id collection-name 0 (collection-guard) (create-principal (collection-guard))))
+          (create-collection collection-name 0 (collection-guard) (create-principal (collection-guard)))
+          collection-id
+        )
       )
     )
   )
@@ -112,7 +126,6 @@
 
         (with-capability (TOKEN_CREATION event-id)
           (with-capability (COLLECTION_OPERATOR)
-            ; TODO: attendance token needs to have the supply limited to one per user
             ; Create the attendance token
             (create-token
               token-id
@@ -121,9 +134,13 @@
               TOKEN-POLICIES
               creator-guard
             )
+            ; Set attendance supply
+            (let ((attendance-supply:integer (try 0 (read-msg ATTENDANCE-SUPPLY-KEY))))
+              (write supplies token-id { "max-supply": attendance-supply })
+            )
           )
         )
-        token-id
+        event-id
       )
     )
   )
@@ -162,7 +179,6 @@
       (with-capability (CONNECT event-id uri connection-guards)
         (with-capability (TOKEN_CREATION event-id)
           (with-capability (COLLECTION_OPERATOR)
-            ; TODO: connection token needs to have the supply limited to number of guards in connection
             ; Create the connection token
             (create-token
               token-id
@@ -171,6 +187,8 @@
               TOKEN-POLICIES
               creator-guard
             )
+            ; Limited supply to number of participants
+            (write supplies token-id { "max-supply": (length connection-guards) })
           )
         )
 
@@ -210,6 +228,7 @@
 
     (enforce (= amount 1.0) "Amount must be 1.0 for proof-of-us tokens")
     (validate-event (read-msg EVENT-ID-MSG-KEY))
+    (validate-supply token amount account)
   )
 
   (defun enforce-burn:bool
@@ -277,6 +296,17 @@
     )
   )
 
+  (defun validate-supply:bool (token:object{token-info} amount:decimal account:string)
+    (with-read supplies (at "id" token) {
+        "max-supply" := max-supply
+      }
+      (if (> max-supply 0)
+        (enforce (<= (+ amount (at 'supply token)) (* max-supply 1.0)) "Exceeds max supply")
+        true
+      )
+    )
+  )
+
   (defun create-event-id:string (name:string starts-at:integer ends-at:integer)
     (format "proof-of-us:{}" [(hash [name starts-at ends-at])])
   )
@@ -288,7 +318,10 @@
 
 (if (read-msg 'upgrade)
   ["upgrade complete"]
-  [(create-table events)]
+  [
+    (create-table events)
+    (create-table supplies)
+  ]
 )
 
 (enforce-guard ADMIN-KS)

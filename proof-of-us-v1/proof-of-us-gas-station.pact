@@ -2,7 +2,7 @@
 
 (module proof-of-us-gas-station GOVERNANCE
 
-  (defconst ADMIN-KS:string "marmalade-examples.marmalade-contract-admin")
+  (defconst ADMIN-KS:string "n_31cd1d224d06ca2b327f1b03f06763e305099250.pou-admin")
 
   (defcap GOVERNANCE ()
     (enforce-keyset ADMIN-KS)
@@ -28,10 +28,10 @@
     )
     (enforce (= "exec" (at "tx-type" (read-msg))) "Can only be used inside an exec")
     (enforce (= 1 (length (at "exec-code" (read-msg)))) "Can only be used to call one pact function")
-    ;  (enforce
-    ;    (= (format "({}.proof-of-us-v2." [(read-msg 'ns)]) (take 53 (at 0 (at "exec-code" (read-msg)))))
-    ;    "Only proof-of-us module calls are allowed"
-    ;  )
+    (enforce
+      (= "(n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us." (take 56 (at 0 (at "exec-code" (read-msg)))))
+      "Only proof-of-us module calls are allowed"
+    )
     (enforce-below-or-at-gas-price 0.000001)
     (compose-capability (ALLOW_GAS))
   )
@@ -58,4 +58,4 @@
   ["upgrade"]
 )
 
-;  (marmalade-examples.proof-of-us-gas-station.GAS_PAYER ["k:account" 0 0.0])
+(enforce-guard ADMIN-KS)

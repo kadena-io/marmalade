@@ -68,7 +68,7 @@
     }])
 
   (expect "successfully creates the event"
-    "t:KLL9uxEASwWVqx0sJOrYby9Ka0TqAaJyJ333qK0k77I"
+    "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
     (create-event (read-msg 'collection_id) (read-msg 'name) (read-msg 'uri) (read-integer 'starts_at) (read-integer 'ends_at))
   )
 

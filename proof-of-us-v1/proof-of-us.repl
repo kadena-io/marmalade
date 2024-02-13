@@ -140,7 +140,7 @@
 
   (env-sigs [
     { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
-      ,"caps": [(ATTEND (read-msg 'event_id) (read-keyset 'attendant_guard) )]
+      ,"caps": [(ATTEND (read-msg 'event_id))]
     }
   ])
 
@@ -155,7 +155,7 @@
 
   (expect "events"
     [
-      {"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.ATTEND","params": [(read-msg 'event_id) (read-keyset 'attendant_guard)]}
+      {"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.ATTEND","params": [(read-msg 'event_id)]}
       ,{"name": "marmalade-v2.ledger.MINT","params": [(read-string 'token_id) (read-msg 'attendant) 1.0]}
       ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": [(read-string 'token_id) (read-msg 'attendant) (read-keyset 'attendant_guard)]}
       ,{"name": "marmalade-v2.ledger.RECONCILE","params": [(read-string 'token_id) 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant),"current": 1.0,"previous": 0.0}]}
@@ -187,12 +187,12 @@
   (env-sigs [
     { "key": "6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
       ,"caps": [
-        (CONNECT (read-msg 'event_id) (read-msg 'uri) [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)] )
+        (CONNECT (read-msg 'event_id) (read-msg 'uri))
       ]
     },
     { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
       ,"caps": [
-        (CONNECT (read-msg 'event_id) (read-msg 'uri) [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)] )
+        (CONNECT (read-msg 'event_id) (read-msg 'uri))
       ]
     }
   ])
@@ -208,7 +208,7 @@
 
   (expect "events"
     [
-      {"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.CONNECT","params": ["proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4" (read-msg 'uri) [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)]]}
+      {"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.CONNECT","params": ["proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4" (read-msg 'uri)]}
       ,{"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.TOKEN_CREATION","params": ["proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"]}
       ,{"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:mhjYGlB0OrhjM8pxHrFTkBFLnP2tZHdr8gU5QH3cuvo" "t:VJ5CnmHMmMoqu-LFkX6-eOiLFoB1Qb49nt0wHTaMtp0"]}
       ,{"name": "marmalade-v2.ledger.TOKEN","params": ["t:VJ5CnmHMmMoqu-LFkX6-eOiLFoB1Qb49nt0wHTaMtp0" 0 TOKEN-POLICIES (read-msg 'uri) (util.guards1.guard-all [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)] ) ]}

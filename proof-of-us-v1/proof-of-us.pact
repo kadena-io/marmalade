@@ -52,16 +52,16 @@
     (enforce-guard ADMIN-KS)
   )
 
-  (defcap CONNECT (event-id:string uri:string connection-guards:[guard])
+  (defcap CONNECT (event-id:string uri:string)
     @doc "Used to guarante signature of all connecting parties"
     @event
-    (util.guards1.enforce-guard-all connection-guards)
+    true
   )
 
-  (defcap ATTEND (event-id:string attendant-guard:guard)
-    @doc "Used to guarante signature of attendant"
+  (defcap ATTEND (event-id:string)
+    @doc "Used to guarantee signature of attendant"
     @event
-    (enforce-guard attendant-guard)
+    true
   )
 
   (defcap COLLECTION_OPERATOR ()
@@ -163,7 +163,8 @@
       (event:object{event-schema} (get-event event-id))
       (token-id:string (at 'token-id event)) )
 
-      (with-capability (ATTEND event-id attendant-guard)
+      (with-capability (ATTEND event-id)
+        (enforce-guard attendant-guard)
         (install-capability (MINT token-id attendant 1.0))
         (mint token-id attendant attendant-guard 1.0)
       )
@@ -172,11 +173,13 @@
   )
 
   (defun create-and-mint-connection-token:string (event-id:string uri:string connection-guards:[guard])
+    (enforce (>= (length connection-guards) 2) "At least 2 connections are required to mint a connection token")
     (let* (
       (creator-guard:guard (util.guards1.guard-all connection-guards))
       (token-id (create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } creator-guard)))
 
-      (with-capability (CONNECT event-id uri connection-guards)
+      (with-capability (CONNECT event-id uri)
+        (util.guards1.enforce-guard-all connection-guards)
         (with-capability (TOKEN_CREATION event-id)
           (with-capability (COLLECTION_OPERATOR)
             ; Create the connection token
@@ -229,6 +232,7 @@
     (enforce (= amount 1.0) "Amount must be 1.0 for proof-of-us tokens")
     (validate-event (read-msg EVENT-ID-MSG-KEY))
     (validate-supply token amount account)
+    ; TODO: validate that the account doesn't already have a token
   )
 
   (defun enforce-burn:bool

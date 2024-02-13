@@ -2,7 +2,7 @@
 
 (module proof-of-us GOVERNANCE
 
-  (defconst ADMIN-KS:string "n_2cf9d750a8ec510cb925d897b82069850b0a0bea.pou-admin")
+  (defconst ADMIN-KS:string "n_31cd1d224d06ca2b327f1b03f06763e305099250.pou-admin")
 
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))

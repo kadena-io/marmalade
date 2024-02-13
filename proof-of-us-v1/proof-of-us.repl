@@ -1,6 +1,25 @@
 ;;load policy manager, ledger
 (load "../pact/marmalade.repl")
 
+(begin-tx "Load dummy webauthn-wallet contract")
+  (env-data {
+    "dummy": ["dummy"]
+  })
+  (env-sigs [
+    { 'key: 'dummy
+     ,'caps: []
+    }])
+  (define-namespace
+    "n_eef68e581f767dd66c4d4c39ed922be944ede505"
+    (read-keyset 'dummy) (read-keyset 'dummy)
+  )
+ (namespace "n_eef68e581f767dd66c4d4c39ed922be944ede505")
+ (module webauthn-wallet G
+   (defcap G() true)
+   (defun enforce-authenticated:bool (w:string) true)
+ )
+(commit-tx)
+
 (begin-tx "load proof of us policy")
   (env-data {
     "ns": "n_31cd1d224d06ca2b327f1b03f06763e305099250"
@@ -25,7 +44,6 @@
   (load "proof-of-us.pact")
   ; (typecheck "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us")
 (commit-tx)
-
 
 (begin-tx "Create a collection for proof of us")
   (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)

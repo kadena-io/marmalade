@@ -164,7 +164,7 @@
       (token-id:string (at 'token-id event)) )
 
       (with-capability (ATTEND event-id)
-        (enforce-guard attendant-guard)
+        (enforce-pou-guard attendant-guard)
         (install-capability (MINT token-id attendant 1.0))
         (mint token-id attendant attendant-guard 1.0)
       )
@@ -179,7 +179,7 @@
       (token-id (create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } creator-guard)))
 
       (with-capability (CONNECT event-id uri)
-        (util.guards1.enforce-guard-all connection-guards)
+        (map (enforce-pou-guard) connection-guards)
         (with-capability (TOKEN_CREATION event-id)
           (with-capability (COLLECTION_OPERATOR)
             ; Create the connection token
@@ -209,8 +209,7 @@
   ;;POLICY IMPLEMENTATION
 
   (defun enforce-init:bool
-    ( token:object{token-info}
-    )
+    ( token:object{token-info})
     @doc "The function is run at `create-token` step of marmalade-v2.ledger.create-token"
 
     (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
@@ -232,7 +231,9 @@
     (enforce (= amount 1.0) "Amount must be 1.0 for proof-of-us tokens")
     (validate-event (read-msg EVENT-ID-MSG-KEY))
     (validate-supply token amount account)
-    ; TODO: validate that the account doesn't already have a token
+    (let ((balance:decimal (try 0.0 (get-balance (at "id" token) account))))
+      (enforce (= 0.0 balance) "Account already has a token")
+    )
   )
 
   (defun enforce-burn:bool
@@ -282,6 +283,13 @@
 
   ;;UTILITY FUNCTIONS
 
+  (defun enforce-pou-guard:bool (guard:guard)
+    (enforce-one "Support both regular and webauthn guards" [
+      (enforce-guard guard)
+      (n_eef68e581f767dd66c4d4c39ed922be944ede505.webauthn-wallet.enforce-authenticated (create-principal guard))
+    ])
+  )
+
   (defun validate-event-time:bool (starts-at:integer ends-at:integer)
     (enforce (> ends-at (curr-time)) "Event end time must be in the future")
     (enforce (> starts-at (curr-time)) "Event start time must be in the future")
@@ -317,6 +325,12 @@
 
   (defun get-event:object{event-schema} (event-id:string)
     (read events event-id)
+  )
+
+  (defun has-minted-attendance-token (event-id:string attendant:string)
+    (with-read events event-id { 'token=id := token-id }
+      (> (get-balance token-id attendant) 0.0)
+    )
   )
 )
 

@@ -328,7 +328,7 @@
   )
 
   (defun has-minted-attendance-token (event-id:string attendant:string)
-    (with-read events event-id { 'token=id := token-id }
+    (with-read events event-id { 'token-id := token-id }
       (> (get-balance token-id attendant) 0.0)
     )
   )

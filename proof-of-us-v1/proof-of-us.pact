@@ -284,7 +284,7 @@
   ;;UTILITY FUNCTIONS
 
   (defun enforce-pou-guard:bool (guard:guard)
-    (enforce-one "Support both regular and webauthn guards" [
+    (enforce-one "Neither keyset or capability guard passed" [
       (enforce-guard guard)
       (n_eef68e581f767dd66c4d4c39ed922be944ede505.webauthn-wallet.enforce-authenticated (create-principal guard))
     ])

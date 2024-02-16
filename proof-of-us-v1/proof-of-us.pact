@@ -64,6 +64,10 @@
     true
   )
 
+  (defcap INTERNAL:bool (token-id:string)
+    true
+  )
+
   (defcap COLLECTION_OPERATOR ()
     true
   )
@@ -135,7 +139,7 @@
               creator-guard
             )
             ; Set attendance supply
-            (let ((attendance-supply:integer (try 0 (read-msg ATTENDANCE-SUPPLY-KEY))))
+            (let ((attendance-supply:integer (try 0 (read-integer ATTENDANCE-SUPPLY-KEY))))
               (write supplies token-id { "max-supply": attendance-supply })
             )
           )
@@ -166,14 +170,19 @@
       (with-capability (ATTEND event-id)
         (enforce-pou-guard attendant-guard)
         (install-capability (MINT token-id attendant 1.0))
-        (mint token-id attendant attendant-guard 1.0)
+        
+        (with-capability (INTERNAL token-id)
+          (mint token-id attendant attendant-guard 1.0)
+        )
+        token-id
       )
     )
-    true
   )
 
   (defun create-and-mint-connection-token:string (event-id:string uri:string connection-guards:[guard])
     (enforce (>= (length connection-guards) 2) "At least 2 connections are required to mint a connection token")
+    (validate-collection event-id (read-msg COLLECTION-ID-MSG-KEY))
+
     (let* (
       (creator-guard:guard (create-capability-guard (CONNECT event-id uri)))
       (token-id (create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } creator-guard)))
@@ -198,7 +207,10 @@
         (map (lambda (connection-guard:guard)
 
           (install-capability (MINT token-id (create-principal connection-guard) 1.0))
-          (mint token-id (create-principal connection-guard) connection-guard 1.0)
+          
+          (with-capability (INTERNAL token-id)
+            (mint token-id (create-principal connection-guard) connection-guard 1.0)
+          )
 
         ) connection-guards)
         token-id
@@ -227,6 +239,7 @@
       amount:decimal
     )
     (require-capability (MINT-CALL (at "id" token) account amount))
+    (require-capability (INTERNAL (at "id" token)))
 
     (enforce (= amount 1.0) "Amount must be 1.0 for proof-of-us tokens")
     (validate-event (read-msg EVENT-ID-MSG-KEY))
@@ -305,6 +318,12 @@
       (ends-at:integer (at 'ends-at event)) )
 
       (enforce (and (>= (curr-time) starts-at) (<= (curr-time) ends-at)) "Minting is not allowed outside of event time")
+    )
+  )
+
+  (defun validate-collection (event-id:string collection-id:string)
+    (let* ((event:object{event-schema} (get-event event-id)))
+      (enforce (= collection-id (at 'collection-id event)) "Event does not belong to this collection")
     )
   )
 

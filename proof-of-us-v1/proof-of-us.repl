@@ -142,7 +142,6 @@
 
 (commit-tx)
 
-
 (begin-tx "Mint attendance token")
   (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)
   (use marmalade-v2.util-v1)
@@ -163,7 +162,7 @@
   ])
 
   (expect "successfully create an attendance token"
-    true
+    (read-msg 'token_id)
     (mint-attendance-token
       (read-msg 'event_id)
       (read-msg 'attendant)
@@ -240,4 +239,373 @@
       ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU" 2.0]}
     ]
     (map (remove "module-hash")  (env-events true)))
+(commit-tx)
+
+(begin-tx "Should only be able to mint single attendance token")
+  (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)
+  (use marmalade-v2.util-v1)
+
+  (env-chain-data {"block-time": (time "2024-02-01T20:30:00Z")})
+
+  (env-data {
+    "event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
+    ,"attendant": "k:1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+    ,"attendant_guard": ["1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"]
+    ,"token_id": "t:iyHsPbrPsit6Yu4RXCwib6XqUtUWLT0TAAKAV_lnXlM"
+  })
+
+  (env-sigs [
+    { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+      ,"caps": [(ATTEND (read-msg 'event_id))]
+    }
+  ])
+
+  (expect-failure "should fail because token was already minted"
+    "Account already has a token"
+    (mint-attendance-token
+      (read-msg 'event_id)
+      (read-msg 'attendant)
+      (read-keyset 'attendant_guard)
+    )
+  )
+
+(commit-tx)
+
+(begin-tx "Should only be able to mint single connection token")
+  (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.collection-policy-v1)
+  (use marmalade-v2.util-v1)
+
+  (env-chain-data {"block-time": (time "2024-02-01T20:30:00Z")})
+
+  (env-data {
+    "uri": "kadena://event-1-2"
+    ,"event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
+    ,"collection_id": "collection:mhjYGlB0OrhjM8pxHrFTkBFLnP2tZHdr8gU5QH3cuvo"
+    ,"attendant_1": "k:6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
+    ,"attendant_1_guard": ["6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"]
+    ,"attendant_2": "k:1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+    ,"attendant_2_guard": ["1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"]
+  })
+
+  (env-sigs [
+    { "key": "6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
+      ,"caps": [
+        (CONNECT (read-msg 'event_id) (read-msg 'uri))
+      ]
+    },
+    { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+      ,"caps": [
+        (CONNECT (read-msg 'event_id) (read-msg 'uri))
+      ]
+    }
+  ])
+
+  (expect-failure "failed to create the same connection again"
+    "Failure: Database exception: Insert: row found for key t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU"
+    (create-and-mint-connection-token
+      (read-msg 'event_id)
+      (read-msg 'uri)
+      [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)]
+    )
+  )
+
+(commit-tx)
+
+(begin-tx "Should not be able to mint an attendance token directly")
+  (use marmalade-v2.ledger)
+  (use mini-guard-utils)
+
+  (env-chain-data {"block-time": (time "2024-02-01T20:30:00Z")})
+
+  (env-data {
+    "event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
+    ,"attendant": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+    ,"attendant_guard": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"]
+    ,"token_id": "t:iyHsPbrPsit6Yu4RXCwib6XqUtUWLT0TAAKAV_lnXlM"
+  })
+
+  (env-sigs [
+    { 'key: "e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+     ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token_id) (read-msg 'attendant) 1.0)]
+    }])
+  
+  (expect-failure "failed to mint the token directly"
+    "require-capability: not granted: (n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.INTERNAL"
+    (mint (read-msg 'token_id) (read-msg 'attendant) (read-keyset 'attendant_guard ) 1.0))
+
+(commit-tx)
+
+(begin-tx "Should not be able to mint a connection token directly")
+  (use marmalade-v2.ledger)
+  (use mini-guard-utils)
+
+  (env-chain-data {"block-time": (time "2024-02-01T20:30:00Z")})
+
+  (env-data {
+    "event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
+    ,"attendant": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+    ,"attendant_guard": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"]
+    ,"token_id": "t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU"
+  })
+
+  (env-sigs [
+    { 'key: "e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+    ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token_id) (read-msg 'attendant) 1.0)]
+    }])
+
+  (expect-failure "failed to mint the token directly"
+    "require-capability: not granted: (n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.INTERNAL"
+    (mint (read-msg 'token_id) (read-msg 'attendant) (read-keyset 'attendant_guard ) 1.0))
+
+(commit-tx)
+
+(begin-tx "Should not be able to mint a connection token for only one user")
+  (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.collection-policy-v1)
+  (use marmalade-v2.util-v1)
+
+  (env-chain-data {"block-time": (time "2024-02-01T20:30:00Z")})
+
+  (env-data {
+    "uri": "kadena://event-1-3"
+    ,"event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
+    ,"collection_id": "collection:mhjYGlB0OrhjM8pxHrFTkBFLnP2tZHdr8gU5QH3cuvo"
+    ,"attendant_1": "k:6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
+    ,"attendant_1_guard": ["6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"]
+  })
+
+  (env-sigs [
+    { "key": "6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
+      ,"caps": [
+        (CONNECT (read-msg 'event_id) (read-msg 'uri))
+      ]
+    }
+  ])
+
+  (expect-failure "failed to create connection"
+    "At least 2 connections are required to mint a connection token"
+    (create-and-mint-connection-token
+      (read-msg 'event_id)
+      (read-msg 'uri)
+      [(read-keyset 'attendant_1_guard)]
+    )
+  )
+(commit-tx)
+
+(begin-tx "Should not be able to mint an attendance token outside of event time")
+  (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)
+  (use marmalade-v2.util-v1)
+
+  (env-chain-data {"block-time": (time "2024-04-01T20:30:00Z")})
+
+  (env-data {
+    "event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
+    ,"attendant": "k:1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+    ,"attendant_guard": ["1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"]
+    ,"token_id": "t:iyHsPbrPsit6Yu4RXCwib6XqUtUWLT0TAAKAV_lnXlM"
+  })
+
+  (env-sigs [
+    { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+      ,"caps": [(ATTEND (read-msg 'event_id))]
+    }
+  ])
+
+  (expect-failure "failed to mint"
+    "Minting is not allowed outside of event time"
+    (mint-attendance-token
+      (read-msg 'event_id)
+      (read-msg 'attendant)
+      (read-keyset 'attendant_guard)
+    )
+  )
+(commit-tx)
+
+(begin-tx "Should not be able to mint a connection token outside of event time")
+  (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.collection-policy-v1)
+  (use marmalade-v2.util-v1)
+
+  (env-chain-data {"block-time": (time "2024-04-01T20:30:00Z")})
+
+  (env-data {
+    "uri": "kadena://event-1-3"
+    ,"event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
+    ,"collection_id": "collection:mhjYGlB0OrhjM8pxHrFTkBFLnP2tZHdr8gU5QH3cuvo"
+    ,"attendant_1": "k:6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
+    ,"attendant_1_guard": ["6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"]
+    ,"attendant_2": "k:1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+    ,"attendant_2_guard": ["1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"]
+  })
+
+  (env-sigs [
+    { "key": "6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
+      ,"caps": [
+        (CONNECT (read-msg 'event_id) (read-msg 'uri))
+      ]
+    },
+    { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+      ,"caps": [
+        (CONNECT (read-msg 'event_id) (read-msg 'uri))
+      ]
+    }
+  ])
+
+  (expect-failure "failed to mint"
+    "Minting is not allowed outside of event time"
+    (create-and-mint-connection-token
+      (read-msg 'event_id)
+      (read-msg 'uri)
+      [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)]
+    )
+  )
+(commit-tx)
+
+(begin-tx "Should not be able to burn a token")
+  (use marmalade-v2.ledger)
+  (use mini-guard-utils)
+
+  (env-data {
+    "token-id": "t:iyHsPbrPsit6Yu4RXCwib6XqUtUWLT0TAAKAV_lnXlM"
+    ,"account": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+    ,"account-guard": {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
+  })
+
+  (env-sigs [
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
+    ,'caps: [(marmalade-v2.ledger.BURN (read-msg 'token-id) (read-msg 'account) 1.0)]
+  }])
+
+  (expect-failure "failed to burn"
+    "Burn is not allowed!"
+    (burn (read-msg 'token-id) (read-msg 'account) 0.5))
+
+(commit-tx)
+
+(begin-tx "Should not be able to transfer a token")
+  (use marmalade-v2.ledger)
+  (use mini-guard-utils)
+
+  (env-data {
+     "token-id": "t:iyHsPbrPsit6Yu4RXCwib6XqUtUWLT0TAAKAV_lnXlM"
+    ,"sender": "k:1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+    ,"receiver": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
+  })
+
+  (expect-failure "transfer token fails"
+    "Transfer is not allowed!"
+    (transfer (read-msg 'token-id) (read-msg 'sender) (read-msg 'receiver) 1.0 ))
+
+(commit-tx)
+
+(begin-tx "Should not be able to mint a token to wrong collection")
+  (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.collection-policy-v1)
+  (use marmalade-v2.util-v1)
+
+  (env-chain-data {"block-time": (time "2024-02-01T20:30:00Z")})
+
+  (env-sigs [
+    { 'key: 'proof-of-us
+     ,'caps: []
+    }])
+
+  (env-data {
+    "uri": "kadena://event-with-wrong-collection"
+    ,"event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
+    ,"collection_id": (create-event-collection "wrong-collection")
+    ,"attendant_1": "k:6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
+    ,"attendant_1_guard": ["6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"]
+    ,"attendant_2": "k:1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+    ,"attendant_2_guard": ["1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"]
+  })
+
+  (env-sigs [
+    { "key": "6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
+      ,"caps": [
+        (CONNECT (read-msg 'event_id) (read-msg 'uri))
+      ]
+    },
+    { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+      ,"caps": [
+        (CONNECT (read-msg 'event_id) (read-msg 'uri))
+      ]
+    }
+  ])
+
+  (expect-failure "successfully create a group connection"
+    "Event does not belong to this collection"
+    (create-and-mint-connection-token
+      (read-msg 'event_id)
+      (read-msg 'uri)
+      [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)]
+    )
+  )
+(commit-tx)
+
+(begin-tx "Should not be able to mint a token after max supply reached")
+  (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)
+  (use marmalade-v2.util-v1)
+
+  (env-chain-data {"block-time": (time "2024-02-01T12:00:00Z")})
+
+  (env-data {
+    "name": "KadenaEvent-limited"
+    ,"uri": "kadena://event-limited"
+    ,"collection_id": "collection:mhjYGlB0OrhjM8pxHrFTkBFLnP2tZHdr8gU5QH3cuvo"
+    ,"event_id": (create-event-id "KadenaEvent-limited" (to-timestamp (time "2024-02-01T15:00:00Z")) (to-timestamp (time "2024-02-02T15:00:00Z")))
+    ,"starts_at": (to-timestamp (time "2024-02-01T15:00:00Z"))
+    ,"ends_at": (to-timestamp (time "2024-02-02T15:00:00Z"))
+    ,"operator": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
+    ,"token_id": "t:PqbE_R-qIyePGd1gItsIvku34GgkfdTSRBkdqTkzNIA"
+    ,"attendance_supply": 1
+  })
+
+  (env-sigs [
+    { "key": 'proof-of-us
+      ,"caps": [(EVENT (read-msg 'collection_id) (read-msg 'event_id) (read-msg 'name) (read-msg 'uri))]
+    }])
+
+  (expect "successfully creates the event"
+    "proof-of-us:2HpYaHlOmxKihIgZ94eCmApeYZOZusKjSTVw4I9umi8"
+    (create-event (read-msg 'collection_id) (read-msg 'name) (read-msg 'uri) (read-integer 'starts_at) (read-integer 'ends_at))
+  )
+
+  (env-chain-data {"block-time": (time "2024-02-01T20:30:00Z")})
+
+  (env-data {
+    "event_id": (create-event-id "KadenaEvent-limited" (to-timestamp (time "2024-02-01T15:00:00Z")) (to-timestamp (time "2024-02-02T15:00:00Z")))
+    ,"attendant": "k:1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+    ,"attendant_guard": ["1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"]
+    ,"token_id": "t:PqbE_R-qIyePGd1gItsIvku34GgkfdTSRBkdqTkzNIA"
+  })
+
+  (env-sigs [
+    { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+      ,"caps": [(ATTEND (read-msg 'event_id))]
+    }
+  ])
+
+  (expect "successfully create an attendance token"
+    (read-msg 'token_id)
+    (mint-attendance-token
+      (read-msg 'event_id)
+      (read-msg 'attendant)
+      (read-keyset 'attendant_guard)
+    )
+  )
+
+  (expect-failure "failed to mint if max supply reached"
+    "Exceeds max supply"
+    (mint-attendance-token
+      (read-msg 'event_id)
+      (read-msg 'attendant)
+      (read-keyset 'attendant_guard)
+    )
+  )
 (commit-tx)

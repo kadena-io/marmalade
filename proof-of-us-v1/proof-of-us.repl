@@ -216,7 +216,7 @@
   ])
 
   (expect "successfully create a group connection"
-    "t:VJ5CnmHMmMoqu-LFkX6-eOiLFoB1Qb49nt0wHTaMtp0"
+    "t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU"
     (create-and-mint-connection-token
       (read-msg 'event_id)
       (read-msg 'uri)
@@ -228,16 +228,16 @@
     [
       {"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.CONNECT","params": ["proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4" (read-msg 'uri)]}
       ,{"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.TOKEN_CREATION","params": ["proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"]}
-      ,{"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:mhjYGlB0OrhjM8pxHrFTkBFLnP2tZHdr8gU5QH3cuvo" "t:VJ5CnmHMmMoqu-LFkX6-eOiLFoB1Qb49nt0wHTaMtp0"]}
-      ,{"name": "marmalade-v2.ledger.TOKEN","params": ["t:VJ5CnmHMmMoqu-LFkX6-eOiLFoB1Qb49nt0wHTaMtp0" 0 TOKEN-POLICIES (read-msg 'uri) (util.guards1.guard-all [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)] ) ]}
-      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:VJ5CnmHMmMoqu-LFkX6-eOiLFoB1Qb49nt0wHTaMtp0" (read-msg 'attendant_1) 1.0]}
-      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:VJ5CnmHMmMoqu-LFkX6-eOiLFoB1Qb49nt0wHTaMtp0" (read-msg 'attendant_1) (read-keyset 'attendant_1_guard)]}
-      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:VJ5CnmHMmMoqu-LFkX6-eOiLFoB1Qb49nt0wHTaMtp0" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_1),"current": 1.0,"previous": 0.0}]}
-      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:VJ5CnmHMmMoqu-LFkX6-eOiLFoB1Qb49nt0wHTaMtp0" 1.0]}
-      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:VJ5CnmHMmMoqu-LFkX6-eOiLFoB1Qb49nt0wHTaMtp0" (read-msg 'attendant_2) 1.0]}
-      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:VJ5CnmHMmMoqu-LFkX6-eOiLFoB1Qb49nt0wHTaMtp0" (read-msg 'attendant_2) (read-keyset 'attendant_2_guard)]}
-      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:VJ5CnmHMmMoqu-LFkX6-eOiLFoB1Qb49nt0wHTaMtp0" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_2),"current": 1.0,"previous": 0.0}]}
-      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:VJ5CnmHMmMoqu-LFkX6-eOiLFoB1Qb49nt0wHTaMtp0" 2.0]}
+      ,{"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:mhjYGlB0OrhjM8pxHrFTkBFLnP2tZHdr8gU5QH3cuvo" "t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU"]}
+      ,{"name": "marmalade-v2.ledger.TOKEN","params": ["t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU" 0 TOKEN-POLICIES (read-msg 'uri) (create-capability-guard (CONNECT (read-msg 'event_id) (read-msg 'uri))) ]}
+      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU" (read-msg 'attendant_1) 1.0]}
+      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU" (read-msg 'attendant_1) (read-keyset 'attendant_1_guard)]}
+      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_1),"current": 1.0,"previous": 0.0}]}
+      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU" 1.0]}
+      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU" (read-msg 'attendant_2) 1.0]}
+      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU" (read-msg 'attendant_2) (read-keyset 'attendant_2_guard)]}
+      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_2),"current": 1.0,"previous": 0.0}]}
+      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU" 2.0]}
     ]
     (map (remove "module-hash")  (env-events true)))
 (commit-tx)

@@ -175,7 +175,7 @@
   (defun create-and-mint-connection-token:string (event-id:string uri:string connection-guards:[guard])
     (enforce (>= (length connection-guards) 2) "At least 2 connections are required to mint a connection token")
     (let* (
-      (creator-guard:guard (util.guards1.guard-all connection-guards))
+      (creator-guard:guard (create-capability-guard (CONNECT event-id uri)))
       (token-id (create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } creator-guard)))
 
       (with-capability (CONNECT event-id uri)

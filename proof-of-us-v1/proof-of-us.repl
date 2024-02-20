@@ -609,3 +609,60 @@
     )
   )
 (commit-tx)
+
+(begin-tx "Mint connection token without event")
+  (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.collection-policy-v1)
+  (use marmalade-v2.util-v1)
+
+  (env-chain-data {"block-time": (time "2024-02-01T20:30:00Z")})
+
+  (env-data {
+    "uri": "kadena://event-1-2"
+    ,"collection_id": "collection:mhjYGlB0OrhjM8pxHrFTkBFLnP2tZHdr8gU5QH3cuvo"
+    ,"attendant_1": "k:6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
+    ,"attendant_1_guard": ["6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"]
+    ,"attendant_2": "k:1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+    ,"attendant_2_guard": ["1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"]
+  })
+
+  (env-sigs [
+    { "key": "6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
+      ,"caps": [
+        (CONNECT "" (read-msg 'uri))
+      ]
+    },
+    { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+      ,"caps": [
+        (CONNECT "" (read-msg 'uri))
+      ]
+    }
+  ])
+
+  (expect "successfully create a group connection"
+    "t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U"
+    (create-and-mint-connection-token
+      ""
+      (read-msg 'uri)
+      [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)]
+    )
+  )
+
+  (expect "events"
+    [
+      {"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.CONNECT","params": ["" (read-msg 'uri)]}
+      ,{"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.TOKEN_CREATION","params": [""]}
+      ,{"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:mhjYGlB0OrhjM8pxHrFTkBFLnP2tZHdr8gU5QH3cuvo" "t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U"]}
+      ,{"name": "marmalade-v2.ledger.TOKEN","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" 0 TOKEN-POLICIES (read-msg 'uri) (create-capability-guard (CONNECT "" (read-msg 'uri))) ]}
+      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" (read-msg 'attendant_1) 1.0]}
+      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" (read-msg 'attendant_1) (read-keyset 'attendant_1_guard)]}
+      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_1),"current": 1.0,"previous": 0.0}]}
+      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" 1.0]}
+      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" (read-msg 'attendant_2) 1.0]}
+      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" (read-msg 'attendant_2) (read-keyset 'attendant_2_guard)]}
+      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_2),"current": 1.0,"previous": 0.0}]}
+      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" 2.0]}
+    ]
+    (map (remove "module-hash")  (env-events true)))
+(commit-tx)

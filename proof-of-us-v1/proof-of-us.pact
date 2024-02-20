@@ -10,7 +10,6 @@
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
   (use marmalade-v2.ledger)
-  (use marmalade-v2.util-v1)
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.collection-policy-v1)
   (use marmalade-v2.util-v1 [curr-time])
@@ -38,12 +37,16 @@
     true
   )
 
+  (defun allow:bool () true)
+
   (defcap TOKEN_CREATION (event-id:string)
     @doc "Used to validate token creation"
     @event
     (util.guards1.guard-any [
       (keyset-ref-guard ADMIN-KS)
-      (create-user-guard (validate-event event-id))
+      (if (= event-id "") (create-user-guard (allow)) 
+        (create-user-guard (validate-event event-id))
+      )
     ])
   )
 
@@ -74,7 +77,6 @@
 
   (defconst EVENT-ID-MSG-KEY:string "event_id")
   (defconst ATTENDANCE-SUPPLY-KEY:string "attendance_supply")
-
 
   (defun has-collection-policy:bool (policies)
     (> (length (filter (lambda (policy) (= policy marmalade-v2.collection-policy-v1)) policies)) 0))
@@ -163,6 +165,8 @@
   (defun mint-attendance-token (event-id:string attendant:string attendant-guard:guard)
     (enforce (validate-principal attendant-guard attendant) "Incorrect account guard, only principal accounts allowed")
 
+    (validate-event event-id)
+
     (let* (
       (event:object{event-schema} (get-event event-id))
       (token-id:string (at 'token-id event)) )
@@ -181,8 +185,13 @@
 
   (defun create-and-mint-connection-token:string (event-id:string uri:string connection-guards:[guard])
     (enforce (>= (length connection-guards) 2) "At least 2 connections are required to mint a connection token")
-    (validate-collection event-id (read-msg COLLECTION-ID-MSG-KEY))
 
+    (if (= event-id "") true [
+        (validate-collection event-id (read-msg COLLECTION-ID-MSG-KEY))
+        (validate-event event-id)
+      ]
+    )
+    
     (let* (
       (creator-guard:guard (create-capability-guard (CONNECT event-id uri)))
       (token-id (create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } creator-guard)))
@@ -225,7 +234,7 @@
     @doc "The function is run at `create-token` step of marmalade-v2.ledger.create-token"
 
     (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
-    (require-capability (TOKEN_CREATION (read-msg EVENT-ID-MSG-KEY)))
+    (require-capability (TOKEN_CREATION (try "" (read-msg EVENT-ID-MSG-KEY))))
 
     (enforce (= (at 'precision token) 0) "Precision must be 0 for proof-of-us tokens")
 
@@ -242,7 +251,6 @@
     (require-capability (INTERNAL (at "id" token)))
 
     (enforce (= amount 1.0) "Amount must be 1.0 for proof-of-us tokens")
-    (validate-event (read-msg EVENT-ID-MSG-KEY))
     (validate-supply token amount account)
     (let ((balance:decimal (try 0.0 (get-balance (at "id" token) account))))
       (enforce (= 0.0 balance) "Account already has a token")

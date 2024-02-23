@@ -1,0 +1,12 @@
+lockfileVersion: '6.0'
+
+dependencies:
+  simple-tree-utils:
+    specifier: ^1.0.1
+    version: 1.0.1
+
+packages:
+
+  /simple-tree-utils@1.0.1:
+    resolution: {integrity: sha512-iSMWIbZEKUuolWOt5UBT4fV5tTmakFqzCY3wnbm0gtut1jEUSx8zjKpN9wZ9sl/2PNsVk0cti15Fg4UX+IQE8g==}
+    dev: false

@@ -1,0 +1,13 @@
+{
+  "name": "default-contracts",
+  "description": "",
+  "source": "git@github.com:kadena-io/chainweb-node.git",
+  "dependencyTree": [
+    {
+      "path": "/pact/coin-contract/coin.pact",
+      "dependencies": {
+        "path": "/pact/coin-contract/fungible-v1.pact"
+      }
+    }
+  ]
+}

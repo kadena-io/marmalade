@@ -1,0 +1,43 @@
+{
+  "name": "marmalade",
+  "description": "Marmalade NFT smart contract",
+  "dependencies": ["default-contracts.json"],
+  "dependencyTree": [
+    {
+      "path": "pact_modules/kadena-io/chainweb-node/pact/fungible-v2.pact",
+      "env": {},
+      "dependents": [
+        {
+          "path": "pact_modules/kadena-io/chainweb-node/pact/coin.pact",
+          "env": {
+            "fee": "read-decimal"
+          },
+          "dependents": [
+            {
+              "path": "pact/ledger/ledger.pact",
+              "env": {
+                "ns": "string",
+                "upgrade": "msg"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+
+// pact-lsp <> **/*.pact
+// 1. tree of dependencies
+// 2. each node in the tree will have a property for env-data (read-x)
+
+// $ kadena toolbox create-repl pact/ledger/ledger.pact
+// test-ledger.repl
+// (set-env "ns" "free")
+// (load 'pact/ledger/ledger.pact')
+// (load 'pact_modules/kadena-io/chainweb-node/pact/coin.pact')
+// (load 'pact_modules/kadena-io/chainweb-node/pact/fungible-v2.pact')
+// ; start testing
+
+// $ kadena toolbox create-deployment-script --network="api.chainweb.com" pact/ledger/ledger.pact
+//  interactive questions: "ns" "test"

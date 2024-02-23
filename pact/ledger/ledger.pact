@@ -1,3 +1,5 @@
+; require('../marmalade-ns/ns-marmalade.pact')
+; require(')
 (namespace (read-string 'ns))
 
 (module ledger GOVERNANCE
@@ -19,6 +21,7 @@
   ;;
 
   (deftable ledger:{account-details})
+  (policy-manager.xyz { })
 
   (defschema token-schema
     id:string

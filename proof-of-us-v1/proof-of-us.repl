@@ -214,6 +214,11 @@
     }
   ])
 
+  (expect "Retrieve connection token id before minting"
+    "t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU"
+    (retrieve-connection-token-id (read-msg 'event_id) (read-msg 'uri))
+  )
+
   (expect "successfully create a group connection"
     "t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU"
     (create-and-mint-connection-token
@@ -330,7 +335,7 @@
     { 'key: "e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
      ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token_id) (read-msg 'attendant) 1.0)]
     }])
-  
+
   (expect-failure "failed to mint the token directly"
     "require-capability: not granted: (n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.INTERNAL"
     (mint (read-msg 'token_id) (read-msg 'attendant) (read-keyset 'attendant_guard ) 1.0))

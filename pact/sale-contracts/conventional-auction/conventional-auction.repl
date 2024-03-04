@@ -498,7 +498,7 @@
   )
 (commit-tx)
 
-(begin-tx "Place bids with non-existing marketplace account fails")
+(begin-tx "Place bids with invalid marketplace fee spec fails")
   (env-hash (hash "place-conventional-auction-bid-mk-fee"))
   (env-chain-data {"block-time": (time "2023-10-03T00:00:00Z")})
   (use marmalade-v2.ledger)
@@ -523,10 +523,27 @@
       (PLACE_BID (read-keyset 'buyer-guard)),
       (coin.TRANSFER (read-string 'buyer) "u:util.guards1.enforce-guard-any:pL1c4j8Ex_J4FE6nlpKwUhyyNuj2PCE2zvTb_2pmfV0" 110.0)
     ]}])
+
   (expect-failure "Place bid fails when marketplace account doesn't exist"
     "row not found"
     (place-bid (read-string "sale-id") (read-string 'buyer) (read-keyset 'buyer-guard) 100.0)
   )
+
+  (env-data {
+    "token1-id": (create-token-id { 'uri: "conventional-auction-uri-1", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY)} ALWAYS-TRUE)
+    ,"sale-id": "L8MyXGnK9uOtzMsi8JPGcdMrOybW862pHZHnnuYHVhs"
+    ,"buyer": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
+    ,"buyer-guard": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
+    ,"marketplace_fee": {
+      "mk-account": "k:cad725b9789b04dd1ee21e02287a0b65201c1c8b17275860e8e82aa68b12be2d"
+      ,"mk-fee-percentage": -0.99999999
+    }
+  })
+
+  (expect-failure
+    "Invalid market-fee percentage"
+    (place-bid (read-string "sale-id") (read-string 'buyer) (read-keyset 'buyer-guard ) 10000000000.0) )
+
 (rollback-tx)
 
 (begin-tx "Place bids with marketplace fees")

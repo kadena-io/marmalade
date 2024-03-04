@@ -226,6 +226,7 @@
           (mk-fee-percentage:decimal (at "mk-fee-percentage" mk-fee-spec))
           (mk-fee:decimal (floor (* mk-fee-percentage bid) (fungible::precision)))
         )
+        (enforce (and (>= mk-fee-percentage 0.0) (<= mk-fee-percentage 1.0)) "Invalid market-fee percentage")
         (with-capability (PLACE_BID bidder-guard)
           ; Return amount to previous bidder if there was one
           (if (> prev-highest-bid 0.0)

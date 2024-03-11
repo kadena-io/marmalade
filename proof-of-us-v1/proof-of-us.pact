@@ -174,13 +174,17 @@
       (with-capability (ATTEND event-id)
         (enforce-pou-guard attendant-guard)
         (install-capability (MINT token-id attendant 1.0))
-        
+
         (with-capability (INTERNAL token-id)
           (mint token-id attendant attendant-guard 1.0)
         )
         token-id
       )
     )
+  )
+
+  (defun retrieve-connection-token-id:string (event-id:string uri:string)
+    (create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } (create-capability-guard (CONNECT event-id uri)))
   )
 
   (defun create-and-mint-connection-token:string (event-id:string uri:string connection-guards:[guard])
@@ -216,7 +220,7 @@
         (map (lambda (connection-guard:guard)
 
           (install-capability (MINT token-id (create-principal connection-guard) 1.0))
-          
+
           (with-capability (INTERNAL token-id)
             (mint token-id (create-principal connection-guard) connection-guard 1.0)
           )

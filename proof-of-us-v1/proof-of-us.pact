@@ -37,19 +37,6 @@
     true
   )
 
-  (defun allow:bool () true)
-
-  (defcap TOKEN_CREATION (event-id:string)
-    @doc "Used to validate token creation"
-    @event
-    (util.guards1.guard-any [
-      (keyset-ref-guard ADMIN-KS)
-      (if (= event-id "") (create-user-guard (allow)) 
-        (create-user-guard (validate-event event-id))
-      )
-    ])
-  )
-
   (defcap COLLECTION_CREATION ()
     @doc "Used to guard collection creation"
     (enforce-guard ADMIN-KS)
@@ -68,10 +55,12 @@
   )
 
   (defcap INTERNAL:bool (token-id:string)
+    @doc "Used to guarantee function is called only by the contract itself"
     true
   )
 
   (defcap COLLECTION_OPERATOR ()
+    @doc "Used to guard adding tokens to a collection"
     true
   )
 
@@ -130,8 +119,8 @@
           ,'ends-at: ends-at
         })
 
-        (with-capability (TOKEN_CREATION event-id)
-          (with-capability (COLLECTION_OPERATOR)
+        (with-capability (COLLECTION_OPERATOR)
+          (with-capability (INTERNAL token-id)
             ; Create the attendance token
             (create-token
               token-id
@@ -140,10 +129,10 @@
               TOKEN-POLICIES
               creator-guard
             )
-            ; Set attendance supply
-            (let ((attendance-supply:integer (try 0 (read-integer ATTENDANCE-SUPPLY-KEY))))
-              (write supplies token-id { "max-supply": attendance-supply })
-            )
+          )
+          ; Set attendance supply
+          (let ((attendance-supply:integer (try 0 (read-integer ATTENDANCE-SUPPLY-KEY))))
+            (write supplies token-id { "max-supply": attendance-supply })
           )
         )
         event-id
@@ -187,22 +176,22 @@
     (create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } (create-capability-guard (CONNECT event-id uri)))
   )
 
-  (defun create-and-mint-connection-token:string (event-id:string uri:string connection-guards:[guard])
+  (defun create-and-mint-connection-token:string (uri:string connection-guards:[guard])
     (enforce (>= (length connection-guards) 2) "At least 2 connections are required to mint a connection token")
-
-    (if (= event-id "") true [
-        (validate-collection event-id (read-msg COLLECTION-ID-MSG-KEY))
-        (validate-event event-id)
-      ]
-    )
     
     (let* (
+      (event-id:string (try "" (read-msg EVENT-ID-MSG-KEY)))
       (creator-guard:guard (create-capability-guard (CONNECT event-id uri)))
       (token-id (create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } creator-guard)))
 
+      (if (= event-id "") true [
+          (validate-event-collection event-id (read-msg COLLECTION-ID-MSG-KEY))
+          (validate-event event-id)
+        ]
+      )
       (with-capability (CONNECT event-id uri)
-        (map (enforce-pou-guard) connection-guards)
-        (with-capability (TOKEN_CREATION event-id)
+        (with-capability (INTERNAL token-id)
+          (map (enforce-pou-guard) connection-guards)
           (with-capability (COLLECTION_OPERATOR)
             ; Create the connection token
             (create-token
@@ -215,18 +204,16 @@
             ; Limited supply to number of participants
             (write supplies token-id { "max-supply": (length connection-guards) })
           )
-        )
 
-        (map (lambda (connection-guard:guard)
+          (map (lambda (connection-guard:guard)
 
-          (install-capability (MINT token-id (create-principal connection-guard) 1.0))
+            (install-capability (MINT token-id (create-principal connection-guard) 1.0))
 
-          (with-capability (INTERNAL token-id)
             (mint token-id (create-principal connection-guard) connection-guard 1.0)
-          )
 
-        ) connection-guards)
-        token-id
+          ) connection-guards)
+          token-id
+        )
       )
     )
   )
@@ -238,7 +225,7 @@
     @doc "The function is run at `create-token` step of marmalade-v2.ledger.create-token"
 
     (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
-    (require-capability (TOKEN_CREATION (try "" (read-msg EVENT-ID-MSG-KEY))))
+    (require-capability (INTERNAL (at "id" token)))
 
     (enforce (= (at 'precision token) 0) "Precision must be 0 for proof-of-us tokens")
 
@@ -333,7 +320,7 @@
     )
   )
 
-  (defun validate-collection (event-id:string collection-id:string)
+  (defun validate-event-collection (event-id:string collection-id:string)
     (let* ((event:object{event-schema} (get-event event-id)))
       (enforce (= collection-id (at 'collection-id event)) "Event does not belong to this collection")
     )

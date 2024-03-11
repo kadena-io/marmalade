@@ -93,7 +93,6 @@
   (expect "event created events"
     [
       {"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.EVENT","params": [(read-msg 'collection_id) (read-msg 'event_id) (read-msg 'name) (read-msg 'uri)]}
-      ,{"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.TOKEN_CREATION","params": [(read-msg 'event_id)]}
       ,{"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": [(read-msg 'collection_id) (read-msg 'token_id)]}
       ,{"name": "marmalade-v2.ledger.TOKEN","params": [(read-msg 'token_id) 0 [marmalade-v2.collection-policy-v1 n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us] (read-msg 'uri) (create-capability-guard (EVENT (read-msg 'collection_id) (read-msg 'event_id) (read-msg 'name) (read-msg 'uri)))]}
       ]
@@ -222,7 +221,6 @@
   (expect "successfully create a group connection"
     "t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU"
     (create-and-mint-connection-token
-      (read-msg 'event_id)
       (read-msg 'uri)
       [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)]
     )
@@ -231,7 +229,6 @@
   (expect "events"
     [
       {"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.CONNECT","params": ["proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4" (read-msg 'uri)]}
-      ,{"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.TOKEN_CREATION","params": ["proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"]}
       ,{"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:mhjYGlB0OrhjM8pxHrFTkBFLnP2tZHdr8gU5QH3cuvo" "t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU"]}
       ,{"name": "marmalade-v2.ledger.TOKEN","params": ["t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU" 0 TOKEN-POLICIES (read-msg 'uri) (create-capability-guard (CONNECT (read-msg 'event_id) (read-msg 'uri))) ]}
       ,{"name": "marmalade-v2.ledger.MINT","params": ["t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU" (read-msg 'attendant_1) 1.0]}
@@ -310,7 +307,6 @@
   (expect-failure "failed to create the same connection again"
     "Failure: Database exception: Insert: row found for key t:tm8ASdLUsJbfEeDnmj1-sg4BgtzH2zdfDbr-k5AWvAU"
     (create-and-mint-connection-token
-      (read-msg 'event_id)
       (read-msg 'uri)
       [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)]
     )
@@ -393,7 +389,6 @@
   (expect-failure "failed to create connection"
     "At least 2 connections are required to mint a connection token"
     (create-and-mint-connection-token
-      (read-msg 'event_id)
       (read-msg 'uri)
       [(read-keyset 'attendant_1_guard)]
     )
@@ -463,7 +458,6 @@
   (expect-failure "failed to mint"
     "Minting is not allowed outside of event time"
     (create-and-mint-connection-token
-      (read-msg 'event_id)
       (read-msg 'uri)
       [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)]
     )
@@ -546,7 +540,6 @@
   (expect-failure "successfully create a group connection"
     "Event does not belong to this collection"
     (create-and-mint-connection-token
-      (read-msg 'event_id)
       (read-msg 'uri)
       [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)]
     )
@@ -648,7 +641,6 @@
   (expect "successfully create a group connection"
     "t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U"
     (create-and-mint-connection-token
-      ""
       (read-msg 'uri)
       [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)]
     )
@@ -657,7 +649,6 @@
   (expect "events"
     [
       {"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.CONNECT","params": ["" (read-msg 'uri)]}
-      ,{"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.TOKEN_CREATION","params": [""]}
       ,{"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:mhjYGlB0OrhjM8pxHrFTkBFLnP2tZHdr8gU5QH3cuvo" "t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U"]}
       ,{"name": "marmalade-v2.ledger.TOKEN","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" 0 TOKEN-POLICIES (read-msg 'uri) (create-capability-guard (CONNECT "" (read-msg 'uri))) ]}
       ,{"name": "marmalade-v2.ledger.MINT","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" (read-msg 'attendant_1) 1.0]}

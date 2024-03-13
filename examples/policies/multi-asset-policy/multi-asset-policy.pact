@@ -66,7 +66,11 @@
   )  
   
   (defun get-assets:[string] (token-id:string)
-    (try [] (at 'assets (read token-assets token-id)))
+    (with-default-read token-assets token-id 
+      { 'assets: [] } 
+      { 'assets := assets } 
+      assets
+    )
   )
 
   (defun propose-asset:bool (token-id:string uri:string)
@@ -99,11 +103,15 @@
   )
 
   (defun get-proposed-assets:[string] (token-id:string)
-    (try [] (at 'assets (read proposed-assets token-id)))
+    (with-default-read proposed-assets token-id 
+      { 'assets: [] } 
+      { 'assets := assets } 
+      assets
+    )
   )
 
   (defun get-proposed-asset:string (token-id:string asset-id:integer)
-    (try "" (at asset-id (get-proposed-assets token-id)))
+    (at asset-id (get-proposed-assets token-id))
   )
 
   (defun reject-proposed-asset:bool (token-id:string asset-id:integer owner:string)

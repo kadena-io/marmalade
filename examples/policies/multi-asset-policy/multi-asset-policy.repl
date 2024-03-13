@@ -64,8 +64,8 @@
 
   (expect "events"
     [ 
-      {"name": "marmalade-examples.multi-asset-policy.ASSET_ACCEPTED","params": [(read-msg 'token-id) 0 "ipfs://1"]} 
-      ,{"name": "marmalade-examples.multi-asset-policy.ASSET_ACCEPTED","params": [(read-msg 'token-id) 1 "ipfs://2"]} 
+      {"name": "marmalade-examples.multi-asset-policy.ASSET_SET","params": [(read-msg 'token-id) 0 "ipfs://1"]} 
+      ,{"name": "marmalade-examples.multi-asset-policy.ASSET_SET","params": [(read-msg 'token-id) 1 "ipfs://2"]} 
       ,{"name": "marmalade-v2.ledger.TOKEN","params": [(read-msg 'token-id) 0 [marmalade-examples.multi-asset-policy] "multi-asset-policy-fungible" ALWAYS-TRUE]} 
     ]
     (map (remove "module-hash")  (env-events true)))
@@ -89,15 +89,15 @@
     "Token does not have non-fungible policy"
     (propose-asset (read-msg 'token-id) "ipfs://1"))
 
-  (expect-failure "should not allow rejecting pending assets"
+  (expect-failure "should not allow rejecting proposed assets"
     "Token does not have non-fungible policy"
     (reject-proposed-asset (read-msg 'token-id) 0 "k:owner"))
 
-  (expect-failure "should not allow rejecting all pending assets"
+  (expect-failure "should not allow rejecting all proposed assets"
     "Token does not have non-fungible policy"
     (reject-all-proposed-assets (read-msg 'token-id) "k:owner"))
 
-  (expect-failure "should not allow accepting pending asset"
+  (expect-failure "should not allow accepting proposed asset"
     "Token does not have non-fungible policy"
     (accept-asset (read-msg 'token-id) 0 "k:owner"))
 
@@ -153,6 +153,7 @@
     ,"replaced-asset": "ipfs://1-replaced"
     ,"owner": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
     ,"owner-guard": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
+    ,"operator_guard": {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
   } )
 
   (env-sigs [
@@ -173,10 +174,10 @@
 
   (env-sigs [
     { 'key: "e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
-     ,'caps: []}
+     ,'caps: [(marmalade-examples.multi-asset-policy.ASSET_PROPOSED (read-msg 'token-id) 0 (read-msg 'new-asset) (read-keyset 'operator_guard))]}
   ])
 
-  (expect "no pending assets at the begining"
+  (expect "no proposed assets at the begining"
     []
     (get-proposed-assets (read-msg 'token-id))
   )
@@ -186,7 +187,7 @@
     (propose-asset (read-msg 'token-id) (read-msg 'new-asset)))
 
   (expect "events"
-    [{"name": "marmalade-examples.multi-asset-policy.ASSET_PROPOSED","params": [(read-msg 'token-id) 0 (read-msg 'new-asset)]}]
+    [{"name": "marmalade-examples.multi-asset-policy.ASSET_PROPOSED","params": [(read-msg 'token-id) 0 (read-msg 'new-asset) (read-keyset 'operator_guard)]}]
     (map (remove "module-hash")  (env-events true)))
   
   (expect "get previously added asset"
@@ -202,12 +203,17 @@
     "Must be different URI"
     (replace-proposed-asset (read-msg 'token-id) 0 (read-msg 'new-asset)))
 
+  (env-sigs [
+    { 'key: "e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+      ,'caps: [(marmalade-examples.multi-asset-policy.ASSET_PROPOSED (read-msg 'token-id) 0 (read-msg 'replaced-asset) (read-keyset 'operator_guard))]}
+  ])
+
   (expect "asset URI sucessfully replaced"
     true
     (replace-proposed-asset (read-msg 'token-id) 0 (read-msg 'replaced-asset)))
 
   (expect "events"
-    [{"name": "marmalade-examples.multi-asset-policy.ASSET_PROPOSED","params": [(read-msg 'token-id) 0 (read-msg 'replaced-asset)]}]
+    [{"name": "marmalade-examples.multi-asset-policy.ASSET_PROPOSED","params": [(read-msg 'token-id) 0 (read-msg 'replaced-asset) (read-keyset 'operator_guard)]}]
     (map (remove "module-hash")  (env-events true)))
 
 (commit-tx)
@@ -225,30 +231,34 @@
     "token-id": (create-token-id { 'uri: "multi-asset-policy-non-fungible", 'precision: 0, 'policies: [marmalade-examples.multi-asset-policy marmalade-v2.non-fungible-policy-v1] } ALWAYS-TRUE)
     ,"replaced-asset": "ipfs://1-replaced"
     ,"owner": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
+    ,"operator_guard": {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
   } )
 
   (env-sigs [
     { 'key: "6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
-     ,'caps: []}
+     ,'caps: [(marmalade-examples.multi-asset-policy.ASSET_REJECTED (read-msg 'token-id) 0 (read-msg 'replaced-asset) (read-msg 'owner))]}
   ])
 
-  (expect "reject pending asset"
+  (expect "reject proposed asset"
     true
     (reject-proposed-asset (read-msg 'token-id) 0 (read-msg 'owner))
   )
 
   (expect "events"
-    [{"name": "marmalade-examples.multi-asset-policy.ASSET_REJECTED","params": [(read-msg 'token-id) 0 (read-msg 'replaced-asset)]}]
+    [{"name": "marmalade-examples.multi-asset-policy.ASSET_REJECTED","params": [(read-msg 'token-id) 0 (read-msg 'replaced-asset) (read-msg 'owner)]}]
     (map (remove "module-hash")  (env-events true)))
 
-  (expect "no pending assets after rejecting"
+  (expect "no proposed assets after rejecting"
     []
     (get-proposed-assets (read-msg 'token-id))
   )
 
   (env-sigs [
     { 'key: "e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
-     ,'caps: []}
+     ,'caps: [
+      (marmalade-examples.multi-asset-policy.ASSET_PROPOSED (read-msg 'token-id) 0 "ipfs://1" (read-keyset 'operator_guard))
+      ,(marmalade-examples.multi-asset-policy.ASSET_PROPOSED (read-msg 'token-id) 1 "ipfs://2" (read-keyset 'operator_guard))
+    ]}
   ])
 
   (expect "new asset successfully proposed"
@@ -261,25 +271,28 @@
 
   (expect "events"
     [
-      {"name": "marmalade-examples.multi-asset-policy.ASSET_PROPOSED","params": [(read-msg 'token-id) 0 "ipfs://1"]}
-      ,{"name": "marmalade-examples.multi-asset-policy.ASSET_PROPOSED","params": [(read-msg 'token-id) 1 "ipfs://2"]}
+      {"name": "marmalade-examples.multi-asset-policy.ASSET_PROPOSED","params": [(read-msg 'token-id) 0 "ipfs://1" (read-keyset 'operator_guard)]}
+      ,{"name": "marmalade-examples.multi-asset-policy.ASSET_PROPOSED","params": [(read-msg 'token-id) 1 "ipfs://2" (read-keyset 'operator_guard)]}
     ]
     (map (remove "module-hash")  (env-events true)))
 
   (env-sigs [
     { 'key: "6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
-     ,'caps: []}
+      ,'caps: [
+        (marmalade-examples.multi-asset-policy.ASSET_REJECTED (read-msg 'token-id) 0 "ipfs://1" (read-msg 'owner))
+        ,(marmalade-examples.multi-asset-policy.ASSET_REJECTED (read-msg 'token-id) 1 "ipfs://2" (read-msg 'owner))
+      ]}
   ])
 
-  (expect "reject all pending assets"
+  (expect "reject all proposed assets"
     true
     (reject-all-proposed-assets (read-msg 'token-id) (read-msg 'owner))
   )
 
   (expect "events"
     [
-      {"name": "marmalade-examples.multi-asset-policy.ASSET_REJECTED","params": [(read-msg 'token-id) 0 "ipfs://1"]}
-      ,{"name": "marmalade-examples.multi-asset-policy.ASSET_REJECTED","params": [(read-msg 'token-id) 1 "ipfs://2"]}
+      {"name": "marmalade-examples.multi-asset-policy.ASSET_REJECTED","params": [(read-msg 'token-id) 0 "ipfs://1" (read-msg 'owner)]}
+      ,{"name": "marmalade-examples.multi-asset-policy.ASSET_REJECTED","params": [(read-msg 'token-id) 1 "ipfs://2" (read-msg 'owner)]}
     ]
     (map (remove "module-hash")  (env-events true)))
   
@@ -297,11 +310,16 @@
   (env-data {
     "token-id": (create-token-id { 'uri: "multi-asset-policy-non-fungible", 'precision: 0, 'policies: [marmalade-examples.multi-asset-policy marmalade-v2.non-fungible-policy-v1] } ALWAYS-TRUE)
     ,"owner": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
+    ,"operator_guard": {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
   } )
 
   (env-sigs [
     { 'key: "e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
-      ,'caps: []}
+     ,'caps: [
+      (marmalade-examples.multi-asset-policy.ASSET_PROPOSED (read-msg 'token-id) 0 "ipfs://1" (read-keyset 'operator_guard))
+      ,(marmalade-examples.multi-asset-policy.ASSET_PROPOSED (read-msg 'token-id) 1 "ipfs://2" (read-keyset 'operator_guard))
+      ,(marmalade-examples.multi-asset-policy.ASSET_PROPOSED (read-msg 'token-id) 2 "ipfs://3" (read-keyset 'operator_guard))
+    ]}
   ])
 
   (expect "new asset successfully proposed"
@@ -318,9 +336,9 @@
 
   (expect "events"
     [
-      {"name": "marmalade-examples.multi-asset-policy.ASSET_PROPOSED","params": [(read-msg 'token-id) 0 "ipfs://1"]},
-      {"name": "marmalade-examples.multi-asset-policy.ASSET_PROPOSED","params": [(read-msg 'token-id) 1 "ipfs://2"]},
-      {"name": "marmalade-examples.multi-asset-policy.ASSET_PROPOSED","params": [(read-msg 'token-id) 2 "ipfs://3"]}
+      {"name": "marmalade-examples.multi-asset-policy.ASSET_PROPOSED","params": [(read-msg 'token-id) 0 "ipfs://1" (read-keyset 'operator_guard)]},
+      {"name": "marmalade-examples.multi-asset-policy.ASSET_PROPOSED","params": [(read-msg 'token-id) 1 "ipfs://2" (read-keyset 'operator_guard)]},
+      {"name": "marmalade-examples.multi-asset-policy.ASSET_PROPOSED","params": [(read-msg 'token-id) 2 "ipfs://3" (read-keyset 'operator_guard)]}
     ]
     (map (remove "module-hash")  (env-events true)))
 
@@ -331,29 +349,33 @@
 
   (env-sigs [
     { 'key: "6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
-      ,'caps: []}
+      ,'caps: [
+        (marmalade-examples.multi-asset-policy.ASSET_ACCEPTED (read-msg 'token-id) 0 "ipfs://1" (read-msg 'owner))
+        ,(marmalade-examples.multi-asset-policy.ASSET_ACCEPTED (read-msg 'token-id) 1 "ipfs://2" (read-msg 'owner))
+        ,(marmalade-examples.multi-asset-policy.ASSET_ACCEPTED (read-msg 'token-id) 2 "ipfs://3" (read-msg 'owner))
+      ]}
   ])
 
-  (expect "accept pending asset"
+  (expect "accept proposed asset"
     true
     (accept-asset (read-msg 'token-id) 0 (read-msg 'owner))
   )
 
-  (expect "accept pending asset"
+  (expect "accept proposed asset"
     true
     (accept-asset (read-msg 'token-id) 1 (read-msg 'owner))
   )
 
-  (expect "accept pending asset"
+  (expect "accept proposed asset"
     true
     (accept-asset (read-msg 'token-id) 2 (read-msg 'owner))
   )
 
   (expect "events"
     [
-      {"name": "marmalade-examples.multi-asset-policy.ASSET_ACCEPTED", "params": [(read-msg 'token-id) 0 "ipfs://1"]},
-      {"name": "marmalade-examples.multi-asset-policy.ASSET_ACCEPTED", "params": [(read-msg 'token-id) 1 "ipfs://2"]},
-      {"name": "marmalade-examples.multi-asset-policy.ASSET_ACCEPTED", "params": [(read-msg 'token-id) 2 "ipfs://3"]}
+      {"name": "marmalade-examples.multi-asset-policy.ASSET_ACCEPTED", "params": [(read-msg 'token-id) 0 "ipfs://1" (read-msg 'owner)]},
+      {"name": "marmalade-examples.multi-asset-policy.ASSET_ACCEPTED", "params": [(read-msg 'token-id) 1 "ipfs://2" (read-msg 'owner)]},
+      {"name": "marmalade-examples.multi-asset-policy.ASSET_ACCEPTED", "params": [(read-msg 'token-id) 2 "ipfs://3" (read-msg 'owner)]}
     ]
     (map (remove "module-hash")  (env-events true)))
   
@@ -393,24 +415,38 @@
     ["ipfs://1" "ipfs://2" "ipfs://3"]
     (get-assets (read-msg 'token-id)))
 
+  (env-sigs [
+    { 'key: "6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
+      ,'caps: [
+        (marmalade-examples.multi-asset-policy.ASSET_PRIORITY_SET (read-msg 'token-id) (read-integer 'new-priority) "ipfs://2" (read-msg 'owner))
+      ]}
+  ])
+
   (expect "successfully set new priority"
     true
     (set-asset-priority (read-msg 'token-id) (read-integer 'target-asset-id) (read-integer 'new-priority) (read-msg 'owner) ))
  
   (expect "events"
-    [{"name": "marmalade-examples.multi-asset-policy.ASSET_PRIORITY_SET", "params": [(read-msg 'token-id) (read-integer 'new-priority) "ipfs://2"]}]
+    [{"name": "marmalade-examples.multi-asset-policy.ASSET_PRIORITY_SET", "params": [(read-msg 'token-id) (read-integer 'new-priority) "ipfs://2" (read-msg 'owner)]}]
     (map (remove "module-hash")  (env-events true)))
 
   (expect "successfully get all asset URIs"
     ["ipfs://2" "ipfs://3" "ipfs://1"]
     (get-assets (read-msg 'token-id)))
 
+  (env-sigs [
+    { 'key: "6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
+      ,'caps: [
+        (marmalade-examples.multi-asset-policy.ASSET_PRIORITY_SET (read-msg 'token-id) 2 "ipfs://2" (read-msg 'owner))
+      ]}
+  ])
+
   (expect "successfully set new priority"
     true
     (set-asset-priority (read-msg 'token-id) 0 2 (read-msg 'owner) ))
  
   (expect "events"
-    [{"name": "marmalade-examples.multi-asset-policy.ASSET_PRIORITY_SET", "params": [(read-msg 'token-id) 2 "ipfs://2"]}]
+    [{"name": "marmalade-examples.multi-asset-policy.ASSET_PRIORITY_SET", "params": [(read-msg 'token-id) 2 "ipfs://2" (read-msg 'owner)]}]
     (map (remove "module-hash")  (env-events true)))
 
   (expect "successfully get all asset URIs"

@@ -19,32 +19,39 @@
   (defconst OPERATOR-GUARD-MSG-KEY:string "operator_guard")
   (defconst ASSETS-MSG-KEY:string "assets")
 
-  (defcap ASSET_PROPOSED (token-id:string asset-id:integer uri:string)
+  (defcap ASSET_PROPOSED (token-id:string asset-id:integer uri:string operator-guard:guard)
     @doc "Emitted when new asset is proposed"
     @event
 
-    true
+    (enforce-guard operator-guard)
   )
   
-  (defcap ASSET_REJECTED (token-id:string asset-id:integer uri:string)
+  (defcap ASSET_REJECTED (token-id:string asset-id:integer uri:string owner:string)
     @doc "Emitted when the asset has been rejected"
     @event
     
-    true
+    (enforce-guard (marmalade-v2.ledger.account-guard token-id owner))
   )
   
-  (defcap ASSET_ACCEPTED (token-id:string asset-id:integer uri:string)
+  (defcap ASSET_ACCEPTED (token-id:string asset-id:integer uri:string owner:string)
     @doc "Emitted when the asset has been accepted"
     @event
 
-    true
+    (enforce-guard (marmalade-v2.ledger.account-guard token-id owner))
   )
 
-  (defcap ASSET_PRIORITY_SET (token-id:string asset-id:integer uri:string)
-    @doc "Emitted when new asset priority is set"
+  (defcap ASSET_SET (token-id:string asset-id:integer uri:string)
+    @doc "Emitted at init for fungible tokens"
     @event
 
     true
+  )
+
+  (defcap ASSET_PRIORITY_SET (token-id:string asset-id:integer uri:string owner:string)
+    @doc "Emitted when new asset priority is set"
+    @event
+
+    (enforce-guard (marmalade-v2.ledger.account-guard token-id owner))
   )
 
   (defschema token-asset-schema 
@@ -76,29 +83,33 @@
   (defun propose-asset:bool (token-id:string uri:string)
     (enforce-non-fungible-policy token-id)
     (enforce (not (= uri "")) "URI cannot be empty")
-    (enforce-guard (at 'guard (read token-operators token-id)))
     (let* (
       (assets:[string] (+ (get-proposed-assets token-id) [uri]))
-      (asset-id:integer (- (length assets) 1)) 
+      (asset-id:integer (- (length assets) 1))
+      (operator-guard:guard (at 'guard (read token-operators token-id)))
     )
-      (write proposed-assets token-id { 'assets: assets })
-      (emit-event (ASSET_PROPOSED token-id asset-id uri))
-      true
+      (with-capability (ASSET_PROPOSED token-id asset-id uri operator-guard)
+        (write proposed-assets token-id { 'assets: assets })
+        true
+      )
     )
   )
 
   (defun replace-proposed-asset:bool (token-id:string asset-id:integer uri:string)
     (enforce-non-fungible-policy token-id)
     (enforce (not (= uri "")) "URI cannot be empty")
-    (enforce-guard (at 'guard (read token-operators token-id)))
 
-    (let ((assets:[string] (get-proposed-assets token-id)))
+    (let (
+      (assets:[string] (get-proposed-assets token-id))
+      (operator-guard:guard (at 'guard (read token-operators token-id)))
+    )
       (enforce (> (length assets) asset-id) "Invalid asset ID")
       (enforce (not (= uri (at asset-id assets))) "Must be different URI")
 
-      (write proposed-assets token-id { 'assets: (update-array assets asset-id uri) })
-      (emit-event (ASSET_PROPOSED token-id asset-id uri))
-      true
+      (with-capability (ASSET_PROPOSED token-id asset-id uri operator-guard)
+        (write proposed-assets token-id { 'assets: (update-array assets asset-id uri) })
+        true
+      )
     )
   )
 
@@ -116,7 +127,6 @@
 
   (defun reject-proposed-asset:bool (token-id:string asset-id:integer owner:string)
     (enforce-non-fungible-policy token-id)
-    (enforce-guard (marmalade-v2.ledger.account-guard token-id owner))
 
     (let ((balance:decimal (marmalade-v2.ledger.get-balance token-id owner)))
       (enforce (= balance 1.0) "Token not owned")
@@ -124,17 +134,17 @@
 
     (let ((assets:[string] (get-proposed-assets token-id)))
       (enforce (>= (- (length assets) 1) asset-id) "Invalid asset ID")
-      (let ((updated-assets:[string] (filter (lambda (index:integer) (not (= index asset-id))) (enumerate 0 (- (length assets) 1)))))
-        (write proposed-assets token-id { 'assets: updated-assets })
-        (emit-event (ASSET_REJECTED token-id asset-id (at asset-id assets)))
-        true
+      (with-capability (ASSET_REJECTED token-id asset-id (at asset-id assets) owner)
+        (let ((updated-assets:[string] (filter (lambda (index:integer) (not (= index asset-id))) (enumerate 0 (- (length assets) 1)))))
+          (write proposed-assets token-id { 'assets: updated-assets })
+          true
+        )
       )
     )
   )
 
   (defun reject-all-proposed-assets:bool (token-id:string owner:string)
     (enforce-non-fungible-policy token-id)
-    (enforce-guard (marmalade-v2.ledger.account-guard token-id owner))
 
     (let (
       (balance:decimal (marmalade-v2.ledger.get-balance token-id owner))
@@ -144,7 +154,10 @@
 
       (map 
         (lambda (asset-id:integer)
-          (emit-event (ASSET_REJECTED token-id asset-id (at asset-id assets)))
+          (with-capability (ASSET_REJECTED token-id asset-id (at asset-id assets) owner)
+            true
+          )
+
         ) 
       (enumerate 0 (- (length assets) 1)))
 
@@ -156,7 +169,6 @@
 
   (defun accept-asset:bool (token-id:string asset-id:integer owner:string)
     (enforce-non-fungible-policy token-id)
-    (enforce-guard (marmalade-v2.ledger.account-guard token-id owner))
 
     (let (
       (balance:decimal (marmalade-v2.ledger.get-balance token-id owner))
@@ -165,15 +177,15 @@
     )
       (enforce (= balance 1.0) "Token not owned")
 
-      (write token-assets token-id { 'assets: (+ assets [uri]) })
-      (emit-event (ASSET_ACCEPTED token-id asset-id uri))
-      true  
+      (with-capability (ASSET_ACCEPTED token-id asset-id uri owner)
+        (write token-assets token-id { 'assets: (+ assets [uri]) })
+        true  
+      )
     )
   )
 
   (defun set-asset-priority (token-id:string asset-id:integer priority:integer owner:string)
     (enforce-non-fungible-policy token-id)
-    (enforce-guard (marmalade-v2.ledger.account-guard token-id owner))
 
     (let* (
       (balance:decimal (marmalade-v2.ledger.get-balance token-id owner))
@@ -185,11 +197,10 @@
     )
       (enforce (= balance 1.0) "Token not owned")
 
-      (write token-assets token-id { 'assets: (+ truncated-assets [asset-to-be-replaced]) })
-
-      (emit-event (ASSET_PRIORITY_SET token-id priority target-asset))
-
-      true
+      (with-capability (ASSET_PRIORITY_SET token-id priority target-asset owner)
+        (write token-assets token-id { 'assets: (+ truncated-assets [asset-to-be-replaced]) })
+        true
+      )
     )
   
   )
@@ -281,7 +292,7 @@
 
       (map
         (lambda (asset-id:integer)
-          (emit-event (ASSET_ACCEPTED (at 'id token) asset-id (at asset-id assets)))
+          (emit-event (ASSET_SET (at 'id token) asset-id (at asset-id assets)))
         ) 
       (enumerate 0 (- (length assets) 1)))
       true

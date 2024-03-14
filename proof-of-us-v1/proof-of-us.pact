@@ -190,8 +190,8 @@
         ]
       )
       (with-capability (CONNECT event-id uri)
+        (map (enforce-pou-guard) connection-guards)
         (with-capability (INTERNAL token-id)
-          (map (enforce-pou-guard) connection-guards)
           (with-capability (COLLECTION_OPERATOR)
             ; Create the connection token
             (create-token

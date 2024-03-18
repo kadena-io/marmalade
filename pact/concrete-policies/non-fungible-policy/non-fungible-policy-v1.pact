@@ -10,6 +10,7 @@
     (enforce-guard ADMIN-KS))
 
   (implements kip.token-policy-v2)
+  (implements kip.updatable-uri-policy-v1)
   (use policy-manager)
   (use kip.token-policy-v2 [token-info])
 
@@ -76,6 +77,12 @@
       receiver:string
       amount:decimal )
     true
+  )
+
+  (defun enforce-update-uri:bool
+    ( token:object{token-info}
+      new-uri:string )
+      true
   )
 
 )

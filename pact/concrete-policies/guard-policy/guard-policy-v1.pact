@@ -9,10 +9,13 @@
     (enforce-guard ADMIN-KS))
 
   (implements kip.token-policy-v2)
+  (implements kip.updatable-uri-policy-v1)
+
   (use kip.token-policy-v2 [token-info])
   (use policy-manager)
 
   (defschema guards
+    uri-guard:guard
     mint-guard:guard
     burn-guard:guard
     sale-guard:guard
@@ -21,6 +24,7 @@
 
   (deftable policy-guards:{guards})
 
+  (defconst URI-GUARD-MSG-KEY:string "uri_guard")
   (defconst MINT-GUARD-MSG-KEY:string "mint_guard")
   (defconst BURN-GUARD-MSG-KEY:string "burn_guard")
   (defconst SALE-GUARD-MSG-KEY:string "sale_guard")
@@ -49,6 +53,10 @@
 
   (defcap TRANSFER (token-id:string sender:string receiver:string amount:decimal)
     (enforce-guard (get-transfer-guard token-id))
+  )
+
+  (defcap UPDATE-URI (token-id:string new-uri:string)
+    (enforce-guard (get-uri-guard token-id))
   )
 
   (defun success:bool ()
@@ -92,6 +100,14 @@
     )
   )
 
+  (defun get-uri-guard:guard (token-id:string)
+    (with-read policy-guards token-id {
+      "uri-guard":= uri-guard
+    }
+    uri-guard
+    )
+  )
+
   (defun get-guards:object{guards} (token:object{token-info})
     (read policy-guards (at 'id token))
   )
@@ -102,6 +118,7 @@
     @doc "Executed at `create-token` step of marmalade.ledger. Registers  guards for \
     \ 'mint', 'burn', 'sale', 'transfer' operations of the created token.            \
     \ Required msg-data keys:                                                        \
+    \ * (optional) uri-guard:string -  uri-guard and adds failure guard if absent. \
     \ * (optional) mint_guard:string -  mint-guard and adds success guard if absent. \
     \ * (optional) burn_guard:string -  burn-guard and adds success guard if absent. \
     \ * (optional) sale_guard:string -  sale-guard and adds success guard if absent. \
@@ -109,7 +126,8 @@
     \ the created token"
     (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) guard-policy-v1))
     (let ((guards:object{guards}
-      { 'mint-guard: (try GUARD_SUCCESS (read-msg MINT-GUARD-MSG-KEY) ) ;; type error becomes successful guard
+      { 'uri-guard: (try GUARD_SUCCESS (read-msg URI-GUARD-MSG-KEY) ) ;; type error becomes failing guard
+      , 'mint-guard: (try GUARD_SUCCESS (read-msg MINT-GUARD-MSG-KEY) ) ;; type error becomes successful guard
       , 'burn-guard: (try GUARD_SUCCESS (read-msg BURN-GUARD-MSG-KEY) )
       , 'sale-guard: (try GUARD_SUCCESS (read-msg SALE-GUARD-MSG-KEY) )
       , 'transfer-guard: (try GUARD_SUCCESS (read-msg TRANSFER-GUARD-MSG-KEY) ) } ))
@@ -190,6 +208,15 @@
       amount:decimal )
     (require-capability (TRANSFER-CALL (at "id" token) sender receiver amount guard-policy-v1))
     (with-capability (TRANSFER (at 'id token) sender receiver amount)
+      true
+    )
+  )
+
+  (defun enforce-update-uri:bool
+    ( token:object{token-info}
+      new-uri:string )
+    (require-capability (UPDATE-URI-CALL (at "id" token) new-uri))
+    (with-capability (UPDATE-URI (at 'id token) new-uri)
       true
     )
   )

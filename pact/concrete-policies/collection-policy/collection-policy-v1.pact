@@ -11,6 +11,7 @@
     (enforce-guard ADMIN-KS))
 
   (implements kip.token-policy-v2)
+  (implements kip.updatable-uri-policy-v1)
 
   (use policy-manager)
   (use kip.token-policy-v2 [token-info])
@@ -21,7 +22,6 @@
     size:integer
     max-size:integer
     operator-guard:guard
-    operator-account:string
   )
 
   (defschema token
@@ -34,7 +34,7 @@
 
   (defconst COLLECTION-ID-MSG-KEY:string "collection_id")
 
-  (defcap COLLECTION:bool (collection-id:string collection-name:string collection-size:integer operator-guard:guard operator-account:string)
+  (defcap COLLECTION:bool (collection-id:string collection-name:string collection-size:integer operator-guard:guard)
     @doc "Capability to grant creation of a collection and emit COLLECTION event for discovery"
     @event
     (enforce-guard operator-guard)
@@ -50,27 +50,25 @@
   )
 
   (defun create-collection:bool
-    ( collection-name:string
+    ( collection-id:string
+      collection-name:string
       collection-size:integer
       operator-guard:guard
-      operator-account:string
       )
       @doc "Executed directly on the policy, required to succeed before `create-token` \
       \ step for collection tokens and emits COLLECTION event for discovery"
       (enforce (>= collection-size 0) "Collection size must be positive")
-      (enforce (validate-principal operator-guard operator-account) "Incorrect account guard, only principal accounts allowed")
-      (let ((collection-id:string (create-collection-id collection-name operator-guard) ))
-        (with-capability (COLLECTION collection-id collection-name collection-size operator-guard operator-account)
-          (insert collections collection-id {
-          "id": collection-id
-          ,"name": collection-name
-          ,"max-size": collection-size
-          ,"size": 0
-          ,"operator-guard": operator-guard
-          ,"operator-account": operator-account
-          })
-          true
-      ))
+      (enforce (= collection-id (create-collection-id collection-name operator-guard) ) "collection id violation")
+      (with-capability (COLLECTION collection-id collection-name collection-size operator-guard)
+        (insert collections collection-id {
+        "id": collection-id
+        ,"name": collection-name
+        ,"max-size": collection-size
+        ,"size": 0
+        ,"operator-guard": operator-guard
+        })
+        true
+      )
   )
 
   (defun enforce-init:bool (token:object{token-info})
@@ -162,10 +160,16 @@
     true
   )
 
+
+  (defun enforce-update-uri:bool
+    ( token:object{token-info}
+      new-uri:string )
+      true
+  )
   ;;UTILITY FUNCTIONS
 
   (defun create-collection-id:string (collection-name:string operator-guard:guard)
-    (format "collection:{}" [(hash [collection-name operator-guard])])
+    (format "collection:{}" [(hash [collection-name operator-guard (at 'chain-id (chain-data))])])
   )
 
   (defun get-collection:object{collection} (collection-id:string )

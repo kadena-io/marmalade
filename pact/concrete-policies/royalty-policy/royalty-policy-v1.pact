@@ -13,6 +13,8 @@
   (use policy-manager [QUOTE-MSG-KEY quote-spec quote-schema])
 
   (implements kip.token-policy-v2)
+  (implements kip.updatable-uri-policy-v1)
+
   (use kip.token-policy-v2 [token-info])
 
   (defschema royalty-schema
@@ -163,11 +165,16 @@
     (enforce false "Transfer prohibited")
   )
 
+  (defun enforce-update-uri:bool
+    ( token:object{token-info}
+      new-uri:string )
+    true
+  )
 )
 
 
 (if (read-msg 'upgrade)
   ["upgrade complete"]
   [ (create-table royalties)])
-  
+
 (enforce-guard ADMIN-KS)

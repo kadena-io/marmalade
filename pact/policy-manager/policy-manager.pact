@@ -9,9 +9,9 @@
 
   (use kip.token-policy-v2 [token-info])
   (use util.fungible-util)
-  (use ledger-v1)
+  (use ledger-v2)
 
-  (defun init:bool(ledger:module{ledger-v1})
+  (defun init:bool(ledger:module{ledger-v2})
     @doc "Must be initiated with ledger implementation"
     (with-capability (GOVERNANCE)
       (insert ledgers "" {
@@ -111,6 +111,10 @@
     true
   )
 
+  (defcap UPDATE-URI-CALL:bool (id:string new-uri:string)
+    true
+  )
+
   (defcap SALE-GUARD-CALL:bool (sale-id:string price:decimal)
     true
   )
@@ -135,7 +139,7 @@
 
   ; Saves reference to ledger
   (defschema ledger
-    ledger-impl:module{ledger-v1}
+    ledger-impl:module{ledger-v2}
   )
 
   (deftable ledgers:{ledger}
@@ -212,7 +216,7 @@
 
   (defun enforce-init:[bool]
     (token:object{token-info})
-    (let ((ledger:module{ledger-v1} (retrieve-ledger)))
+    (let ((ledger:module{ledger-v2} (retrieve-ledger)))
       (require-capability (ledger::INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
     )
 
@@ -229,7 +233,7 @@
       guard:guard
       amount:decimal
     )
-    (let ((ledger:module{ledger-v1} (retrieve-ledger)))
+    (let ((ledger:module{ledger-v2} (retrieve-ledger)))
       (require-capability (ledger::MINT-CALL (at "id" token) account amount))
     )
     (map (lambda (policy:module{kip.token-policy-v2})
@@ -244,7 +248,7 @@
       account:string
       amount:decimal
     )
-    (let ((ledger:module{ledger-v1} (retrieve-ledger)))
+    (let ((ledger:module{ledger-v2} (retrieve-ledger)))
       (require-capability (ledger::BURN-CALL (at "id" token) account amount))
     )
     (map (lambda (policy:module{kip.token-policy-v2})
@@ -265,7 +269,7 @@
     \ * (optional) quote:object{quote-spec} - sale is registered as a quoted fungible \
     \ sale if present. If absent, sale proceeds without quotes."
 
-    (let ((ledger:module{ledger-v1} (retrieve-ledger)))
+    (let ((ledger:module{ledger-v2} (retrieve-ledger)))
       (require-capability (ledger::OFFER-CALL (at "id" token) seller amount timeout sale-id))
     )
 
@@ -313,7 +317,7 @@
       timeout:integer
       sale-id:string )
     @doc " Executed at `withdraw` step of marmalade.ledger."
-    (let ((ledger:module{ledger-v1} (retrieve-ledger)))
+    (let ((ledger:module{ledger-v2} (retrieve-ledger)))
       (require-capability (ledger::WITHDRAW-CALL (at "id" token) seller amount timeout sale-id))
     )
     (enforce-sale-pact sale-id)
@@ -354,7 +358,7 @@
     (enforce-sale-pact sale-id)
 
     ;; enforce function is called from ledger
-    (let ((ledger:module{ledger-v1} (retrieve-ledger)))
+    (let ((ledger:module{ledger-v2} (retrieve-ledger)))
       (require-capability (ledger::BUY-CALL (at "id" token) seller buyer amount sale-id))
     )
 
@@ -446,12 +450,25 @@
       guard:guard
       receiver:string
       amount:decimal )
-    (let ((ledger:module{ledger-v1} (retrieve-ledger)))
+    (let ((ledger:module{ledger-v2} (retrieve-ledger)))
       (require-capability (ledger::TRANSFER-CALL (at "id" token) sender receiver amount))
     )
     (map (lambda (policy:module{kip.token-policy-v2})
       (with-capability (TRANSFER-CALL (at "id" token) sender receiver amount policy)
         (policy::enforce-transfer token sender guard receiver amount)
+      )
+    ) (at 'policies token))
+  )
+
+  (defun enforce-update-uri:[bool]
+    ( token:object{token-info}
+      new-uri:string )
+    (let ((ledger:module{ledger-v2} (retrieve-ledger)))
+      (require-capability (ledger::UPDATE-URI-CALL (at "id" token) new-uri))
+    )
+    (map (lambda (policy:module{kip.token-policy-v2,kip.updatable-uri-policy-v1})
+      (with-capability (UPDATE-URI-CALL (at "id" token)  new-uri)
+        (policy::enforce-update-uri token new-uri)
       )
     ) (at 'policies token))
   )
@@ -482,7 +499,7 @@
       (!= o {}))
   )
 
-  (defun retrieve-ledger:module{ledger-v1} ()
+  (defun retrieve-ledger:module{ledger-v2} ()
     @doc "Retrieves the ledger implementation"
     (with-read ledgers "" {
         "ledger-impl":= ledger

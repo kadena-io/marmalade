@@ -16,12 +16,14 @@
   (use mini-guard-utils)
   (env-data {
     "operator-account": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3",
-    "operator": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
+    "operator": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"},
+    "collection-id": "collection:bJ-99z8hNtdyiLxS0LdS418oW90ck9dGd1t0w-LOAY4"
   })
 
  (expect-failure "create collection fails if operator guard isn't present"
     "Keyset failure"
-    (marmalade-v2.collection-policy-v1.create-collection "test-collection0" 10 (read-keyset 'operator) (read-string 'operator-account)))
+    (marmalade-v2.collection-policy-v1.create-collection (read-msg "collection-id") "test-collection0" 10 (read-keyset 'operator)))
+
 (rollback-tx)
 
 (begin-tx "Creating collection with a non-principal account fails")
@@ -30,17 +32,18 @@
   (use marmalade-v2.util-v1)
   (use mini-guard-utils)
   (env-data {
-    "operator": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
+    "operator": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"},
+    "collection-id" : "collection:bJ-99z8hNtdyiLxS0LdS418oW90ck9dGd1t0w-LOAY4"
   })
 
   (env-sigs [
     { 'key: "6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
-    ,'caps: [(marmalade-v2.collection-policy-v1.COLLECTION "collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk" "test-collection0" 10 (read-keyset 'operator ) "my-operator-account")]
+    ,'caps: [(marmalade-v2.collection-policy-v1.COLLECTION "collection:bJ-99z8hNtdyiLxS0LdS418oW90ck9dGd1t0w-LOAY4" "test-collection0" 10 (read-keyset 'operator ) )]
     }])
 
-  (expect-failure "Create a collection while using a named account"
-    "Incorrect account guard, only principal accounts allowed"
-    (marmalade-v2.collection-policy-v1.create-collection "test-collection0" 10 (read-keyset 'operator ) "my-operator-account"))
+  (expect "Create a collection"
+    true
+    (marmalade-v2.collection-policy-v1.create-collection (read-msg "collection-id") "test-collection0" 10 (read-keyset 'operator ) ))
 (rollback-tx)
 
 (begin-tx "Creating collection")
@@ -58,26 +61,26 @@
     ,"creator-guard":  {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
     ,"royalty-rate": 0.05
     }
-  ,"collection_id": "collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk"
+  ,"collection_id": "collection:bJ-99z8hNtdyiLxS0LdS418oW90ck9dGd1t0w-LOAY4"
   ,"operator-account": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
   ,"operator": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
   })
 
   (expect "collection id generation based on name and operator"
-    "collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk"
+    "collection:bJ-99z8hNtdyiLxS0LdS418oW90ck9dGd1t0w-LOAY4"
     (marmalade-v2.collection-policy-v1.create-collection-id "test-collection0" (read-keyset 'operator )))
 
   (env-sigs [
     { 'key: "6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
-    ,'caps: [(marmalade-v2.collection-policy-v1.COLLECTION "collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk" "test-collection0" 10 (read-keyset 'operator ) (read-string 'operator-account))]
+    ,'caps: [(marmalade-v2.collection-policy-v1.COLLECTION (read-msg "collection_id") "test-collection0" 10 (read-keyset 'operator ))]
     }])
 
   (expect "initiate a collection with `create-collection`"
     true
-    (marmalade-v2.collection-policy-v1.create-collection "test-collection0" 10 (read-keyset 'operator) (read-string 'operator-account)))
+    (marmalade-v2.collection-policy-v1.create-collection (read-msg "collection_id") "test-collection0" 10 (read-keyset 'operator)))
 
   (expect "create-collection events"
-    [ {"name": "marmalade-v2.collection-policy-v1.COLLECTION","params": ["collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk" "test-collection0" 10 (read-keyset 'operator)  (read-string 'operator-account)]}]
+    [ {"name": "marmalade-v2.collection-policy-v1.COLLECTION","params": ["collection:bJ-99z8hNtdyiLxS0LdS418oW90ck9dGd1t0w-LOAY4" "test-collection0" 10 (read-keyset 'operator) ]}]
     (map (remove "module-hash")  (env-events true))
   )
 (commit-tx)
@@ -103,7 +106,7 @@
 
   (env-sigs [
     { 'key: "6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
-    ,'caps: [(marmalade-v2.collection-policy-v1.TOKEN-COLLECTION "collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk" (read-msg 'token-id) )]
+    ,'caps: [(marmalade-v2.collection-policy-v1.TOKEN-COLLECTION "collection:bJ-99z8hNtdyiLxS0LdS418oW90ck9dGd1t0w-LOAY4" (read-msg 'token-id) )]
     }])
 
   (expect "create a default token with collection-policy, quote-policy, non-fungible-policy, royalty-policy"
@@ -111,10 +114,10 @@
     (create-token (read-msg 'token-id) 0 "test-collection-royalty-uri" (create-policies DEFAULT_COLLECTION_ROYALTY) ALWAYS-TRUE))
 
   (expect "create-token events"
-     [ {"name": "marmalade-v2.royalty-policy-v1.ROYALTY","params": ["t:e83TzCt8iPa0O8nZXRzq32_BoJ54mhZuWc5SlAC_85I" (read-msg 'royalty_spec)]}
-       {"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk" "t:e83TzCt8iPa0O8nZXRzq32_BoJ54mhZuWc5SlAC_85I"]}
-       {"name": "marmalade-v2.guard-policy-v1.GUARDS","params": ["t:e83TzCt8iPa0O8nZXRzq32_BoJ54mhZuWc5SlAC_85I" {"burn-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"mint-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"sale-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"transfer-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS}]}
-       {"name": "marmalade-v2.ledger.TOKEN","params": ["t:e83TzCt8iPa0O8nZXRzq32_BoJ54mhZuWc5SlAC_85I" 0 [marmalade-v2.non-fungible-policy-v1 marmalade-v2.royalty-policy-v1 marmalade-v2.collection-policy-v1 marmalade-v2.guard-policy-v1] "test-collection-royalty-uri" ALWAYS-TRUE]} ]
+     [ {"name": "marmalade-v2.royalty-policy-v1.ROYALTY","params": [(read-msg 'token-id) (read-msg 'royalty_spec)]}
+       {"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:bJ-99z8hNtdyiLxS0LdS418oW90ck9dGd1t0w-LOAY4" (read-msg 'token-id)]}
+       {"name": "marmalade-v2.guard-policy-v1.GUARDS","params": [(read-msg 'token-id) {"burn-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"mint-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"sale-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"transfer-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS, "uri-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS}]}
+       {"name": "marmalade-v2.ledger.TOKEN","params": [(read-msg 'token-id) 0 [marmalade-v2.non-fungible-policy-v1 marmalade-v2.royalty-policy-v1 marmalade-v2.collection-policy-v1 marmalade-v2.guard-policy-v1] "test-collection-royalty-uri" ALWAYS-TRUE]} ]
     (map (remove "module-hash")  (env-events true))
   )
 (commit-tx)
@@ -134,28 +137,27 @@
 
   (expect "collection should be present and size should be updated"
     {
-      "id": "collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk"
+      "id": "collection:bJ-99z8hNtdyiLxS0LdS418oW90ck9dGd1t0w-LOAY4"
       ,"name": "test-collection0"
       ,"size": 1
       ,"max-size": 10
       ,"operator-guard": (read-keyset 'operator )
-      ,"operator-account": (read-string 'operator-account)
     }
     (marmalade-v2.collection-policy-v1.get-collection (read-msg 'collection_id)))
 
   (expect "token should be part of collection"
     {
       "id": (read-msg 'token-id)
-     ,"collection-id": "collection:xxHOh6IqMvTkIKmvTy2kTdy36s8XR83ahT3CtXHprUk"
+     ,"collection-id": "collection:bJ-99z8hNtdyiLxS0LdS418oW90ck9dGd1t0w-LOAY4"
     }
     (marmalade-v2.collection-policy-v1.get-token (read-msg 'token-id))
   )
 
   (expect "mint events"
-     [ {"name": "marmalade-v2.ledger.MINT","params": ["t:e83TzCt8iPa0O8nZXRzq32_BoJ54mhZuWc5SlAC_85I" (read-string 'account) 1.0]}
-       {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:e83TzCt8iPa0O8nZXRzq32_BoJ54mhZuWc5SlAC_85I" (read-string 'account) (read-keyset 'account-guard)]}
-       {"name": "marmalade-v2.ledger.RECONCILE","params": ["t:e83TzCt8iPa0O8nZXRzq32_BoJ54mhZuWc5SlAC_85I" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-string 'account),"current": 1.0,"previous": 0.0}]}
-       {"name": "marmalade-v2.ledger.SUPPLY","params": ["t:e83TzCt8iPa0O8nZXRzq32_BoJ54mhZuWc5SlAC_85I" 1.0]} ]
+     [ {"name": "marmalade-v2.ledger.MINT","params": [(read-msg 'token-id) (read-string 'account) 1.0]}
+       {"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": [(read-msg 'token-id) (read-string 'account) (read-keyset 'account-guard)]}
+       {"name": "marmalade-v2.ledger.RECONCILE","params": [(read-msg 'token-id) 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-string 'account),"current": 1.0,"previous": 0.0}]}
+       {"name": "marmalade-v2.ledger.SUPPLY","params": [(read-msg 'token-id) 1.0]} ]
     (map (remove "module-hash")  (env-events true))
   )
 
@@ -178,19 +180,18 @@
       ,"creator-guard":  {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
     ,"royalty-rate": 0.05
     }
-  ,"collection_id": "collection:SG71Y5jVhzJLGDvxSMpdLwRQ5cMO70d_GIjyeLaRyxI"
-  ,"operator-account": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
+  ,"collection_id": "collection:i3ow_SSJWmzviydQ1pqxGhrXT6XU07DsXdtVCyLFsxw"
   ,"operator": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
   })
 
   (env-sigs [
       { 'key: "6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
-      ,'caps: [(marmalade-v2.collection-policy-v1.COLLECTION (read-string 'collection_id) "test-collection-size" 1 (read-keyset 'operator )  (read-string "operator-account"))]
+      ,'caps: [(marmalade-v2.collection-policy-v1.COLLECTION (read-string 'collection_id) "test-collection-size" 1 (read-keyset 'operator ))]
       }])
 
   (expect "initiate a collection with `create-collection`"
     true
-    (marmalade-v2.collection-policy-v1.create-collection "test-collection-size" 1 (read-keyset 'operator) (read-string "operator-account")))
+    (marmalade-v2.collection-policy-v1.create-collection "collection:i3ow_SSJWmzviydQ1pqxGhrXT6XU07DsXdtVCyLFsxw" "test-collection-size" 1 (read-keyset 'operator) ))
 
   (env-sigs [
     { 'key: "6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
@@ -206,13 +207,12 @@
     "Exceeds collection size"
     (create-token (read-msg 'token-id2) 0 "test-collection-size-uri2" (create-policies DEFAULT_COLLECTION_ROYALTY) ALWAYS-TRUE))
 
-
   (expect "create-collection, create-token events"
-    [ {"name": "marmalade-v2.collection-policy-v1.COLLECTION","params": ["collection:SG71Y5jVhzJLGDvxSMpdLwRQ5cMO70d_GIjyeLaRyxI" "test-collection-size" 1 (read-keyset 'operator)  (read-string "operator-account")]}
-      {"name": "marmalade-v2.royalty-policy-v1.ROYALTY","params": ["t:tNiX3x5wudNYsplHqy8P98j8UPHF8XX2n4G7-nXiMt8" (read-msg 'royalty_spec)] }
-      {"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:SG71Y5jVhzJLGDvxSMpdLwRQ5cMO70d_GIjyeLaRyxI" "t:tNiX3x5wudNYsplHqy8P98j8UPHF8XX2n4G7-nXiMt8"]}
-      {"name": "marmalade-v2.guard-policy-v1.GUARDS","params": ["t:tNiX3x5wudNYsplHqy8P98j8UPHF8XX2n4G7-nXiMt8" {"burn-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"mint-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"sale-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"transfer-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS}]}
-      {"name": "marmalade-v2.ledger.TOKEN","params": ["t:tNiX3x5wudNYsplHqy8P98j8UPHF8XX2n4G7-nXiMt8" 0 [marmalade-v2.non-fungible-policy-v1 marmalade-v2.royalty-policy-v1 marmalade-v2.collection-policy-v1 marmalade-v2.guard-policy-v1] "test-collection-size-uri1" ALWAYS-TRUE]}]
+    [ {"name": "marmalade-v2.collection-policy-v1.COLLECTION","params": ["collection:i3ow_SSJWmzviydQ1pqxGhrXT6XU07DsXdtVCyLFsxw" "test-collection-size" 1 (read-keyset 'operator)  ]}
+      {"name": "marmalade-v2.royalty-policy-v1.ROYALTY","params": ["t:We0gk3NJYFd0k1B37NcDU7sqE_vfN6sdA2hvdzIc2xM" (read-msg 'royalty_spec)] }
+      {"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:i3ow_SSJWmzviydQ1pqxGhrXT6XU07DsXdtVCyLFsxw" "t:We0gk3NJYFd0k1B37NcDU7sqE_vfN6sdA2hvdzIc2xM"]}
+      {"name": "marmalade-v2.guard-policy-v1.GUARDS","params": ["t:We0gk3NJYFd0k1B37NcDU7sqE_vfN6sdA2hvdzIc2xM" {"burn-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"mint-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"sale-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"transfer-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS, "uri-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS}]}
+      {"name": "marmalade-v2.ledger.TOKEN","params": ["t:We0gk3NJYFd0k1B37NcDU7sqE_vfN6sdA2hvdzIc2xM" 0 [marmalade-v2.non-fungible-policy-v1 marmalade-v2.royalty-policy-v1 marmalade-v2.collection-policy-v1 marmalade-v2.guard-policy-v1] "test-collection-size-uri1" ALWAYS-TRUE]}]
     (map (remove "module-hash")  (env-events true)))
 (rollback-tx)
 
@@ -233,22 +233,19 @@
     ,"creator-guard":  {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
     ,"royalty-rate": 0.05
     }
-  ,"collection_id": "collection:SG71Y5jVhzJLGDvxSMpdLwRQ5cMO70d_GIjyeLaRyxI"
+  ,"collection_id": "collection:i3ow_SSJWmzviydQ1pqxGhrXT6XU07DsXdtVCyLFsxw"
   ,"operator": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
-  ,"operator-account": "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
   })
 
   (env-sigs [
       { 'key: "6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
       ,'caps: [
-        (marmalade-v2.collection-policy-v1.COLLECTION (read-string 'collection_id) "test-collection-size" 0 (read-keyset 'operator )  (read-string 'operator-account))]
+        (marmalade-v2.collection-policy-v1.COLLECTION (read-string 'collection_id) "test-collection-size" 0 (read-keyset 'operator )  )]
       }])
-
-  (marmalade-v2.collection-policy-v1.create-collection-id "test-collection-size" (read-keyset 'operator))
 
   (expect "initiate a collection with `create-collection`"
     true
-    (marmalade-v2.collection-policy-v1.create-collection "test-collection-size" 0 (read-keyset 'operator) (read-string 'operator-account)))
+    (marmalade-v2.collection-policy-v1.create-collection (read-msg "collection_id") "test-collection-size" 0 (read-keyset 'operator)))
 
   (env-sigs [
       { 'key: "6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"
@@ -265,14 +262,14 @@
     (create-token (read-msg 'token-id2) 0 "test-collection-size-uri2" (create-policies DEFAULT_COLLECTION_ROYALTY) ALWAYS-TRUE))
 
   (expect "create-collection, create-token events"
-    [ {"name": "marmalade-v2.collection-policy-v1.COLLECTION","params": ["collection:SG71Y5jVhzJLGDvxSMpdLwRQ5cMO70d_GIjyeLaRyxI" "test-collection-size" 0 (read-keyset 'operator)  (read-string 'operator-account)]}
-      {"name": "marmalade-v2.royalty-policy-v1.ROYALTY","params": ["t:tNiX3x5wudNYsplHqy8P98j8UPHF8XX2n4G7-nXiMt8" (read-msg 'royalty_spec) ]}
-      {"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:SG71Y5jVhzJLGDvxSMpdLwRQ5cMO70d_GIjyeLaRyxI" "t:tNiX3x5wudNYsplHqy8P98j8UPHF8XX2n4G7-nXiMt8"]}
-      {"name": "marmalade-v2.guard-policy-v1.GUARDS","params": ["t:tNiX3x5wudNYsplHqy8P98j8UPHF8XX2n4G7-nXiMt8" {"burn-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"mint-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"sale-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"transfer-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS}]}
-      {"name": "marmalade-v2.ledger.TOKEN","params": ["t:tNiX3x5wudNYsplHqy8P98j8UPHF8XX2n4G7-nXiMt8" 0 [marmalade-v2.non-fungible-policy-v1 marmalade-v2.royalty-policy-v1 marmalade-v2.collection-policy-v1 marmalade-v2.guard-policy-v1] "test-collection-size-uri1" ALWAYS-TRUE]}
-      {"name": "marmalade-v2.royalty-policy-v1.ROYALTY","params": ["t:Y7TEGb0F0SUF5EFShV0jaewJcpfioGMrElU6YCFWW1I" (read-msg 'royalty_spec) ]}
-      {"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:SG71Y5jVhzJLGDvxSMpdLwRQ5cMO70d_GIjyeLaRyxI" "t:Y7TEGb0F0SUF5EFShV0jaewJcpfioGMrElU6YCFWW1I"]}
-      {"name": "marmalade-v2.guard-policy-v1.GUARDS","params": ["t:Y7TEGb0F0SUF5EFShV0jaewJcpfioGMrElU6YCFWW1I" {"burn-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"mint-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"sale-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"transfer-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS}]}
-      {"name": "marmalade-v2.ledger.TOKEN","params": ["t:Y7TEGb0F0SUF5EFShV0jaewJcpfioGMrElU6YCFWW1I" 0 [marmalade-v2.non-fungible-policy-v1 marmalade-v2.royalty-policy-v1 marmalade-v2.collection-policy-v1 marmalade-v2.guard-policy-v1] "test-collection-size-uri2" ALWAYS-TRUE]}]
+    [ {"name": "marmalade-v2.collection-policy-v1.COLLECTION","params": ["collection:i3ow_SSJWmzviydQ1pqxGhrXT6XU07DsXdtVCyLFsxw" "test-collection-size" 0 (read-keyset 'operator) ]}
+      {"name": "marmalade-v2.royalty-policy-v1.ROYALTY","params": ["t:We0gk3NJYFd0k1B37NcDU7sqE_vfN6sdA2hvdzIc2xM" (read-msg 'royalty_spec) ]}
+      {"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:i3ow_SSJWmzviydQ1pqxGhrXT6XU07DsXdtVCyLFsxw" "t:We0gk3NJYFd0k1B37NcDU7sqE_vfN6sdA2hvdzIc2xM"]}
+      {"name": "marmalade-v2.guard-policy-v1.GUARDS","params": ["t:We0gk3NJYFd0k1B37NcDU7sqE_vfN6sdA2hvdzIc2xM" {"burn-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"mint-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"sale-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"transfer-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS, "uri-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS}]}
+      {"name": "marmalade-v2.ledger.TOKEN","params": ["t:We0gk3NJYFd0k1B37NcDU7sqE_vfN6sdA2hvdzIc2xM" 0 [marmalade-v2.non-fungible-policy-v1 marmalade-v2.royalty-policy-v1 marmalade-v2.collection-policy-v1 marmalade-v2.guard-policy-v1] "test-collection-size-uri1" ALWAYS-TRUE]}
+      {"name": "marmalade-v2.royalty-policy-v1.ROYALTY","params": ["t:djpXia3yvtko9EoOspAcJ9Y0gLo0775qREGgWsH7dFE" (read-msg 'royalty_spec) ]}
+      {"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:i3ow_SSJWmzviydQ1pqxGhrXT6XU07DsXdtVCyLFsxw" "t:djpXia3yvtko9EoOspAcJ9Y0gLo0775qREGgWsH7dFE"]}
+      {"name": "marmalade-v2.guard-policy-v1.GUARDS","params": ["t:djpXia3yvtko9EoOspAcJ9Y0gLo0775qREGgWsH7dFE" {"burn-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"mint-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"sale-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS,"transfer-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS, "uri-guard": marmalade-v2.guard-policy-v1.GUARD_SUCCESS}]}
+      {"name": "marmalade-v2.ledger.TOKEN","params": ["t:djpXia3yvtko9EoOspAcJ9Y0gLo0775qREGgWsH7dFE" 0 [marmalade-v2.non-fungible-policy-v1 marmalade-v2.royalty-policy-v1 marmalade-v2.collection-policy-v1 marmalade-v2.guard-policy-v1] "test-collection-size-uri2" ALWAYS-TRUE]}]
     (map (remove "module-hash")  (env-events true)))
 (rollback-tx)

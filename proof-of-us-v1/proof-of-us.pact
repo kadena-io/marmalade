@@ -10,7 +10,6 @@
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
   (use marmalade-v2.ledger)
-  (use marmalade-v2.util-v1)
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.collection-policy-v1)
   (use marmalade-v2.util-v1 [curr-time])
@@ -38,15 +37,6 @@
     true
   )
 
-  (defcap TOKEN_CREATION (event-id:string)
-    @doc "Used to validate token creation"
-    @event
-    (util.guards1.guard-any [
-      (keyset-ref-guard ADMIN-KS)
-      (create-user-guard (validate-event event-id))
-    ])
-  )
-
   (defcap COLLECTION_CREATION ()
     @doc "Used to guard collection creation"
     (enforce-guard ADMIN-KS)
@@ -65,16 +55,17 @@
   )
 
   (defcap INTERNAL:bool (token-id:string)
+    @doc "Used to guarantee function is called only by the contract itself"
     true
   )
 
   (defcap COLLECTION_OPERATOR ()
+    @doc "Used to guard adding tokens to a collection"
     true
   )
 
   (defconst EVENT-ID-MSG-KEY:string "event_id")
   (defconst ATTENDANCE-SUPPLY-KEY:string "attendance_supply")
-
 
   (defun has-collection-policy:bool (policies)
     (> (length (filter (lambda (policy) (= policy marmalade-v2.collection-policy-v1)) policies)) 0))
@@ -128,8 +119,8 @@
           ,'ends-at: ends-at
         })
 
-        (with-capability (TOKEN_CREATION event-id)
-          (with-capability (COLLECTION_OPERATOR)
+        (with-capability (COLLECTION_OPERATOR)
+          (with-capability (INTERNAL token-id)
             ; Create the attendance token
             (create-token
               token-id
@@ -138,10 +129,10 @@
               TOKEN-POLICIES
               creator-guard
             )
-            ; Set attendance supply
-            (let ((attendance-supply:integer (try 0 (read-integer ATTENDANCE-SUPPLY-KEY))))
-              (write supplies token-id { "max-supply": attendance-supply })
-            )
+          )
+          ; Set attendance supply
+          (let ((attendance-supply:integer (try 0 (read-integer ATTENDANCE-SUPPLY-KEY))))
+            (write supplies token-id { "max-supply": attendance-supply })
           )
         )
         event-id
@@ -163,6 +154,8 @@
   (defun mint-attendance-token (event-id:string attendant:string attendant-guard:guard)
     (enforce (validate-principal attendant-guard attendant) "Incorrect account guard, only principal accounts allowed")
 
+    (validate-event event-id)
+
     (let* (
       (event:object{event-schema} (get-event event-id))
       (token-id:string (at 'token-id event)) )
@@ -183,17 +176,22 @@
     (create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } (create-capability-guard (CONNECT event-id uri)))
   )
 
-  (defun create-and-mint-connection-token:string (event-id:string uri:string connection-guards:[guard])
+  (defun create-and-mint-connection-token:string (uri:string connection-guards:[guard])
     (enforce (>= (length connection-guards) 2) "At least 2 connections are required to mint a connection token")
-    (validate-collection event-id (read-msg COLLECTION-ID-MSG-KEY))
-
+    
     (let* (
+      (event-id:string (try "" (read-msg EVENT-ID-MSG-KEY)))
       (creator-guard:guard (create-capability-guard (CONNECT event-id uri)))
       (token-id (create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } creator-guard)))
 
+      (if (= event-id "") true [
+          (validate-event-collection event-id (read-msg COLLECTION-ID-MSG-KEY))
+          (validate-event event-id)
+        ]
+      )
       (with-capability (CONNECT event-id uri)
         (map (enforce-pou-guard) connection-guards)
-        (with-capability (TOKEN_CREATION event-id)
+        (with-capability (INTERNAL token-id)
           (with-capability (COLLECTION_OPERATOR)
             ; Create the connection token
             (create-token
@@ -206,18 +204,16 @@
             ; Limited supply to number of participants
             (write supplies token-id { "max-supply": (length connection-guards) })
           )
-        )
 
-        (map (lambda (connection-guard:guard)
+          (map (lambda (connection-guard:guard)
 
-          (install-capability (MINT token-id (create-principal connection-guard) 1.0))
+            (install-capability (MINT token-id (create-principal connection-guard) 1.0))
 
-          (with-capability (INTERNAL token-id)
             (mint token-id (create-principal connection-guard) connection-guard 1.0)
-          )
 
-        ) connection-guards)
-        token-id
+          ) connection-guards)
+          token-id
+        )
       )
     )
   )
@@ -229,7 +225,7 @@
     @doc "The function is run at `create-token` step of marmalade-v2.ledger.create-token"
 
     (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
-    (require-capability (TOKEN_CREATION (read-msg EVENT-ID-MSG-KEY)))
+    (require-capability (INTERNAL (at "id" token)))
 
     (enforce (= (at 'precision token) 0) "Precision must be 0 for proof-of-us tokens")
 
@@ -246,7 +242,6 @@
     (require-capability (INTERNAL (at "id" token)))
 
     (enforce (= amount 1.0) "Amount must be 1.0 for proof-of-us tokens")
-    (validate-event (read-msg EVENT-ID-MSG-KEY))
     (validate-supply token amount account)
     (let ((balance:decimal (try 0.0 (get-balance (at "id" token) account))))
       (enforce (= 0.0 balance) "Account already has a token")
@@ -325,7 +320,7 @@
     )
   )
 
-  (defun validate-collection (event-id:string collection-id:string)
+  (defun validate-event-collection (event-id:string collection-id:string)
     (let* ((event:object{event-schema} (get-event event-id)))
       (enforce (= collection-id (at 'collection-id event)) "Event does not belong to this collection")
     )

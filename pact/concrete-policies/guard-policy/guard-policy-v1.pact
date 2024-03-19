@@ -126,8 +126,8 @@
     \ the created token"
     (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) guard-policy-v1))
     (let ((guards:object{guards}
-      { 'uri-guard: (try GUARD_SUCCESS (read-msg URI-GUARD-MSG-KEY) ) ;; type error becomes failing guard
-      , 'mint-guard: (try GUARD_SUCCESS (read-msg MINT-GUARD-MSG-KEY) ) ;; type error becomes successful guard
+      { 'uri-guard: (try GUARD_SUCCESS (read-msg URI-GUARD-MSG-KEY) )
+      , 'mint-guard: (try GUARD_SUCCESS (read-msg MINT-GUARD-MSG-KEY) ) 
       , 'burn-guard: (try GUARD_SUCCESS (read-msg BURN-GUARD-MSG-KEY) )
       , 'sale-guard: (try GUARD_SUCCESS (read-msg SALE-GUARD-MSG-KEY) )
       , 'transfer-guard: (try GUARD_SUCCESS (read-msg TRANSFER-GUARD-MSG-KEY) ) } ))

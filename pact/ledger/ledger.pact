@@ -403,10 +403,7 @@
       (policy-manager.enforce-update-uri (get-token-info id) new-uri)
     )
     (with-capability (UPDATE-URI id new-uri)
-      (with-read tokens id
-        { 'uri := old-uri }
-        (update tokens id { 'uri: new-uri })
-      )
+      (update tokens id { 'uri: new-uri })
     )
     true
   )

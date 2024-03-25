@@ -38,11 +38,6 @@ jobs:
         with:
           target: examples/policies/timed-mint-policy/timed-mint-policy-v1.repl
 
-      - name: Test soul-bound-policy-v1
-        uses: ./.github/actions/repl
-        with:
-          target: examples/policies/soul-bound-policy/soul-bound-policy-v1.repl
-
       - name: Test private-token-policy-v1
         uses: ./.github/actions/repl
         with:

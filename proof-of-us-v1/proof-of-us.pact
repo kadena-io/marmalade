@@ -9,7 +9,6 @@
 
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
-  (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.collection-policy-v1)
   (use marmalade-v2.util-v1 [curr-time])
@@ -105,7 +104,7 @@
   (defun create-event (collection-id:string name:string uri:string starts-at:integer ends-at:integer)
     (let* ((event-id:string (create-event-id name starts-at ends-at))
         (creator-guard:guard (create-capability-guard (EVENT collection-id event-id name uri)))
-        (token-id (create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } creator-guard)) )
+        (token-id (marmalade-v2.ledger.create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } creator-guard)) )
 
       (validate-event-time starts-at ends-at)
 
@@ -122,7 +121,7 @@
         (with-capability (COLLECTION_OPERATOR)
           (with-capability (INTERNAL token-id)
             ; Create the attendance token
-            (create-token
+            (marmalade-v2.ledger.create-token
               token-id
               0
               uri
@@ -162,10 +161,10 @@
 
       (with-capability (ATTEND event-id)
         (enforce-pou-guard attendant-guard)
-        (install-capability (MINT token-id attendant 1.0))
+        (install-capability (marmalade-v2.ledger.MINT token-id attendant 1.0))
 
         (with-capability (INTERNAL token-id)
-          (mint token-id attendant attendant-guard 1.0)
+          (marmalade-v2.ledger.mint token-id attendant attendant-guard 1.0)
         )
         token-id
       )
@@ -173,16 +172,16 @@
   )
 
   (defun retrieve-connection-token-id:string (event-id:string uri:string)
-    (create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } (create-capability-guard (CONNECT event-id uri)))
+    (marmalade-v2.ledger.create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } (create-capability-guard (CONNECT event-id uri)))
   )
 
   (defun create-and-mint-connection-token:string (uri:string connection-guards:[guard])
     (enforce (>= (length connection-guards) 2) "At least 2 connections are required to mint a connection token")
-    
+
     (let* (
       (event-id:string (try "" (read-msg EVENT-ID-MSG-KEY)))
       (creator-guard:guard (create-capability-guard (CONNECT event-id uri)))
-      (token-id (create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } creator-guard)))
+      (token-id (marmalade-v2.ledger.create-token-id { 'uri: uri, 'precision: 0, 'policies: TOKEN-POLICIES } creator-guard)))
 
       (if (= event-id "") true [
           (validate-event-collection event-id (read-msg COLLECTION-ID-MSG-KEY))
@@ -194,7 +193,7 @@
         (with-capability (INTERNAL token-id)
           (with-capability (COLLECTION_OPERATOR)
             ; Create the connection token
-            (create-token
+            (marmalade-v2.ledger.create-token
               token-id
               0
               uri
@@ -207,9 +206,9 @@
 
           (map (lambda (connection-guard:guard)
 
-            (install-capability (MINT token-id (create-principal connection-guard) 1.0))
+            (install-capability (marmalade-v2.ledger.MINT token-id (create-principal connection-guard) 1.0))
 
-            (mint token-id (create-principal connection-guard) connection-guard 1.0)
+            (marmalade-v2.ledger.mint token-id (create-principal connection-guard) connection-guard 1.0)
 
           ) connection-guards)
           token-id
@@ -243,7 +242,7 @@
 
     (enforce (= amount 1.0) "Amount must be 1.0 for proof-of-us tokens")
     (validate-supply token amount account)
-    (let ((balance:decimal (try 0.0 (get-balance (at "id" token) account))))
+    (let ((balance:decimal (try 0.0 (marmalade-v2.ledger.get-balance (at "id" token) account))))
       (enforce (= 0.0 balance) "Account already has a token")
     )
   )
@@ -347,7 +346,7 @@
 
   (defun has-minted-attendance-token (event-id:string attendant:string)
     (with-read events event-id { 'token-id := token-id }
-      (> (get-balance token-id attendant) 0.0)
+      (> (marmalade-v2.ledger.get-balance token-id attendant) 0.0)
     )
   )
 )

@@ -224,7 +224,7 @@
     ( token:object{token-info})
     @doc "The function is run at `create-token` step of marmalade-v2.ledger.create-token"
 
-    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
+    (require-capability (marmalade-v2.policy-manager.INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) proof-of-us))
     (require-capability (INTERNAL (at "id" token)))
 
     (enforce (= (at 'precision token) 0) "Precision must be 0 for proof-of-us tokens")
@@ -238,7 +238,7 @@
       guard:guard
       amount:decimal
     )
-    (require-capability (MINT-CALL (at "id" token) account amount))
+    (require-capability (marmalade-v2.policy-manager.MINT-CALL (at "id" token) account amount proof-of-us))
     (require-capability (INTERNAL (at "id" token)))
 
     (enforce (= amount 1.0) "Amount must be 1.0 for proof-of-us tokens")

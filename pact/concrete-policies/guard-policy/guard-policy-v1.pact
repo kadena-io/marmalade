@@ -4,15 +4,19 @@
 (module guard-policy-v1 GOVERNANCE
 
   (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
+  (defconst POLICY:string (format "{}" [guard-policy-v1]))
 
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
 
   (implements kip.token-policy-v2)
+  (implements kip.updatable-uri-policy-v1)
+
   (use kip.token-policy-v2 [token-info])
   (use policy-manager)
 
   (defschema guards
+    uri-guard:guard
     mint-guard:guard
     burn-guard:guard
     sale-guard:guard
@@ -21,6 +25,7 @@
 
   (deftable policy-guards:{guards})
 
+  (defconst URI-GUARD-MSG-KEY:string "uri_guard")
   (defconst MINT-GUARD-MSG-KEY:string "mint_guard")
   (defconst BURN-GUARD-MSG-KEY:string "burn_guard")
   (defconst SALE-GUARD-MSG-KEY:string "sale_guard")
@@ -49,6 +54,10 @@
 
   (defcap TRANSFER (token-id:string sender:string receiver:string amount:decimal)
     (enforce-guard (get-transfer-guard token-id))
+  )
+
+  (defcap UPDATE-URI (token-id:string new-uri:string)
+    (enforce-guard (get-uri-guard token-id))
   )
 
   (defun success:bool ()
@@ -92,6 +101,14 @@
     )
   )
 
+  (defun get-uri-guard:guard (token-id:string)
+    (with-read policy-guards token-id {
+      "uri-guard":= uri-guard
+    }
+    uri-guard
+    )
+  )
+
   (defun get-guards:object{guards} (token:object{token-info})
     (read policy-guards (at 'id token))
   )
@@ -102,14 +119,16 @@
     @doc "Executed at `create-token` step of marmalade.ledger. Registers  guards for \
     \ 'mint', 'burn', 'sale', 'transfer' operations of the created token.            \
     \ Required msg-data keys:                                                        \
+    \ * (optional) uri-guard:string -  uri-guard and adds failure guard if absent. \
     \ * (optional) mint_guard:string -  mint-guard and adds success guard if absent. \
     \ * (optional) burn_guard:string -  burn-guard and adds success guard if absent. \
     \ * (optional) sale_guard:string -  sale-guard and adds success guard if absent. \
     \ * (optional) transfer_guard:string -  transfer-guard and adds success guard if absent. \
     \ the created token"
-    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) guard-policy-v1))
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) POLICY))
     (let ((guards:object{guards}
-      { 'mint-guard: (try GUARD_SUCCESS (read-msg MINT-GUARD-MSG-KEY) ) ;; type error becomes successful guard
+      { 'uri-guard: (try GUARD_SUCCESS (read-msg URI-GUARD-MSG-KEY) )
+      , 'mint-guard: (try GUARD_SUCCESS (read-msg MINT-GUARD-MSG-KEY) )
       , 'burn-guard: (try GUARD_SUCCESS (read-msg BURN-GUARD-MSG-KEY) )
       , 'sale-guard: (try GUARD_SUCCESS (read-msg SALE-GUARD-MSG-KEY) )
       , 'transfer-guard: (try GUARD_SUCCESS (read-msg TRANSFER-GUARD-MSG-KEY) ) } ))
@@ -125,7 +144,7 @@
       guard:guard
       amount:decimal
     )
-    (require-capability (MINT-CALL (at "id" token) account amount guard-policy-v1))
+    (require-capability (MINT-CALL (at "id" token) account amount POLICY))
     (with-capability (MINT (at 'id token) account amount)
       true
     )
@@ -136,7 +155,7 @@
       account:string
       amount:decimal
     )
-    (require-capability (BURN-CALL (at "id" token) account amount guard-policy-v1))
+    (require-capability (BURN-CALL (at "id" token) account amount POLICY))
     (with-capability (BURN (at 'id token) account amount)
       true
     )
@@ -148,7 +167,7 @@
       amount:decimal
       timeout:integer
       sale-id:string )
-    (require-capability (OFFER-CALL (at "id" token) seller amount sale-id timeout guard-policy-v1))
+    (require-capability (OFFER-CALL (at "id" token) seller amount sale-id timeout POLICY))
     (enforce-sale-pact sale-id)
     (with-capability (SALE (at 'id token) seller amount)
       true
@@ -162,7 +181,7 @@
       buyer-guard:guard
       amount:decimal
       sale-id:string )
-    (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id guard-policy-v1))
+    (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id POLICY))
     (enforce-sale-pact sale-id)
     (with-capability (SALE (at 'id token) seller amount)
       true
@@ -175,7 +194,7 @@
       amount:decimal
       timeout:integer
       sale-id:string )
-    (require-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id timeout guard-policy-v1))
+    (require-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id timeout POLICY))
     (enforce-sale-pact sale-id)
     (with-capability (SALE (at 'id token) seller amount)
       true
@@ -188,8 +207,17 @@
       guard:guard
       receiver:string
       amount:decimal )
-    (require-capability (TRANSFER-CALL (at "id" token) sender receiver amount guard-policy-v1))
+    (require-capability (TRANSFER-CALL (at "id" token) sender receiver amount POLICY))
     (with-capability (TRANSFER (at 'id token) sender receiver amount)
+      true
+    )
+  )
+
+  (defun enforce-update-uri:bool
+    ( token:object{token-info}
+      new-uri:string )
+    (require-capability (UPDATE-URI-CALL (at "id" token) new-uri POLICY))
+    (with-capability (UPDATE-URI (at 'id token) new-uri)
       true
     )
   )

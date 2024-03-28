@@ -8,11 +8,15 @@
           (> (length account) 2))
     ]
 
-  (implements ledger-v1)
+  (implements ledger-v2)
   (implements kip.poly-fungible-v3)
+
   (use kip.poly-fungible-v3 [account-details sender-balance-change receiver-balance-change])
   (use util.fungible-util)
   (use policy-manager)
+
+  ;; Version
+  (defconst VERSION:integer 1)
 
   ;;
   ;; Tables/Schemas
@@ -26,6 +30,7 @@
     precision:integer
     supply:decimal
     policies:[module{kip.token-policy-v2}]
+    version:integer
   )
 
   (defschema token-details
@@ -88,8 +93,7 @@
     @event true
   )
 
-  (defcap CREATE-TOKEN:bool (id:string creation-guard:guard)
-    (enforce-guard creation-guard)
+  (defcap CREATE-TOKEN:bool (id:string)
     true
   )
 
@@ -118,7 +122,7 @@
   )
 
   ;;
-  ;; ledger-v1 caps to be able to validate access to policy operations.
+  ;; ledger-v2 caps to be able to validate access to policy operations.
   ;;
 
   (defcap INIT-CALL:bool (id:string precision:integer uri:string)
@@ -134,6 +138,10 @@
   )
 
   (defcap BURN-CALL:bool (id:string account:string amount:decimal)
+    true
+  )
+
+  (defcap UPDATE-URI-CALL:bool (id:string new-uri:string)
     true
   )
 
@@ -181,6 +189,14 @@
     (compose-capability (UPDATE_SUPPLY))
   )
 
+  (defcap UPDATE-URI:bool
+    ( token-id:string
+      new-uri:string
+    )
+    @managed
+    true
+  )
+
   ;  Transform token-schema object to token-info object
   (defun get-token-info:object{kip.token-policy-v2.token-info} (id:string)
     (with-read tokens id
@@ -223,7 +239,7 @@
   (defun create-token-id:string (token-details:object{token-details}
                                  creation-guard:guard)
     (format "t:{}"
-      [(hash [token-details (at 'chain-id (chain-data)) creation-guard])])
+      [(hash [(format "{}" [token-details]) (at 'chain-id (chain-data)) creation-guard])])
   )
 
   (defun create-token:bool
@@ -243,13 +259,15 @@
       (policy-manager.enforce-init
         { 'id: id, 'supply: 0.0, 'precision: precision, 'uri: uri,  'policies: policies})
     )
-    (with-capability (CREATE-TOKEN id creation-guard)
+    (with-capability (CREATE-TOKEN id)
+      (enforce-guard creation-guard)
       (insert tokens id {
         "id": id,
         "uri": uri,
         "precision": precision,
         "supply": 0.0,
-        "policies": policies
+        "policies": policies,
+        "version": VERSION
       })
       (emit-event (TOKEN id precision policies uri creation-guard))
     )
@@ -383,6 +401,23 @@
       ))
   )
 
+  (defun update-uri:bool
+    ( id:string
+      new-uri:string
+    )
+    (if (< (get-version id) 1)
+      (enforce false "updatable-uri not supported")
+      true
+    )
+    (with-capability (UPDATE-URI-CALL id new-uri)
+      (policy-manager.enforce-update-uri (get-token-info id) new-uri)
+    )
+    (with-capability (UPDATE-URI id new-uri)
+      (update tokens id { 'uri: new-uri })
+    )
+    true
+  )
+
   (defun debit:object{sender-balance-change}
     ( id:string
       account:string
@@ -493,8 +528,10 @@
   )
 
   (defun get-uri:string (id:string)
-    (at 'uri (read tokens id))
-  )
+    (with-read tokens id {'uri := uri} uri))
+
+  (defun get-version:integer (id:string)
+     (try 0 (with-read tokens id {'version := version} version)))
 
   ;;
   ;; sale

@@ -8,11 +8,17 @@
           (> (length account) 2))
     ]
 
+  (bless "GzUX1HSmOSdEdjOZpBJxt9Mko9LZXGx1zMm7ROiNgUU")
+  (bless "tn9NcilQtMmAs5PlraNqknCfGgMfRH98H6Ye2HeB2wU")
+  (bless "0zofWv2cdYBZREalMO8A5aeNCi6_0GryM-N6WFK1Vw4")
+
   (implements ledger-v2)
   (implements kip.poly-fungible-v3)
   (use kip.poly-fungible-v3 [account-details sender-balance-change receiver-balance-change])
   (use util.fungible-util)
   (use policy-manager)
+
+  (defconst VERSION:integer 1)
 
   ;;
   ;; Tables/Schemas
@@ -26,6 +32,7 @@
     precision:integer
     supply:decimal
     policies:[module{kip.token-policy-v2}]
+    version:integer
   )
 
   (defschema token-details
@@ -261,7 +268,8 @@
         "uri": uri,
         "precision": precision,
         "supply": 0.0,
-        "policies": policies
+        "policies": policies,
+        "version": VERSION
       })
       (emit-event (TOKEN id precision policies uri creation-guard))
     )

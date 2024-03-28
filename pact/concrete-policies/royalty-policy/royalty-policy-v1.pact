@@ -5,17 +5,17 @@
   @doc "Concrete policy to support royalty payouts in a specified fungible during sale."
 
   (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
+  (defconst POLICY:string (format "{}" [royalty-policy-v1]))
 
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
 
   (use policy-manager)
   (use policy-manager [QUOTE-MSG-KEY quote-spec quote-schema])
+  (use kip.token-policy-v2 [token-info])
 
   (implements kip.token-policy-v2)
   (implements kip.updatable-uri-policy-v1)
-
-  (use kip.token-policy-v2 [token-info])
 
   (defschema royalty-schema
     fungible:module{fungible-v2}
@@ -57,7 +57,7 @@
     \ Required msg-data keys:                                                  \
     \ * royalty_spec:object{royalty-schema} - registers royalty information of \
     \ the created token"
-    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) royalty-policy-v1))
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) POLICY))
     (let* ( (spec:object{royalty-schema} (read-msg ROYALTY-SPEC-MSG-KEY))
             (fungible:module{fungible-v2} (at 'fungible spec))
             (creator:string (at 'creator spec))
@@ -107,7 +107,7 @@
       sale-id:string
     )
     @doc "Capture quote spec for SALE of TOKEN from message"
-    (require-capability (OFFER-CALL (at "id" token) seller amount sale-id timeout royalty-policy-v1))
+    (require-capability (OFFER-CALL (at "id" token) seller amount sale-id timeout POLICY))
     (enforce (exists-msg-quote QUOTE-MSG-KEY) "Offer is restricted to quoted sale")
     (bind (get-royalty token)
       { 'fungible := fungible:module{fungible-v2} }
@@ -125,7 +125,7 @@
       buyer-guard:guard
       amount:decimal
       sale-id:string )
-    (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id royalty-policy-v1))
+    (require-capability (BUY-CALL (at "id" token) seller buyer amount sale-id POLICY))
     (enforce-sale-pact sale-id)
     (bind (get-royalty token)
       { 'fungible := fungible:module{fungible-v2}
@@ -171,7 +171,6 @@
     true
   )
 )
-
 
 (if (read-msg 'upgrade)
   ["upgrade complete"]

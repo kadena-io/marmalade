@@ -407,6 +407,10 @@
     ( id:string
       new-uri:string
     )
+    (if (< (get-version id) 1)
+      (enforce false "updatable-uri not supported")
+      true
+    )
     (with-capability (UPDATE-URI-CALL id new-uri)
       (policy-manager.enforce-update-uri (get-token-info id) new-uri)
     )
@@ -526,8 +530,10 @@
   )
 
   (defun get-uri:string (id:string)
-    (at 'uri (read tokens id))
-  )
+    (with-read tokens id {'uri := uri} uri))
+
+  (defun get-version:integer (id:string)
+     (try 0 (with-read tokens id {'version := version} version)))
 
   ;;
   ;; sale

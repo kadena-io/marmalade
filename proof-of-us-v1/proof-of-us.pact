@@ -66,6 +66,8 @@
   (defconst EVENT-ID-MSG-KEY:string "event_id")
   (defconst ATTENDANCE-SUPPLY-KEY:string "attendance_supply")
 
+  (defconst MIN-MAJORITY-THRESHOLD:integer 5)
+
   (defun has-collection-policy:bool (policies)
     (> (length (filter (lambda (policy) (= policy marmalade-v2.collection-policy-v1)) policies)) 0))
 
@@ -189,7 +191,7 @@
         ]
       )
       (with-capability (CONNECT event-id uri)
-        (map (enforce-pou-guard) connection-guards)
+        (enforce-guard-count connection-guards (get-guard-threshold connection-guards))
         (with-capability (INTERNAL token-id)
           (with-capability (COLLECTION_OPERATOR)
             ; Create the connection token
@@ -293,6 +295,29 @@
   )
 
   ;;UTILITY FUNCTIONS
+
+  (defun get-guard-threshold:integer (guards:[guard])
+    (let ((count:integer (length guards)))
+      (if (>= count MIN-MAJORITY-THRESHOLD)
+        (+ 1 (/ count 2))
+        count
+      )
+    )
+  )
+
+  (defun enforce-guard-count:bool (guards:[guard] threshold:integer)
+    "Will succeed if at least the threshold of guards is successfully enforced."
+    (enforce (<= threshold
+      (length
+        (filter
+          (= true)
+          (map (try-enforce-guard) guards))))
+      "Guard threshold not met")
+  )
+
+  (defun try-enforce-guard (guard:guard)
+    (try false (enforce-pou-guard guard))
+  )
 
   (defun enforce-pou-guard:bool (guard:guard)
     (enforce-one "Neither keyset or capability guard passed" [

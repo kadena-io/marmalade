@@ -67,6 +67,7 @@
   (defconst ATTENDANCE-SUPPLY-KEY:string "attendance_supply")
 
   (defconst MIN-MAJORITY-THRESHOLD:integer 5)
+  (defconst MIN-SIGNATURE-THRESHOLD:integer 4)
 
   (defun has-collection-policy:bool (policies)
     (> (length (filter (lambda (policy) (= policy marmalade-v2.collection-policy-v1)) policies)) 0))
@@ -299,7 +300,12 @@
   (defun get-guard-threshold:integer (guards:[guard])
     (let ((count:integer (length guards)))
       (if (>= count MIN-MAJORITY-THRESHOLD)
-        (+ 1 (/ count 2))
+        (let ((threshold:integer (+ 1 (/ count 2))))
+          (if (< threshold MIN-SIGNATURE-THRESHOLD)
+            MIN-SIGNATURE-THRESHOLD
+            threshold
+          )
+        )
         count
       )
     )

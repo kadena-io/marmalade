@@ -84,8 +84,8 @@
     (get-guard-threshold (helper.list-of 4))
   )
 
-  (expect "for array length of 5 should return 3 - at least 51 percent"
-    3
+  (expect "for array length of 5 should return 4 - at least 4 signatures"
+    4
     (get-guard-threshold (helper.list-of 5))
   )
 

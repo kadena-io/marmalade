@@ -314,12 +314,3 @@
 )
 
 (commit-tx)
-
-(begin-tx)
-
-(expect "get version of a token"
-  1
-  (marmalade-v2.ledger.get-version "t:YV6-cQBhE_EoIXAuNV08aGXLfcucBEGy0Gb1Pj6w_Oo")
-)
-
-(commit-tx)

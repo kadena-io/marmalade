@@ -30,6 +30,14 @@
     precision:integer
     supply:decimal
     policies:[module{kip.token-policy-v2}]
+  )
+
+  (defschema token-schema_1
+    id:string
+    uri:string
+    precision:integer
+    supply:decimal
+    policies:[module{kip.token-policy-v2}]
     version:integer
   )
 
@@ -40,6 +48,7 @@
   )
 
   (deftable tokens:{token-schema})
+  (deftable tokens_1:{token-schema_1})
 
   ;;
   ;; Capabilities
@@ -199,19 +208,7 @@
 
   ;  Transform token-schema object to token-info object
   (defun get-token-info:object{kip.token-policy-v2.token-info} (id:string)
-    (with-read tokens id
-     { 'policies := policies:[module{kip.token-policy-v2}]
-     , 'supply := supply
-     , 'precision := precision
-     , 'uri := uri
-     }
-     {
-       'id: id
-       , 'supply: supply
-       , 'precision: precision
-       , 'uri: uri
-       , 'policies: policies
-     } )
+    (drop ['version] (get-token id))
   )
 
   (defun create-account:bool
@@ -230,10 +227,7 @@
   )
 
   (defun total-supply:decimal (id:string)
-    (with-default-read tokens id
-      { 'supply : 0.0 }
-      { 'supply := s }
-      s)
+    (at 'supply (get-token id))
   )
 
   (defun create-token-id:string (token-details:object{token-details}
@@ -261,7 +255,7 @@
     )
     (with-capability (CREATE-TOKEN id)
       (enforce-guard creation-guard)
-      (insert tokens id {
+      (insert tokens_1 id {
         "id": id,
         "uri": uri,
         "precision": precision,
@@ -405,15 +399,13 @@
     ( id:string
       new-uri:string
     )
-    (if (< (get-version id) 1)
-      (enforce false "updatable-uri not supported")
-      true
-    )
+    (let ((version:integer (get-version id)))
+      (enforce (> version 0) "updatable-uri not supported"))
     (with-capability (UPDATE-URI-CALL id new-uri)
       (policy-manager.enforce-update-uri (get-token-info id) new-uri)
     )
     (with-capability (UPDATE-URI id new-uri)
-      (update tokens id { 'uri: new-uri })
+      (update tokens_1 id { 'uri: new-uri })
     )
     true
   )
@@ -487,12 +479,13 @@
 
   (defun update-supply:bool (id:string amount:decimal)
     (require-capability (UPDATE_SUPPLY))
-    (with-default-read tokens id
-      { 'supply: 0.0 }
-      { 'supply := s }
-      (let ((new-supply (+ s amount)))
+    (bind (get-token id) {"supply":= s, "version":= version}
+      (let ( (new-supply (+ s amount)))
+      (if (= version 0)
         (update tokens id {'supply: new-supply })
-        (emit-event (SUPPLY id new-supply))))
+        (update tokens_1 id {'supply: new-supply })
+      )
+      (emit-event (SUPPLY id new-supply))))
   )
 
   (defun enforce-unit:bool (id:string amount:decimal)
@@ -504,7 +497,7 @@
   )
 
   (defun precision:integer (id:string)
-    (at 'precision (read tokens id))
+    (at 'precision (get-token id))
   )
 
   (defpact transfer-crosschain:bool
@@ -528,10 +521,53 @@
   )
 
   (defun get-uri:string (id:string)
-    (with-read tokens id {'uri := uri} uri))
+    (at 'uri (get-token id)))
+
+  (defun get-token:object{token-schema_1} (id:string)
+    (with-default-read tokens_1 id {
+       'id: ""
+      ,'uri: ""
+      ,'precision: -1
+      ,'supply: -1.0
+      ,'policies: []
+      ,'version: -1
+      } {
+      'id:= token_id
+     ,'uri:= uri
+     ,'precision:= precision
+     ,'supply:= supply
+     ,'policies:= policies
+     ,'version:= version
+    }
+    (if (< version 0)
+      (with-read tokens id {
+        'id:= token_id_1
+       ,'uri:= uri_1
+       ,'precision:= precision_1
+       ,'supply:= supply_1
+       ,'policies:= policies_1
+      } {
+        'id: token_id_1
+       ,'uri: uri_1
+       ,'precision: precision_1
+       ,'supply: supply_1
+       ,'policies: policies_1
+       ,'version: 0
+        } )
+        {
+          'id: token_id
+         ,'uri: uri
+         ,'precision: precision
+         ,'supply: supply
+         ,'policies: policies
+         ,'version: version
+      } )
+    )
+  )
 
   (defun get-version:integer (id:string)
-     (try 0 (with-read tokens id {'version := version} version)))
+    (at 'version (get-token id))
+  )
 
   ;;
   ;; sale
@@ -697,8 +733,12 @@
   )
 )
 
-(if (read-msg 'upgrade)
-  ["upgrade complete"]
+(if (read-msg 'upgrade )
+  (if (read-msg 'upgrade_version_1 )
+    (create-table tokens_1)
+    ["upgrade complete"]
+  )
   [ (create-table ledger)
     (create-table tokens) ])
+
 (enforce-guard ADMIN-KS)

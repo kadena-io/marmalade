@@ -110,6 +110,19 @@
    true
    (create-token (read-msg 'token-id) 0 "test-uri-guard" (create-policies DEFAULT) ALWAYS-TRUE))
 
+  (expect "create token succeeds with uri-guard"
+    (read-keyset 'uri_guard )
+    (get-uri-guard (read-msg 'token-id )))
+
+  (expect "get-guards returns all-guards object"
+    {'uri-guard: (read-keyset 'uri_guard )
+    ,'mint-guard: GUARD_SUCCESS
+    ,'burn-guard: GUARD_SUCCESS
+    ,'transfer-guard: GUARD_SUCCESS
+    ,'sale-guard: GUARD_SUCCESS
+    }
+    (get-guards (marmalade-v2.ledger.get-token-info (read-msg 'token-id ))))
+
    (env-sigs [
      { 'key: 'uri
       ,'caps: [ (marmalade-v2.ledger.UPDATE-URI (read-msg 'token-id) "updated-uri")

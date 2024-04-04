@@ -15,7 +15,7 @@
   (use kip.token-policy-v2 [token-info])
   (use marmalade-v2.policy-manager)
 
-  (defschema all_guards
+  (defschema all-guards
     mint-guard:guard
     burn-guard:guard
     sale-guard:guard
@@ -46,7 +46,7 @@
   (defconst GUARD_SUCCESS:guard (create-user-guard (success)))
   (defconst GUARD_FAILURE:guard (create-user-guard (failure)))
 
-  (defcap GUARDS:bool (token-id:string guards:object{all_guards})
+  (defcap GUARDS:bool (token-id:string guards:object{all-guards})
     @doc "Emits event for discovery"
     @event
     true
@@ -114,14 +114,20 @@
   )
 
   (defun get-uri-guard:guard (token-id:string)
-    (with-read uri-guards token-id {
-      "uri-guard":= uri-guard
-    }
-    uri-guard
+    (let ((version:integer (marmalade-v2.ledger.get-version token-id)))
+      (if (= version 0)
+        GUARD_FAILURE
+        (with-read uri-guards token-id
+          {
+            "uri-guard":= uri-guard
+          }
+          uri-guard
+        )
+      )
     )
   )
 
-  (defun get-guards:object{all_guards} (token:object{token-info})
+  (defun get-guards:object{all-guards} (token:object{token-info})
     (with-read policy-guards (at 'id token) {
        'mint-guard:= mint-guard
       ,'burn-guard:= burn-guard

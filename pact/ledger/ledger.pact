@@ -8,12 +8,13 @@
           (> (length account) 2))
     ]
 
-  (implements ledger-v2)
+  (implements marmalade-v2.ledger-v2)
   (implements kip.poly-fungible-v3)
 
   (use kip.poly-fungible-v3 [account-details sender-balance-change receiver-balance-change])
+  (use kip.token-policy-v2 [token-info])
   (use util.fungible-util)
-  (use policy-manager)
+  (use marmalade-v2.policy-manager)
 
   ;; Version
   (defconst VERSION:integer 1)
@@ -32,12 +33,7 @@
     policies:[module{kip.token-policy-v2}]
   )
 
-  (defschema token-schema_1
-    id:string
-    uri:string
-    precision:integer
-    supply:decimal
-    policies:[module{kip.token-policy-v2}]
+  (defschema version
     version:integer
   )
 
@@ -48,7 +44,7 @@
   )
 
   (deftable tokens:{token-schema})
-  (deftable tokens_1:{token-schema_1})
+  (deftable versions:{version})
 
   ;;
   ;; Capabilities
@@ -207,7 +203,7 @@
   )
 
   ;  Transform token-schema object to token-info object
-  (defun get-token-info:object{kip.token-policy-v2.token-info} (id:string)
+  (defun get-token-info:object{token-info} (id:string)
     (drop ['version] (get-token id))
   )
 
@@ -250,17 +246,19 @@
     )
     (with-capability (INIT-CALL id precision uri)
       ;; maps policy list and calls policy::enforce-init
-      (policy-manager.enforce-init
+      (marmalade-v2.policy-manager.enforce-init
         { 'id: id, 'supply: 0.0, 'precision: precision, 'uri: uri,  'policies: policies})
     )
     (with-capability (CREATE-TOKEN id)
       (enforce-guard creation-guard)
-      (insert tokens_1 id {
+      (insert tokens id {
         "id": id,
         "uri": uri,
         "precision": precision,
         "supply": 0.0,
-        "policies": policies,
+        "policies": policies
+      })
+      (insert versions id {
         "version": VERSION
       })
       (emit-event (TOKEN id precision policies uri creation-guard))
@@ -317,7 +315,7 @@
       "sender cannot be the receiver of a transfer")
     (enforce-valid-transfer sender receiver (precision id) amount)
     (with-capability (TRANSFER-CALL id sender receiver amount)
-      (policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
+      (marmalade-v2.policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
     )
     (with-capability (TRANSFER id sender receiver amount)
       (with-read ledger (key id receiver)
@@ -342,7 +340,7 @@
       "sender cannot be the receiver of a transfer")
     (enforce-valid-transfer sender receiver (precision id) amount)
     (with-capability (TRANSFER-CALL id sender receiver amount)
-      (policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
+      (marmalade-v2.policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
     )
     (with-capability (TRANSFER id sender receiver amount)
       (let
@@ -361,7 +359,7 @@
       amount:decimal
     )
     (with-capability (MINT-CALL id account amount)
-      (policy-manager.enforce-mint (get-token-info id) account guard amount)
+      (marmalade-v2.policy-manager.enforce-mint (get-token-info id) account guard amount)
     )
     (with-capability (MINT id account amount)
       (let
@@ -381,7 +379,7 @@
       amount:decimal
     )
     (with-capability (BURN-CALL id account amount)
-      (policy-manager.enforce-burn (get-token-info id) account amount)
+      (marmalade-v2.policy-manager.enforce-burn (get-token-info id) account amount)
     )
     (with-capability (BURN id account amount)
       (let
@@ -402,10 +400,10 @@
     (let ((version:integer (get-version id)))
       (enforce (> version 0) "updatable-uri not supported"))
     (with-capability (UPDATE-URI-CALL id new-uri)
-      (policy-manager.enforce-update-uri (get-token-info id) new-uri)
+      (marmalade-v2.policy-manager.enforce-update-uri (get-token-info id) new-uri)
     )
     (with-capability (UPDATE-URI id new-uri)
-      (update tokens_1 id { 'uri: new-uri })
+      (update tokens id { 'uri: new-uri })
     )
     true
   )
@@ -479,13 +477,12 @@
 
   (defun update-supply:bool (id:string amount:decimal)
     (require-capability (UPDATE_SUPPLY))
-    (bind (get-token id) {"supply":= s, "version":= version}
-      (let ( (new-supply (+ s amount)))
-      (if (= version 0)
+    (with-default-read tokens id
+      { 'supply: 0.0 }
+      { 'supply := s }
+      (let ((new-supply (+ s amount)))
         (update tokens id {'supply: new-supply })
-        (update tokens_1 id {'supply: new-supply })
-      )
-      (emit-event (SUPPLY id new-supply))))
+        (emit-event (SUPPLY id new-supply))))
   )
 
   (defun enforce-unit:bool (id:string amount:decimal)
@@ -523,50 +520,35 @@
   (defun get-uri:string (id:string)
     (at 'uri (get-token id)))
 
-  (defun get-token:object{token-schema_1} (id:string)
-    (with-default-read tokens_1 id {
-       'id: ""
-      ,'uri: ""
-      ,'precision: -1
-      ,'supply: -1.0
-      ,'policies: []
-      ,'version: -1
-      } {
-      'id:= token_id
-     ,'uri:= uri
-     ,'precision:= precision
-     ,'supply:= supply
-     ,'policies:= policies
-     ,'version:= version
-    }
-    (if (< version 0)
+  (defun get-token:object{token-schema} (id:string)
       (with-read tokens id {
-        'id:= token_id_1
-       ,'uri:= uri_1
-       ,'precision:= precision_1
-       ,'supply:= supply_1
-       ,'policies:= policies_1
+        'id:= token-id
+       ,'uri:= uri
+       ,'precision:= precision
+       ,'supply:= supply
+       ,'policies:= policies
       } {
-        'id: token_id_1
-       ,'uri: uri_1
-       ,'precision: precision_1
-       ,'supply: supply_1
-       ,'policies: policies_1
-       ,'version: 0
-        } )
-        {
-          'id: token_id
-         ,'uri: uri
-         ,'precision: precision
-         ,'supply: supply
-         ,'policies: policies
-         ,'version: version
-      } )
+        'id: token-id
+       ,'uri: uri
+       ,'precision: precision
+       ,'supply: supply
+       ,'policies: policies
+      }
     )
   )
 
   (defun get-version:integer (id:string)
-    (at 'version (get-token id))
+    (with-default-read versions id
+      {'version: 0 }
+      {'version:= version }
+      (if (< version 1)
+        (with-read tokens id
+          {'id:= id}
+          version
+        )
+        version
+      )
+    )
   )
 
   ;;
@@ -625,7 +607,7 @@
       ;; Step 0: offer
       (let ((token-info (get-token-info id)))
         (with-capability (OFFER-CALL id seller amount timeout (pact-id))
-          (policy-manager.enforce-offer token-info seller amount timeout (pact-id)))
+          (marmalade-v2.policy-manager.enforce-offer token-info seller amount timeout (pact-id)))
         (with-capability (SALE id seller amount timeout (pact-id))
           (offer id seller amount))
         (pact-id)
@@ -633,7 +615,7 @@
       ;;Step 0, rollback: withdraw
       (let ((token-info (get-token-info id)))
         (with-capability (WITHDRAW-CALL id seller amount timeout (pact-id))
-          (policy-manager.enforce-withdraw token-info seller amount timeout (pact-id)))
+          (marmalade-v2.policy-manager.enforce-withdraw token-info seller amount timeout (pact-id)))
         (with-capability (WITHDRAW id seller amount timeout (pact-id))
           (withdraw id seller amount))
         (pact-id)
@@ -644,7 +626,7 @@
       (let ( (buyer:string (read-msg "buyer"))
               (buyer-guard:guard (read-msg "buyer-guard")) )
           (with-capability (BUY-CALL id seller buyer amount (pact-id))
-            (policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
+            (marmalade-v2.policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
           )
           (with-capability (BUY id seller buyer amount (pact-id))
             (buy id seller buyer buyer-guard amount)
@@ -735,7 +717,7 @@
 
 (if (read-msg 'upgrade )
   (if (read-msg 'upgrade_version_1 )
-    (create-table tokens_1)
+    [ (create-table versions) ]
     ["upgrade complete"]
   )
   [ (create-table ledger)

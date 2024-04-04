@@ -10,8 +10,8 @@
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
 
-  (use policy-manager)
-  (use policy-manager [QUOTE-MSG-KEY quote-spec quote-schema])
+  (use marmalade-v2.policy-manager)
+  (use marmalade-v2.policy-manager [QUOTE-MSG-KEY quote-spec quote-schema])
   (use kip.token-policy-v2 [token-info])
 
   (implements kip.token-policy-v2)

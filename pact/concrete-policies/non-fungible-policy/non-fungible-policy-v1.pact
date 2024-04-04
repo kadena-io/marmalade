@@ -13,7 +13,7 @@
   (implements kip.token-policy-v2)
   (implements kip.updatable-uri-policy-v1)
 
-  (use policy-manager)
+  (use marmalade-v2.policy-manager)
   (use kip.token-policy-v2 [token-info])
 
   (defun enforce-init:bool

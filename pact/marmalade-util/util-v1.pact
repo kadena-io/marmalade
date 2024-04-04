@@ -2,9 +2,9 @@
 
 (module util-v1 GOVERNANCE
   (use kip.token-policy-v2)
-  (use ledger)
-  (use policy-manager)
-  (use policy-manager [CONCRETE_POLICY_LIST NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.policy-manager)
+  (use marmalade-v2.policy-manager [CONCRETE_POLICY_LIST NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
 
   (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
 

@@ -128,6 +128,7 @@
    , 'upgrade: true
    , 'upgrade_version_1: true })
   (load "./ledger/ledger.pact")
+  (load "./concrete-policies/guard-policy/guard-policy-v1.pact")
 (commit-tx)
 
 (begin-tx "create-token")

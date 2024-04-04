@@ -13,28 +13,40 @@
   (implements kip.updatable-uri-policy-v1)
 
   (use kip.token-policy-v2 [token-info])
-  (use policy-manager)
+  (use marmalade-v2.policy-manager)
+
+  (defschema all_guards
+    mint-guard:guard
+    burn-guard:guard
+    sale-guard:guard
+    transfer-guard:guard
+    uri-guard:guard
+  )
 
   (defschema guards
-    uri-guard:guard
     mint-guard:guard
     burn-guard:guard
     sale-guard:guard
     transfer-guard:guard
   )
 
-  (deftable policy-guards:{guards})
+  (defschema uri-guard
+    uri-guard:guard
+  )
 
-  (defconst URI-GUARD-MSG-KEY:string "uri_guard")
+  (deftable policy-guards:{guards})
+  (deftable uri-guards:{uri-guard})
+
   (defconst MINT-GUARD-MSG-KEY:string "mint_guard")
   (defconst BURN-GUARD-MSG-KEY:string "burn_guard")
   (defconst SALE-GUARD-MSG-KEY:string "sale_guard")
   (defconst TRANSFER-GUARD-MSG-KEY:string "transfer_guard")
+  (defconst URI-GUARD-MSG-KEY:string "uri_guard")
 
   (defconst GUARD_SUCCESS:guard (create-user-guard (success)))
   (defconst GUARD_FAILURE:guard (create-user-guard (failure)))
 
-  (defcap GUARDS:bool (token-id:string guards:object{guards})
+  (defcap GUARDS:bool (token-id:string guards:object{all_guards})
     @doc "Emits event for discovery"
     @event
     true
@@ -102,15 +114,30 @@
   )
 
   (defun get-uri-guard:guard (token-id:string)
-    (with-read policy-guards token-id {
+    (with-read uri-guards token-id {
       "uri-guard":= uri-guard
     }
     uri-guard
     )
   )
 
-  (defun get-guards:object{guards} (token:object{token-info})
-    (read policy-guards (at 'id token))
+  (defun get-guards:object{all_guards} (token:object{token-info})
+    (with-read policy-guards (at 'id token) {
+       'mint-guard:= mint-guard
+      ,'burn-guard:= burn-guard
+      ,'sale-guard:= sale-guard
+      ,'transfer-guard:= transfer-guard
+      }
+      (with-default-read uri-guards (at 'id token)
+        {'uri-guard: GUARD_FAILURE}
+        {'uri-guard:= uri-guard}
+      {'uri-guard: uri-guard
+      ,'mint-guard: mint-guard
+      ,'burn-guard: burn-guard
+      ,'sale-guard: sale-guard
+      ,'transfer-guard: transfer-guard
+      })
+    )
   )
 
   (defun enforce-init:bool
@@ -127,15 +154,18 @@
     \ the created token"
     (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) POLICY))
     (let ((guards:object{guards}
-      { 'uri-guard: (try GUARD_SUCCESS (read-msg URI-GUARD-MSG-KEY) )
-      , 'mint-guard: (try GUARD_SUCCESS (read-msg MINT-GUARD-MSG-KEY) )
-      , 'burn-guard: (try GUARD_SUCCESS (read-msg BURN-GUARD-MSG-KEY) )
-      , 'sale-guard: (try GUARD_SUCCESS (read-msg SALE-GUARD-MSG-KEY) )
-      , 'transfer-guard: (try GUARD_SUCCESS (read-msg TRANSFER-GUARD-MSG-KEY) ) } ))
-    (insert policy-guards (at 'id token)
-      guards)
-    (emit-event (GUARDS (at "id" token) guards)) )
-    true
+          { 'mint-guard: (try GUARD_SUCCESS (read-msg MINT-GUARD-MSG-KEY) )
+          , 'burn-guard: (try GUARD_SUCCESS (read-msg BURN-GUARD-MSG-KEY) )
+          , 'sale-guard: (try GUARD_SUCCESS (read-msg SALE-GUARD-MSG-KEY) )
+          , 'transfer-guard: (try GUARD_SUCCESS (read-msg TRANSFER-GUARD-MSG-KEY) ) } )
+          (uri-guard:object{uri-guard}
+            { 'uri-guard: (try GUARD_SUCCESS (read-msg URI-GUARD-MSG-KEY) ) }))
+      (insert policy-guards (at 'id token)
+        guards)
+      (insert uri-guards (at 'id token)
+        uri-guard)
+      (emit-event (GUARDS (at "id" token) (+ uri-guard guards))) )
+      true
   )
 
   (defun enforce-mint:bool
@@ -229,8 +259,11 @@
 )
 
 (if (read-msg 'upgrade )
-  ["upgrade complete"]
-  [ (create-table policy-guards) ]
+  (if (read-msg 'upgrade_version_1 )
+    [ (create-table uri-guards) ]
+    ["upgrade complete"]
   )
+  [ (create-table policy-guards) ]
+)
 
 (enforce-guard ADMIN-KS)

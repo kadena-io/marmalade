@@ -67,7 +67,6 @@
   (defconst EVENT-ID-MSG-KEY:string "event_id")
   (defconst ATTENDANCE-SUPPLY-KEY:string "attendance_supply")
 
-  (defconst MIN-MAJORITY-THRESHOLD:integer 5)
   (defconst MIN-SIGNATURE-THRESHOLD:integer 4)
 
   (defun has-collection-policy:bool (policies)
@@ -300,7 +299,7 @@
 
   (defun get-guard-threshold:integer (guards:[guard])
     (let ((count:integer (length guards)))
-      (if (>= count MIN-MAJORITY-THRESHOLD)
+      (if (> count MIN-SIGNATURE-THRESHOLD)
         (let ((threshold:integer (+ 1 (/ count 2))))
           (if (< threshold MIN-SIGNATURE-THRESHOLD)
             MIN-SIGNATURE-THRESHOLD

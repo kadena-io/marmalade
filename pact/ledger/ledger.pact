@@ -203,8 +203,20 @@
   )
 
   ;  Transform token-schema object to token-info object
-  (defun get-token-info:object{token-info} (id:string)
-    (drop ['version] (get-token id))
+  (defun get-token-info:object{kip.token-policy-v2.token-info} (id:string)
+    (with-read tokens id
+     { 'policies := policies:[module{kip.token-policy-v2}]
+     , 'supply := supply
+     , 'precision := precision
+     , 'uri := uri
+     }
+     {
+       'id: id
+       , 'supply: supply
+       , 'precision: precision
+       , 'uri: uri
+       , 'policies: policies
+     } )
   )
 
   (defun create-account:bool
@@ -220,10 +232,6 @@
       , "account" : account
       })
     (emit-event (ACCOUNT_GUARD id account guard))
-  )
-
-  (defun total-supply:decimal (id:string)
-    (at 'supply (get-token id))
   )
 
   (defun create-token-id:string (token-details:object{token-details}
@@ -493,10 +501,6 @@
       "precision violation"))
   )
 
-  (defun precision:integer (id:string)
-    (at 'precision (get-token id))
-  )
-
   (defpact transfer-crosschain:bool
     ( id:string
       sender:string
@@ -517,23 +521,24 @@
     (format "{}:{}" [id account])
   )
 
-  (defun get-uri:string (id:string)
-    (at 'uri (get-token id)))
+  (defun total-supply:decimal (id:string)
+    (with-default-read tokens id
+      { 'supply : 0.0 }
+      { 'supply := s }
+      s)
+  )
 
-  (defun get-token:object{token-schema} (id:string)
-      (with-read tokens id {
-        'id:= token-id
-       ,'uri:= uri
-       ,'precision:= precision
-       ,'supply:= supply
-       ,'policies:= policies
-      } {
-        'id: token-id
-       ,'uri: uri
-       ,'precision: precision
-       ,'supply: supply
-       ,'policies: policies
-      }
+  (defun precision:integer (id:string)
+    (with-read tokens id
+      { 'precision := precision }
+      precision
+    )
+  )
+
+  (defun get-uri:string (id:string)
+    (with-read tokens id
+      { 'uri := uri }
+      uri
     )
   )
 

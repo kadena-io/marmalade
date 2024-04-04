@@ -6,6 +6,7 @@ signers:
 data:
   ns: {{marmalade_namespace}}
   upgrade: {{is_upgrade}}
+  upgrade_version_1: {{upgrade_version_1}}
 networkId: {{network}}
 publicMeta:
   chainId: "{{chain}}"

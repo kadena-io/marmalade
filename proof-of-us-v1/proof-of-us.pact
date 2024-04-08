@@ -12,7 +12,9 @@
   (use marmalade-v2.policy-manager)
   (use marmalade-v2.collection-policy-v1)
   (use marmalade-v2.util-v1 [curr-time])
+  (use n_eef68e581f767dd66c4d4c39ed922be944ede505.webauthn-wallet)
 
+  (defconst POLICY:string (format "{}" [proof-of-us]))
   (defconst TOKEN-POLICIES [marmalade-v2.collection-policy-v1 proof-of-us])
 
   (defcap EVENT (collection-id:string event-id:string name:string uri:string)
@@ -65,6 +67,8 @@
 
   (defconst EVENT-ID-MSG-KEY:string "event_id")
   (defconst ATTENDANCE-SUPPLY-KEY:string "attendance_supply")
+
+  (defconst MIN-SIGNATURE-THRESHOLD:integer 4)
 
   (defun has-collection-policy:bool (policies)
     (> (length (filter (lambda (policy) (= policy marmalade-v2.collection-policy-v1)) policies)) 0))
@@ -189,7 +193,7 @@
         ]
       )
       (with-capability (CONNECT event-id uri)
-        (map (enforce-pou-guard) connection-guards)
+        (enforce-guard-count connection-guards (get-guard-threshold connection-guards))
         (with-capability (INTERNAL token-id)
           (with-capability (COLLECTION_OPERATOR)
             ; Create the connection token
@@ -223,7 +227,7 @@
     ( token:object{token-info})
     @doc "The function is run at `create-token` step of marmalade-v2.ledger.create-token"
 
-    (require-capability (marmalade-v2.policy-manager.INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) proof-of-us))
+    (require-capability (marmalade-v2.policy-manager.INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) POLICY))
     (require-capability (INTERNAL (at "id" token)))
 
     (enforce (= (at 'precision token) 0) "Precision must be 0 for proof-of-us tokens")
@@ -237,7 +241,7 @@
       guard:guard
       amount:decimal
     )
-    (require-capability (marmalade-v2.policy-manager.MINT-CALL (at "id" token) account amount proof-of-us))
+    (require-capability (marmalade-v2.policy-manager.MINT-CALL (at "id" token) account amount POLICY))
     (require-capability (INTERNAL (at "id" token)))
 
     (enforce (= amount 1.0) "Amount must be 1.0 for proof-of-us tokens")
@@ -294,10 +298,38 @@
 
   ;;UTILITY FUNCTIONS
 
+  (defun get-guard-threshold:integer (guards:[guard])
+    (let ((count:integer (length guards)))
+      (if (> count MIN-SIGNATURE-THRESHOLD)
+        (let ((threshold:integer (+ 1 (/ count 2))))
+          (if (< threshold MIN-SIGNATURE-THRESHOLD)
+            MIN-SIGNATURE-THRESHOLD
+            threshold
+          )
+        )
+        count
+      )
+    )
+  )
+
+  (defun enforce-guard-count:bool (guards:[guard] threshold:integer)
+    "Will succeed if at least the threshold of guards is successfully enforced."
+    (enforce (<= threshold
+      (length
+        (filter
+          (= true)
+          (map (try-enforce-guard) guards))))
+      "Guard threshold not met")
+  )
+
+  (defun try-enforce-guard (guard:guard)
+    (try false (enforce-pou-guard guard))
+  )
+
   (defun enforce-pou-guard:bool (guard:guard)
     (enforce-one "Neither keyset or capability guard passed" [
       (enforce-guard guard)
-      (n_eef68e581f767dd66c4d4c39ed922be944ede505.webauthn-wallet.enforce-authenticated (create-principal guard))
+      (enforce-authenticated (create-principal guard))
     ])
   )
 

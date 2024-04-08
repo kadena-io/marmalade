@@ -16,7 +16,7 @@
  (namespace "n_eef68e581f767dd66c4d4c39ed922be944ede505")
  (module webauthn-wallet G
    (defcap G() true)
-   (defun enforce-authenticated:bool (w:string) true)
+   (defun enforce-authenticated:bool (w:string) false)
  )
 (commit-tx)
 
@@ -42,7 +42,78 @@
   (define-keyset (+ (read-msg 'ns) ".pou-admin") (read-keyset 'proof-of-us))
 
   (load "proof-of-us.pact")
-  ; (typecheck "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us")
+  (typecheck "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us")
+(commit-tx)
+
+(begin-tx "Test get-guard-threshold function")
+  (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)
+
+  (env-data {
+    "guard": ["6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"]
+  })
+
+  (module helper G
+    (defcap G() true)
+    (defun list-of (count:integer)
+      (map (lambda (x) (read-keyset 'guard)) (enumerate 0 (- count 1)))
+    )
+  )
+
+  (expect "helper returns array length based on input count"
+    [(read-keyset 'guard) (read-keyset 'guard)]
+    (helper.list-of 2)
+  )
+
+  (expect "for array length of 1 should return 1"
+    1
+    (get-guard-threshold (helper.list-of 1))
+  )
+
+  (expect "for array length of 2 should return 2"
+    2
+    (get-guard-threshold (helper.list-of 2))
+  )
+
+  (expect "for array length of 3 should return 3"
+    3
+    (get-guard-threshold (helper.list-of 3))
+  )
+
+  (expect "for array length of 4 should return 4"
+    4
+    (get-guard-threshold (helper.list-of 4))
+  )
+
+  (expect "for array length of 5 should return 4 - at least 4 signatures"
+    4
+    (get-guard-threshold (helper.list-of 5))
+  )
+
+  (expect "for array length of 6 should return 4 - at least 51 percent"
+    4
+    (get-guard-threshold (helper.list-of 6))
+  )
+
+  (expect "for array length of 7 should return 4 - at least 51 percent"
+    4
+    (get-guard-threshold (helper.list-of 7))
+  )
+
+  (expect "for array length of 8 should return 5 - at least 51 percent"
+    5
+    (get-guard-threshold (helper.list-of 8))
+    )
+  
+  (expect "for array length of 9 should return 5 - at least 51 percent"
+    5
+    (get-guard-threshold (helper.list-of 9))
+    )
+    
+  (expect "for array length of 10 should return 6 - at least 51 percent"
+    6
+    (get-guard-threshold (helper.list-of 10))
+  )
+
 (commit-tx)
 
 (begin-tx "Create a collection for proof of us")
@@ -182,6 +253,89 @@
 
 (commit-tx)
 
+(begin-tx "Should only be able to mint single attendance token")
+  (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)
+  (use marmalade-v2.util-v1)
+
+  (env-chain-data {"block-time": (time "2024-02-01T20:30:00Z")})
+
+  (env-data {
+    "event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
+    ,"attendant": "k:1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+    ,"attendant_guard": ["1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"]
+    ,"token_id": "t:iyHsPbrPsit6Yu4RXCwib6XqUtUWLT0TAAKAV_lnXlM"
+  })
+
+  (env-sigs [
+    { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+      ,"caps": [(ATTEND (read-msg 'event_id))]
+    }
+  ])
+
+  (expect-failure "should fail because token was already minted"
+    "Account already has a token"
+    (mint-attendance-token
+      (read-msg 'event_id)
+      (read-msg 'attendant)
+      (read-keyset 'attendant_guard)
+    )
+  )
+
+(commit-tx)
+
+(begin-tx "Should not be able to mint an attendance token directly")
+  (use marmalade-v2.ledger)
+  (use mini-guard-utils)
+
+  (env-chain-data {"block-time": (time "2024-02-01T20:30:00Z")})
+
+  (env-data {
+    "event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
+    ,"attendant": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+    ,"attendant_guard": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"]
+    ,"token_id": "t:iyHsPbrPsit6Yu4RXCwib6XqUtUWLT0TAAKAV_lnXlM"
+  })
+
+  (env-sigs [
+    { 'key: "e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+     ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token_id) (read-msg 'attendant) 1.0)]
+    }])
+
+  (expect-failure "failed to mint the token directly"
+    "require-capability: not granted: (n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.INTERNAL"
+    (mint (read-msg 'token_id) (read-msg 'attendant) (read-keyset 'attendant_guard ) 1.0))
+
+(commit-tx)
+
+(begin-tx "Should not be able to mint an attendance token outside of event time")
+  (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)
+  (use marmalade-v2.util-v1)
+
+  (env-chain-data {"block-time": (time "2024-04-01T20:30:00Z")})
+
+  (env-data {
+    "event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
+    ,"attendant": "k:1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+    ,"attendant_guard": ["1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"]
+    ,"token_id": "t:iyHsPbrPsit6Yu4RXCwib6XqUtUWLT0TAAKAV_lnXlM"
+  })
+
+  (env-sigs [
+    { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+      ,"caps": [(ATTEND (read-msg 'event_id))]
+    }
+  ])
+
+  (expect-failure "failed to mint"
+    "Minting is not allowed outside of event time"
+    (mint-attendance-token
+      (read-msg 'event_id)
+      (read-msg 'attendant)
+      (read-keyset 'attendant_guard)
+    )
+  )
+(commit-tx)
+
 (begin-tx "Mint connection token")
   (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)
   (use marmalade-v2.ledger)
@@ -243,34 +397,196 @@
     (map (remove "module-hash")  (env-events true)))
 (commit-tx)
 
-(begin-tx "Should only be able to mint single attendance token")
+(begin-tx "Should only need 51 percent of signatures to mint connection token if above minimum majority")
   (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.collection-policy-v1)
   (use marmalade-v2.util-v1)
 
   (env-chain-data {"block-time": (time "2024-02-01T20:30:00Z")})
 
   (env-data {
-    "event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
-    ,"attendant": "k:1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
-    ,"attendant_guard": ["1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"]
-    ,"token_id": "t:iyHsPbrPsit6Yu4RXCwib6XqUtUWLT0TAAKAV_lnXlM"
+    "uri": "kadena://event-51-percent"
+    ,"event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
+    ,"collection_id": "collection:mhjYGlB0OrhjM8pxHrFTkBFLnP2tZHdr8gU5QH3cuvo"
+    ,"attendant_1": "k:6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
+    ,"attendant_1_guard": ["6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"]
+    ,"attendant_2": "k:1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+    ,"attendant_2_guard": ["1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"]
+    ,"attendant_3": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+    ,"attendant_3_guard": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"]
+    ,"attendant_4": "k:05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"
+    ,"attendant_4_guard": ["05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"]
+    ,"attendant_5": "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7"
+    ,"attendant_5_guard": ["15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7"]
+    ,"attendant_6": "k:9cb0617446a85d12aa5164aceb1ad9eb7234ccf2ede3858744cc62c620b9133e"
+    ,"attendant_6_guard": ["9cb0617446a85d12aa5164aceb1ad9eb7234ccf2ede3858744cc62c620b9133e"]
   })
 
   (env-sigs [
+    { "key": "6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
+      ,"caps": [
+        (CONNECT (read-msg 'event_id) (read-msg 'uri))
+      ]
+    },
     { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
-      ,"caps": [(ATTEND (read-msg 'event_id))]
+      ,"caps": [
+        (CONNECT (read-msg 'event_id) (read-msg 'uri))
+      ]
+    },
+    { "key": "e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+      ,"caps": [
+        (CONNECT (read-msg 'event_id) (read-msg 'uri))
+      ]
     }
   ])
 
-  (expect-failure "should fail because token was already minted"
-    "Account already has a token"
-    (mint-attendance-token
-      (read-msg 'event_id)
-      (read-msg 'attendant)
-      (read-keyset 'attendant_guard)
+  (expect-failure "fail if less than 51 percent of signatures are provided"
+    "Guard threshold not met"
+    (create-and-mint-connection-token
+      (read-msg 'uri)
+      [
+        (read-keyset 'attendant_1_guard) 
+        (read-keyset 'attendant_2_guard)
+        (read-keyset 'attendant_3_guard)
+        (read-keyset 'attendant_4_guard)
+        (read-keyset 'attendant_5_guard)
+        (read-keyset 'attendant_6_guard)
+      ]
     )
   )
 
+  (env-sigs [
+    { "key": "6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
+      ,"caps": [
+        (CONNECT (read-msg 'event_id) (read-msg 'uri))
+      ]
+    },
+    { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+      ,"caps": [
+        (CONNECT (read-msg 'event_id) (read-msg 'uri))
+      ]
+    },
+    { "key": "e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+      ,"caps": [
+        (CONNECT (read-msg 'event_id) (read-msg 'uri))
+      ]
+    },
+    { "key": "05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"
+      ,"caps": [
+        (CONNECT (read-msg 'event_id) (read-msg 'uri))
+      ]
+    }
+  ])
+
+  (expect "for a group of 6 guards only 4 signatures are required"
+    "t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM"
+    (create-and-mint-connection-token
+      (read-msg 'uri)
+      [
+        (read-keyset 'attendant_1_guard) 
+        (read-keyset 'attendant_2_guard)
+        (read-keyset 'attendant_3_guard)
+        (read-keyset 'attendant_4_guard)
+        (read-keyset 'attendant_5_guard)
+        (read-keyset 'attendant_6_guard)
+      ]
+    )
+  )
+
+  (expect "events"
+    [
+      {"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.CONNECT","params": ["proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4" (read-msg 'uri)]}
+      ,{"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:mhjYGlB0OrhjM8pxHrFTkBFLnP2tZHdr8gU5QH3cuvo" "t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM"]}
+      ,{"name": "marmalade-v2.ledger.TOKEN","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" 0 TOKEN-POLICIES (read-msg 'uri) (create-capability-guard (CONNECT (read-msg 'event_id) (read-msg 'uri))) ]}
+      
+      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" (read-msg 'attendant_1) 1.0]}
+      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" (read-msg 'attendant_1) (read-keyset 'attendant_1_guard)]}
+      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_1),"current": 1.0,"previous": 0.0}]}
+      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" 1.0]}
+      
+      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" (read-msg 'attendant_2) 1.0]}
+      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" (read-msg 'attendant_2) (read-keyset 'attendant_2_guard)]}
+      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_2),"current": 1.0,"previous": 0.0}]}
+      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" 2.0]}
+      
+      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" (read-msg 'attendant_3) 1.0]}
+      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" (read-msg 'attendant_3) (read-keyset 'attendant_3_guard)]}
+      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_3),"current": 1.0,"previous": 0.0}]}
+      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" 3.0]}
+      
+      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" (read-msg 'attendant_4) 1.0]}
+      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" (read-msg 'attendant_4) (read-keyset 'attendant_4_guard)]}
+      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_4),"current": 1.0,"previous": 0.0}]}
+      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" 4.0]}
+      
+      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" (read-msg 'attendant_5) 1.0]}
+      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" (read-msg 'attendant_5) (read-keyset 'attendant_5_guard)]}
+      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_5),"current": 1.0,"previous": 0.0}]}
+      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" 5.0]}
+      
+      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" (read-msg 'attendant_6) 1.0]}
+      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" (read-msg 'attendant_6) (read-keyset 'attendant_6_guard)]}
+      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_6),"current": 1.0,"previous": 0.0}]}
+      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:42Jr_sO-6YFYoFUfsb6s2viqoc4FkpR13fs5EopnGfM" 6.0]}    
+    ]
+    (map (remove "module-hash")  (env-events true)))
+
+(commit-tx)
+
+(begin-tx "Should be able to mint connection token without event")
+  (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.collection-policy-v1)
+  (use marmalade-v2.util-v1)
+
+  (env-chain-data {"block-time": (time "2024-02-01T20:30:00Z")})
+
+  (env-data {
+    "uri": "kadena://event-1-2"
+    ,"collection_id": "collection:mhjYGlB0OrhjM8pxHrFTkBFLnP2tZHdr8gU5QH3cuvo"
+    ,"attendant_1": "k:6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
+    ,"attendant_1_guard": ["6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"]
+    ,"attendant_2": "k:1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+    ,"attendant_2_guard": ["1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"]
+  })
+
+  (env-sigs [
+    { "key": "6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
+      ,"caps": [
+        (CONNECT "" (read-msg 'uri))
+      ]
+    },
+    { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
+      ,"caps": [
+        (CONNECT "" (read-msg 'uri))
+      ]
+    }
+  ])
+
+  (expect "successfully create a group connection"
+    "t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U"
+    (create-and-mint-connection-token
+      (read-msg 'uri)
+      [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)]
+    )
+  )
+
+  (expect "events"
+    [
+      {"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.CONNECT","params": ["" (read-msg 'uri)]}
+      ,{"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:mhjYGlB0OrhjM8pxHrFTkBFLnP2tZHdr8gU5QH3cuvo" "t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U"]}
+      ,{"name": "marmalade-v2.ledger.TOKEN","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" 0 TOKEN-POLICIES (read-msg 'uri) (create-capability-guard (CONNECT "" (read-msg 'uri))) ]}
+      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" (read-msg 'attendant_1) 1.0]}
+      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" (read-msg 'attendant_1) (read-keyset 'attendant_1_guard)]}
+      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_1),"current": 1.0,"previous": 0.0}]}
+      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" 1.0]}
+      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" (read-msg 'attendant_2) 1.0]}
+      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" (read-msg 'attendant_2) (read-keyset 'attendant_2_guard)]}
+      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_2),"current": 1.0,"previous": 0.0}]}
+      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" 2.0]}
+    ]
+    (map (remove "module-hash")  (env-events true)))
 (commit-tx)
 
 (begin-tx "Should only be able to mint single connection token")
@@ -311,30 +627,6 @@
       [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)]
     )
   )
-
-(commit-tx)
-
-(begin-tx "Should not be able to mint an attendance token directly")
-  (use marmalade-v2.ledger)
-  (use mini-guard-utils)
-
-  (env-chain-data {"block-time": (time "2024-02-01T20:30:00Z")})
-
-  (env-data {
-    "event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
-    ,"attendant": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
-    ,"attendant_guard": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"]
-    ,"token_id": "t:iyHsPbrPsit6Yu4RXCwib6XqUtUWLT0TAAKAV_lnXlM"
-  })
-
-  (env-sigs [
-    { 'key: "e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
-     ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token_id) (read-msg 'attendant) 1.0)]
-    }])
-
-  (expect-failure "failed to mint the token directly"
-    "require-capability: not granted: (n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.INTERNAL"
-    (mint (read-msg 'token_id) (read-msg 'attendant) (read-keyset 'attendant_guard ) 1.0))
 
 (commit-tx)
 
@@ -391,35 +683,6 @@
     (create-and-mint-connection-token
       (read-msg 'uri)
       [(read-keyset 'attendant_1_guard)]
-    )
-  )
-(commit-tx)
-
-(begin-tx "Should not be able to mint an attendance token outside of event time")
-  (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)
-  (use marmalade-v2.util-v1)
-
-  (env-chain-data {"block-time": (time "2024-04-01T20:30:00Z")})
-
-  (env-data {
-    "event_id": "proof-of-us:jaBJwplwj1eKKqJE8qrmxpa5075pVdkgkldtqltoot4"
-    ,"attendant": "k:1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
-    ,"attendant_guard": ["1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"]
-    ,"token_id": "t:iyHsPbrPsit6Yu4RXCwib6XqUtUWLT0TAAKAV_lnXlM"
-  })
-
-  (env-sigs [
-    { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
-      ,"caps": [(ATTEND (read-msg 'event_id))]
-    }
-  ])
-
-  (expect-failure "failed to mint"
-    "Minting is not allowed outside of event time"
-    (mint-attendance-token
-      (read-msg 'event_id)
-      (read-msg 'attendant)
-      (read-keyset 'attendant_guard)
     )
   )
 (commit-tx)
@@ -608,57 +871,3 @@
   )
 (commit-tx)
 
-(begin-tx "Mint connection token without event")
-  (use n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us)
-  (use marmalade-v2.ledger)
-  (use marmalade-v2.collection-policy-v1)
-  (use marmalade-v2.util-v1)
-
-  (env-chain-data {"block-time": (time "2024-02-01T20:30:00Z")})
-
-  (env-data {
-    "uri": "kadena://event-1-2"
-    ,"collection_id": "collection:mhjYGlB0OrhjM8pxHrFTkBFLnP2tZHdr8gU5QH3cuvo"
-    ,"attendant_1": "k:6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
-    ,"attendant_1_guard": ["6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"]
-    ,"attendant_2": "k:1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
-    ,"attendant_2_guard": ["1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"]
-  })
-
-  (env-sigs [
-    { "key": "6dd79e5d5081b96fc1072637a781da9d97b2c67114812933b413700ec3d8bdae"
-      ,"caps": [
-        (CONNECT "" (read-msg 'uri))
-      ]
-    },
-    { "key": "1c2c0ed4ae333088dd231a2e0e13f71f98186fedc016e4df95d7a79be83287d8"
-      ,"caps": [
-        (CONNECT "" (read-msg 'uri))
-      ]
-    }
-  ])
-
-  (expect "successfully create a group connection"
-    "t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U"
-    (create-and-mint-connection-token
-      (read-msg 'uri)
-      [(read-keyset 'attendant_1_guard) (read-keyset 'attendant_2_guard)]
-    )
-  )
-
-  (expect "events"
-    [
-      {"name": "n_31cd1d224d06ca2b327f1b03f06763e305099250.proof-of-us.CONNECT","params": ["" (read-msg 'uri)]}
-      ,{"name": "marmalade-v2.collection-policy-v1.TOKEN-COLLECTION","params": ["collection:mhjYGlB0OrhjM8pxHrFTkBFLnP2tZHdr8gU5QH3cuvo" "t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U"]}
-      ,{"name": "marmalade-v2.ledger.TOKEN","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" 0 TOKEN-POLICIES (read-msg 'uri) (create-capability-guard (CONNECT "" (read-msg 'uri))) ]}
-      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" (read-msg 'attendant_1) 1.0]}
-      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" (read-msg 'attendant_1) (read-keyset 'attendant_1_guard)]}
-      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_1),"current": 1.0,"previous": 0.0}]}
-      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" 1.0]}
-      ,{"name": "marmalade-v2.ledger.MINT","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" (read-msg 'attendant_2) 1.0]}
-      ,{"name": "marmalade-v2.ledger.ACCOUNT_GUARD","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" (read-msg 'attendant_2) (read-keyset 'attendant_2_guard)]}
-      ,{"name": "marmalade-v2.ledger.RECONCILE","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" 1.0 {"account": "","current": 0.0,"previous": 0.0} {"account": (read-msg 'attendant_2),"current": 1.0,"previous": 0.0}]}
-      ,{"name": "marmalade-v2.ledger.SUPPLY","params": ["t:KNWEDM6nNTKdzXBcPSEbIMv5-DMvTP16nMBfSbQTm-U" 2.0]}
-    ]
-    (map (remove "module-hash")  (env-events true)))
-(commit-tx)

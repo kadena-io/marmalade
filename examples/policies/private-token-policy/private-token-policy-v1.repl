@@ -79,14 +79,19 @@
     ,"token-id": (create-token-id { 'uri: (hash "ipfs://secret-uri"), 'precision: 0, 'policies: [marmalade-examples.private-token-policy-v1 marmalade-v2.guard-policy-v1] } ALWAYS-TRUE)
     ,"uri-guard": {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
   })
+
+  (expect "token has not been revealed"
+    false
+    (is-revealed (read-msg 'token-id))
+  )
   
   (expect-failure "fail if new URI is empty string"
     "URI cannot be empty"
-    (update-uri (read-msg 'token-id) ""))
+    (reveal-uri (read-msg 'token-id) ""))
   
   (expect-failure "fail if new URI is wrong"
     "URI does not match the hash"
-    (update-uri (read-msg 'token-id) "ipfs://wrong-uri"))
+    (reveal-uri (read-msg 'token-id) "ipfs://wrong-uri"))
 
   (env-sigs [
     { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
@@ -97,15 +102,20 @@
   
   (expect "successfully reveal the URI"
     true
-    (update-uri (read-msg 'token-id) (read-msg 'secret-uri)))
+    (reveal-uri (read-msg 'token-id) (read-msg 'secret-uri)))
 
-  (expect "update uri events"
-    [{"name": "marmalade-examples.private-token-policy-v1.TOKEN_REVEALED","params": [(read-msg 'token-id) (read-msg 'secret-uri)]} 
-    ,{"name": "marmalade-v2.ledger.UPDATE-URI","params": [(read-msg 'token-id) (read-msg 'secret-uri)]}]
+  (expect "reveal uri events"
+    [{"name": "marmalade-v2.ledger.UPDATE-URI","params": [(read-msg 'token-id) (read-msg 'secret-uri)]}
+    ,{"name": "marmalade-examples.private-token-policy-v1.TOKEN_REVEALED","params": [(read-msg 'token-id) (read-msg 'secret-uri)]} ]
     (map (remove "module-hash")  (env-events true)))
+  
+  (expect "token has been revealed"
+    true
+    (is-revealed (read-msg 'token-id))
+  )
     
-  (expect-failure "cannot update the URI after revealing"
-    "URI does not match the hash"
-    (update-uri (read-msg 'token-id) "ipfs://something-new"))
+  (expect-failure "cannot reveal the URI again"
+    "Token URI already revealed"
+    (reveal-uri (read-msg 'token-id) "ipfs://something-new"))
       
 (commit-tx)

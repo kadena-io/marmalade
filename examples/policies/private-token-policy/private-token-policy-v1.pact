@@ -12,6 +12,12 @@
   (use kip.token-policy-v2 [token-info])
   (use marmalade-v2.guard-policy-v1 [URI-GUARD-MSG-KEY])
 
+  (defschema revealed-tokens-schema
+    revealed:bool  
+  )
+
+  (deftable revealed-tokens:{revealed-tokens-schema})
+
   (defcap TOKEN_REVEALED (token-id:string uri:string)
     @doc "Emitted when the token URI has been revealed"
     @event
@@ -90,18 +96,43 @@
     ( token:object{kip.token-policy-v2.token-info}
       new-uri:string
     )
+    true
+  )
+
+  (defun reveal-uri:bool (token-id:string new-uri:string)
     (let* (
-      (token-id:string (at 'id token))
       (token-info:object{kip.token-policy-v2.token-info} (marmalade-v2.ledger.get-token-info token-id))
       (token-uri-hash:string (at 'uri token-info))
+      (already-revealed:bool (is-revealed token-id))
     )
+      (enforce (not already-revealed) "Token URI already revealed")
+
       (enforce (not (= new-uri "")) "URI cannot be empty")
 
       (enforce (= token-uri-hash (hash new-uri)) "URI does not match the hash")
 
+      (marmalade-v2.ledger.update-uri token-id new-uri)
+
       (emit-event (TOKEN_REVEALED token-id new-uri))
+
+      (insert revealed-tokens token-id { 'revealed: true })
      
       true
     )
   )
+
+  (defun is-revealed:bool (token-id:string)
+    (with-default-read revealed-tokens token-id 
+      { 'revealed : false } 
+      { 'revealed := revealed }
+      revealed
+    )
+  )
 )
+
+(if (read-msg 'upgrade)
+  true
+  (create-table revealed-tokens)
+)
+
+(enforce-guard ADMIN-KS)

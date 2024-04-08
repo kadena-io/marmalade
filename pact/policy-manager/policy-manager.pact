@@ -14,6 +14,14 @@
   (use kip.token-policy-v2 [token-info])
   (use util.fungible-util)
 
+  ; Saves reference to ledger
+  (defschema ledger
+    ledger-impl:module{marmalade-v2.ledger-v2}
+  )
+
+  (deftable ledgers:{ledger}
+    @doc "Singleton table for ledger reference storage")
+
   (defun init:bool(ledger:module{marmalade-v2.ledger-v2})
     @doc "Must be initiated with ledger implementation"
     (with-capability (GOVERNANCE)
@@ -55,6 +63,15 @@
     mk-fee-percentage:decimal
   )
 
+  ;; Saves Sale Logic
+  (defschema sale-contract
+    sale-contract:module{sale-v2}
+  )
+
+  (deftable sale-whitelist:{sale-contract})
+
+  (deftable quotes:{quote-schema})
+
   (defcap QUOTE:bool
     ( sale-id:string
       token-id:string
@@ -63,8 +80,6 @@
     @event
     true
   )
-
-  (deftable quotes:{quote-schema})
 
   (defconst QUOTE-MSG-KEY:string "quote"
     @doc "Payload field for quote spec")
@@ -126,7 +141,6 @@
     true
   )
 
-
   (defcap UPDATE-QUOTE-PRICE:bool (token-id:string sale-id:string sale-type:string updated-price:decimal)
     @doc "Enforces sale-guard on update-quote-price"
     (enforce (> updated-price 0.0) "QUOTE price must be positive")
@@ -135,30 +149,16 @@
       (sale-contract::enforce-quote-update sale-id updated-price))
   )
 
-  (defun get-escrow-account:object{fungible-account} (sale-id:string)
-    { 'account: (create-principal (create-capability-guard (ESCROW sale-id)))
-    , 'guard: (create-capability-guard (ESCROW sale-id))
-    })
-
-  ; Saves reference to ledger
-  (defschema ledger
-    ledger-impl:module{marmalade-v2.ledger-v2}
-  )
-
-  (deftable ledgers:{ledger}
-    @doc "Singleton table for ledger reference storage")
-
-  ;; Saves Sale Logic
-  (defschema sale-contract
-    sale-contract:module{sale-v2}
-  )
-
-  (deftable sale-whitelist:{sale-contract})
-
   (defcap SALE-WHITELIST:bool(sale-contract-key:string)
     @event
     (enforce-guard ADMIN-KS)
   )
+
+  (defun get-escrow-account:object{fungible-account} (sale-id:string)
+    @doc "Returns fungible escrow ACCOUNT and GUARD of the SALE"
+    { 'account: (create-principal (create-capability-guard (ESCROW sale-id)))
+    , 'guard: (create-capability-guard (ESCROW sale-id))
+    })
 
   (defun add-sale-whitelist:bool (sale-contract:module{sale-v2})
     @doc "Adds quote-guard to quote-guard-whitelist list"

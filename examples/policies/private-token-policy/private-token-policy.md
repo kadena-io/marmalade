@@ -8,7 +8,13 @@ Concrete policy `guard-policy` must be used in conjunction with `private-token-p
 
 While creating a token, the URI should be the hash of the actual URI. This can be calculated using a local call to the node so there is no trace recorded on the chain.
 
-## Specification, capabilities, events:
+## Specification, tables, capabilities, events:
+
+**Schemas**: `revealed-tokens-schema` is a schema that stores which tokens have been revealed
+  - `revealed`: shows if the URI has been revealed.
+
+**Tables**: `revealed-tokens` table stores which tokens have been revealed.
+  - `id`: the id of the token
 
 **Capabilities**:
  - `GOVERNANCE`: enforces access control of contract upgrades.
@@ -32,4 +38,8 @@ While creating a token, the URI should be the hash of the actual URI. This can b
 
 **`enforce-transfer`:** Enabled without limitation.
 
-**`enforce-update-uri`:** Enforced during `marmalade-v2.ledger.update-uri`, and it will make sure that the saved hash of the URI matches the hashed new URI.
+**`enforce-update-uri`:** Enabled without limitation.
+
+**`reveal-uri`:** Will make sure that the saved hash of the URI matches the hashed new URI and will invoke `marmalade-v2.ledger.update-uri`.
+
+**`is-revealed`:** Check if the URI has been revealed.

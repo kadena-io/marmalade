@@ -314,12 +314,13 @@
 
   (defun enforce-guard-count:bool (guards:[guard] threshold:integer)
     "Will succeed if at least the threshold of guards is successfully enforced."
-    (enforce (<= threshold
-      (length
-        (filter
-          (= true)
-          (map (try-enforce-guard) guards))))
-      "Guard threshold not met")
+    (let* (
+      (attemps:[bool] (map (try-enforce-guard) guards))
+      (filtered:[bool] (filter (= true) attemps))
+      (len:integer (length filtered))
+    )
+      (enforce (<= threshold len) "Guard threshold not met")
+    )
   )
 
   (defun try-enforce-guard (guard:guard)

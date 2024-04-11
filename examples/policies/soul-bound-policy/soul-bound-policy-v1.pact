@@ -7,6 +7,8 @@
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
 
+  (defconst POLICY:string (format "{}" [soul-bound-policy-v1]))
+
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
   (use marmalade-v2.policy-manager)
@@ -26,7 +28,7 @@
     )
     @doc "The function is run at `create-token` step of marmalade-v2.ledger."
 
-    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) soul-bound-policy-v1))
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) POLICY))
 
     (enforce (= (at 'precision token) 0) "Precision must be 0 for soul-bound tokens")
 
@@ -44,7 +46,7 @@
       guard:guard
       amount:decimal
     )
-    (require-capability (MINT-CALL (at "id" token) account amount soul-bound-policy-v1))
+    (require-capability (MINT-CALL (at "id" token) account amount POLICY))
 
     (enforce (= amount 1.0) "Amount must be 1.0 for soul-bound tokens")
 
@@ -63,7 +65,7 @@
       account:string
       amount:decimal
     )
-    (require-capability (BURN-CALL (at "id" token) account amount soul-bound-policy-v1))
+    (require-capability (BURN-CALL (at "id" token) account amount POLICY))
 
     (enforce (= amount 1.0) "Amount must be 1.0 for soul-bound tokens")
 

@@ -82,7 +82,7 @@
     (create-token (read-msg 'token-id) 0 "test-default-guard" [marmalade-examples.soul-bound-policy-v1 marmalade-v2.guard-policy-v1] ALWAYS-TRUE))
 
   (expect "create-token events"
-    [ {"name": "marmalade-v2.guard-policy-v1.GUARDS","params": [(read-msg 'token-id) {"burn-guard": (read-keyset 'burn_guard),"mint-guard": (read-keyset 'mint_guard),"sale-guard": GUARD_SUCCESS,"transfer-guard": GUARD_SUCCESS}] },
+    [ {"name": "marmalade-v2.guard-policy-v1.GUARDS","params": [(read-msg 'token-id) {"burn-guard": (read-keyset 'burn_guard),"mint-guard": (read-keyset 'mint_guard),"sale-guard": GUARD_SUCCESS,"transfer-guard": GUARD_SUCCESS,"uri-guard": GUARD_SUCCESS}] },
       {"name": "marmalade-v2.ledger.TOKEN","params": [(read-msg 'token-id) 0 [marmalade-examples.soul-bound-policy-v1 marmalade-v2.guard-policy-v1] "test-default-guard" ALWAYS-TRUE]}]
     (map (remove "module-hash")  (env-events true)))
 
@@ -146,7 +146,7 @@
     (create-token (read-msg 'token-id) 0 "mint-burn-mint" [marmalade-examples.soul-bound-policy-v1 marmalade-v2.guard-policy-v1] ALWAYS-TRUE))
 
   (expect "create-token events"
-    [ {"name": "marmalade-v2.guard-policy-v1.GUARDS","params": [(read-msg 'token-id) {"burn-guard": (read-keyset 'burn_guard),"mint-guard": (read-keyset 'mint_guard),"sale-guard": GUARD_SUCCESS,"transfer-guard": GUARD_SUCCESS}] },
+    [ {"name": "marmalade-v2.guard-policy-v1.GUARDS","params": [(read-msg 'token-id) {"burn-guard": (read-keyset 'burn_guard),"mint-guard": (read-keyset 'mint_guard),"sale-guard": GUARD_SUCCESS,"transfer-guard": GUARD_SUCCESS,"uri-guard": GUARD_SUCCESS}] },
      {"name": "marmalade-v2.ledger.TOKEN","params": [(read-msg 'token-id) 0 [marmalade-examples.soul-bound-policy-v1 marmalade-v2.guard-policy-v1] "mint-burn-mint" ALWAYS-TRUE]} ]
     (map (remove "module-hash")  (env-events true)))
 

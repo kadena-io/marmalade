@@ -13,6 +13,8 @@
 
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
+
+  (defconst POLICY:string (format "{}" [onchain-manifest-policy-v1]))
     
   (defconst MANIFEST-SPEC-MSG-KEY:string "manifest_spec")
 
@@ -58,7 +60,7 @@
     \ Required msg-data keys:                                                  \
     \ * manifest_spec:object{manifest-spec} - registers the manifest object of \
     \ the token and the guard that manages the upgrade of the manifest on chain"
-    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) onchain-manifest-policy-v1))
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) POLICY))
     (let ( (manifest:object{manifest-spec} (read-msg MANIFEST-SPEC-MSG-KEY )) )
       (enforce-verify-manifest (at 'manifest manifest))
       (insert manifests (at 'id token) manifest)

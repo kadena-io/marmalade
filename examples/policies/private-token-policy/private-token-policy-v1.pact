@@ -96,7 +96,9 @@
     ( token:object{kip.token-policy-v2.token-info}
       new-uri:string
     )
-    true
+    (let ((revealed:bool (is-revealed (at 'id token))))
+      (enforce revealed "Update disabled prior to revealing")
+    )
   )
 
   (defun reveal-uri:bool (token-id:string new-uri:string)
@@ -110,12 +112,12 @@
       (enforce (not (= new-uri "")) "URI cannot be empty")
 
       (enforce (= token-uri-hash (hash new-uri)) "URI does not match the hash")
+      
+      (insert revealed-tokens token-id { 'revealed: true })
 
       (marmalade-v2.ledger.update-uri token-id new-uri)
 
       (emit-event (TOKEN_REVEALED token-id new-uri))
-
-      (insert revealed-tokens token-id { 'revealed: true })
      
       true
     )

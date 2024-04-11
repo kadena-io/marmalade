@@ -84,6 +84,11 @@
     false
     (is-revealed (read-msg 'token-id))
   )
+
+  (expect-failure "shoud not be able to update uri before revealing"
+    "Update disabled prior to revealing"
+    (marmalade-v2.ledger.update-uri (read-msg 'token-id) "")
+  )
   
   (expect-failure "fail if new URI is empty string"
     "URI cannot be empty"
@@ -117,5 +122,17 @@
   (expect-failure "cannot reveal the URI again"
     "Token URI already revealed"
     (reveal-uri (read-msg 'token-id) "ipfs://something-new"))
+
+  (env-sigs [
+    { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
+      ,'caps: [
+        (marmalade-v2.ledger.UPDATE-URI (read-msg 'token-id) "ipfs://updated")
+        ,(marmalade-v2.guard-policy-v1.UPDATE-URI (read-msg 'token-id) "ipfs://updated")]
+    }])
+
+  (expect "shoud be able to update uri after revealing"
+    true
+    (marmalade-v2.ledger.update-uri (read-msg 'token-id) "ipfs://updated")
+  )
       
 (commit-tx)

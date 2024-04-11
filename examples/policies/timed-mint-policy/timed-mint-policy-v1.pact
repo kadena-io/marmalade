@@ -9,6 +9,8 @@
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
 
+  (defconst POLICY:string (format "{}" [timed-mint-policy-v1]))
+
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
   (use marmalade-v2.policy-manager)
@@ -39,7 +41,7 @@
    (defun enforce-init:bool
      ( token:object{token-info}
      )
-     (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) timed-mint-policy-v1))
+     (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) POLICY))
      (let* ( (spec:object{timed-mint-schema} (read-msg TIMED-MINT-SPEC))
              (max-supply:decimal (at 'max-supply spec))
              (mint-start-time:integer (at 'mint-start-time spec))
@@ -60,7 +62,7 @@
       guard:guard
       amount:decimal
     )
-    (require-capability (MINT-CALL (at "id" token) account amount timed-mint-policy-v1))
+    (require-capability (MINT-CALL (at "id" token) account amount POLICY))
     (let* ( (account-bal:decimal (try 0.0 (at 'balance (marmalade-v2.ledger.details (at 'id token) account))))
             (total-supply:decimal (try 0.0 (marmalade-v2.ledger.total-supply (at 'id token))))
             (timed-mint:object{timed-mint-schema} (get-timed-mint token))

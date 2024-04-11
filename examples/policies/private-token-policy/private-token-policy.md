@@ -8,7 +8,7 @@ Concrete policy `guard-policy` must be used in conjunction with `private-token-p
 
 While creating a token, the URI should be the hash of the actual URI. This can be calculated using a local call to the node so there is no trace recorded on the chain.
 
-Note: token URI can still be updated but the `uri-guard` but only after revealing the initial URI.
+Note: token URI can still be updated by the `uri-guard` but only after revealing the initial URI.
 
 ## Specification, tables, capabilities, events:
 

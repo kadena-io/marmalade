@@ -9,9 +9,13 @@ marmalade_sale_namespace: marmalade-sale
 marmalade_sale_contract:
 
 is_upgrade:
+upgrade_version_1:
 
 sender:
-sender_key: 
+sender_key:
 
 marmalade_user_key_1:
 marmalade_user_key_2:
+
+kip_ns_user_key_1:
+kip_ns_user_key_2:

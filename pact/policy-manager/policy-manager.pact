@@ -2,6 +2,10 @@
 
 (module policy-manager GOVERNANCE
 
+  (bless "mQ_oo2I6T85QydnylhVmoHM9elDsmVD1wV9iXrAuT0I")
+  (bless "WC7obfshJ_VsH2PmcTL2iy4TKjbhHvA1WU_aMWIRwKc")
+  (bless "SpJiV_6CfE3gA5QUlTEKhFgXvZrhg2dORfFqk2GBgjI")
+
   (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
 
   (defcap GOVERNANCE ()
@@ -9,12 +13,19 @@
 
   (use kip.token-policy-v2 [token-info])
   (use util.fungible-util)
-  (use ledger-v2)
 
-  (defun init:bool(ledger:module{ledger-v2})
+  ; Saves reference to ledger
+  (defschema ledger
+    ledger-impl:module{marmalade-v2.ledger-v2}
+  )
+
+  (deftable ledgers:{ledger}
+    @doc "Singleton table for ledger reference storage")
+
+  (defun init:bool(ledger:module{marmalade-v2.ledger-v2})
     @doc "Must be initiated with ledger implementation"
     (with-capability (GOVERNANCE)
-      (insert ledgers "" {
+      (write ledgers "" {
         "ledger-impl": ledger
       })
     )
@@ -52,6 +63,15 @@
     mk-fee-percentage:decimal
   )
 
+  ;; Saves Sale Logic
+  (defschema sale-contract
+    sale-contract:module{sale-v2}
+  )
+
+  (deftable sale-whitelist:{sale-contract})
+
+  (deftable quotes:{quote-schema})
+
   (defcap QUOTE:bool
     ( sale-id:string
       token-id:string
@@ -60,8 +80,6 @@
     @event
     true
   )
-
-  (deftable quotes:{quote-schema})
 
   (defconst QUOTE-MSG-KEY:string "quote"
     @doc "Payload field for quote spec")
@@ -83,35 +101,35 @@
   ;;
   ;; policy-manager-v1 caps to be able to validate access to quote-manager & policy operations.
   ;;
-  (defcap INIT-CALL:bool (id:string precision:integer uri:string policy:module{kip.token-policy-v2})
+  (defcap INIT-CALL:bool (id:string precision:integer uri:string policy:string)
     true
   )
 
-  (defcap TRANSFER-CALL:bool (id:string sender:string receiver:string amount:decimal policy:module{kip.token-policy-v2})
+  (defcap TRANSFER-CALL:bool (id:string sender:string receiver:string amount:decimal policy:string)
     true
   )
 
-  (defcap MINT-CALL:bool (id:string account:string amount:decimal policy:module{kip.token-policy-v2})
+  (defcap MINT-CALL:bool (id:string account:string amount:decimal policy:string)
     true
   )
 
-  (defcap BURN-CALL:bool (id:string account:string amount:decimal policy:module{kip.token-policy-v2})
+  (defcap BURN-CALL:bool (id:string account:string amount:decimal policy:string)
     true
   )
 
-  (defcap OFFER-CALL:bool (id:string seller:string amount:decimal sale-id:string timeout:integer policy:module{kip.token-policy-v2})
+  (defcap OFFER-CALL:bool (id:string seller:string amount:decimal sale-id:string timeout:integer policy:string)
     true
   )
 
-  (defcap WITHDRAW-CALL:bool (id:string seller:string amount:decimal sale-id:string timeout:integer policy:module{kip.token-policy-v2})
+  (defcap WITHDRAW-CALL:bool (id:string seller:string amount:decimal sale-id:string timeout:integer policy:string)
     true
   )
 
-  (defcap BUY-CALL:bool (id:string seller:string buyer:string amount:decimal sale-id:string policy:module{kip.token-policy-v2})
+  (defcap BUY-CALL:bool (id:string seller:string buyer:string amount:decimal sale-id:string policy:string)
     true
   )
 
-  (defcap UPDATE-URI-CALL:bool (id:string new-uri:string)
+  (defcap UPDATE-URI-CALL:bool (id:string new-uri:string policy:string)
     true
   )
 
@@ -123,7 +141,6 @@
     true
   )
 
-
   (defcap UPDATE-QUOTE-PRICE:bool (token-id:string sale-id:string sale-type:string updated-price:decimal)
     @doc "Enforces sale-guard on update-quote-price"
     (enforce (> updated-price 0.0) "QUOTE price must be positive")
@@ -132,30 +149,16 @@
       (sale-contract::enforce-quote-update sale-id updated-price))
   )
 
-  (defun get-escrow-account:object{fungible-account} (sale-id:string)
-    { 'account: (create-principal (create-capability-guard (ESCROW sale-id)))
-    , 'guard: (create-capability-guard (ESCROW sale-id))
-    })
-
-  ; Saves reference to ledger
-  (defschema ledger
-    ledger-impl:module{ledger-v2}
-  )
-
-  (deftable ledgers:{ledger}
-    @doc "Singleton table for ledger reference storage")
-
-  ;; Saves Sale Logic
-  (defschema sale-contract
-    sale-contract:module{sale-v2}
-  )
-
-  (deftable sale-whitelist:{sale-contract})
-
   (defcap SALE-WHITELIST:bool(sale-contract-key:string)
     @event
     (enforce-guard ADMIN-KS)
   )
+
+  (defun get-escrow-account:object{fungible-account} (sale-id:string)
+    @doc "Returns fungible escrow ACCOUNT and GUARD of the SALE"
+    { 'account: (create-principal (create-capability-guard (ESCROW sale-id)))
+    , 'guard: (create-capability-guard (ESCROW sale-id))
+    })
 
   (defun add-sale-whitelist:bool (sale-contract:module{sale-v2})
     @doc "Adds quote-guard to quote-guard-whitelist list"
@@ -216,12 +219,12 @@
 
   (defun enforce-init:[bool]
     (token:object{token-info})
-    (let ((ledger:module{ledger-v2} (retrieve-ledger)))
+    (let ((ledger:module{marmalade-v2.ledger-v2} (retrieve-ledger)))
       (require-capability (ledger::INIT-CALL (at "id" token) (at "precision" token) (at "uri" token)))
     )
 
     (map (lambda (policy:module{kip.token-policy-v2})
-      (with-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) policy)
+      (with-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) (format "{}" [policy]))
         (policy::enforce-init token)
       )
     ) (at 'policies token))
@@ -233,11 +236,11 @@
       guard:guard
       amount:decimal
     )
-    (let ((ledger:module{ledger-v2} (retrieve-ledger)))
+    (let ((ledger:module{marmalade-v2.ledger-v2} (retrieve-ledger)))
       (require-capability (ledger::MINT-CALL (at "id" token) account amount))
     )
     (map (lambda (policy:module{kip.token-policy-v2})
-      (with-capability (MINT-CALL (at "id" token) account amount policy)
+      (with-capability (MINT-CALL (at "id" token) account amount (format "{}" [policy]))
         (policy::enforce-mint token account guard amount)
       )
     ) (at 'policies token))
@@ -248,11 +251,11 @@
       account:string
       amount:decimal
     )
-    (let ((ledger:module{ledger-v2} (retrieve-ledger)))
+    (let ((ledger:module{marmalade-v2.ledger-v2} (retrieve-ledger)))
       (require-capability (ledger::BURN-CALL (at "id" token) account amount))
     )
     (map (lambda (policy:module{kip.token-policy-v2})
-      (with-capability (BURN-CALL (at "id" token) account amount policy)
+      (with-capability (BURN-CALL (at "id" token) account amount (format "{}" [policy]))
         (policy::enforce-burn token account amount)
       )
     ) (at 'policies token))
@@ -269,7 +272,7 @@
     \ * (optional) quote:object{quote-spec} - sale is registered as a quoted fungible \
     \ sale if present. If absent, sale proceeds without quotes."
 
-    (let ((ledger:module{ledger-v2} (retrieve-ledger)))
+    (let ((ledger:module{marmalade-v2.ledger-v2} (retrieve-ledger)))
       (require-capability (ledger::OFFER-CALL (at "id" token) seller amount timeout sale-id))
     )
 
@@ -303,7 +306,7 @@
      ; run policy::enforce-offer
     (map
       (lambda (policy:module{kip.token-policy-v2})
-        (with-capability (OFFER-CALL (at "id" token) seller amount sale-id timeout policy)
+        (with-capability (OFFER-CALL (at "id" token) seller amount sale-id timeout (format "{}" [policy]))
           (policy::enforce-offer token seller amount timeout sale-id)
         )
       )
@@ -317,7 +320,7 @@
       timeout:integer
       sale-id:string )
     @doc " Executed at `withdraw` step of marmalade.ledger."
-    (let ((ledger:module{ledger-v2} (retrieve-ledger)))
+    (let ((ledger:module{marmalade-v2.ledger-v2} (retrieve-ledger)))
       (require-capability (ledger::WITHDRAW-CALL (at "id" token) seller amount timeout sale-id))
     )
     (enforce-sale-pact sale-id)
@@ -336,7 +339,7 @@
     )
 
     (map (lambda (policy:module{kip.token-policy-v2})
-      (with-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id timeout policy)
+      (with-capability (WITHDRAW-CALL (at "id" token) seller amount sale-id timeout (format "{}" [policy]))
         (policy::enforce-withdraw token seller amount timeout sale-id)
       )
     ) (at 'policies token))
@@ -358,7 +361,7 @@
     (enforce-sale-pact sale-id)
 
     ;; enforce function is called from ledger
-    (let ((ledger:module{ledger-v2} (retrieve-ledger)))
+    (let ((ledger:module{marmalade-v2.ledger-v2} (retrieve-ledger)))
       (require-capability (ledger::BUY-CALL (at "id" token) seller buyer amount sale-id))
     )
 
@@ -418,7 +421,7 @@
             ; Run policies::enforce-buy
             (let ((result:[bool]
               (map (lambda (policy:module{kip.token-policy-v2})
-                  (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id policy)
+                  (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id (format "{}" [policy]))
                     (policy::enforce-buy token seller buyer buyer-guard amount sale-id)
                   )
                 ) (at 'policies token))
@@ -437,7 +440,7 @@
 
       ; false: quote is not used
       (map (lambda (policy:module{kip.token-policy-v2})
-        (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id policy)
+        (with-capability (BUY-CALL (at "id" token) seller buyer amount sale-id (format "{}" [policy]))
           (policy::enforce-buy token seller buyer buyer-guard amount sale-id)
         )
       ) (at 'policies token))
@@ -450,35 +453,33 @@
       guard:guard
       receiver:string
       amount:decimal )
-    (let ((ledger:module{ledger-v2} (retrieve-ledger)))
+    (let ((ledger:module{marmalade-v2.ledger-v2} (retrieve-ledger)))
       (require-capability (ledger::TRANSFER-CALL (at "id" token) sender receiver amount))
     )
     (map (lambda (policy:module{kip.token-policy-v2})
-      (with-capability (TRANSFER-CALL (at "id" token) sender receiver amount policy)
+      (with-capability (TRANSFER-CALL (at "id" token) sender receiver amount (format "{}" [policy]))
         (policy::enforce-transfer token sender guard receiver amount)
       )
     ) (at 'policies token))
   )
 
   (defun enforce-update-uri:[bool]
-    ( token:object{token-info}
-      new-uri:string )
-    (let ((ledger:module{ledger-v2} (retrieve-ledger)))
-      (require-capability (ledger::UPDATE-URI-CALL (at "id" token) new-uri))
-    )
-    (map (lambda (policy:module{kip.token-policy-v2,kip.updatable-uri-policy-v1})
-      (with-capability (UPDATE-URI-CALL (at "id" token)  new-uri)
-        (policy::enforce-update-uri token new-uri)
-      )
-    ) (at 'policies token))
-  )
+     ( token:object{token-info}
+       new-uri:string )
+     (let ((ledger:module{marmalade-v2.ledger-v2} (retrieve-ledger)))
+       (require-capability (ledger::UPDATE-URI-CALL (at "id" token) new-uri))
+     )
+     (map (lambda (policy:module{kip.token-policy-v2,kip.updatable-uri-policy-v1})
+       (with-capability (UPDATE-URI-CALL (at "id" token)  new-uri (format "{}" [policy]))
+         (policy::enforce-update-uri token new-uri)
+       )
+     ) (at 'policies token))
+   )
 
   (defun enforce-sale-pact:bool (sale:string)
     "Enforces that SALE is id for currently executing pact"
     (enforce (= sale (pact-id)) "Invalid pact/sale id")
   )
-
-
 
   ; Utility functions
 
@@ -499,7 +500,7 @@
       (!= o {}))
   )
 
-  (defun retrieve-ledger:module{ledger-v2} ()
+  (defun retrieve-ledger:module{marmalade-v2.ledger-v2} ()
     @doc "Retrieves the ledger implementation"
     (with-read ledgers "" {
         "ledger-impl":= ledger

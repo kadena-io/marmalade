@@ -105,11 +105,30 @@
 (commit-tx)
 
 (begin-tx)
-(module mini-guard-utils G
-  (defcap G() true)
-  (defun always-true:bool () true)
-  (defconst ALWAYS-TRUE:guard (create-user-guard (always-true)))
-)
+  (module mini-guard-utils G
+    (defcap G() true)
+    (defun always-true:bool () true)
+    (defconst ALWAYS-TRUE:guard (create-user-guard (always-true)))
+  )
+(commit-tx)
+
+
+(begin-tx "upgrade marmalade")
+  (env-sigs [
+    { 'key: 'marmalade-user
+     ,'caps: []
+    }, {
+      'key: 'marmalade-contract-admin
+     ,'caps: []
+     }])
+  (env-data
+   { 'marmalade-admin: ["marmalade-admin"]
+   , 'marmalade-user: ["marmalade-user"]
+   , 'ns: "marmalade-v2"
+   , 'upgrade: true
+   , 'upgrade_version_1: true })
+  (load "./ledger/ledger.pact")
+  (load "./concrete-policies/guard-policy/guard-policy-v1.pact")
 (commit-tx)
 
 (begin-tx "create-token")

@@ -96,6 +96,7 @@
  (expect-failure "create token fails if operator guard isn't present"
    "Keyset failure"
    (create-token (read-msg 'token-id) 0 "test-collection-royalty-uri" (create-policies DEFAULT_COLLECTION_ROYALTY) ALWAYS-TRUE))
+
 (rollback-tx)
 
 (begin-tx "Create token")

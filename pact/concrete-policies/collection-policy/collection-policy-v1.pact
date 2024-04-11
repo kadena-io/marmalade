@@ -6,6 +6,7 @@
   @doc "Collection token policy."
 
   (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
+  (defconst POLICY:string (format "{}" [collection-policy-v1]))
 
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
@@ -13,7 +14,7 @@
   (implements kip.token-policy-v2)
   (implements kip.updatable-uri-policy-v1)
 
-  (use policy-manager)
+  (use marmalade-v2.policy-manager)
   (use kip.token-policy-v2 [token-info])
 
   (defschema collection
@@ -76,7 +77,7 @@
     \ Required msg-data keys:                                                  \
     \ * collection_id:string - registers the token to a collection and emits   \
     \ TOKEN-COLLECTION event for collection token discovery"
-    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) collection-policy-v1))
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) POLICY))
     (let* ( (token-id:string  (at 'id token))
             (collection-id:string (read-msg COLLECTION-ID-MSG-KEY)) )
     ;;Enforce operator guard

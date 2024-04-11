@@ -8,11 +8,17 @@
           (> (length account) 2))
     ]
 
-  (implements ledger-v2)
+  (implements marmalade-v2.ledger-v2)
   (implements kip.poly-fungible-v3)
+
   (use kip.poly-fungible-v3 [account-details sender-balance-change receiver-balance-change])
+  (use kip.token-policy-v2 [token-info])
   (use util.fungible-util)
-  (use policy-manager)
+  (use marmalade-v2.policy-manager)
+
+  ;; Version
+
+  (defconst VERSION:integer 1)
 
   ;;
   ;; Tables/Schemas
@@ -34,10 +40,15 @@
     policies:[module{kip.token-policy-v2}]
   )
 
+  (defschema version
+    version:integer
+  )
+
   (deftable tokens:{token-schema})
+  (deftable versions:{version})
 
   ;;
-  ;; Capabilities
+  ;; Governance
   ;;
 
   (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
@@ -160,10 +171,6 @@
     (enforce-guard (account-guard id sender))
   )
 
-  (defun account-guard:guard (id:string account:string)
-    (with-read ledger (key id account) { 'guard := g } g)
-  )
-
   (defcap CREDIT (id:string receiver:string) true)
 
   (defcap UPDATE_SUPPLY ()
@@ -192,50 +199,7 @@
     true
   )
 
-  ;  Transform token-schema object to token-info object
-  (defun get-token-info:object{kip.token-policy-v2.token-info} (id:string)
-    (with-read tokens id
-     { 'policies := policies:[module{kip.token-policy-v2}]
-     , 'supply := supply
-     , 'precision := precision
-     , 'uri := uri
-     }
-     {
-       'id: id
-       , 'supply: supply
-       , 'precision: precision
-       , 'uri: uri
-       , 'policies: policies
-     } )
-  )
-
-  (defun create-account:bool
-    ( id:string
-      account:string
-      guard:guard
-    )
-    (enforce-reserved account guard)
-    (insert ledger (key id account)
-      { "balance" : 0.0
-      , "guard"   : guard
-      , "id" : id
-      , "account" : account
-      })
-    (emit-event (ACCOUNT_GUARD id account guard))
-  )
-
-  (defun total-supply:decimal (id:string)
-    (with-default-read tokens id
-      { 'supply : 0.0 }
-      { 'supply := s }
-      s)
-  )
-
-  (defun create-token-id:string (token-details:object{token-details}
-                                 creation-guard:guard)
-    (format "t:{}"
-      [(hash [(format "{}" [token-details]) (at 'chain-id (chain-data)) creation-guard])])
-  )
+  ;; Marmalade Functions
 
   (defun create-token:bool
     ( id:string
@@ -244,6 +208,8 @@
       policies:[module{kip.token-policy-v2}]
       creation-guard:guard
     )
+    @doc "Initializes a TOKEN with given policies and parameters, \
+    \ and executes the enforce-init function for each listed policy."
     ;; enforces token and uri protocols
     (enforce-uri-reserved uri)
     (let ((token-details { 'uri: uri, 'precision: precision, 'policies: (sort policies) }))
@@ -251,7 +217,7 @@
     )
     (with-capability (INIT-CALL id precision uri)
       ;; maps policy list and calls policy::enforce-init
-      (policy-manager.enforce-init
+      (marmalade-v2.policy-manager.enforce-init
         { 'id: id, 'supply: 0.0, 'precision: precision, 'uri: uri,  'policies: policies})
     )
     (with-capability (CREATE-TOKEN id)
@@ -263,48 +229,56 @@
         "supply": 0.0,
         "policies": policies
       })
+      (insert versions id {
+        "version": VERSION
+      })
       (emit-event (TOKEN id precision policies uri creation-guard))
     )
   )
 
-  (defun check-reserved:string (token-id:string)
-    " Checks token-id for reserved name and returns type if \
-    \ found or empty string. Reserved names start with a \
-    \ single char and colon, e.g. 't:foo', which would return 't' as type."
-    (let ((pfx (take 2 token-id)))
-      (if (= ":" (take -1 pfx)) (take 1 pfx) "")))
-
-  (defun enforce-token-reserved:bool (token-id:string token-details:object{token-details}
-                                      creation-guard:guard)
-    @doc "Enforce reserved token-id name protocols."
-    (let ((r (check-reserved token-id)))
-      (if (= "t" r)
-        (enforce
-          (= token-id
-             (create-token-id token-details creation-guard))
-          "Token protocol violation")
-        (enforce false
-          (format "Unrecognized reserved protocol: {}" [r]) ))))
-
-  (defun enforce-uri-reserved:bool (uri:string)
-    " Enforce reserved uri name protocols "
-    (if (= "marmalade:" (take 10 uri))
-        (enforce false "Reserved protocol: marmalade:")
-        true
+  (defun mint:bool
+    ( id:string
+      account:string
+      guard:guard
+      amount:decimal
     )
+    @doc "Mints an AMOUNT of TOKEN to the provided ACCOUNT and its guard,\
+    \ and executes the enforce-mint policy functions."
+    (with-capability (MINT-CALL id account amount)
+      (marmalade-v2.policy-manager.enforce-mint (get-token-info id) account guard amount)
+    )
+    (with-capability (MINT id account amount)
+      (let
+        (
+          (receiver (credit id account guard amount))
+          (sender:object{sender-balance-change}
+            {'account: "", 'previous: 0.0, 'current: 0.0})
+        )
+        (emit-event (RECONCILE id amount sender receiver))
+        (update-supply id amount)
+      ))
   )
 
-  (defun truncate:decimal (id:string amount:decimal)
-    (floor amount (precision id))
-  )
-
-  (defun get-balance:decimal (id:string account:string)
-    (at 'balance (read ledger (key id account)))
-  )
-
-  (defun details:object{account-details}
-    ( id:string account:string )
-    (read ledger (key id account))
+  (defun burn:bool
+    ( id:string
+      account:string
+      amount:decimal
+    )
+    @doc "Burns an AMOUNT of TOKEN from the specified ACCOUNT,\
+    \ and executes the enforce-burn policy functions"
+    (with-capability (BURN-CALL id account amount)
+      (marmalade-v2.policy-manager.enforce-burn (get-token-info id) account amount)
+    )
+    (with-capability (BURN id account amount)
+      (let
+        (
+          (sender (debit id account amount))
+          (receiver:object{receiver-balance-change}
+            {'account: "", 'previous: 0.0, 'current: 0.0})
+        )
+        (emit-event (RECONCILE id amount sender receiver))
+        (update-supply id (- amount))
+      ))
   )
 
   (defun transfer:bool
@@ -313,11 +287,15 @@
       receiver:string
       amount:decimal
     )
+    @doc "Transfers an AMOUNT of TOKEN from the sender ACCOUNT \
+    \ to an existing receiver ACCOUNT, and executes the enforce-transfer \
+    \ policy functions."
+
     (enforce (!= sender receiver)
       "sender cannot be the receiver of a transfer")
     (enforce-valid-transfer sender receiver (precision id) amount)
     (with-capability (TRANSFER-CALL id sender receiver amount)
-      (policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
+      (marmalade-v2.policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
     )
     (with-capability (TRANSFER id sender receiver amount)
       (with-read ledger (key id receiver)
@@ -338,11 +316,15 @@
       receiver-guard:guard
       amount:decimal
     )
+    @doc "Transfers an AMOUNT of TOKEN from the sender ACCOUNT \
+    \ to the receiver ACCOUNT, creates an account if non-existent \
+    \ , and executes the enforce-transfer policy functions."
+
     (enforce (!= sender receiver)
       "sender cannot be the receiver of a transfer")
     (enforce-valid-transfer sender receiver (precision id) amount)
     (with-capability (TRANSFER-CALL id sender receiver amount)
-      (policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
+      (marmalade-v2.policy-manager.enforce-transfer (get-token-info id) sender (account-guard id sender) receiver amount)
     )
     (with-capability (TRANSFER id sender receiver amount)
       (let
@@ -354,59 +336,25 @@
       ))
   )
 
-  (defun mint:bool
-    ( id:string
-      account:string
-      guard:guard
-      amount:decimal
-    )
-    (with-capability (MINT-CALL id account amount)
-      (policy-manager.enforce-mint (get-token-info id) account guard amount)
-    )
-    (with-capability (MINT id account amount)
-      (let
-        (
-          (receiver (credit id account guard amount))
-          (sender:object{sender-balance-change}
-            {'account: "", 'previous: 0.0, 'current: 0.0})
-        )
-        (emit-event (RECONCILE id amount sender receiver))
-        (update-supply id amount)
-      ))
-  )
-
-  (defun burn:bool
-    ( id:string
-      account:string
-      amount:decimal
-    )
-    (with-capability (BURN-CALL id account amount)
-      (policy-manager.enforce-burn (get-token-info id) account amount)
-    )
-    (with-capability (BURN id account amount)
-      (let
-        (
-          (sender (debit id account amount))
-          (receiver:object{receiver-balance-change}
-            {'account: "", 'previous: 0.0, 'current: 0.0})
-        )
-        (emit-event (RECONCILE id amount sender receiver))
-        (update-supply id (- amount))
-      ))
-  )
-
   (defun update-uri:bool
     ( id:string
       new-uri:string
     )
+    @doc "Updates the URI of the token, and executes enforce-update-uri \
+    \ policy functions."
+
+    (let ((version:integer (get-version id)))
+      (enforce (> version 0) "updatable-uri not supported"))
     (with-capability (UPDATE-URI-CALL id new-uri)
-      (policy-manager.enforce-update-uri (get-token-info id) new-uri)
+      (marmalade-v2.policy-manager.enforce-update-uri (get-token-info id) new-uri)
     )
     (with-capability (UPDATE-URI id new-uri)
       (update tokens id { 'uri: new-uri })
     )
     true
   )
+
+  ;; Implementation Functions
 
   (defun debit:object{sender-balance-change}
     ( id:string
@@ -493,10 +441,6 @@
       "precision violation"))
   )
 
-  (defun precision:integer (id:string)
-    (at 'precision (read tokens id))
-  )
-
   (defpact transfer-crosschain:bool
     ( id:string
       sender:string
@@ -508,6 +452,78 @@
       (enforce false "cross chain not supported"))
   )
 
+  (defun account-guard:guard (id:string account:string)
+    (with-read ledger (key id account) { 'guard := g } g)
+  )
+
+  (defun get-token-info:object{kip.token-policy-v2.token-info} (id:string)
+    (with-read tokens id
+     { 'policies := policies:[module{kip.token-policy-v2}]
+     , 'supply := supply:decimal
+     , 'precision := precision:integer
+     , 'uri := uri:string
+     }
+     {
+       'id: id
+       , 'supply: supply
+       , 'precision: precision
+       , 'uri: uri
+       , 'policies: policies
+     } )
+  )
+
+  (defun create-account:bool
+    ( id:string
+      account:string
+      guard:guard
+    )
+    (enforce-reserved account guard)
+    (insert ledger (key id account)
+      { "balance" : 0.0
+      , "guard"   : guard
+      , "id" : id
+      , "account" : account
+      })
+    (emit-event (ACCOUNT_GUARD id account guard))
+  )
+
+  (defun create-token-id:string (token-details:object{token-details}
+                                 creation-guard:guard)
+    (format "t:{}"
+      [(hash [(format "{}" [token-details]) (at 'chain-id (chain-data)) creation-guard])])
+  )
+
+  (defun check-reserved:string (token-id:string)
+    " Checks token-id for reserved name and returns type if \
+    \ found or empty string. Reserved names start with a \
+    \ single char and colon, e.g. 't:foo', which would return 't' as type."
+    (let ((pfx (take 2 token-id)))
+      (if (= ":" (take -1 pfx)) (take 1 pfx) "")))
+
+  (defun enforce-token-reserved:bool (token-id:string token-details:object{token-details}
+                                      creation-guard:guard)
+    @doc "Enforce reserved token-id name protocols."
+    (let ((r (check-reserved token-id)))
+      (if (= "t" r)
+        (enforce
+          (= token-id
+             (create-token-id token-details creation-guard))
+          "Token protocol violation")
+        (enforce false
+          (format "Unrecognized reserved protocol: {}" [r]) ))))
+
+  (defun enforce-uri-reserved:bool (uri:string)
+    " Enforce reserved uri name protocols "
+    (if (= "marmalade:" (take 10 uri))
+        (enforce false "Reserved protocol: marmalade:")
+        true
+    )
+  )
+
+  (defun truncate:decimal (id:string amount:decimal)
+    (floor amount (precision id))
+  )
+
   ;;
   ;; ACCESSORS
   ;;
@@ -517,8 +533,54 @@
     (format "{}:{}" [id account])
   )
 
+  (defun get-balance:decimal (id:string account:string)
+    @doc "Returns the ACCOUNT balance of the TOKEN"
+    (at 'balance (read ledger (key id account)))
+  )
+
+  (defun details:object{account-details}
+    ( id:string account:string )
+    @doc "Returns ACCOUNT information of the TOKEN"
+    (read ledger (key id account))
+  )
+
+  (defun total-supply:decimal (id:string)
+    @doc "Returns total SUPPLY of the TOKEN"
+    (with-default-read tokens id
+      { 'supply : 0.0 }
+      { 'supply := s }
+      s)
+  )
+
+  (defun precision:integer (id:string)
+    @doc "Returns PRECISION of the TOKEN"
+    (with-read tokens id
+      { 'precision := precision }
+      precision
+    )
+  )
+
   (defun get-uri:string (id:string)
-    (at 'uri (read tokens id))
+    @doc "Returns URI of the TOKEN"
+    (with-read tokens id
+      { 'uri := uri }
+      uri
+    )
+  )
+
+  (defun get-version:integer (id:string)
+    @doc "Returns Marmalade VERSION of the TOKEN at creation"
+    (with-default-read versions id
+      {'version: 0 }
+      {'version:= version }
+      (if (< version 1)
+        (with-read tokens id
+          {'id:= id}
+          version
+        )
+        version
+      )
+    )
   )
 
   ;;
@@ -577,7 +639,7 @@
       ;; Step 0: offer
       (let ((token-info (get-token-info id)))
         (with-capability (OFFER-CALL id seller amount timeout (pact-id))
-          (policy-manager.enforce-offer token-info seller amount timeout (pact-id)))
+          (marmalade-v2.policy-manager.enforce-offer token-info seller amount timeout (pact-id)))
         (with-capability (SALE id seller amount timeout (pact-id))
           (offer id seller amount))
         (pact-id)
@@ -585,7 +647,7 @@
       ;;Step 0, rollback: withdraw
       (let ((token-info (get-token-info id)))
         (with-capability (WITHDRAW-CALL id seller amount timeout (pact-id))
-          (policy-manager.enforce-withdraw token-info seller amount timeout (pact-id)))
+          (marmalade-v2.policy-manager.enforce-withdraw token-info seller amount timeout (pact-id)))
         (with-capability (WITHDRAW id seller amount timeout (pact-id))
           (withdraw id seller amount))
         (pact-id)
@@ -596,7 +658,7 @@
       (let ( (buyer:string (read-msg "buyer"))
               (buyer-guard:guard (read-msg "buyer-guard")) )
           (with-capability (BUY-CALL id seller buyer amount (pact-id))
-            (policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
+            (marmalade-v2.policy-manager.enforce-buy (get-token-info id) seller buyer buyer-guard amount (pact-id))
           )
           (with-capability (BUY id seller buyer amount (pact-id))
             (buy id seller buyer buyer-guard amount)
@@ -685,8 +747,12 @@
   )
 )
 
-(if (read-msg 'upgrade)
-  ["upgrade complete"]
+(if (read-msg 'upgrade )
+  (if (read-msg 'upgrade_version_1 )
+    [ (create-table versions) ]
+    ["upgrade complete"]
+  )
   [ (create-table ledger)
     (create-table tokens) ])
+
 (enforce-guard ADMIN-KS)

@@ -116,7 +116,6 @@
   )
 
   (defun replace-proposed-asset:bool (token-id:string asset-id:integer uri:string)
-    (enforce-non-fungible-policy token-id)
     (enforce (not (= uri "")) "URI cannot be empty")
 
     (let (
@@ -146,8 +145,6 @@
   )
 
   (defun reject-proposed-asset:bool (token-id:string asset-id:integer owner:string)
-    (enforce-non-fungible-policy token-id)
-
     (let ((balance:decimal (marmalade-v2.ledger.get-balance token-id owner)))
       (enforce (= balance 1.0) "Token not owned")
     )
@@ -165,8 +162,6 @@
   )
 
   (defun reject-all-proposed-assets:bool (token-id:string owner:string)
-    (enforce-non-fungible-policy token-id)
-
     (let (
       (balance:decimal (marmalade-v2.ledger.get-balance token-id owner))
       (assets:[string] (get-proposed-assets token-id))
@@ -188,8 +183,6 @@
   )
 
   (defun accept-asset:bool (token-id:string asset-id:integer owner:string)
-    (enforce-non-fungible-policy token-id)
-
     (let (
       (balance:decimal (marmalade-v2.ledger.get-balance token-id owner))
       (uri:string (get-proposed-asset token-id asset-id))
@@ -206,8 +199,6 @@
   )
 
   (defun set-asset-priority (token-id:string asset-id:integer priority:integer owner:string)
-    (enforce-non-fungible-policy token-id)
-
     (let* (
       (balance:decimal (marmalade-v2.ledger.get-balance token-id owner))
       (assets:[string] (get-assets token-id))

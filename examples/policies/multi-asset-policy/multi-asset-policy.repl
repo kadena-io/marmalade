@@ -89,18 +89,6 @@
     "Token does not have non-fungible policy"
     (propose-asset (read-msg 'token-id) "ipfs://1"))
 
-  (expect-failure "should not allow rejecting proposed assets"
-    "Token does not have non-fungible policy"
-    (reject-proposed-asset (read-msg 'token-id) 0 "k:owner"))
-
-  (expect-failure "should not allow rejecting all proposed assets"
-    "Token does not have non-fungible policy"
-    (reject-all-proposed-assets (read-msg 'token-id) "k:owner"))
-
-  (expect-failure "should not allow accepting proposed asset"
-    "Token does not have non-fungible policy"
-    (accept-asset (read-msg 'token-id) 0 "k:owner"))
-
 (commit-tx)
 
 (begin-tx "create multi-asset token with non-fungible policy")

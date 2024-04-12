@@ -19,25 +19,46 @@
   (defconst OPERATOR-GUARD-MSG-KEY:string "operator_guard")
   (defconst ASSETS-MSG-KEY:string "assets")
 
-  (defcap ASSET_PROPOSED (token-id:string asset-id:integer uri:string operator-guard:guard)
-    @doc "Emitted when new asset is proposed"
-    @event
+  ; PROTOCOL CAPABILITIES
 
-    (enforce-guard operator-guard)
+  (defcap PROPOSE_ASSET (token-id:string uri:string)
+    (enforce-guard (at 'guard (read token-operators token-id)))
   )
   
+  (defcap REJECT_ASSET (token-id:string asset-id:integer owner:string)
+    (enforce-guard (marmalade-v2.ledger.account-guard token-id owner))
+  )  
+
+  (defcap REJECT_ALL_ASSETS (token-id:string owner:string)
+    (enforce-guard (marmalade-v2.ledger.account-guard token-id owner))
+  )
+  
+  (defcap ACCEPT_ASSET (token-id:string asset-id:integer owner:string)
+    (enforce-guard (marmalade-v2.ledger.account-guard token-id owner))
+  )
+
+  (defcap SET_ASSET_PRIORITY (token-id:string asset-id:integer priority:integer owner:string)
+    (enforce-guard (marmalade-v2.ledger.account-guard token-id owner))
+  )
+
+  ; PROTOCOL EVENTS
+
+  (defcap ASSET_PROPOSED (token-id:string asset-id:integer uri:string)
+    @doc "Emitted when new asset is proposed"
+    @event
+    true
+  )
+
   (defcap ASSET_REJECTED (token-id:string asset-id:integer uri:string owner:string)
     @doc "Emitted when the asset has been rejected"
     @event
-    
-    (enforce-guard (marmalade-v2.ledger.account-guard token-id owner))
+    true
   )
-  
+    
   (defcap ASSET_ACCEPTED (token-id:string asset-id:integer uri:string owner:string)
     @doc "Emitted when the asset has been accepted"
     @event
-
-    (enforce-guard (marmalade-v2.ledger.account-guard token-id owner))
+    true
   )
 
   (defcap ASSET_SET (token-id:string asset-id:integer uri:string)
@@ -47,11 +68,10 @@
     true
   )
 
-  (defcap ASSET_PRIORITY_SET (token-id:string asset-id:integer uri:string owner:string)
+  (defcap ASSET_PRIORITY_SET (token-id:string asset-id:integer priority:integer owner:string)
     @doc "Emitted when new asset priority is set"
     @event
-
-    (enforce-guard (marmalade-v2.ledger.account-guard token-id owner))
+    true
   )
 
   (defschema token-asset-schema 
@@ -86,10 +106,10 @@
     (let* (
       (assets:[string] (+ (get-proposed-assets token-id) [uri]))
       (asset-id:integer (- (length assets) 1))
-      (operator-guard:guard (at 'guard (read token-operators token-id)))
     )
-      (with-capability (ASSET_PROPOSED token-id asset-id uri operator-guard)
+      (with-capability (PROPOSE_ASSET token-id uri)
         (write proposed-assets token-id { 'assets: assets })
+        (emit-event (ASSET_PROPOSED token-id asset-id uri))
         true
       )
     )
@@ -106,7 +126,7 @@
       (enforce (> (length assets) asset-id) "Invalid asset ID")
       (enforce (not (= uri (at asset-id assets))) "Must be different URI")
 
-      (with-capability (ASSET_PROPOSED token-id asset-id uri operator-guard)
+      (with-capability (ASSET_PROPOSED token-id asset-id uri)
         (write proposed-assets token-id { 'assets: (update-array assets asset-id uri) })
         true
       )
@@ -134,12 +154,13 @@
 
     (let ((assets:[string] (get-proposed-assets token-id)))
       (enforce (>= (- (length assets) 1) asset-id) "Invalid asset ID")
-      (with-capability (ASSET_REJECTED token-id asset-id (at asset-id assets) owner)
+      (with-capability (REJECT_ASSET token-id asset-id owner)
         (let ((updated-assets:[string] (filter (lambda (index:integer) (not (= index asset-id))) (enumerate 0 (- (length assets) 1)))))
           (write proposed-assets token-id { 'assets: updated-assets })
           true
         )
       )
+      (emit-event (ASSET_REJECTED token-id asset-id (at asset-id assets) owner))
     )
   )
 
@@ -152,16 +173,15 @@
     )
       (enforce (= balance 1.0) "Token not owned")
 
+      (with-capability (REJECT_ALL_ASSETS token-id owner)
+        (write proposed-assets token-id { 'assets: [] })
+      )
+
       (map 
         (lambda (asset-id:integer)
-          (with-capability (ASSET_REJECTED token-id asset-id (at asset-id assets) owner)
-            true
-          )
-
+          (emit-event (ASSET_REJECTED token-id asset-id (at asset-id assets) owner))
         ) 
       (enumerate 0 (- (length assets) 1)))
-
-      (write proposed-assets token-id { 'assets: [] })
 
       true
     )
@@ -177,8 +197,9 @@
     )
       (enforce (= balance 1.0) "Token not owned")
 
-      (with-capability (ASSET_ACCEPTED token-id asset-id uri owner)
+      (with-capability (ACCEPT_ASSET token-id asset-id owner)
         (write token-assets token-id { 'assets: (+ assets [uri]) })
+        (emit-event (ASSET_ACCEPTED token-id asset-id uri owner))
         true  
       )
     )
@@ -197,8 +218,9 @@
     )
       (enforce (= balance 1.0) "Token not owned")
 
-      (with-capability (ASSET_PRIORITY_SET token-id priority target-asset owner)
+      (with-capability (SET_ASSET_PRIORITY token-id asset-id priority owner)
         (write token-assets token-id { 'assets: (+ truncated-assets [asset-to-be-replaced]) })
+        (emit-event (ASSET_PRIORITY_SET token-id asset-id priority owner))
         true
       )
     )

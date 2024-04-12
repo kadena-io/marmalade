@@ -26,13 +26,19 @@ There are two possible implementations, for fungible and non-fungible tokens.
 
 **Capabilities**:
  - `GOVERNANCE`: enforces access control of contract upgrade.
+ - `PROPOSE_ASSET (token-id:string uri:string)`: enforces access control of token operator.
+ - `ACCEPT_ASSET (token-id:string asset-id:integer owner:string)`: enforces access control of token owner.
+ - `REJECT_ASSET (token-id:string asset-id:integer owner:string)`: enforces access control of token owner.
+ - `REJECT_ALL_ASSETS (token-id:string owner:string)`: enforces access control of token owner.
+ - `SET_ASSET_PRIORITY (token-id:string asset-id:integer priority:integer owner:string)`: enforces access control of token owner.
+
 
 **Events**:
- - `ASSET_PROPOSED (token-id:string asset-id:integer uri:string operator-guard:guard)`: emitted when new asset is proposed.
+ - `ASSET_PROPOSED (token-id:string asset-id:integer uri:string)`: emitted when new asset is proposed.
  - `ASSET_ACCEPTED (token-id:string asset-id:integer uri:string owner:string)`: emitted when the asset has been accepted.
- - `ASSET_ACCEPTED (token-id:string asset-id:integer uri:string owner:string)`: emitted when the asset has been rejected.
+ - `ASSET_REJECTED (token-id:string asset-id:integer uri:string owner:string)`: emitted when the asset has been rejected.
  - `ASSET_SET (token-id:string asset-id:integer uri:string)`: emitted at init for fungible tokens.
- - `ASSET_PRIORITY_SET (token-id:string asset-id:integer uri:string owner:string)`: emitted when new asset priority is set.
+ - `ASSET_PRIORITY_SET (token-id:string asset-id:integer priority:integer owner:string)`: emitted when new asset priority is set.
 
 ## Policy Functions
 

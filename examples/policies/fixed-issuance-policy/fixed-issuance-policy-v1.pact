@@ -9,6 +9,8 @@
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
 
+  (defconst POLICY:string (format "{}" [fixed-issuance-policy-v1]))
+
   (implements kip.token-policy-v2)
   (use kip.token-policy-v2 [token-info])
   (use marmalade-v2.policy-manager)
@@ -34,7 +36,7 @@
     \ Required msg-data keys:                                                  \
     \ * fixed_issuance_spec:object{supply-schema} - registers minimum mint     \
     \ amount, max-supply, and precision information of the created token"
-    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) fixed-issuance-policy-v1))
+    (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) POLICY))
     (let* (
             (fixed-issuance-spec:object{supply-schema} (read-msg FIXED-ISSUANCE-SPEC))
             (min-amount:decimal (at 'min-amount fixed-issuance-spec))
@@ -58,7 +60,7 @@
       guard:guard
       amount:decimal
     )
-    (require-capability (MINT-CALL (at "id" token) account amount fixed-issuance-policy-v1))
+    (require-capability (MINT-CALL (at "id" token) account amount POLICY))
     (bind (get-supply token)
       { 'min-amount:=min-amount:decimal
       , 'max-supply:=max-supply:decimal

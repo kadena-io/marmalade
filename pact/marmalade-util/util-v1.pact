@@ -2,9 +2,9 @@
 
 (module util-v1 GOVERNANCE
   (use kip.token-policy-v2)
-  (use ledger)
-  (use policy-manager)
-  (use policy-manager [CONCRETE_POLICY_LIST NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
+  (use marmalade-v2.ledger)
+  (use marmalade-v2.policy-manager)
+  (use marmalade-v2.policy-manager [CONCRETE_POLICY_LIST NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY])
 
   (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
 
@@ -76,6 +76,15 @@
     }
   )
 
+  (defun contains-concrete-policy:bool (concrete-policy:string policies:[module{kip.token-policy-v2}])
+    (let* ( (policy-modref:module{kip.token-policy-v2} (get-concrete-policy concrete-policy) )
+            (policy-str:string (format "{}" [policy-modref]) )
+            (policies-str:[string] (map (lambda (policy:module{kip.token-policy-v2})
+                                      (format "{}" [policy])) policies)) )
+    (enforce (contains policy-str policies-str) (format "{} is required" [concrete-policy])))
+    true
+  )
+
   (defun to-timestamp:integer (input:time)
     "Computes an Unix timestamp of the input date"
     (floor (diff-time input (time "1970-01-01T00:00:00Z")))
@@ -91,9 +100,8 @@
     (let* ( (nfp-precision:integer 0)
             (account:string (create-principal guard))
             (nfp-amount:decimal 1.0)
-            (nfp:module{kip.token-policy-v2} (get-concrete-policy NON_FUNGIBLE_POLICY))
             (token-id:string (create-token-id {'uri: uri, 'precision: nfp-precision, 'policies: policies} guard)) )
-      (enforce (contains nfp policies) "NON_FUNGIBLE_POLICY is required")
+      (contains-concrete-policy NON_FUNGIBLE_POLICY policies)
       (with-capability (UTIL-SIGN)
         (create-token token-id nfp-precision uri policies guard)
       )
@@ -109,11 +117,10 @@
 
   (defun create-token-with-mint-guard (uri:string precision:integer policies:[module{kip.token-policy-v2}])
     @doc "Creates a token, enforce that MINT-GUARD is registered"
-    (let* ( (gp:module{kip.token-policy-v2} (get-concrete-policy GUARD_POLICY))
-            (mint-guard:guard (read-keyset "mint_guard"))
+    (let* ( (mint-guard:guard (read-keyset "mint_guard"))
             (token-id:string (create-token-id {'uri: uri, 'precision: precision, 'policies: policies} mint-guard))
             )
-      (enforce (contains gp policies) "GUARD_POLICY is required")
+      (contains-concrete-policy GUARD_POLICY policies)
       (with-capability (UTIL-SIGN)
         (create-token token-id precision uri policies mint-guard)
       )

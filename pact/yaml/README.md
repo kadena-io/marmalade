@@ -45,12 +45,14 @@ kda send tx.json
 
 The deployment order must be respected to fulfill all modules dependencies.
 
-* In the `util` Namespace
-  0. fungible-util
-
 * In the `kip` Namespace
 
-  1. account-protocols-v1
+  0. account-protocols-v1
+
+* In the `util` Namespace
+  1. fungible-util
+
+* In the `kip` Namespace
   2. poly-fungible-v3
   3. updatable-uri-v1
   4. poly-fungible-v3

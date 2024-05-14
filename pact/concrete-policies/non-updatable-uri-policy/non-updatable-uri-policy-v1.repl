@@ -1,0 +1,3 @@
+;;load policy manager, ledger
+(load "../../policy-manager/policy-manager.repl")
+(typecheck "marmalade-v2.non-updatable-uri-policy-v1")

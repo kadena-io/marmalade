@@ -127,6 +127,18 @@
     )
   )
 
+  (defun create-token-with-mint-guard (uri:string precision:integer policies:[module{kip.token-policy-v2}])
+    @doc "Creates a token, enforce that MINT-GUARD is registered"
+    (let* ( (mint-guard:guard (read-keyset "mint_guard"))
+            (token-id:string (create-token-id {'uri: uri, 'precision: precision, 'policies: policies} mint-guard))
+            )
+      (contains-concrete-policy GUARD_POLICY policies)
+      (with-capability (UTIL-SIGN)
+        (create-token token-id precision uri policies mint-guard)
+      )
+    )
+  )
+
 )
 
 (enforce-guard ADMIN-KS)

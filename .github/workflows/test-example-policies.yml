@@ -42,3 +42,8 @@ jobs:
         uses: ./.github/actions/repl
         with:
           target: examples/policies/private-token-policy/private-token-policy-v1.repl
+
+      - name: Test multi-asset-policy-v1
+        uses: ./.github/actions/repl
+        with:
+          target: examples/policies/multi-asset-policy/multi-asset-policy.repl

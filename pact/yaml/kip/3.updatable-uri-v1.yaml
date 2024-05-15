@@ -11,4 +11,4 @@ publicMeta:
   sender: {{sender}}
   gasLimit: 100000
   gasPrice: 0.0000001
-  ttl: 600
+  ttl: 100000

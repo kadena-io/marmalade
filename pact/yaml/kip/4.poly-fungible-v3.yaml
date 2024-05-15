@@ -1,14 +1,14 @@
-codeFile: ../ledger/ledger.interface.pact
+codeFile: ../kip/poly-fungible-v3.pact
 signers:
   - public: {{sender_key}}
-  - public: {{marmalade_user_key_1}}
-  - public: {{marmalade_user_key_2}}
+  - public: {{kip_ns_user_key_1}}
+  - public: {{kip_ns_user_key_2}}
 data:
-  ns: {{marmalade_namespace}}
+  ns: {{kip_namespace}}
 networkId: {{network}}
 publicMeta:
   chainId: "{{chain}}"
   sender: {{sender}}
   gasLimit: 100000
   gasPrice: 0.0000001
-  ttl: 10000
+  ttl: 100000

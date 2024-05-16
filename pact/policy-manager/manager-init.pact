@@ -6,4 +6,4 @@
 (policy-manager.write-concrete-policy ROYALTY_POLICY royalty-policy-v1)
 (policy-manager.write-concrete-policy COLLECTION_POLICY collection-policy-v1)
 (policy-manager.write-concrete-policy GUARD_POLICY guard-policy-v1)
-(policy-manager.write-concrete-policy NON_UPDATABLE_URI_POLICY guard-policy-v1)
+(policy-manager.write-concrete-policy NON_UPDATABLE_URI_POLICY non-updatable-uri-policy-v1)

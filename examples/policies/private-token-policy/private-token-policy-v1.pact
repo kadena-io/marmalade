@@ -25,7 +25,7 @@
   )
 
   (defun has-guard-policy:bool (policies)
-    (> (length (filter (lambda (policy) (= policy marmalade-v2.guard-policy-v1)) policies)) 0))
+    (> (length (filter (lambda (policy) (= (format "{}" [policy]) "marmalade-v2.guard-policy-v1")) policies)) 0))
 
   (defun enforce-init:bool
     ( token:object{token-info}

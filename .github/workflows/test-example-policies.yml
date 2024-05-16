@@ -38,6 +38,11 @@ jobs:
         with:
           target: examples/policies/timed-mint-policy/timed-mint-policy-v1.repl
 
+      - name: Test private-token-policy-v1
+        uses: ./.github/actions/repl
+        with:
+          target: examples/policies/private-token-policy/private-token-policy-v1.repl
+
       - name: Test multi-asset-policy-v1
         uses: ./.github/actions/repl
         with:

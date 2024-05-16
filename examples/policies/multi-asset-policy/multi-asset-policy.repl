@@ -328,7 +328,7 @@
     (map (remove "module-hash")  (env-events true)))
 
   (expect-failure "active asset does not exist"
-    "row not found: t:UmMlqvQ1DLAMvW7QzmVsWKHurasTMzFI2CVCAg3Lpc8"
+    "row not found: t:KaIJSvJEBJI8fV2LxDG6Jk_ASLRdQ-0SIr5CiAR2noM"
     (get-asset (read-msg 'token-id) 0)
   )
 

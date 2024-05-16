@@ -15,6 +15,7 @@
        ,'royalty-policy: false
        ,'collection-policy:false
        ,'guard-policy: true
+       ,'non-updatable-uri-policy: false
       }
     )
   )
@@ -67,6 +68,7 @@
    [ {"name": "marmalade-v2.guard-policy-v1.GUARDS","params": [(read-msg 'token-id) {"burn-guard": GUARD_SUCCESS,"mint-guard": GUARD_SUCCESS,"sale-guard": GUARD_SUCCESS,"transfer-guard": GUARD_SUCCESS, "uri-guard": GUARD_SUCCESS}]}
      {"name": "marmalade-v2.ledger.TOKEN","params": [(read-msg 'token-id) 0 [marmalade-v2.non-fungible-policy-v1 marmalade-v2.guard-policy-v1] "test-non-fungible-uri" ALWAYS-TRUE]}]
   (map (remove "module-hash")  (env-events true)))
+
 (commit-tx)
 
 (begin-tx "Mint with a supply other then 1 fails ")

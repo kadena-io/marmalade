@@ -8,14 +8,17 @@
 
   (env-data {
     "creator-guard": {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"},
-    "bad-actor-guard": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
+    "bad-actor-guard": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"},
+    "rotate-guard": {"keys": ["5ed6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}
   })
 
   (marmalade-v2.abc.create-account "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3" (read-keyset 'creator-guard))
   (marmalade-v2.abc.create-account "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3" (read-keyset 'bad-actor-guard))
+  (marmalade-v2.abc.create-account "k:5ed6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3" (read-keyset 'rotate-guard))
 
   (coin.create-account "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3" (read-keyset 'creator-guard))
   (coin.create-account "k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3" (read-keyset 'bad-actor-guard))
+  (coin.create-account "k:5ed6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3" (read-keyset 'rotate-guard))
 
 (commit-tx)
 
@@ -493,3 +496,33 @@
  )
 
 (rollback-tx)
+
+(begin-tx "Rotate Royalty Recipient")
+(use marmalade-v2.royalty-policy-v1)
+(use marmalade-v2.ledger)
+(use marmalade-v2.util-v1)
+(use mini-guard-utils)
+
+(env-keys ["badkeys"])
+(env-data {
+  "ks": {
+    "keys": ["5ed6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"],
+    "pred": "keys-all"
+  },
+  "token-id": (create-token-id { 'uri: "test-royalty-uri", 'precision: 0, 'policies: (create-policies DEFAULT_ROYALTY) } ALWAYS-TRUE)
+})
+
+(expect "Account" "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3" (get-royalty-creator (read-msg 'token-id)))
+
+(expect-failure "Rotate with bad keyset fails"
+    "(enforce-guard cg)     : Failure: Tx Failed: Keyset failure (keys-all): [e4c6807d...]"
+    (rotate (read-msg 'token-id) "k:5ed6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3" (read-keyset 'ks))
+)
+
+(env-keys ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"])
+
+(expect "Successfully Rotated Account/Guard" "Rotated creator and guard" (rotate (read-msg 'token-id) "k:5ed6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3" (read-keyset 'ks)))
+
+(expect "Account" "k:5ed6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3" (get-royalty-creator (read-msg 'token-id)))
+
+(commit-tx)

@@ -41,6 +41,14 @@
     true
   )
 
+  (defcap AUCTION_UPDATED:bool
+    ( sale-id:string
+      token-id:string
+    )
+    @event
+    true
+  )
+
   (defcap MANAGE_AUCTION:bool (sale-id:string token-id:string)
     (let* (
       (quote-info:object{quote-schema} (get-quote-info sale-id))
@@ -186,7 +194,9 @@
           ,"end-date": end-date
           ,"reserve-price": reserve-price
         })
-      ))
+      )
+      (emit-event (AUCTION_UPDATED sale-id token-id))
+    )
   )
 
   (defun retrieve-auction (sale-id:string)

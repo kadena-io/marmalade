@@ -167,7 +167,7 @@
      }
   ])
   (expect "Update auction succeeds"
-    "Write succeeded"
+    true
     (update-auction (read-string "sale-id") 1696809600 1697328000 80.0)
   )
 (rollback-tx)

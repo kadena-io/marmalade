@@ -5,3 +5,4 @@
 This repo houses smart contracts and frontend code for Marmalade, Kadena's platform for poly-fungibles and NFTs.
 
 [[MARMALADE DOCS]](https://docs.kadena.io/marmalade)
+[[MARMALADE Contract Reference]](https://docs.kadena.io/reference/nft-ref)

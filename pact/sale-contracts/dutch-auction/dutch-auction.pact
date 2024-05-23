@@ -35,6 +35,14 @@
     true
   )
 
+  (defcap AUCTION_UPDATED:bool
+    ( sale-id:string
+      token-id:string
+    )
+    @event
+    true
+  )
+
   (defcap MANAGE_AUCTION:bool (sale-id:string token-id:string)
     (let* (
       (quote-info:object{quote-schema} (get-quote-info sale-id))
@@ -173,6 +181,7 @@
           ,"price-interval-seconds": price-interval-seconds
         })
       )
+      (emit-event (AUCTION_UPDATED sale-id token-id))
     )
   )
 

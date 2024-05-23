@@ -124,12 +124,19 @@
   )
 
   (defun enforce-withdrawal:bool (sale-id:string)
-    (with-read auctions sale-id
+    (with-default-read auctions sale-id
+      { 'end-date: -1,
+        'highest-bid: 0.0 }
       { 'end-date:= end-date,
         'highest-bid:= highest-bid
       }
-      (enforce (> (curr-time) end-date) "Auction is still ongoing or hasn't started yet")
-      (enforce (= highest-bid 0.0) "Bid has been placed, can't withdraw")
+      (if (= end-date -1)
+        true
+        (let ((_ ""))
+          (enforce (> (curr-time) end-date) "Auction is still ongoing or hasn't started yet")
+          (enforce (= highest-bid 0.0) "Bid has been placed, can't withdraw")
+        )
+      )
     )
     true
   )
@@ -244,6 +251,7 @@
                 (install-capability (fungible::TRANSFER (escrow-account sale-id) previous-bidder (fungible::get-balance (escrow-account sale-id))))
                 (fungible::transfer (escrow-account sale-id) previous-bidder (fungible::get-balance (escrow-account sale-id)))
               )
+              true
             )
             true
           )
@@ -265,6 +273,7 @@
              (mk-account:string (at 'account (fungible::details (at 'mk-account mk-fee-spec)))))
              (enforce (!= "" mk-account) "Marketplace fee account does not exist")
               (write mk-fees bid-id mk-fee-spec)
+              true
             )
           )
           (update auctions sale-id { 'highest-bid: bid, 'highest-bid-id: bid-id })

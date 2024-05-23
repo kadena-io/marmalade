@@ -1,0 +1,17 @@
+code: |-
+  (use marmalade-v2.util-v1)
+  (marmalade-v2.ledger.create-token-id
+    {'precision: {{precision-value}}, 'policies: (create-policies DEFAULT_COLLECTION_ROYALTY), 'uri: "{{uri-value}}" }
+    (read-keyset 'creator-guard) )
+data:
+  creator-guard:
+     keys:
+       - {{creator-key}}
+     pred: keys-all
+networkId: "{{networkId}}"
+publicMeta:
+  chainId: "{{chainId}}"
+  sender: ""
+  gasPrice: 0.000001
+  gasLimit: 10000
+  ttl: 10000

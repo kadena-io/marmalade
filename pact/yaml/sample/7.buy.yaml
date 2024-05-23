@@ -1,0 +1,29 @@
+pactId: "{{sale-id}}"
+proof: null
+type: "cont"
+step: 1
+rollback: false
+signers:
+  - public: {{buyer-key}}
+    caps:
+      - name: marmalade-v2.ledger.BUY
+        args: ["{{token-id}}", "{{seller-account}}", "{{buyer-account}}", {{buy-amount}}, "{{sale-id}}" ]
+      - name: coin.TRANSFER
+        args: ["{{buyer-fungible-account}}", "{{escrow-account}}",{{sale-price}}]
+  - public: {{gas-payer-key}}
+    caps:
+      - name: coin.GAS
+        args: []
+data:
+  buyer: "{{buyer-account}}"
+  buyer-guard:
+    keys: ["{{buyer-key}}"]
+    pred: "keys-all"
+  buyer_fungible_account: "{{buyer-fungible-account}}"
+networkId: "{{networkId}}"
+publicMeta:
+  chainId: "{{chainId}}"
+  sender: "{{gas-payer}}"
+  gasLimit: 10000
+  gasPrice: 0.0000001
+  ttl: 600

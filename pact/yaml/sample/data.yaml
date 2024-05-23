@@ -1,0 +1,75 @@
+# meta
+chainId: "1"
+networkId: development
+gas-payer: "k:368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca"
+gas-payer-key: "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca"
+
+# 0.0 create coin account of the royalty creator account
+creator-account: "k:490b6e51d1cfc57bd15cb0fed0d3ace49eb664f5a26d39b1f3af21b2a9718bfd"
+creator-key: "490b6e51d1cfc57bd15cb0fed0d3ace49eb664f5a26d39b1f3af21b2a9718bfd"
+
+# 0.1 create-collection-id
+collection-name: "test-collection"
+operator-key: "490b6e51d1cfc57bd15cb0fed0d3ace49eb664f5a26d39b1f3af21b2a9718bfd"
+
+# 0.2 create-token-id
+creator-key: "490b6e51d1cfc57bd15cb0fed0d3ace49eb664f5a26d39b1f3af21b2a9718bfd"
+uri-value: "test-uri"
+precision-value: "0"
+
+# 0.3 get-uri
+token-id: # get token-id by running 0.2.create-token-id
+
+# 0.4 get-escrow-account
+sale-id: # sale-id is the requestKey from 5-offer
+
+# 1 create-collection
+collection_id: # get collection-id by running 0.1.create-collection-id
+collection-name: "test-collection"
+collection-size: 0
+operator-key: "490b6e51d1cfc57bd15cb0fed0d3ace49eb664f5a26d39b1f3af21b2a9718bfd"
+
+# 2 create-token
+token-id: # get token-id by running 0.2.create-token-id
+creator-account: "k:490b6e51d1cfc57bd15cb0fed0d3ace49eb664f5a26d39b1f3af21b2a9718bfd"
+creator-key: "490b6e51d1cfc57bd15cb0fed0d3ace49eb664f5a26d39b1f3af21b2a9718bfd"
+collection_id: # get collection-id by running 0.1.create-collection-id
+uri-value: "test-uri"
+precision-value: "0"
+royalty-rate: 0.05
+
+# 3 mint
+token-id: # get token-id by running 0.2.create-token-id
+mint-amount: 1.0
+creator-key: "490b6e51d1cfc57bd15cb0fed0d3ace49eb664f5a26d39b1f3af21b2a9718bfd"
+mint-account: "k:490b6e51d1cfc57bd15cb0fed0d3ace49eb664f5a26d39b1f3af21b2a9718bfd"
+mint-key: "490b6e51d1cfc57bd15cb0fed0d3ace49eb664f5a26d39b1f3af21b2a9718bfd"
+
+# 4 update uri
+token-id: # get token-id by running 0.2.create-token-id
+uri-key: "490b6e51d1cfc57bd15cb0fed0d3ace49eb664f5a26d39b1f3af21b2a9718bfd"
+new-uri: "test-uri-111"
+
+# 5 offer
+timeout: "0"
+seller-account: "k:490b6e51d1cfc57bd15cb0fed0d3ace49eb664f5a26d39b1f3af21b2a9718bfd"
+seller-key: "490b6e51d1cfc57bd15cb0fed0d3ace49eb664f5a26d39b1f3af21b2a9718bfd"
+sell-amount: 1.0
+sale-type: ""
+sale-price: 2.0
+
+# 6 withdraw
+seller-key: "490b6e51d1cfc57bd15cb0fed0d3ace49eb664f5a26d39b1f3af21b2a9718bfd"
+sale-id: # sale-id is the requestKey from 5-offer
+sell-amount: 1.0
+timeout: "0"
+
+# 7 buy
+seller-account: "k:490b6e51d1cfc57bd15cb0fed0d3ace49eb664f5a26d39b1f3af21b2a9718bfd"
+buyer-account: "k:368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca"
+buyer-key: "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca"
+buyer-fungible-account: "k:368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca"
+escrow-account: "c:SQLGrWEGcCz5L6s5AhfTBiJQr8fpePO3H90eKZbb80s"
+sale-id: # sale-id is the requestKey from 5-offer
+buy-amount: 1.0
+sale-price: 2.0

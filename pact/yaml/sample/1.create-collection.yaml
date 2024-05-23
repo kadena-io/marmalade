@@ -1,0 +1,25 @@
+code: |-
+  (marmalade-v2.collection-policy-v1.create-collection
+    "{{collection_id}}" "{{collection-name}}" (read-integer "collection-size") (read-keyset 'operator-guard))
+signers:
+  - public: "{{operator-key}}"
+    caps:
+      - name: marmalade-v2.collection-policy-v1.COLLECTION
+        args: [ "{{collection_id}}", "{{collection-name}}", {"int": {{collection-size}}}, {"pred":"keys-all","keys":["{{operator-key}}"]}]
+  - public: "{{gas-payer-key}}"
+    caps:
+      - name: coin.GAS
+        args: []
+data:
+  collection-size: {{collection-size}}
+  operator-guard:
+     keys:
+       - "{{operator-key}}"
+     pred: keys-all
+networkId: "{{networkId}}"
+publicMeta:
+  chainId: "{{chainId}}"
+  sender: "{{gas-payer}}"
+  gasPrice: 0.000001
+  gasLimit: 10000
+  ttl: 10000

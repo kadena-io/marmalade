@@ -139,7 +139,7 @@
 
   (expect "create-auction events"
     [
-      {"name": "marmalade-sale.conventional-auction.AUCTION_CREATED","params": ["_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y" (read-msg "token1-id") "u:util.guards1.enforce-guard-any:8iBtcNCfjArejHvxJ0rde1DsWxuhHqOzd1w40jsDPV4"]}
+      {"name": "marmalade-sale.conventional-auction.AUCTION_CREATED","params": ["_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y" (read-msg "token1-id")]}
     ]
     (map (remove "module-hash")  (env-events true))
   )

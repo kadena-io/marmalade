@@ -35,7 +35,6 @@
   (defcap AUCTION_CREATED:bool
     ( sale-id:string
       token-id:string
-      escrow:string
     )
     @event
     true
@@ -49,23 +48,20 @@
     true
   )
 
+  (defcap BID_PLACED:bool
+    ( bid-id:string
+      sale-id:string
+    )
+    @event
+    true
+  )
+
   (defcap MANAGE_AUCTION:bool (sale-id:string token-id:string)
     (let* (
       (quote-info:object{quote-schema} (get-quote-info sale-id))
       (seller:string (at 'seller quote-info)))
       (enforce-guard (marmalade-v2.ledger.account-guard token-id seller))
     )
-  )
-
-  (defcap BID_PLACED:bool
-    ( bid-id:string
-      bidder:string
-      bidder-guard:guard
-      bid:decimal
-      token-id:string
-    )
-    @event
-    true
   )
 
   (defcap PLACE_BID:bool (bidder-guard:guard)
@@ -168,7 +164,7 @@
         ,"highest-bid-id": ""
         ,"reserve-price": reserve-price
       })
-      (emit-event (AUCTION_CREATED sale-id token-id (escrow-account sale-id)))
+      (emit-event (AUCTION_CREATED sale-id token-id))
     )
   )
 
@@ -272,7 +268,7 @@
             )
           )
           (update auctions sale-id { 'highest-bid: bid, 'highest-bid-id: bid-id })
-          (emit-event (BID_PLACED bid-id bidder bidder-guard bid token-id))
+          (emit-event (BID_PLACED bid-id sale-id))
         ))
       true
     )

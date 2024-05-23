@@ -42,7 +42,7 @@
     @event
     true
   )
-  
+
   (defcap PRICE_ACCEPTED:bool
     ( sale-id:string
       token-id:string
@@ -95,12 +95,19 @@
   )
 
   (defun enforce-withdrawal:bool (sale-id:string)
-    (with-read auctions sale-id
+    (with-default-read auctions sale-id
+      { 'end-date: -1,
+        'sell-price: 0.0 }
       { 'end-date:= end-date,
         'sell-price:= sell-price
       }
-      (enforce (> (curr-time) end-date) "Auction is still ongoing or hasn't started yet")
-      (enforce (= sell-price 0.0) "Price has been accepted, can't withdraw")
+      (if (= end-date -1)
+        true
+        (let ((_ ""))
+          (enforce (> (curr-time) end-date) "Auction is still ongoing or hasn't started yet")
+          (enforce (= sell-price 0.0) "Price has been accepted, can't withdraw")
+        )
+      )
     )
     true
   )

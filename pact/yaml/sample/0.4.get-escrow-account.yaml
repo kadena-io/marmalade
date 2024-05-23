@@ -1,0 +1,9 @@
+code: (marmalade-v2.policy-manager.get-escrow-account "{{sale-id}}")
+signers:
+networkId: {{networkId}}
+publicMeta:
+  chainId: "{{chainId}}"
+  sender: ""
+  ttl: 600
+  gasPrice: 0.0000001
+  gasLimit: 10000

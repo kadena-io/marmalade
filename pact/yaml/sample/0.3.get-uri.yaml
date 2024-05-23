@@ -1,0 +1,9 @@
+code: (marmalade-v2.ledger.get-uri "{{token-id}}")
+signers:
+networkId: {{networkId}}
+publicMeta:
+  chainId: "{{chainId}}"
+  sender: ""
+  ttl: 600
+  gasPrice: 0.0000001
+  gasLimit: 10000

@@ -1,0 +1,21 @@
+#  assumes no creator account exists, creator guard is reused to register as mint guard
+
+code: (marmalade-v2.ledger.update-uri "{{token-id}}" "{{new-uri}}")
+signers:
+  - public: "{{uri-key}}"
+    caps:
+      - name: marmalade-v2.ledger.UPDATE-URI
+        args: ["{{token-id}}", "{{new-uri}}"]
+      - name: marmalade-v2.guard-policy-v1.UPDATE-URI
+        args: ["{{token-id}}", "{{new-uri}}"]
+  - public: "{{gas-payer-key}}"
+    caps:
+      - name: coin.GAS
+        args: []
+networkId: {{networkId}}
+publicMeta:
+  chainId: "{{chainId}}"
+  sender: "{{gas-payer}}"
+  ttl: 600
+  gasPrice: 0.0000001
+  gasLimit: 10000

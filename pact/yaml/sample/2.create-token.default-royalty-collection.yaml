@@ -1,0 +1,53 @@
+code: |-
+  (marmalade-v2.ledger.create-token
+    "{{token-id}}"
+    {{precision-value}}
+    "{{uri-value}}"
+    (marmalade-v2.util-v1.create-policies marmalade-v2.util-v1.DEFAULT_COLLECTION_ROYALTY)
+    (at 'creator-guard (read-msg 'royalty_spec))
+  )
+signers:
+  - public: "{{creator-key}}"
+    caps:
+      - name: marmalade-v2.collection-policy-v1.TOKEN-COLLECTION
+        args: [ "{{collection_id}}", "{{token-id}}"]
+      - name: marmalade-v2.ledger.CREATE-TOKEN
+        args: [ "{{token-id}}", {"pred":"keys-all","keys":["{{creator-key}}"]}]
+  - public: "{{gas-payer-key}}"
+    caps:
+      - name: coin.GAS
+        args: []
+data:
+  # Registers a mint guard (guard-policy)
+  mint_guard:
+     keys:
+       - {{creator-key}}
+     pred: keys-all
+ # Registers a uri guard (guard-policy)
+  uri_guard:
+     keys:
+       - {{creator-key}}
+     pred: keys-all
+  collection_id: {{collection_id}}
+ # Registers royalty information (royalty-policy)
+  royalty_spec:
+    fungible:
+      refName:
+        namespace: null
+        name: coin
+      refSpec:
+        - namespace: null
+          name: fungible-v2
+    creator: "{{creator-account}}"
+    creator-guard:
+       keys:
+         - {{creator-key}}
+       pred: keys-all
+    royalty-rate: {{royalty-rate}}
+networkId: {{networkId}}
+publicMeta:
+  chainId: "{{chainId}}"
+  sender: "{{gas-payer}}"
+  ttl: 600
+  gasPrice: 0.0000001
+  gasLimit: 10000

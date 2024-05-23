@@ -1,0 +1,15 @@
+code: |-
+  (marmalade-v2.collection-policy-v1.create-collection-id
+    "{{collection-name}}" (read-keyset 'operator-guard) )
+data:
+  operator-guard:
+     keys:
+       - "{{operator-key}}"
+     pred: keys-all
+networkId: "{{networkId}}"
+publicMeta:
+  chainId: "{{chainId}}"
+  sender: ""
+  gasPrice: 0.000001
+  gasLimit: 10000
+  ttl: 10000

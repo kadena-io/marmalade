@@ -1,0 +1,19 @@
+code: (coin.create-account (read-msg 'creator) (read-keyset 'creator-guard))
+signers:
+  - public: "{{gas-payer-key}}"
+    caps:
+      - name: coin.GAS
+        args: []
+data:
+  creator: "{{creator-account}}"
+  creator-guard:
+     keys:
+       - {{creator-key}}
+     pred: keys-all
+networkId: {{networkId}}
+publicMeta:
+  chainId: "{{chainId}}"
+  sender: "{{gas-payer}}"
+  ttl: 600
+  gasPrice: 0.0000001
+  gasLimit: 10000

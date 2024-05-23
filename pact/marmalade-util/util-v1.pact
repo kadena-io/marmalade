@@ -11,11 +11,6 @@
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
 
-  (defcap UTIL-SIGN ()
-    @doc "Capabiltiy to easily scope signatures"
-    true
-  )
-
   (defschema concrete-policy-bool
     non-fungible-policy:bool
     royalty-policy:bool
@@ -144,10 +139,7 @@
             (nfp-amount:decimal 1.0)
             (token-id:string (create-token-id {'uri: uri, 'precision: nfp-precision, 'policies: policies} guard)) )
       (contains-concrete-policy NON_FUNGIBLE_POLICY policies)
-      (with-capability (UTIL-SIGN)
-        (create-token token-id nfp-precision uri policies guard)
-      )
-      (install-capability (MINT token-id account nfp-amount))
+      (create-token token-id nfp-precision uri policies guard)
       (mint token-id account guard nfp-amount)
     )
   )
@@ -166,9 +158,7 @@
             (token-id:string (create-token-id {'uri: uri, 'precision: precision, 'policies: policies} mint-guard))
             )
       (enforce-mint-guard policies)
-      (with-capability (UTIL-SIGN)
-        (create-token token-id precision uri policies mint-guard)
-      )
+      (create-token token-id precision uri policies mint-guard)
     )
   )
 
@@ -178,9 +168,7 @@
             (token-id:string (create-token-id {'uri: uri, 'precision: precision, 'policies: policies} uri-guard))
             )
       (enforce-uri-guard policies)
-      (with-capability (UTIL-SIGN)
-        (create-token token-id precision uri policies uri-guard)
-      )
+      (create-token token-id precision uri policies uri-guard)
     )
   )
 

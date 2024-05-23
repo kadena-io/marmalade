@@ -5,18 +5,27 @@
 (begin-tx "mint a featureless NFT")
 
   (use marmalade-v2.util-v1)
+  (use marmalade-v2.policy-manager)
+
   (env-data {
+    "token-id": "t:U50F3xof5EnLQFPd0v2vt8PR3GJTAt8DJ2oWFj7eOgA",
     "account": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3",
     "account-guard": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"]
   })
 
   (env-sigs [
     { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
-     ,'caps: [(marmalade-v2.util-v1.UTIL-SIGN) ]
+     ,'caps: [
+        (marmalade-v2.ledger.CREATE-TOKEN (read-msg 'token-id) (read-keyset 'account-guard))
+        (marmalade-v2.ledger.MINT (read-msg 'token-id) (read-msg 'account) 1.0)
+      ]
     }
    ])
 
-  (mint-basic-NFT "uri" (read-keyset 'account-guard ))
+   (expect "create and mint featureless NFT in one call"
+     true
+     (mint-basic-NFT "uri" (read-keyset 'account-guard ))
+   )
 
   (expect "create-token, mint events"
      [ {"name": "marmalade-v2.ledger.TOKEN","params": ["t:U50F3xof5EnLQFPd0v2vt8PR3GJTAt8DJ2oWFj7eOgA" 0 [marmalade-v2.non-fungible-policy-v1 marmalade-v2.non-updatable-uri-policy-v1] "uri" (read-keyset 'account-guard)]}
@@ -26,7 +35,7 @@
        {"name": "marmalade-v2.ledger.SUPPLY","params": ["t:U50F3xof5EnLQFPd0v2vt8PR3GJTAt8DJ2oWFj7eOgA" 1.0]}]
      (map (remove "module-hash")  (env-events true))
   )
-(commit-tx)
+(rollback-tx)
 
 (begin-tx "mint a NFT with policies")
 
@@ -39,8 +48,9 @@
 
   (env-sigs [
     { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
-     ,'caps: [(marmalade-v2.ledger.CREATE-TOKEN "t:KCqmjoC9QK86p3YF5MmVJMfC7Ngq5PRZHCiHf73-hss") ]
-    }
+     ,'caps: [(marmalade-v2.ledger.CREATE-TOKEN "t:KCqmjoC9QK86p3YF5MmVJMfC7Ngq5PRZHCiHf73-hss" (read-keyset 'account-guard))
+              (marmalade-v2.ledger.MINT "t:KCqmjoC9QK86p3YF5MmVJMfC7Ngq5PRZHCiHf73-hss" "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3" 1.0)
+             ]}
    ])
 
   (expect "mint default NFT using mint-NFT "
@@ -64,10 +74,11 @@
   (env-data {"mint_guard": {"keys": ["e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"], "pred": "keys-all"}})
   (env-sigs [
     { 'key: 'e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3
-     ,'caps: [(marmalade-v2.ledger.CREATE-TOKEN "t:L3Eh5k3RUJDiD2AWahQwaQPJJ6S3_L9tK2svspfpRPQ")]
+     ,'caps: [(marmalade-v2.ledger.CREATE-TOKEN "t:L3Eh5k3RUJDiD2AWahQwaQPJJ6S3_L9tK2svspfpRPQ" (read-keyset 'mint_guard ))]
     }
    ])
-  (expect "create-tokne with a mint guard"
+
+  (expect "create-token with a mint guard"
     true
     (create-token-with-mint-guard "ur1i" 0 (create-policies DEFAULT)))
 

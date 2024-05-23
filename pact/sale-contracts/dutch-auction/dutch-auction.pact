@@ -35,23 +35,28 @@
     true
   )
 
+  (defcap AUCTION_UPDATED:bool
+    ( sale-id:string
+      token-id:string
+    )
+    @event
+    true
+  )
+  
+  (defcap PRICE_ACCEPTED:bool
+    ( sale-id:string
+      token-id:string
+    )
+    @event
+    true
+  )
+
   (defcap MANAGE_AUCTION:bool (sale-id:string token-id:string)
     (let* (
       (quote-info:object{quote-schema} (get-quote-info sale-id))
       (seller:string (at 'seller quote-info)))
       (enforce-guard (marmalade-v2.ledger.account-guard token-id seller))
     )
-  )
-
-  (defcap PRICE_ACCEPTED:bool
-    ( sale-id:string
-      buyer:string
-      buyer-guard:guard
-      price:decimal
-      token-id:string
-    )
-    @event
-    true
   )
 
   (defcap DUMMY:bool () true)
@@ -83,7 +88,7 @@
           ,"buyer-guard": buyer-guard
         })
 
-        (emit-event (PRICE_ACCEPTED sale-id buyer buyer-guard current-price token-id))
+        (emit-event (PRICE_ACCEPTED sale-id token-id))
       )
     )
     true
@@ -173,6 +178,7 @@
           ,"price-interval-seconds": price-interval-seconds
         })
       )
+      (emit-event (AUCTION_UPDATED sale-id token-id))
     )
   )
 

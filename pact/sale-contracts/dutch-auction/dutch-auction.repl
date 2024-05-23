@@ -176,7 +176,7 @@
       }
    ])
    (expect "Update auction succeeds"
-     "Write succeeded"
+     true
      (update-auction (read-string "sale-id") 1696809600 1697328000 110.0 50.0 3600)
    )
  (rollback-tx)
@@ -324,7 +324,7 @@
 
  (env-chain-data {"block-time": (time "2023-10-01T00:00:00Z")})
  (expect "Update auction to 30-minute interval"
-   "Write succeeded"
+   true
    (update-auction (read-string "sale-id") 1696809600 1697328000 100.0 50.0 1800)
  )
 
@@ -397,7 +397,7 @@
 
  (env-chain-data {"block-time": (time "2023-10-01T00:00:00Z")})
  (expect "Update auction to 30-minute interval"
-   "Write succeeded"
+   true
    (update-auction (read-string "sale-id") 1696859100 1696874400 100.0 50.0 1800)
  )
 
@@ -457,8 +457,9 @@
  ])
 
  (env-chain-data {"block-time": (time "2023-10-01T00:00:00Z")})
+
  (expect "Update auction to 10-minute interval"
-   "Write succeeded"
+   true
    (update-auction (read-string "sale-id") 1696866000 1696869900 100.0 50.0 600)
  )
 

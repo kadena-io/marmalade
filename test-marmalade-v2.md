@@ -14,11 +14,10 @@ To enable smooth migration from Marmalade V1 into Marmalade V2, V2 contracts on 
 - `marmalade-v2.policy-manager-v1`
 - `marmalade-v2.ledger-v1`
 
-## Ledger, Policy Manager, Quote Manager
+## Ledger, Policy Manager
 
 - `marmalade-v2.ledger`
 - `marmalade-v2.policy-manager`
-- `marmalade-v2.quote-manager`
 
 ## Concrete policies
 
@@ -26,10 +25,12 @@ To enable smooth migration from Marmalade V1 into Marmalade V2, V2 contracts on 
 - `marmalade-v2.royalty-policy-v1`
 - `marmalade-v2.non-fungible-policy-v1`
 - `marmalade-v2.guard-policy-v1`
+- `marmalade-v2.non-updatable-uri-policy-v1`
 
-## Example Bidding Contract
+## Bidding Contract
 
-- `n_9dadddb8426ba2397433bf4e6a110dab4fccead6.basic-bidding-sale`
+- `marmalade-sale.conventional-auction`
+- `marmalade-sale.dutch-auction`
 
 ## Util
 
@@ -37,4 +38,5 @@ To enable smooth migration from Marmalade V1 into Marmalade V2, V2 contracts on 
 
 ## Docs
 
-- [V2 README](./README.md)
+- [Marmalade Docs](https://docs.kadena.io/build/nft-marmalade)
+- [Marmalade Reference](https://docs.kadena.io/reference/nft-ref)

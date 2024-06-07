@@ -185,8 +185,10 @@
   (defconst ROYALTY_POLICY:string 'royalty-policy )
   (defconst COLLECTION_POLICY:string 'collection-policy )
   (defconst GUARD_POLICY:string 'guard-policy )
+  (defconst NON_UPDATABLE_URI_POLICY:string 'non-updatable-uri-policy )
+
   (defconst CONCRETE_POLICY_LIST:[string]
-    [NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY] )
+    [NON_FUNGIBLE_POLICY ROYALTY_POLICY COLLECTION_POLICY GUARD_POLICY NON_UPDATABLE_URI_POLICY] )
 
   (defun write-concrete-policy:bool (policy-field:string policy:module{kip.token-policy-v2})
     (enforce (contains policy-field CONCRETE_POLICY_LIST) "Not registered as concrete policy")

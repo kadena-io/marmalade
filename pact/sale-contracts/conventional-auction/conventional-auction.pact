@@ -35,7 +35,22 @@
   (defcap AUCTION_CREATED:bool
     ( sale-id:string
       token-id:string
-      escrow:string
+    )
+    @event
+    true
+  )
+
+  (defcap AUCTION_UPDATED:bool
+    ( sale-id:string
+      token-id:string
+    )
+    @event
+    true
+  )
+
+  (defcap BID_PLACED:bool
+    ( bid-id:string
+      sale-id:string
     )
     @event
     true
@@ -47,17 +62,6 @@
       (seller:string (at 'seller quote-info)))
       (enforce-guard (marmalade-v2.ledger.account-guard token-id seller))
     )
-  )
-
-  (defcap BID_PLACED:bool
-    ( bid-id:string
-      bidder:string
-      bidder-guard:guard
-      bid:decimal
-      token-id:string
-    )
-    @event
-    true
   )
 
   (defcap PLACE_BID:bool (bidder-guard:guard)
@@ -120,12 +124,19 @@
   )
 
   (defun enforce-withdrawal:bool (sale-id:string)
-    (with-read auctions sale-id
+    (with-default-read auctions sale-id
+      { 'end-date: -1,
+        'highest-bid: 0.0 }
       { 'end-date:= end-date,
         'highest-bid:= highest-bid
       }
-      (enforce (> (curr-time) end-date) "Auction is still ongoing or hasn't started yet")
-      (enforce (= highest-bid 0.0) "Bid has been placed, can't withdraw")
+      (if (= end-date -1)
+        true
+        (let ((_ ""))
+          (enforce (> (curr-time) end-date) "Auction is still ongoing or hasn't started yet")
+          (enforce (= highest-bid 0.0) "Bid has been placed, can't withdraw")
+        )
+      )
     )
     true
   )
@@ -160,7 +171,7 @@
         ,"highest-bid-id": ""
         ,"reserve-price": reserve-price
       })
-      (emit-event (AUCTION_CREATED sale-id token-id (escrow-account sale-id)))
+      (emit-event (AUCTION_CREATED sale-id token-id))
     )
   )
 
@@ -186,7 +197,9 @@
           ,"end-date": end-date
           ,"reserve-price": reserve-price
         })
-      ))
+      )
+      (emit-event (AUCTION_UPDATED sale-id token-id))
+    )
   )
 
   (defun retrieve-auction (sale-id:string)
@@ -238,6 +251,7 @@
                 (install-capability (fungible::TRANSFER (escrow-account sale-id) previous-bidder (fungible::get-balance (escrow-account sale-id))))
                 (fungible::transfer (escrow-account sale-id) previous-bidder (fungible::get-balance (escrow-account sale-id)))
               )
+              true
             )
             true
           )
@@ -259,10 +273,11 @@
              (mk-account:string (at 'account (fungible::details (at 'mk-account mk-fee-spec)))))
              (enforce (!= "" mk-account) "Marketplace fee account does not exist")
               (write mk-fees bid-id mk-fee-spec)
+              true
             )
           )
           (update auctions sale-id { 'highest-bid: bid, 'highest-bid-id: bid-id })
-          (emit-event (BID_PLACED bid-id bidder bidder-guard bid token-id))
+          (emit-event (BID_PLACED bid-id sale-id))
         ))
       true
     )

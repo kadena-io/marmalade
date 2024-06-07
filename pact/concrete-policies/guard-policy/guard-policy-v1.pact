@@ -78,7 +78,6 @@
 
   (defun failure:bool ()
     (enforce false "Disabled")
-    true
   )
 
   (defun get-mint-guard:guard (token-id:string)
@@ -149,13 +148,13 @@
   (defun enforce-init:bool
     ( token:object{token-info}
     )
-    @doc "Executed at `create-token` step of marmalade.ledger. Registers  guards for \
-    \ 'mint', 'burn', 'sale', 'transfer' operations of the created token.            \
-    \ Required msg-data keys:                                                        \
-    \ * (optional) uri-guard:string -  uri-guard and adds failure guard if absent. \
-    \ * (optional) mint_guard:string -  mint-guard and adds success guard if absent. \
-    \ * (optional) burn_guard:string -  burn-guard and adds success guard if absent. \
-    \ * (optional) sale_guard:string -  sale-guard and adds success guard if absent. \
+    @doc "Executed at `create-token` step of marmalade.ledger. Registers  guards for   \
+    \ 'mint', 'burn', 'sale', 'transfer', 'update-uri' operations of the created token.\
+    \ Required msg-data keys:                                                          \
+    \ * (optional) uri-guard:string -  uri-guard and adds success guard if absent.     \
+    \ * (optional) mint_guard:string -  mint-guard and adds success guard if absent.   \
+    \ * (optional) burn_guard:string -  burn-guard and adds success guard if absent.   \
+    \ * (optional) sale_guard:string -  sale-guard and adds success guard if absent.   \
     \ * (optional) transfer_guard:string -  transfer-guard and adds success guard if absent. \
     \ the created token"
     (require-capability (INIT-CALL (at "id" token) (at "precision" token) (at "uri" token) POLICY))

@@ -46,8 +46,29 @@
     true
   )
 
+  (defcap ROTATE-ROYALTY (token-id:string creator:string creator-guard:guard)
+    @doc "Update royalty information for token"
+    @event
+    (with-read royalties token-id {'creator-guard:=cg}
+      (enforce-guard cg)
+    )
+  )
+
   (defun get-royalty:object{royalty-schema} (token:object{token-info})
     (read royalties (at 'id token))
+  )
+  
+  (defun rotate:string (token-id:string creator:string creator-guard:guard)
+    @doc "Rotates the royalty creator account and guard for the token"
+    (with-capability (ROTATE-ROYALTY token-id creator creator-guard)
+      (update royalties token-id {'creator:creator,
+                                  'creator-guard:creator-guard})
+    )
+    "Rotated creator and guard"
+  )
+
+  (defun get-royalty-creator:string (token-id:string)
+    (at 'creator (read royalties token-id))
   )
 
   (defun enforce-init:bool

@@ -11,16 +11,12 @@
   (defcap GOVERNANCE ()
     (enforce-guard ADMIN-KS))
 
-  (defcap UTIL-SIGN ()
-    @doc "Capabiltiy to easily scope signatures"
-    true
-  )
-
   (defschema concrete-policy-bool
     non-fungible-policy:bool
     royalty-policy:bool
     collection-policy:bool
     guard-policy:bool
+    non-updatable-uri-policy:bool
   )
 
   (defconst DEFAULT:object{concrete-policy-bool}
@@ -28,13 +24,32 @@
      ,'royalty-policy: false
      ,'collection-policy:false
      ,'guard-policy: true
-     })
+     ,'non-updatable-uri-policy: false
+   })
+
+   (defconst DEFAULT_NON_UPDATABLE:object{concrete-policy-bool}
+     { 'non-fungible-policy: true
+      ,'royalty-policy: false
+      ,'collection-policy:false
+      ,'guard-policy: true
+      ,'non-updatable-uri-policy: true
+    })
 
   (defconst DEFAULT_ROYALTY:object{concrete-policy-bool}
     { 'non-fungible-policy: true
      ,'royalty-policy: true
      ,'collection-policy:false
      ,'guard-policy: true
+     ,'non-updatable-uri-policy: false
+    }
+  )
+
+  (defconst DEFAULT_ROYALTY_NON_UPDATABLE:object{concrete-policy-bool}
+    { 'non-fungible-policy: true
+     ,'royalty-policy: true
+     ,'collection-policy:false
+     ,'guard-policy: true
+     ,'non-updatable-uri-policy: true
     }
   )
 
@@ -43,6 +58,16 @@
      ,'royalty-policy: false
      ,'collection-policy: true
      ,'guard-policy: true
+     ,'non-updatable-uri-policy: false
+    }
+  )
+
+  (defconst DEFAULT_COLLECTION_NON_UPDATABLE:object{concrete-policy-bool}
+    { 'non-fungible-policy: true
+     ,'royalty-policy: false
+     ,'collection-policy: true
+     ,'guard-policy: true
+     ,'non-updatable-uri-policy: true
     }
   )
 
@@ -51,6 +76,16 @@
      ,'royalty-policy: true
      ,'collection-policy: true
      ,'guard-policy: true
+     ,'non-updatable-uri-policy: false
+    }
+  )
+
+  (defconst DEFAULT_COLLECTION_ROYALTY_NON_UPDATABLE:object{concrete-policy-bool}
+    { 'non-fungible-policy: true
+     ,'royalty-policy: true
+     ,'collection-policy: true
+     ,'guard-policy: true
+     ,'non-updatable-uri-policy: true
     }
   )
 
@@ -59,6 +94,7 @@
      ,'royalty-policy: false
      ,'collection-policy:false
      ,'guard-policy: false
+     ,'non-updatable-uri-policy: false
     }
   )
 
@@ -73,6 +109,7 @@
      ,'royalty-policy: (contains (get-concrete-policy ROYALTY_POLICY) policies)
      ,'collection-policy: (contains (get-concrete-policy COLLECTION_POLICY) policies)
      ,'guard-policy: (contains (get-concrete-policy GUARD_POLICY) policies)
+     ,'non-updatable-uri-policy: (contains (get-concrete-policy NON_UPDATABLE_URI_POLICY) policies)
     }
   )
 
@@ -102,17 +139,17 @@
             (nfp-amount:decimal 1.0)
             (token-id:string (create-token-id {'uri: uri, 'precision: nfp-precision, 'policies: policies} guard)) )
       (contains-concrete-policy NON_FUNGIBLE_POLICY policies)
-      (with-capability (UTIL-SIGN)
-        (create-token token-id nfp-precision uri policies guard)
-      )
-      (install-capability (MINT token-id account nfp-amount))
+      (create-token token-id nfp-precision uri policies guard)
       (mint token-id account guard nfp-amount)
     )
   )
 
   (defun mint-basic-NFT (uri:string guard:guard)
-    @doc "Mints a NON-FUNGIBLE-TOKEN without any configuration"
-    (mint-NFT uri [(get-concrete-policy NON_FUNGIBLE_POLICY)] guard)
+    @doc "Mints a NON-FUNGIBLE-TOKEN without any configuration and upatability of URI"
+    (mint-NFT uri [
+      (get-concrete-policy NON_FUNGIBLE_POLICY)
+      (get-concrete-policy NON_UPDATABLE_URI_POLICY)
+    ] guard)
   )
 
   (defun create-token-with-mint-guard (uri:string precision:integer policies:[module{kip.token-policy-v2}])
@@ -120,11 +157,36 @@
     (let* ( (mint-guard:guard (read-keyset "mint_guard"))
             (token-id:string (create-token-id {'uri: uri, 'precision: precision, 'policies: policies} mint-guard))
             )
-      (contains-concrete-policy GUARD_POLICY policies)
-      (with-capability (UTIL-SIGN)
-        (create-token token-id precision uri policies mint-guard)
-      )
+      (enforce-mint-guard policies)
+      (create-token token-id precision uri policies mint-guard)
     )
+  )
+
+  (defun create-token-with-uri-guard (uri:string precision:integer policies:[module{kip.token-policy-v2}])
+    @doc "Creates a token, enforce that URI-GUARD is registered"
+    (let* ( (uri-guard:guard (read-keyset "uri_guard"))
+            (token-id:string (create-token-id {'uri: uri, 'precision: precision, 'policies: policies} uri-guard))
+            )
+      (enforce-uri-guard policies)
+      (create-token token-id precision uri policies uri-guard)
+    )
+  )
+
+  (defun enforce-uri-guard (policies:[module{kip.token-policy-v2}])
+    @doc "Helper function to enforce that a URI_GUARD is correctly registered with GUARD_POLICY"
+    (contains-concrete-policy GUARD_POLICY policies)
+    (read-keyset "uri_guard")
+  )
+
+  (defun enforce-mint-guard (policies:[module{kip.token-policy-v2}])
+    @doc "Helper function to enforce that a URI_GUARD is correctly registered with GUARD_POLICY"
+    (contains-concrete-policy GUARD_POLICY policies)
+    (read-keyset "mint_guard")
+  )
+
+  (defun enforce-non-updatable-uri (policies:[module{kip.token-policy-v2}])
+    @doc "Helper function to enforce that a NON_UPDATABLE_URI_POLICY is part of policies"
+    (contains-concrete-policy NON_UPDATABLE_URI_POLICY policies)
   )
 
 )

@@ -1,0 +1,22 @@
+pactId: "{{sale-id}}"
+proof: null
+type: "cont"
+step: 0
+rollback: true
+signers:
+  - public: {{seller-key}}
+    caps:
+      - name: marmalade-v2.ledger.WITHDRAW
+        args: ["{{token-id}}", "{{seller-account}}", {{sell-amount}}, {"int": {{timeout}}}, "{{sale-id}}" ]
+  - public: {{gas-payer-key}}
+    caps:
+      - name: coin.GAS
+        args: []
+data:
+networkId: "{{networkId}}"
+publicMeta:
+  chainId: "{{chainId}}"
+  sender: "{{gas-payer}}"
+  gasLimit: 10000
+  gasPrice: 0.0000001
+  ttl: 600

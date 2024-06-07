@@ -101,6 +101,7 @@
   (load "./concrete-policies/royalty-policy/royalty-policy-v1.pact")
   (load "./concrete-policies/collection-policy/collection-policy-v1.pact")
   (load "./concrete-policies/guard-policy/guard-policy-v1.pact")
+  (load "./concrete-policies/non-updatable-uri-policy/non-updatable-uri-policy-v1.pact")
   (load "./policy-manager/manager-init.pact")
 (commit-tx)
 

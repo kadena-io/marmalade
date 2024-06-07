@@ -1,0 +1,26 @@
+#  assumes creator account exists. Create-account can be created in 0.0 template.
+code: (marmalade-v2.ledger.mint "{{token-id}}" "{{mint-account}}" (read-keyset 'mint-guard) (read-decimal 'amount))
+signers:
+  - public: "{{creator-key}}"
+    caps:
+      - name: marmalade-v2.ledger.MINT
+        args: ["{{token-id}}", "{{mint-account}}", 1.0]
+      - name: marmalade-v2.guard-policy-v1.MINT
+        args: ["{{token-id}}", "{{mint-account}}", 1.0]
+  - public: "{{gas-payer-key}}"
+    caps:
+      - name: coin.GAS
+        args: []
+data:
+  mint-guard:
+     keys:
+       - "{{mint-key}}"
+     pred: keys-all
+  amount: {{mint-amount}}
+networkId: {{networkId}}
+publicMeta:
+  chainId: "{{chainId}}"
+  sender: "{{gas-payer}}"
+  ttl: 600
+  gasPrice: 0.0000001
+  gasLimit: 10000

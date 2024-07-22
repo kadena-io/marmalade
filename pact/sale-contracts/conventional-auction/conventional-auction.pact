@@ -52,6 +52,7 @@
     ( bid-id:string
       sale-id:string
       bid:decimal
+      bidder:string
       token-id:string
     )
     @event
@@ -279,7 +280,7 @@
             )
           )
           (update auctions sale-id { 'highest-bid: bid, 'highest-bid-id: bid-id })
-          (emit-event (BID_PLACED bid-id sale-id bid token-id))
+          (emit-event (BID_PLACED bid-id sale-id bid bidder token-id))
         ))
       true
     )

@@ -1,0 +1,292 @@
+{
+  "profiles": {
+    "default": {
+      "host": "http://localhost:8080",
+      "networkId": "development",
+      "chains": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19"
+      ]
+    }
+  },
+  "steps": [
+    {
+      "profile": "default",
+      "code": "(ns.write-registry \"kadena\" (read-keyset 'ks) true)(define-namespace \"kadena\" (read-keyset 'ks) (read-keyset 'ks))",
+      "data": {
+        "ks": {
+          "keys": [
+            "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca"
+          ],
+          "pred": "keys-all"
+        }
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "codeFile": "./pact/spirekey.pact",
+      "data": {
+        "upgrade": false
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "code": "(ns.write-registry \"kip\" (read-keyset 'ks) true)(define-namespace \"kip\" (read-keyset 'ks) (read-keyset 'ks))",
+      "data": {
+        "ks": {
+          "keys": [
+            "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca"
+          ],
+          "pred": "keys-all"
+        }
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "codeFile": "./pact/kip/account-protocols-v1.pact",
+      "data": {},
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "code": "(ns.write-registry \"util\" (read-keyset 'ks) true)(define-namespace \"util\" (read-keyset 'ks) (read-keyset 'ks))(namespace 'util)(define-keyset \"util.util-ns-admin\" (read-keyset 'ks))",
+      "data": {
+        "ks": {
+          "keys": [
+            "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca"
+          ],
+          "pred": "keys-all"
+        }
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "codeFile": "./pact/util/fungible-util.pact",
+      "data": {},
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "codeFile": "./pact/kip/token-policy-v2.pact",
+      "data": {
+        "ns": "kip"
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "codeFile": "./pact/kip/updatable-uri-policy-v1.pact",
+      "data": {
+        "ns": "kip"
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "codeFile": "./pact/kip/poly-fungible-v3.pact",
+      "data": {
+        "ns": "kip"
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "code": "(ns.write-registry \"marmalade-v2\" (read-keyset 'ks) true)(define-namespace \"marmalade-v2\" (read-keyset 'ks) (read-keyset 'ks))(namespace \"marmalade-v2\") (define-keyset \"marmalade-v2.marmalade-contract-admin\" (read-keyset 'ks))",
+      "data": {
+        "ks": {
+          "keys": [
+            "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca"
+          ],
+          "pred": "keys-all"
+        }
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "code": "(ns.write-registry \"marmalade-sale\" (read-keyset 'ks) true)(define-namespace \"marmalade-sale\" (read-keyset 'ks) (read-keyset 'ks))(namespace \"marmalade-sale\")(define-keyset \"marmalade-sale.marmalade-contract-admin\" (read-keyset 'ks))",
+      "data": {
+        "ks": {
+          "keys": [
+            "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca"
+          ],
+          "pred": "keys-all"
+        }
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "codeFile": "./pact/ledger/ledger-v2.interface.pact",
+      "data": {
+        "ns": "marmalade-v2"
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "codeFile": "./pact/policy-manager/sale.interface.pact",
+      "data": {
+        "ns": "marmalade-v2"
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "codeFile": "./pact/policy-manager/policy-manager.pact",
+      "data": {
+        "ns": "marmalade-v2",
+        "upgrade": false
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "codeFile": "./pact/ledger/ledger.pact",
+      "data": {
+        "ns": "marmalade-v2",
+        "upgrade": false,
+        "upgrade_version_1": false
+      },
+      "sender": "sender00"
+    },
+
+
+    {
+      "profile": "default",
+      "codeFile": "./pact/concrete-policies/collection-policy/collection-policy-v1.pact",
+      "data": {
+        "ns": "marmalade-v2",
+        "upgrade": false,
+        "upgrade_version_1": false
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "codeFile": "./pact/concrete-policies/guard-policy/guard-policy-v1.pact",
+      "data": {
+        "ns": "marmalade-v2",
+        "upgrade": false,
+        "upgrade_version_1": false
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "codeFile": "./pact/concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact",
+      "data": {
+        "ns": "marmalade-v2",
+        "upgrade": false,
+        "upgrade_version_1": false
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "codeFile": "./pact/concrete-policies/non-updatable-uri-policy/non-updatable-uri-policy-v1.pact",
+      "data": {
+        "ns": "marmalade-v2",
+        "upgrade": false,
+        "upgrade_version_1": false
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "codeFile": "./pact/concrete-policies/royalty-policy/royalty-policy-v1.pact",
+      "data": {
+        "ns": "marmalade-v2",
+        "upgrade": false,
+        "upgrade_version_1": false
+      },
+      "sender": "sender00"
+    },
+    
+    {
+      "profile": "default",
+      "codeFile": "./pact/policy-manager/manager-init.pact",
+      "data": {
+        "ns": "marmalade-v2"
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "codeFile": "./pact/marmalade-util/util-v1.pact",
+      "data": {
+        "ns": "marmalade-v2",
+        "upgrade": false
+      },
+      "sender": "sender00"
+    },
+
+    {
+      "profile": "default",
+      "codeFile": "./pact/util/guards1.pact",
+      "data": {},
+      "sender": "sender00"
+    },
+
+    {
+      "profile": "default",
+      "codeFile": "./pact/sale-contracts/conventional-auction/conventional-auction.pact",
+      "data": {
+        "ns": "marmalade-sale",
+        "upgrade": false
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "codeFile": "./pact/sale-contracts/dutch-auction/dutch-auction.pact",
+      "data": {
+        "ns": "marmalade-sale",
+        "upgrade": false
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "codeFile": "./pact/sale-contracts/sale-init.pact",
+      "data": {
+        "ns": "marmalade-v2"
+      },
+      "caps": [
+        [
+          "marmalade-v2.policy-manager.SALE-WHITELIST",
+          "marmalade-sale.conventional-auction"
+        ],
+        [
+          "marmalade-v2.policy-manager.SALE-WHITELIST",
+          "marmalade-sale.dutch-auction"
+        ],
+        ["coin.GAS"]
+      ],
+      "sender": "sender00"
+    }
+  ]
+}
+

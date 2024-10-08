@@ -1,0 +1,20 @@
+{
+  "name": "devnet-deploy",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "tsx ./deploy.ts ./deploy.json ./signers.json",
+    "postinstall": "npm run deploy"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^22.7.5"
+  },
+  "dependencies": {
+    "@kadena/client": "^1.15.0",
+    "@kadena/cryptography-utils": "^0.4.4"
+  }
+}

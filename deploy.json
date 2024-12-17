@@ -51,6 +51,55 @@
     },
     {
       "profile": "default",
+      "codeFile": "./pact/spirekey-gas-station.pact",
+      "data": {
+        "upgrade": false
+      },
+      "sender": "sender00"
+    },
+    {
+      "profile": "default",
+      "code": "(coin.transfer-create \"sender00\" \"senderx\" (read-keyset 'ks) 1000000.0)",
+      "data": {
+        "ks": {
+          "keys": [
+            "368820f80c324bbc7c2b0610688a7da43e39f91d118732671cd9c7500ff43cca"
+          ],
+          "pred": "keys-all"
+        }
+      },
+      "sender": "sender00",
+      "caps": [
+        [
+          "coin.TRANSFER",
+          "sender00",
+          "senderx",
+          "1000000.0"
+        ],
+        [
+          "coin.GAS"
+        ]
+      ]
+    },
+    {
+      "profile": "default",
+      "code": "(coin.transfer \"sender00\" \"c:kZqdOJ6B_584lKXJgB8srIVivESgjqLneAA6JYJwrf8\" 100.0)",
+      "data": {},
+      "sender": "sender00",
+      "caps": [
+        [
+          "coin.TRANSFER",
+          "sender00",
+          "c:kZqdOJ6B_584lKXJgB8srIVivESgjqLneAA6JYJwrf8",
+          "100.0"
+        ],
+        [
+          "coin.GAS"
+        ]
+      ]
+    },
+    {
+      "profile": "default",
       "code": "(ns.write-registry \"kip\" (read-keyset 'ks) true)(define-namespace \"kip\" (read-keyset 'ks) (read-keyset 'ks))",
       "data": {
         "ks": {
@@ -172,8 +221,6 @@
       },
       "sender": "sender00"
     },
-
-
     {
       "profile": "default",
       "codeFile": "./pact/concrete-policies/collection-policy/collection-policy-v1.pact",
@@ -224,7 +271,6 @@
       },
       "sender": "sender00"
     },
-    
     {
       "profile": "default",
       "codeFile": "./pact/policy-manager/manager-init.pact",
@@ -242,14 +288,12 @@
       },
       "sender": "sender00"
     },
-
     {
       "profile": "default",
       "codeFile": "./pact/util/guards1.pact",
       "data": {},
       "sender": "sender00"
     },
-
     {
       "profile": "default",
       "codeFile": "./pact/sale-contracts/conventional-auction/conventional-auction.pact",
@@ -283,10 +327,11 @@
           "marmalade-v2.policy-manager.SALE-WHITELIST",
           "marmalade-sale.dutch-auction"
         ],
-        ["coin.GAS"]
+        [
+          "coin.GAS"
+        ]
       ],
       "sender": "sender00"
     }
   ]
 }
-

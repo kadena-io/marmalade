@@ -127,7 +127,7 @@
    , 'marmalade-user: ["marmalade-user"]
    , 'ns: "marmalade-v2"
    , 'upgrade: true
-   , 'upgrade_version_1: true })
+   , 'upgrade_version_1: false })
   (load "./ledger/ledger.pact")
   (load "./concrete-policies/guard-policy/guard-policy-v1.pact")
 (commit-tx)

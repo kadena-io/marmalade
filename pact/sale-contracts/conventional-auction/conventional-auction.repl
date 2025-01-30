@@ -492,11 +492,15 @@
     'buyer-guard: {"keys": ["ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c"], "pred": "keys-all"},
     'buyer_fungible_account: (escrow-account "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y")
     ,'updated_price: 125.0
+    ,"policy-manager-escrow-account": (at 'account (marmalade-v2.policy-manager.get-escrow-account "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"))
     })
 
   (env-sigs [
     { 'key: 'any
-     ,'caps: [(marmalade-v2.ledger.BUY (read-msg "token1-id") "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3" (read-string 'buyer) 1.0 "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y")]
+     ,'caps: [
+      (marmalade-v2.ledger.BUY (read-msg "token1-id") "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3" (read-string 'buyer) 1.0 "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"),
+      (coin.TRANSFER (read-string "buyer_fungible_account") (read-string "policy-manager-escrow-account") (read-decimal "updated_price"))
+    ]
      }])
 
   (expect "Claim the token succeeds"
@@ -715,12 +719,18 @@
     "marketplace_fee": {
       "mk-account": "k:cad725b9789b04dd1ee21e02287a0b65201c1c8b17275860e8e82aa68b12be2d"
       ,"mk-fee-percentage": 0.1
-    }
+    },
+    "policy-manager-escrow-account": (at 'account (marmalade-v2.policy-manager.get-escrow-account "L8MyXGnK9uOtzMsi8JPGcdMrOybW862pHZHnnuYHVhs")),
+    "mk-fee": (floor (* 0.1 (read-decimal "updated_price")) (coin.precision))
   })
 
   (env-sigs [
     { 'key: 'any
-     ,'caps: [(marmalade-v2.ledger.BUY (read-msg "token1-id") (read-string 'seller) (read-string 'buyer) 1.0 "L8MyXGnK9uOtzMsi8JPGcdMrOybW862pHZHnnuYHVhs")]
+     ,'caps: [
+      (marmalade-v2.ledger.BUY (read-msg "token1-id") (read-string 'seller) (read-string 'buyer) 1.0 "L8MyXGnK9uOtzMsi8JPGcdMrOybW862pHZHnnuYHVhs"),
+      (coin.TRANSFER (read-string "buyer_fungible_account") (read-string "policy-manager-escrow-account") (read-decimal "updated_price")),
+      (coin.TRANSFER (read-string "buyer_fungible_account") (at "mk-account" (read-msg "marketplace_fee")) (read-decimal "mk-fee"))
+    ]
     }])
 
   (expect "Claim the token succeeds"

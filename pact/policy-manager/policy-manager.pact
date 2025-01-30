@@ -409,14 +409,12 @@
             (with-capability (FUNGIBLE-TRANSFER-CALL sale-id)
               (enforce (and (>= mk-fee-percentage 0.0) (<= mk-fee-percentage 1.0)) "Invalid market-fee percentage")
 
-              (install-capability (fungible::TRANSFER (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at "mk-account" mk-fee-spec) mk-fee))
               (fungible::transfer (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at "mk-account" mk-fee-spec) mk-fee)
             )
           )
 
           (with-capability (FUNGIBLE-TRANSFER-CALL sale-id)
             ; Transfer sale amount from buyer to policy manager's escrow account
-            (install-capability (fungible::TRANSFER (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at 'account escrow-account) final-sale-price))
             (fungible::transfer-create (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at 'account escrow-account) (at 'guard escrow-account) final-sale-price)
           )
           (with-capability (ESCROW sale-id)

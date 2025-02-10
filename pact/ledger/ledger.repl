@@ -1,6 +1,5 @@
 (load "../marmalade.repl")
 
-(typecheck "marmalade-v2.ledger")
 (begin-tx "create-token")
 
   (use marmalade-v2.ledger)
@@ -114,7 +113,7 @@
     })
 
   (expect-failure "offer fails when called directly"
-    "pact-id: not in pact execution"
+    "Attempted to fetch defpact data, but currently not within defpact execution"
     (offer (read-string "token-id") (read-string "account") 1.0)
   )
 

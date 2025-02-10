@@ -1,7 +1,5 @@
 (load "../marmalade.repl")
 
-;  (typecheck "marmalade-v2.policy-manager")
-
 (begin-tx "upgrade policy and check if stored policy matches with saved concrete policy")
   (env-sigs [
     { 'key: 'marmalade-contract-admin

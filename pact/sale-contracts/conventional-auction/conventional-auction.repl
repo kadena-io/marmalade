@@ -14,8 +14,6 @@
   (marmalade-v2.policy-manager.add-sale-whitelist marmalade-sale.conventional-auction)
 (commit-tx)
 
-;  (typecheck "marmalade-sale.conventional-auction")
-
 (begin-tx "Create and mint a token")
   (use marmalade-v2.ledger)
   (use marmalade-v2.policy-manager)

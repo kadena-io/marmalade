@@ -16,7 +16,7 @@ runs:
         mkdir bin
         cd bin
         wget https://github.com/kadena-io/pact-5/releases/download/${{ inputs.version }}/pact-${{ inputs.version }}-linux-x64.tar.gz
-        tar -xzf "pact*.tar.gz"
+        tar -xzf "pact-${{ inputs.version }}-linux-x64.tar.gz"
         chmod +x pact
         cd ..
 

@@ -39,7 +39,7 @@
   } )
 
   (expect-failure "fail to create the token without assets"
-    "No such key in message: assets"
+    "read-msg failure"
     (create-token (read-msg 'token-id) 0 "multi-asset-policy-fungible" [marmalade-examples.multi-asset-policy] ALWAYS-TRUE))
 
   (env-data {
@@ -103,7 +103,7 @@
   } )
 
   (expect-failure "fail to create the token without operator_guard"
-    "No such key in message: operator_guard"
+    "read-msg failure"
     (create-token (read-msg 'token-id) 0 "multi-asset-policy-non-fungible" [marmalade-examples.multi-asset-policy marmalade-v2.non-fungible-policy-v1] ALWAYS-TRUE))
 
   (env-data {
@@ -327,7 +327,7 @@
     (map (remove "module-hash")  (env-events true)))
 
   (expect-failure "active asset does not exist"
-    "row not found: t:KaIJSvJEBJI8fV2LxDG6Jk_ASLRdQ-0SIr5CiAR2noM"
+    "No value found in table marmalade-examples.multi-asset-policy_token-assets for key: t:jv0TVGhzV9GN7xwvgDSjCQpY0E64KrxMWInNVOb0WAU"
     (get-asset (read-msg 'token-id) 0)
   )
 

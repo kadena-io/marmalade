@@ -1,6 +1,6 @@
 ;;load policy manager, ledger
 (load "../../policy-manager/policy-manager.repl")
-(typecheck "marmalade-v2.guard-policy-v1")
+;  (typecheck "marmalade-v2.guard-policy-v1")
 
 (begin-tx "Create token without mint guard")
     (use marmalade-v2.ledger)

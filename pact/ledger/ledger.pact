@@ -752,7 +752,6 @@
     ["upgrade complete"]
   )
   [ (create-table ledger)
-    (create-table tokens)
-    (create-table versions)])
+    (create-table tokens) ])
 
 (enforce-guard ADMIN-KS)

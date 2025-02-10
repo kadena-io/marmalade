@@ -538,7 +538,8 @@
        ]}
      {'key:'buyer
        ,'caps: [
-         (marmalade-v2.ledger.BUY "t:E3StsDuFkw7kPU8_CGha59AaONqN1C39cB37D4hswmU" (read-string 'seller) (read-string 'buyer) 1.0 (pact-id))
+         (marmalade-v2.ledger.BUY "t:E3StsDuFkw7kPU8_CGha59AaONqN1C39cB37D4hswmU" (read-string 'seller) (read-string 'buyer) 1.0 (pact-id)),
+         (marmalade-v2.abc.TRANSFER "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" "k:c8493f58aaff5787a15c987cf35b41bbca164a41d8978913860805768ed66fe7" 2.0)
        ]}
    ])
 
@@ -643,6 +644,7 @@
          (marmalade-v2.abc.TRANSFER (read-string 'buyer_fungible_account) "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" 1.5)
          (marmalade-v2.abc.TRANSFER (read-string 'buyer_fungible_account) (read-string 'marketplace-fungible-account) 0.15)
          (marmalade-v2.ledger.BUY "t:E3StsDuFkw7kPU8_CGha59AaONqN1C39cB37D4hswmU" (read-string 'seller) (read-string 'buyer) 1.0 (pact-id))
+         (marmalade-v2.abc.TRANSFER "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw"(read-string 'seller) 1.5)
        ]}
    ])
 
@@ -895,6 +897,7 @@
    ,"buyer-guard": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
    ,"buyer_fungible_account": "k:ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c"
    ,"seller": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+   ,"seller-fungible-account": "k:c8493f58aaff5787a15c987cf35b41bbca164a41d8978913860805768ed66fe7"
    })
 
   (marmalade-v2.abc.fund (read-string "buyer_fungible_account") 50.0)
@@ -904,7 +907,9 @@
         (marmalade-v2.ledger.BUY "t:E3StsDuFkw7kPU8_CGha59AaONqN1C39cB37D4hswmU" (read-string 'seller) (read-string 'buyer) 1.0 (pact-id))
       ]}
       ,{'key: 'ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c
-       ,'caps: [(marmalade-v2.abc.TRANSFER (read-string 'buyer_fungible_account) "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" 50.0) ]
+       ,'caps: [(marmalade-v2.abc.TRANSFER (read-string 'buyer_fungible_account) "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" 50.0)
+                (marmalade-v2.abc.TRANSFER "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" (read-string 'seller-fungible-account) 50.0) 
+              ]
       }
   ])
 

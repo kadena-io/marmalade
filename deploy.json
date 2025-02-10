@@ -194,7 +194,8 @@
       "codeFile": "./pact/concrete-policies/collection-policy/collection-policy-v1.pact",
       "data": {
         "ns": "marmalade-v2",
-        "upgrade": false
+        "upgrade": false,
+        "upgrade_version_1": false
       },
       "sender": "sender00"
     },
@@ -213,7 +214,8 @@
       "codeFile": "./pact/concrete-policies/non-fungible-policy/non-fungible-policy-v1.pact",
       "data": {
         "ns": "marmalade-v2",
-        "upgrade": false
+        "upgrade": false,
+        "upgrade_version_1": false
       },
       "sender": "sender00"
     },
@@ -222,7 +224,8 @@
       "codeFile": "./pact/concrete-policies/non-updatable-uri-policy/non-updatable-uri-policy-v1.pact",
       "data": {
         "ns": "marmalade-v2",
-        "upgrade": false
+        "upgrade": false,
+        "upgrade_version_1": false
       },
       "sender": "sender00"
     },
@@ -231,7 +234,8 @@
       "codeFile": "./pact/concrete-policies/royalty-policy/royalty-policy-v1.pact",
       "data": {
         "ns": "marmalade-v2",
-        "upgrade": false
+        "upgrade": false,
+        "upgrade_version_1": false
       },
       "sender": "sender00"
     },

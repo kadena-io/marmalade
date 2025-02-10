@@ -408,7 +408,6 @@
             true
             (with-capability (FUNGIBLE-TRANSFER-CALL sale-id)
               (enforce (and (>= mk-fee-percentage 0.0) (<= mk-fee-percentage 1.0)) "Invalid market-fee percentage")
-
               (fungible::transfer (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at "mk-account" mk-fee-spec) mk-fee)
             )
           )
@@ -430,7 +429,6 @@
               (let (
                     (balance:decimal (fungible::get-balance (at 'account escrow-account)))
                   )
-                (install-capability (fungible::TRANSFER (at 'account escrow-account) (at 'account seller-fungible-account) balance))
                 (fungible::transfer (at 'account escrow-account) (at 'account seller-fungible-account) balance)
               )
             result

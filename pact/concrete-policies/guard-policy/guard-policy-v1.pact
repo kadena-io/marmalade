@@ -268,10 +268,7 @@
     [ (create-table uri-guards) ]
     ["upgrade complete"]
   )
-  [
-    (create-table policy-guards)
-    (create-table uri-guards)
-  ]
+  [ (create-table policy-guards) ]
 )
 
 (enforce-guard ADMIN-KS)

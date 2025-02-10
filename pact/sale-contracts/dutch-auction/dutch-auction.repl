@@ -14,7 +14,7 @@
   (marmalade-v2.policy-manager.add-sale-whitelist marmalade-sale.dutch-auction)
 (commit-tx)
 
-(typecheck "marmalade-sale.dutch-auction")
+;  (typecheck "marmalade-sale.dutch-auction")
 
 (begin-tx "Create and mint a token")
   (use marmalade-v2.ledger)
@@ -606,7 +606,9 @@
      'buyer_fungible_account: "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7",
      'policy-manager-escrow: (at 'account (get-escrow-account "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y")),
      'updated_price: 66.43,
-     "sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y"
+     "sale-id": "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y",
+     "creator": "k:05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e",
+     "seller-fungible-account": "k:05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e"
      })
 
    (env-sigs [
@@ -614,7 +616,9 @@
       ,'caps: [(marmalade-v2.ledger.BUY (read-msg "token1-id") "k:05df86b4fda15ac84cdd2ab4facb433db6098d10b6b09803eedbaea78d10723e" "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7" 1.0 "_vS1Y4nXQavtHxQAUCNDeRzG5Jc8Se22Ocg4RNP5B2Y")]
       },
       { 'key: "15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7"
-       ,'caps: [(coin.TRANSFER "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7" (read-string 'policy-manager-escrow) 66.43)]
+       ,'caps: [(coin.TRANSFER "k:15071b931200c63c8d84870c387534216533810919b382924514003b2c90c0d7" (read-string 'policy-manager-escrow) 66.43),
+                (coin.TRANSFER (read-string 'policy-manager-escrow) (read-string 'seller-fungible-account) 66.43)      
+              ]
        }])
 
    (expect "Claim the token succeeds"

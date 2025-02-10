@@ -5,7 +5,7 @@ inputs:
   version:
     description: "Target Pact version to install"
     required: false
-    default: "4.10.0"
+    default: "5.0"
 
 runs:
   using: composite
@@ -15,8 +15,8 @@ runs:
       run: |
         mkdir bin
         cd bin
-        wget https://github.com/kadena-io/pact/releases/download/v${{ inputs.version }}/pact-${{ inputs.version }}-linux-20.04.zip
-        unzip "pact*.zip"
+        wget https://github.com/kadena-io/pact-5/releases/download/${{ inputs.version }}/pact-${{ inputs.version }}-linux-x64.tar.gz
+        tar -xzf "pact*.tar.gz"
         chmod +x pact
         cd ..
 

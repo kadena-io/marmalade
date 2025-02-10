@@ -5,6 +5,8 @@
   (bless "mQ_oo2I6T85QydnylhVmoHM9elDsmVD1wV9iXrAuT0I")
   (bless "WC7obfshJ_VsH2PmcTL2iy4TKjbhHvA1WU_aMWIRwKc")
   (bless "SpJiV_6CfE3gA5QUlTEKhFgXvZrhg2dORfFqk2GBgjI")
+  ;; pact 5 upgrade
+  (bless "_cyAG-5SMLCsizWOiyQjyOfbZZ9VdUGiT_SssLq6Hw4")
 
   (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
 

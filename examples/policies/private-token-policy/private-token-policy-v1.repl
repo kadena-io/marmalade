@@ -41,7 +41,7 @@
     (create-token (read-msg 'token-id-without-guard-policy) 0 (hash "ipfs://secret-uri") [marmalade-examples.private-token-policy-v1] ALWAYS-TRUE))
 
   (expect-failure "Failed to create a token without uri-guard"
-    "Failure: Tx Failed: No such key in message: uri_guard"
+    "read-msg failure"
     (create-token (read-msg 'token-id) 0 (hash "ipfs://secret-uri") [marmalade-examples.private-token-policy-v1 marmalade-v2.guard-policy-v1] ALWAYS-TRUE))
 
 (commit-tx)

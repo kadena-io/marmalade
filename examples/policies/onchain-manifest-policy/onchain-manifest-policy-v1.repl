@@ -40,7 +40,7 @@
   })
 
   (expect-failure "fail to create token with invalid manifest"
-    "Failure: Missing fields for {manifest-spec}"
+    "Runtime typecheck failure, argument is object , but expected type object{marmalade-examples.onchain-manifest-policy-v1.manifest-spec}"
     (create-token (read-msg 'token-id) 0 "test-onchain-manifest-uri" [marmalade-examples.onchain-manifest-policy-v1] ALWAYS-TRUE))
 
   (env-data {

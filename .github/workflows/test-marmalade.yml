@@ -19,7 +19,7 @@ jobs:
       - name: Setup Pact
         uses: ./.github/actions/setup-pact
         with:
-          version: "4.10.0"
+          version: "5.0"
 
       - name: Test pact/marmalade.repl
         uses: ./.github/actions/repl

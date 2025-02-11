@@ -5,6 +5,8 @@
   (bless "mQ_oo2I6T85QydnylhVmoHM9elDsmVD1wV9iXrAuT0I")
   (bless "WC7obfshJ_VsH2PmcTL2iy4TKjbhHvA1WU_aMWIRwKc")
   (bless "SpJiV_6CfE3gA5QUlTEKhFgXvZrhg2dORfFqk2GBgjI")
+  ;; pact 5 upgrade
+  (bless "_cyAG-5SMLCsizWOiyQjyOfbZZ9VdUGiT_SssLq6Hw4")
 
   (defconst ADMIN-KS:string "marmalade-v2.marmalade-contract-admin")
 
@@ -408,15 +410,12 @@
             true
             (with-capability (FUNGIBLE-TRANSFER-CALL sale-id)
               (enforce (and (>= mk-fee-percentage 0.0) (<= mk-fee-percentage 1.0)) "Invalid market-fee percentage")
-
-              (install-capability (fungible::TRANSFER (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at "mk-account" mk-fee-spec) mk-fee))
               (fungible::transfer (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at "mk-account" mk-fee-spec) mk-fee)
             )
           )
 
           (with-capability (FUNGIBLE-TRANSFER-CALL sale-id)
             ; Transfer sale amount from buyer to policy manager's escrow account
-            (install-capability (fungible::TRANSFER (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at 'account escrow-account) final-sale-price))
             (fungible::transfer-create (read-msg BUYER-FUNGIBLE-ACCOUNT-MSG-KEY) (at 'account escrow-account) (at 'guard escrow-account) final-sale-price)
           )
           (with-capability (ESCROW sale-id)
@@ -432,7 +431,6 @@
               (let (
                     (balance:decimal (fungible::get-balance (at 'account escrow-account)))
                   )
-                (install-capability (fungible::TRANSFER (at 'account escrow-account) (at 'account seller-fungible-account) balance))
                 (fungible::transfer (at 'account escrow-account) (at 'account seller-fungible-account) balance)
               )
             result

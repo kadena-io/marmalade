@@ -1,7 +1,5 @@
 (load "../marmalade.repl")
 
-(typecheck "marmalade-v2.policy-manager")
-
 (begin-tx "upgrade policy and check if stored policy matches with saved concrete policy")
   (env-sigs [
     { 'key: 'marmalade-contract-admin
@@ -130,7 +128,7 @@
     })
 
   (expect-failure "enforce-init cannot be called directly"
-    "(require-capability (ledger::I...: Failure: Tx Failed: require-capability: not granted: (marmalade-v2.ledger.INIT-CALL \"t:E3StsDuFkw7kPU8_CGha59AaONqN1C39cB37D4hswmU\" 0 \"default-test-uri\")"
+    "require-capability: not granted: (marmalade-v2.ledger.INIT-CALL)"
     (enforce-init {
       "id": (create-token-id { 'uri: "default-test-uri", 'precision: 0, 'policies: [] } ALWAYS-TRUE)
      ,"supply": 0.0
@@ -170,7 +168,7 @@
     ]}])
 
    (expect-failure "enforce-mint cannot be called directly"
-     "(require-capability (ledger::M...: Failure: Tx Failed: require-capability: not granted: (marmalade-v2.ledger.MINT-CALL \"t:E3StsDuFkw7kPU8_CGha59AaONqN1C39cB37D4hswmU\" \"k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3\" 1.0)"
+     "require-capability: not granted: (marmalade-v2.ledger.MINT-CALL)"
      (enforce-mint (get-token-info "t:E3StsDuFkw7kPU8_CGha59AaONqN1C39cB37D4hswmU") (read-string 'account) (read-keyset 'account-guard ) 1.0)
    )
 
@@ -199,7 +197,7 @@
   }])
 
 (expect-failure "enforce-burn cannot be called directly"
- "require-capability (ledger::B...: Failure: Tx Failed: require-capability: not granted: (marmalade-v2.ledger.BURN-CALL \"t:E3StsDuFkw7kPU8_CGha59AaONqN1C39cB37D4hswmU\" \"k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3\" 1.0)"
+ "require-capability: not granted: (marmalade-v2.ledger.BURN-CALL)"
  (enforce-burn (get-token-info "t:E3StsDuFkw7kPU8_CGha59AaONqN1C39cB37D4hswmU") (read-string 'account) 1.0)
 )
 
@@ -229,7 +227,7 @@
     }])
 
   (expect-failure "enforce-offer cannot be called directly"
-    "(marmalade-v2.ledger.OFFER-CALL \"t:E3StsDuFkw7kPU8_CGha59AaONqN1C39cB37D4hswmU\" \"k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3\" 1.0 0 \"void-sale-id\")"
+    "require-capability: not granted: (marmalade-v2.ledger.OFFER-CALL)"
     (enforce-offer (get-token-info (read-string "token-id")) (read-string 'seller) 1.0 0 "void-sale-id")
   )
 
@@ -261,7 +259,7 @@
   ])
 
   (expect-failure "enforce-buy cannot be called directly"
-   "(marmalade-v2.ledger.BUY-CALL \"t:E3StsDuFkw7kPU8_CGha59AaONqN1C39cB37D4hswmU\" \"k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3\" \"k:6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3\" 1.0 \"y9iTTBsSq56yIgmJexCyOX3DSFVe0CwQs4K0jISRAdM\")"
+   "require-capability: not granted: (marmalade-v2.ledger.BUY-CALL)"
    (enforce-buy (get-token-info (read-string 'token-id )) (read-string 'seller ) (read-string 'buyer ) (read-keyset 'buyer-guard ) 1.0 (pact-id)))
 
   (expect "Buy succeeds"
@@ -283,7 +281,7 @@
     }])
 
   (expect-failure "Withdraw fails after buy is completed"
-    "resumePact: pact completed: y9iTTBsSq56yIgmJexCyOX3DSFVe0CwQs4K0jISRAdM"
+    "Requested defpact already completed:  defpact id:y9iTTBsSq56yIgmJexCyOX3DSFVe0CwQs4K0jISRAdM"
     (continue-pact 0 true))
 
 (rollback-tx)
@@ -327,7 +325,7 @@
     }])
 
   (expect-failure "enforce-withdraw cannot be called directly"
-    "(marmalade-v2.ledger.WITHDRAW-CALL \"t:E3StsDuFkw7kPU8_CGha59AaONqN1C39cB37D4hswmU\" \"k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3\" 1.0 0 \"i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY\")"
+    "require-capability: not granted: (marmalade-v2.ledger.WITHDRAW-CALL)"
     (enforce-withdraw (get-token-info (read-string 'token-id )) (read-string 'seller ) 1.0 0 (pact-id) ))
 
   (expect "Withdraw succeeds"
@@ -359,7 +357,7 @@
   ])
 
   (expect-failure "Buy fails when called after withdraw"
-    "resumePact: pact completed: i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"
+    "Requested defpact already completed:  defpact id:i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"
     (continue-pact 1))
 
 (rollback-tx)
@@ -466,7 +464,7 @@
    })
 
   (expect-failure "Buy fails when called after withdraw"
-    "resumePact: pact completed: i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"
+    "Requested defpact already completed:  defpact id:i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"
     (continue-pact 1))
 
 (rollback-tx)
@@ -538,7 +536,8 @@
        ]}
      {'key:'buyer
        ,'caps: [
-         (marmalade-v2.ledger.BUY "t:E3StsDuFkw7kPU8_CGha59AaONqN1C39cB37D4hswmU" (read-string 'seller) (read-string 'buyer) 1.0 (pact-id))
+         (marmalade-v2.ledger.BUY "t:E3StsDuFkw7kPU8_CGha59AaONqN1C39cB37D4hswmU" (read-string 'seller) (read-string 'buyer) 1.0 (pact-id)),
+         (marmalade-v2.abc.TRANSFER "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" "k:c8493f58aaff5787a15c987cf35b41bbca164a41d8978913860805768ed66fe7" 2.0)
        ]}
    ])
 
@@ -563,7 +562,7 @@
     }])
 
   (expect-failure "Withdraw fails after buy has completed"
-    "resumePact: pact completed: i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"
+    "Requested defpact already completed:  defpact id:i35txr8Kcr43a3gQm7Zbd98mqQwfqpd2DkdsbKeA0qY"
     (continue-pact 0 true))
 
 (rollback-tx)
@@ -643,6 +642,7 @@
          (marmalade-v2.abc.TRANSFER (read-string 'buyer_fungible_account) "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" 1.5)
          (marmalade-v2.abc.TRANSFER (read-string 'buyer_fungible_account) (read-string 'marketplace-fungible-account) 0.15)
          (marmalade-v2.ledger.BUY "t:E3StsDuFkw7kPU8_CGha59AaONqN1C39cB37D4hswmU" (read-string 'seller) (read-string 'buyer) 1.0 (pact-id))
+         (marmalade-v2.abc.TRANSFER "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw"(read-string 'seller) 1.5)
        ]}
    ])
 
@@ -731,7 +731,7 @@
     }])
 
   (expect-failure "sale with non-whitelisted sale-type fails"
-    "with-read: row not found: wrong"
+    "No value found in table marmalade-v2.policy-manager_sale-whitelist for key: wrong"
     (sale (read-msg 'token-id) "k:account" 1.0 (to-timestamp (time "2023-07-10T00:00:00Z"))))
 
   (env-data {
@@ -895,6 +895,7 @@
    ,"buyer-guard": {"keys": ["6778a9153dbfcfb787c9eb1700455a59af62b15008b71f805398d857bddb48f3"], "pred": "keys-all"}
    ,"buyer_fungible_account": "k:ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c"
    ,"seller": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
+   ,"seller-fungible-account": "k:c8493f58aaff5787a15c987cf35b41bbca164a41d8978913860805768ed66fe7"
    })
 
   (marmalade-v2.abc.fund (read-string "buyer_fungible_account") 50.0)
@@ -904,7 +905,9 @@
         (marmalade-v2.ledger.BUY "t:E3StsDuFkw7kPU8_CGha59AaONqN1C39cB37D4hswmU" (read-string 'seller) (read-string 'buyer) 1.0 (pact-id))
       ]}
       ,{'key: 'ae511ecee78c71793b7915bc51f2e2b9a0b274aefa0ece5cb76bfcb8e0e1151c
-       ,'caps: [(marmalade-v2.abc.TRANSFER (read-string 'buyer_fungible_account) "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" 50.0) ]
+       ,'caps: [(marmalade-v2.abc.TRANSFER (read-string 'buyer_fungible_account) "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" 50.0)
+                (marmalade-v2.abc.TRANSFER "c:OgWllLAYtF0-YHB7by8ZdFfYg_DvDLoQNfFD4gXdzdw" (read-string 'seller-fungible-account) 50.0) 
+              ]
       }
   ])
 
@@ -931,7 +934,7 @@
   })
 
   (expect-failure "Buy fails when updated_price is not decimal"
-    "Type error: expected decimal, found string"
+    "Runtime typecheck failure, argument is string , but expected type decimal"
     (continue-pact 1))
 
   (env-data {

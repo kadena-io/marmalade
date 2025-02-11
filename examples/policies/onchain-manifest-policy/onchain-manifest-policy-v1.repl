@@ -22,9 +22,8 @@
   (namespace (read-msg 'ns))
 
   (define-keyset (+ (read-msg 'ns) ".onchain-manifest-policy") (read-keyset 'onchain-manifest-policy))
-  
+
   (load "onchain-manifest-policy-v1.pact")
-  (typecheck "marmalade-examples.onchain-manifest-policy-v1")
 (commit-tx)
 
 (begin-tx "create token with onchain manifest policy")
@@ -41,7 +40,7 @@
   })
 
   (expect-failure "fail to create token with invalid manifest"
-    "Failure: Missing fields for {manifest-spec}"
+    "Runtime typecheck failure, argument is object , but expected type object{marmalade-examples.onchain-manifest-policy-v1.manifest-spec}"
     (create-token (read-msg 'token-id) 0 "test-onchain-manifest-uri" [marmalade-examples.onchain-manifest-policy-v1] ALWAYS-TRUE))
 
   (env-data {
@@ -76,7 +75,7 @@
   (env-sigs [
     {"key": "malicious-user", "caps": [(marmalade-examples.onchain-manifest-policy-v1.UPGRADE (read-msg 'token-id))]}
     ])
- 
+
   (expect-failure "fail to upgrade a onchain manifest with malicious user"
     "Keyset failure (keys-all): [manifest...]"
     (upgrade-manifest (read-msg 'token-id ) (read-msg 'manifest1 )))
@@ -84,7 +83,7 @@
   (env-sigs [
     {"key": "manifest", "caps": [(marmalade-examples.onchain-manifest-policy-v1.UPGRADE (read-msg 'token-id))]}
     ])
-  
+
   (expect "upgrade a onchain manifest"
     "Write succeeded"
     (upgrade-manifest (read-msg 'token-id ) (read-msg 'manifest1 )))
@@ -96,9 +95,9 @@
   (expect "Manifest was upgraded"
    {"uri": {"scheme": "text1","data": "data"},"hash": "dD_VD1vl5Qx25WYNhW6RWIuxo25LQfa49Fs55ckMwUE","data": []}
    (get-manifest (read-msg 'token-id )))
-   
+
 (commit-tx)
-   
+
 (begin-tx "create token with onchain manifest and royalty policy")
 
   (use marmalade-v2.ledger)
@@ -135,7 +134,7 @@
     (create-token (read-msg 'token-id) 0 "onchain-manifest-with-royalty" (read-msg 'policies) ALWAYS-TRUE))
 
   (expect "create-token events"
-    [ 
+    [
       {"name": "marmalade-v2.royalty-policy-v1.ROYALTY","params": [(read-msg 'token-id) (read-msg 'royalty_spec) ]},
       {"name": "marmalade-v2.ledger.TOKEN","params": [(read-msg 'token-id) 0 (read-msg 'policies) "onchain-manifest-with-royalty" ALWAYS-TRUE]} ]
     (map (remove "module-hash")  (env-events true)))

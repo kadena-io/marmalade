@@ -21,12 +21,12 @@ jobs:
       - name: Setup Pact
         uses: ./.github/actions/setup-pact
         with:
-          version: "4.10.0"
+          version: "5.0"
 
       - name: Test fixed-issuance-policy-v1
         uses: ./.github/actions/repl
         with:
-          target: examples/policies/fixed-issuance-policy/fixed-issuance-policy-v1.pact
+          target: examples/policies/fixed-issuance-policy/fixed-issuance-policy-v1.repl
 
       - name: Test onchain-manifest-policy-v1
         uses: ./.github/actions/repl

@@ -22,9 +22,8 @@
   (namespace (read-msg 'ns))
 
   (define-keyset (+ (read-msg 'ns) ".timed-mint-policy") (read-keyset 'timed-mint-policy))
-  
+
   (load "timed-mint-policy-v1.pact")
-  (typecheck "marmalade-examples.timed-mint-policy-v1")
 (commit-tx)
 
 
@@ -100,7 +99,7 @@
   (use marmalade-examples.timed-mint-policy-v1)
   (use marmalade-v2.util-v1)
   (use mini-guard-utils)
-  
+
   (env-data {
     "token-id": (create-token-id { 'uri: "timed-mint-policy-v1-0", 'precision: 0, 'policies: [marmalade-examples.timed-mint-policy-v1] } ALWAYS-TRUE)
     ,"account": "k:e4c6807d79d8bf4695e10e5678ebf72862f59b71f971d39dd3349f4beeacd6e3"
@@ -125,7 +124,7 @@
   (expect-failure "Fail if mint after end"
     "Mint has ended"
     (mint (read-msg 'token-id) (read-msg 'account) (read-keyset 'account-guard ) 1.0))
-    
+
   ; mint before max-supply reached but would reach wit the amount minting
   (env-chain-data {"block-time": (time "2023-07-09T15:00:00Z")})
 
@@ -152,7 +151,7 @@
   (expect-failure "Fail if account had already minted"
     "Account has already minted"
     (mint (read-msg 'token-id) (read-msg 'account) (read-keyset 'account-guard ) 1.0))
-    
+
   ; mint after max-supply reached
   (env-chain-data {"block-time": (time "2023-07-09T15:00:00Z")})
   (env-data {

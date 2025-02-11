@@ -23,10 +23,8 @@
   (namespace (read-msg 'ns))
 
   (define-keyset (+ (read-msg 'ns) ".fixed-issuance-policy") (read-keyset 'fixed-issuance-policy))
-  
-  (load "fixed-issuance-policy-v1.pact")
-  (typecheck "marmalade-examples.fixed-issuance-policy-v1")
 
+  (load "fixed-issuance-policy-v1.pact")
 (commit-tx)
 
 (begin-tx "Create token with fixed issuance policy")
@@ -130,7 +128,7 @@
     { 'key: 'account
      ,'caps: [(marmalade-v2.ledger.MINT (read-msg 'token-id) (read-msg 'account) 2.0)]
     }])
-  
+
   (expect-failure "Fail if minting more than max-supply"
     "Exceeds max supply"
     (mint (read-msg 'token-id) (read-msg 'account) (read-keyset 'account-guard ) 2.0))

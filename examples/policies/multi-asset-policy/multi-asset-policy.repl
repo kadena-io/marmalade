@@ -22,9 +22,8 @@
   (namespace (read-msg 'ns))
 
   (define-keyset (+ (read-msg 'ns) ".multi-asset-policy") (read-keyset 'multi-asset-policy))
-  
+
   (load "multi-asset-policy.pact")
-  (typecheck "marmalade-examples.multi-asset-policy")
 (commit-tx)
 
 (begin-tx "create multi-asset token without non-fungible policy")
@@ -40,7 +39,7 @@
   } )
 
   (expect-failure "fail to create the token without assets"
-    "No such key in message: assets"
+    "read-msg failure"
     (create-token (read-msg 'token-id) 0 "multi-asset-policy-fungible" [marmalade-examples.multi-asset-policy] ALWAYS-TRUE))
 
   (env-data {
@@ -63,10 +62,10 @@
     (create-token (read-msg 'token-id) 0 "multi-asset-policy-fungible" [marmalade-examples.multi-asset-policy] ALWAYS-TRUE))
 
   (expect "events"
-    [ 
-      {"name": "marmalade-examples.multi-asset-policy.ASSET_SET","params": [(read-msg 'token-id) 0 "ipfs://1"]} 
-      ,{"name": "marmalade-examples.multi-asset-policy.ASSET_SET","params": [(read-msg 'token-id) 1 "ipfs://2"]} 
-      ,{"name": "marmalade-v2.ledger.TOKEN","params": [(read-msg 'token-id) 0 [marmalade-examples.multi-asset-policy] "multi-asset-policy-fungible" ALWAYS-TRUE]} 
+    [
+      {"name": "marmalade-examples.multi-asset-policy.ASSET_SET","params": [(read-msg 'token-id) 0 "ipfs://1"]}
+      ,{"name": "marmalade-examples.multi-asset-policy.ASSET_SET","params": [(read-msg 'token-id) 1 "ipfs://2"]}
+      ,{"name": "marmalade-v2.ledger.TOKEN","params": [(read-msg 'token-id) 0 [marmalade-examples.multi-asset-policy] "multi-asset-policy-fungible" ALWAYS-TRUE]}
     ]
     (map (remove "module-hash")  (env-events true)))
 
@@ -104,7 +103,7 @@
   } )
 
   (expect-failure "fail to create the token without operator_guard"
-    "No such key in message: operator_guard"
+    "read-msg failure"
     (create-token (read-msg 'token-id) 0 "multi-asset-policy-non-fungible" [marmalade-examples.multi-asset-policy marmalade-v2.non-fungible-policy-v1] ALWAYS-TRUE))
 
   (env-data {
@@ -177,7 +176,7 @@
   (expect "events"
     [{"name": "marmalade-examples.multi-asset-policy.ASSET_PROPOSED","params": [(read-msg 'token-id) 0 (read-msg 'new-asset)]}]
     (map (remove "module-hash")  (env-events true)))
-  
+
   (expect "get previously added asset"
     [(read-msg 'new-asset)]
     (get-proposed-assets (read-msg 'token-id))
@@ -280,7 +279,7 @@
       ,{"name": "marmalade-examples.multi-asset-policy.ASSET_REJECTED","params": [(read-msg 'token-id) 1 "ipfs://2" (read-msg 'owner)]}
     ]
     (map (remove "module-hash")  (env-events true)))
-  
+
 (commit-tx)
 
 
@@ -328,7 +327,7 @@
     (map (remove "module-hash")  (env-events true)))
 
   (expect-failure "active asset does not exist"
-    "row not found: t:KaIJSvJEBJI8fV2LxDG6Jk_ASLRdQ-0SIr5CiAR2noM"
+    "No value found in table marmalade-examples.multi-asset-policy_token-assets for key: t:jv0TVGhzV9GN7xwvgDSjCQpY0E64KrxMWInNVOb0WAU"
     (get-asset (read-msg 'token-id) 0)
   )
 
@@ -363,7 +362,7 @@
       {"name": "marmalade-examples.multi-asset-policy.ASSET_ACCEPTED", "params": [(read-msg 'token-id) 2 "ipfs://3" (read-msg 'owner)]}
     ]
     (map (remove "module-hash")  (env-events true)))
-  
+
   (expect "successfully get asset URI"
     "ipfs://1"
     (get-asset (read-msg 'token-id) 0)
@@ -378,7 +377,7 @@
     "ipfs://3"
     (get-asset (read-msg 'token-id) 2)
   )
-  
+
 (commit-tx)
 
 (begin-tx "change asset priority")
@@ -395,7 +394,7 @@
     ,"target-asset-id": 1
     ,"new-priority": 0
   } )
- 
+
   (expect "successfully get all asset URIs"
     ["ipfs://1" "ipfs://2" "ipfs://3"]
     (get-assets (read-msg 'token-id)))
@@ -410,7 +409,7 @@
   (expect "successfully set new priority"
     true
     (set-asset-priority (read-msg 'token-id) (read-integer 'target-asset-id) (read-integer 'new-priority) (read-msg 'owner) ))
- 
+
   (expect "events"
     [{"name": "marmalade-examples.multi-asset-policy.ASSET_PRIORITY_SET", "params": [(read-msg 'token-id) (read-integer 'target-asset-id) (read-integer 'new-priority) (read-msg 'owner)]}]
     (map (remove "module-hash")  (env-events true)))
@@ -429,7 +428,7 @@
   (expect "successfully set new priority"
     true
     (set-asset-priority (read-msg 'token-id) 0 2 (read-msg 'owner) ))
- 
+
   (expect "events"
     [{"name": "marmalade-examples.multi-asset-policy.ASSET_PRIORITY_SET", "params": [(read-msg 'token-id) 0 2 (read-msg 'owner)]}]
     (map (remove "module-hash")  (env-events true)))

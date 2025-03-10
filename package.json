@@ -1,5 +1,5 @@
 {
-  "name": "devnet-deploy",
+  "name": "@kadena/devnet-deploy",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",

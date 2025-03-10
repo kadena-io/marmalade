@@ -17,5 +17,6 @@
   "dependencies": {
     "@kadena/client": "^1.15.0",
     "@kadena/cryptography-utils": "^0.4.4"
-  }
+  },
+  "private": true
 }
